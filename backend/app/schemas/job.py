@@ -65,7 +65,7 @@ class JobResponse(BaseModel):
     salary_max: Optional[int]
     salary_currency: str
     match_score: Optional[int]
-    tags: list
+    tags: list[str]
     found_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime

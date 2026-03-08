@@ -5,7 +5,6 @@ from typing import Optional
 
 from sqlalchemy import cast, or_, select, String
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.models.job import Application, Job
 from app.models.user import User, UserRole
@@ -20,11 +19,10 @@ def _can_access(job: Job, user: User) -> bool:
 
 
 async def _load_job(db: AsyncSession, job_id: int) -> Job | None:
-    """Load job by id, eagerly loading its applications."""
+    """Load job by id."""
     result = await db.execute(
         select(Job)
         .where(Job.id == job_id)
-        .options(selectinload(Job.applications))
     )
     return result.scalar_one_or_none()
 
@@ -105,30 +103,9 @@ async def update_job(
     if job is None or not _can_access(job, current_user):
         return None
 
-    if data.title is not None:
-        job.title = data.title
-    if data.company is not None:
-        job.company = data.company
-    if data.location is not None:
-        job.location = data.location
-    if data.url is not None:
-        job.url = data.url
-    if data.source is not None:
-        job.source = data.source
-    if data.description is not None:
-        job.description = data.description
-    if data.salary_min is not None:
-        job.salary_min = data.salary_min
-    if data.salary_max is not None:
-        job.salary_max = data.salary_max
-    if data.salary_currency is not None:
-        job.salary_currency = data.salary_currency
-    if data.match_score is not None:
-        job.match_score = data.match_score
-    if data.tags is not None:
-        job.tags = data.tags
-    if data.found_at is not None:
-        job.found_at = data.found_at
+    update_data = data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(job, field, value)
 
     job.updated_at = datetime.now(timezone.utc)
     await db.commit()
