@@ -11,6 +11,11 @@ from app.models.user import User, UserRole
 from app.schemas.application import ApplicationCreate, ApplicationStatusChange, ApplicationUpdate
 
 
+class DuplicateApplicationError(Exception):
+    """Raised when an application already exists for the given job and user."""
+    pass
+
+
 def _can_access(application: Application, user: User) -> bool:
     """Return True if user may read or write this application."""
     if user.role == UserRole.admin:
@@ -55,7 +60,7 @@ async def create_application(
         )
     )
     if existing.scalars().first():
-        return "duplicate"  # sentinel value
+        raise DuplicateApplicationError()
 
     application = Application(
         user_id=current_user.id,
@@ -133,6 +138,9 @@ async def change_status(
     application = await _load_application(db, application_id)
     if application is None or not _can_access(application, current_user):
         return None
+
+    if data.new_status == application.status:
+        return application  # no change needed, skip history entry
 
     old_status = application.status.value
 

@@ -11,6 +11,7 @@ from app.schemas.application import (
     ApplicationUpdate,
 )
 from app.services import application as application_service
+from app.services.application import DuplicateApplicationError
 
 router = APIRouter(prefix="/api/applications", tags=["applications"])
 
@@ -21,11 +22,12 @@ async def create_application(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await application_service.create_application(db, data, current_user)
+    try:
+        result = await application_service.create_application(db, data, current_user)
+    except DuplicateApplicationError:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Application already exists for this job")
     if result is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
-    if result == "duplicate":
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Application already exists for this job")
     return result
 
 
