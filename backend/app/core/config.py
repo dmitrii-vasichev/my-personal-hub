@@ -1,0 +1,23 @@
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    # Database
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/personal_hub"
+
+    # JWT
+    JWT_SECRET_KEY: str = "change-me-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_DAYS: int = 7
+
+    # Admin seed
+    ADMIN_EMAIL: str = "admin@example.com"
+    ADMIN_PASSWORD: str = "change-me"
+
+    # App
+    APP_ENV: str = "development"
+
+    model_config = {"env_file": ".env", "extra": "ignore"}
+
+
+settings = Settings()
