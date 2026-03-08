@@ -23,15 +23,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      setIsLoading(false);
-      if (!PUBLIC_PATHS.includes(pathname)) {
-        router.replace("/login");
+    async function checkAuth() {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        if (!PUBLIC_PATHS.includes(pathname)) {
+          router.replace("/login");
+        }
+        return;
       }
-      return;
+      await refreshUser();
     }
-    refreshUser().finally(() => setIsLoading(false));
+
+    checkAuth().finally(() => setIsLoading(false));
   }, [pathname, refreshUser, router]);
 
   const login = async (email: string, password: string) => {
