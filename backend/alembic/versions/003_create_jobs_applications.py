@@ -99,8 +99,9 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["job_id"], ["jobs.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.create_index("ix_applications_user_status", "applications", ["user_id", "status"])
+    op.create_index("ix_applications_user_id", "applications", ["user_id"])
     op.create_index("ix_applications_job_id", "applications", ["job_id"])
+    op.create_index("ix_applications_user_status", "applications", ["user_id", "status"])
 
     op.create_table(
         "status_history",
@@ -128,8 +129,9 @@ def downgrade() -> None:
     op.drop_index("ix_status_history_application_id", table_name="status_history")
     op.drop_table("status_history")
 
-    op.drop_index("ix_applications_job_id", table_name="applications")
     op.drop_index("ix_applications_user_status", table_name="applications")
+    op.drop_index("ix_applications_job_id", table_name="applications")
+    op.drop_index("ix_applications_user_id", table_name="applications")
     op.drop_table("applications")
 
     op.drop_index("ix_jobs_user_id", table_name="jobs")

@@ -39,7 +39,7 @@ class Job(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -76,18 +76,16 @@ class Job(Base):
         "Application", back_populates="job", cascade="all, delete-orphan"
     )
 
-    __table_args__ = (Index("ix_jobs_user_id", "user_id"),)
-
 
 class Application(Base):
     __tablename__ = "applications"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     job_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False
+        Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     status: Mapped[ApplicationStatus] = mapped_column(
@@ -120,7 +118,6 @@ class Application(Base):
 
     __table_args__ = (
         Index("ix_applications_user_status", "user_id", "status"),
-        Index("ix_applications_job_id", "job_id"),
     )
 
 
@@ -129,7 +126,7 @@ class StatusHistory(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     application_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False
+        Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     # null for the initial status entry when an application is first created
@@ -144,5 +141,3 @@ class StatusHistory(Base):
     application: Mapped["Application"] = relationship(
         "Application", back_populates="status_history"
     )
-
-    __table_args__ = (Index("ix_status_history_application_id", "application_id"),)
