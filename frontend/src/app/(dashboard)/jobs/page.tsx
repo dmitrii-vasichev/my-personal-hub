@@ -5,6 +5,7 @@ import { Plus, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { JobFiltersBar } from "@/components/jobs/job-filters";
 import { JobsList } from "@/components/jobs/jobs-list";
+import { JobDialog } from "@/components/jobs/job-dialog";
 import { useJobs, useDeleteJob } from "@/hooks/use-jobs";
 import { useCreateApplication } from "@/hooks/use-applications";
 import type { Job, JobFilters } from "@/types/job";
@@ -15,6 +16,8 @@ export default function JobsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("jobs");
   const [filters, setFilters] = useState<JobFilters>({});
   const [trackingJobId, setTrackingJobId] = useState<number | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<Job | undefined>();
 
   const { data: jobs = [], isLoading, error } = useJobs(filters);
   const createApplication = useCreateApplication();
@@ -33,8 +36,8 @@ export default function JobsPage() {
   };
 
   const handleEdit = (job: Job) => {
-    // Edit dialog — placeholder until Task 7 (job form dialog)
-    console.log("Edit job", job.id);
+    setEditingJob(job);
+    setDialogOpen(true);
   };
 
   const handleDelete = async (job: Job) => {
@@ -50,7 +53,7 @@ export default function JobsPage() {
         <Button
           size="sm"
           className="gap-1.5 bg-[#5B6AD0] hover:bg-[#6E7CE0] text-white border-0"
-          onClick={() => console.log("Open add-job dialog")}
+          onClick={() => { setEditingJob(undefined); setDialogOpen(true); }}
         >
           <Plus className="h-4 w-4" />
           Add Job
@@ -117,6 +120,17 @@ export default function JobsPage() {
           </div>
         </div>
       )}
+
+      <JobDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        mode={editingJob ? "edit" : "create"}
+        job={editingJob}
+        onSuccess={() => {
+          setDialogOpen(false);
+          setEditingJob(undefined);
+        }}
+      />
     </div>
   );
 }
