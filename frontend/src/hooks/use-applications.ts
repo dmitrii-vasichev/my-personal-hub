@@ -164,6 +164,7 @@ export function useChangeApplicationStatus() {
     // Always refetch after error or success to sync server state
     onSettled: () => {
       qc.invalidateQueries({ queryKey: [APPLICATIONS_KEY] });
+      qc.invalidateQueries({ queryKey: [JOBS_KEY] });
     },
   });
 }
