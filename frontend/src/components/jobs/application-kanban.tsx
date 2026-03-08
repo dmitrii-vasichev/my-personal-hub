@@ -13,14 +13,47 @@ import {
 } from "@dnd-kit/core";
 import type { ApplicationStatus, KanbanCard } from "@/types/job";
 import { PIPELINE_COLUMNS, TERMINAL_STATUSES } from "@/types/job";
-import { useApplicationKanban, useChangeApplicationStatus } from "@/hooks/use-applications";
+import { useApplicationKanban } from "@/hooks/use-applications";
 import { ApplicationColumn } from "./application-column";
 import { ApplicationCardOverlay } from "./application-card";
+import { StatusChangeDialog } from "./status-change-dialog";
+
+interface PendingChange {
+  cardId: number;
+  oldStatus: ApplicationStatus;
+  newStatus: ApplicationStatus;
+}
+
+function KanbanSkeleton() {
+  return (
+    <div className="flex gap-4 overflow-x-auto pb-4">
+      {Array.from({ length: 5 }).map((_, colIdx) => (
+        <div
+          key={colIdx}
+          className="flex w-[240px] shrink-0 flex-col gap-2 rounded-lg bg-[#131316] border border-[#232329] p-3 animate-pulse"
+        >
+          {/* Column header skeleton */}
+          <div className="h-3.5 w-24 rounded bg-[#232329] mb-2" />
+          {/* Card skeletons */}
+          {Array.from({ length: colIdx === 0 ? 3 : colIdx === 1 ? 2 : 2 }).map((_, cardIdx) => (
+            <div
+              key={cardIdx}
+              className="rounded-md bg-[#0E0E12] border border-[#232329] p-3"
+            >
+              <div className="h-3.5 bg-[#232329] rounded w-4/5 mb-2" />
+              <div className="h-3 bg-[#232329] rounded w-3/5" />
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function ApplicationKanban() {
   const { data: kanbanData, isLoading, error } = useApplicationKanban();
-  const changeStatus = useChangeApplicationStatus();
   const [activeCard, setActiveCard] = useState<KanbanCard | null>(null);
+  const [pendingChange, setPendingChange] = useState<PendingChange | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -46,16 +79,17 @@ export function ApplicationKanban() {
     const oldStatus = (active.data.current?.status as ApplicationStatus) ?? null;
 
     if (newStatus !== oldStatus) {
-      changeStatus.mutate({ id: cardId, data: { new_status: newStatus } });
+      // Show confirmation dialog before mutating — dialog owns the mutation
+      setPendingChange({ cardId, oldStatus, newStatus });
     }
   };
 
+  const handleDialogCancel = () => {
+    setPendingChange(null);
+  };
+
   if (isLoading) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-[#5C5C66]">Loading pipeline...</p>
-      </div>
-    );
+    return <KanbanSkeleton />;
   }
 
   if (error || !kanbanData) {
@@ -86,34 +120,15 @@ export function ApplicationKanban() {
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      {/* Main pipeline board */}
-      <div
-        className={`flex gap-4 overflow-x-auto pb-4 transition-opacity ${
-          changeStatus.isPending ? "opacity-70" : ""
-        }`}
+    <>
+      <DndContext
+        sensors={sensors}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
       >
-        {PIPELINE_COLUMNS.map((status) => (
-          <ApplicationColumn
-            key={status}
-            status={status}
-            cards={kanbanData[status] ?? []}
-            activeCardId={activeCard?.id ?? null}
-          />
-        ))}
-      </div>
-
-      {/* Terminal statuses section */}
-      <div className="mt-6">
-        <p className="mb-3 text-[11px] font-medium uppercase tracking-wider text-[#5C5C66] px-1">
-          Completed
-        </p>
+        {/* Main pipeline board */}
         <div className="flex gap-4 overflow-x-auto pb-4">
-          {TERMINAL_STATUSES.map((status) => (
+          {PIPELINE_COLUMNS.map((status) => (
             <ApplicationColumn
               key={status}
               status={status}
@@ -122,11 +137,43 @@ export function ApplicationKanban() {
             />
           ))}
         </div>
-      </div>
 
-      <DragOverlay>
-        {activeCard ? <ApplicationCardOverlay card={activeCard} /> : null}
-      </DragOverlay>
-    </DndContext>
+        {/* Terminal statuses section */}
+        <div className="mt-6">
+          <p className="mb-3 text-[11px] font-medium uppercase tracking-wider text-[#5C5C66] px-1">
+            Completed
+          </p>
+          <div className="flex gap-4 overflow-x-auto pb-4">
+            {TERMINAL_STATUSES.map((status) => (
+              <ApplicationColumn
+                key={status}
+                status={status}
+                cards={kanbanData[status] ?? []}
+                activeCardId={activeCard?.id ?? null}
+              />
+            ))}
+          </div>
+        </div>
+
+        <DragOverlay>
+          {activeCard ? <ApplicationCardOverlay card={activeCard} /> : null}
+        </DragOverlay>
+      </DndContext>
+
+      {/* Status change confirmation dialog triggered by drag-and-drop */}
+      {pendingChange && (
+        <StatusChangeDialog
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) handleDialogCancel();
+          }}
+          applicationId={pendingChange.cardId}
+          currentStatus={pendingChange.oldStatus}
+          preselectedStatus={pendingChange.newStatus}
+          onSuccess={() => setPendingChange(null)}
+          onCancel={handleDialogCancel}
+        />
+      )}
+    </>
   );
 }

@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Plus, GitBranch } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { JobFiltersBar } from "@/components/jobs/job-filters";
 import { JobsList } from "@/components/jobs/jobs-list";
@@ -35,7 +36,7 @@ function JobsPageInner() {
       await createApplication.mutateAsync({ job_id: job.id });
       setActiveTab("pipeline");
     } catch {
-      // Mutation failure — stay on current tab, error shown inline if needed
+      toast.error("Failed to start tracking");
     } finally {
       setTrackingJobId(null);
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
@@ -40,7 +41,11 @@ interface StatusChangeDialogProps {
   onOpenChange: (open: boolean) => void;
   applicationId: number;
   currentStatus: ApplicationStatus;
+  /** Pre-select a target status (e.g. when triggered by drag-and-drop). */
+  preselectedStatus?: ApplicationStatus;
   onSuccess?: () => void;
+  /** Called when the user cancels the dialog (no mutation fired). */
+  onCancel?: () => void;
 }
 
 export function StatusChangeDialog({
@@ -48,11 +53,15 @@ export function StatusChangeDialog({
   onOpenChange,
   applicationId,
   currentStatus,
+  preselectedStatus,
   onSuccess,
+  onCancel,
 }: StatusChangeDialogProps) {
   const changeStatus = useChangeApplicationStatus();
 
-  const [newStatus, setNewStatus] = useState<ApplicationStatus>(currentStatus);
+  const [newStatus, setNewStatus] = useState<ApplicationStatus>(
+    preselectedStatus ?? currentStatus
+  );
   const [comment, setComment] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -80,7 +89,9 @@ export function StatusChangeDialog({
       onSuccess?.();
       onOpenChange(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update status");
+      const message = err instanceof Error ? err.message : "Failed to update status";
+      setError(message);
+      toast.error(message);
     }
   };
 
@@ -88,9 +99,10 @@ export function StatusChangeDialog({
     if (!isLoading) {
       if (!isOpen) {
         // Reset form state when closing
-        setNewStatus(currentStatus);
+        setNewStatus(preselectedStatus ?? currentStatus);
         setComment("");
         setError(null);
+        onCancel?.();
       }
       onOpenChange(isOpen);
     }

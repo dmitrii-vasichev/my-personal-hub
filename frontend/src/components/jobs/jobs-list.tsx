@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { Briefcase } from "lucide-react";
+import { toast } from "sonner";
 import { JobCard } from "@/components/jobs/job-card";
 import type { Job } from "@/types/job";
 
@@ -33,6 +35,13 @@ export function JobsList({
   onDelete,
   onTrack,
 }: JobsListProps) {
+  // Show a toast whenever the error state becomes active
+  useEffect(() => {
+    if (error) {
+      toast.error("Failed to load jobs");
+    }
+  }, [error]);
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
