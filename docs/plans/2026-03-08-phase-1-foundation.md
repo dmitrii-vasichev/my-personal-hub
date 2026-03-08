@@ -5,7 +5,7 @@ Set up the full project scaffolding — frontend (Next.js 14), backend (FastAPI)
 
 ## Tasks
 
-### Task 1: Backend scaffolding (FastAPI + PostgreSQL + Alembic)
+### Task 1 (#1): Backend scaffolding (FastAPI + PostgreSQL + Alembic)
 **Description:** Initialize FastAPI project with async SQLAlchemy 2.0, Alembic migrations, and PostgreSQL connection. Set up project structure with modular architecture.
 
 **Files:**
@@ -29,7 +29,7 @@ Set up the full project scaffolding — frontend (Next.js 14), backend (FastAPI)
 
 ---
 
-### Task 2: Frontend scaffolding (Next.js 14 + Tailwind + shadcn/ui)
+### Task 2 (#2): Frontend scaffolding (Next.js 14 + Tailwind + shadcn/ui)
 **Description:** Initialize Next.js 14 app with TypeScript, Tailwind CSS v4, shadcn/ui, and base theme configuration from design brief.
 
 **Files:**
@@ -51,7 +51,7 @@ Set up the full project scaffolding — frontend (Next.js 14), backend (FastAPI)
 
 ---
 
-### Task 3: Database schema — users table + initial migration
+### Task 3 (#3): Database schema — users table + initial migration
 **Description:** Create the `users` model and Alembic migration. Fields: id, email, password_hash, role (admin/user), display_name, must_change_password, created_at.
 
 **Files:**
@@ -69,7 +69,7 @@ Set up the full project scaffolding — frontend (Next.js 14), backend (FastAPI)
 
 ---
 
-### Task 4: Auth API — register, login, me, change-password
+### Task 4 (#4): Auth API — register, login, me, change-password
 **Description:** Implement auth endpoints with bcrypt password hashing and JWT tokens. Admin-only registration. Force password change on first login.
 
 **Files:**
@@ -91,7 +91,7 @@ Set up the full project scaffolding — frontend (Next.js 14), backend (FastAPI)
 
 ---
 
-### Task 5: Auth middleware + role-based access
+### Task 5 (#5): Auth middleware + role-based access
 **Description:** JWT validation middleware for protected routes. Role-based dependency injection (require_admin, require_auth).
 
 **Files:**
@@ -109,7 +109,7 @@ Set up the full project scaffolding — frontend (Next.js 14), backend (FastAPI)
 
 ---
 
-### Task 6: Frontend auth — login page + JWT storage + protected routes
+### Task 6 (#6): Frontend auth — login page + JWT storage + protected routes
 **Description:** Login page UI, JWT storage in httpOnly cookie or localStorage, auth context, protected route wrapper.
 
 **Files:**
@@ -131,7 +131,7 @@ Set up the full project scaffolding — frontend (Next.js 14), backend (FastAPI)
 
 ---
 
-### Task 7: Sidebar navigation + app shell layout
+### Task 7 (#7): Sidebar navigation + app shell layout
 **Description:** Collapsible sidebar with module links (Dashboard, Tasks, Job Hunt, Calendar). App shell with header (user profile, theme toggle) and main content area. Responsive.
 
 **Files:**
@@ -152,7 +152,7 @@ Set up the full project scaffolding — frontend (Next.js 14), backend (FastAPI)
 
 ---
 
-### Task 8: Theme toggle (dark/light)
+### Task 8 (#8): Theme toggle (dark/light)
 **Description:** Theme switcher using next-themes. Dark theme by default. Persists preference in localStorage. Tailwind dark mode class strategy.
 
 **Files:**
@@ -170,7 +170,7 @@ Set up the full project scaffolding — frontend (Next.js 14), backend (FastAPI)
 
 ---
 
-### Task 9: Docker Compose for local development
+### Task 9 (#9): Docker Compose for local development
 **Description:** Docker Compose with PostgreSQL, backend (FastAPI), and frontend (Next.js) for one-command local setup.
 
 **Files:**
