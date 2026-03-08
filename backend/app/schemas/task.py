@@ -1,0 +1,101 @@
+from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel
+
+from app.models.task import TaskPriority, TaskSource, TaskStatus, UpdateType
+
+
+class ChecklistItem(BaseModel):
+    id: str
+    text: str
+    completed: bool = False
+
+
+class UserBrief(BaseModel):
+    id: int
+    display_name: str
+    email: str
+
+    model_config = {"from_attributes": True}
+
+
+# ── Task schemas ─────────────────────────────────────────────────────────────
+
+
+class TaskCreate(BaseModel):
+    title: str
+    description: Optional[str] = None
+    priority: TaskPriority = TaskPriority.medium
+    deadline: Optional[datetime] = None
+    checklist: list[ChecklistItem] = []
+    assignee_id: Optional[int] = None
+
+
+class TaskUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[TaskStatus] = None
+    priority: Optional[TaskPriority] = None
+    deadline: Optional[datetime] = None
+    checklist: Optional[list[ChecklistItem]] = None
+    assignee_id: Optional[int] = None
+
+
+class TaskResponse(BaseModel):
+    id: int
+    user_id: int
+    created_by_id: int
+    assignee_id: Optional[int]
+    title: str
+    description: Optional[str]
+    status: TaskStatus
+    priority: TaskPriority
+    checklist: list[dict]
+    source: TaskSource
+    deadline: Optional[datetime]
+    reminder_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    created_at: datetime
+    updated_at: datetime
+
+    creator: Optional[UserBrief] = None
+    assignee: Optional[UserBrief] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ── TaskUpdate (timeline) schemas ────────────────────────────────────────────
+
+
+class TaskUpdateCreate(BaseModel):
+    type: UpdateType
+    content: Optional[str] = None
+    progress_percent: Optional[int] = None
+
+
+class TaskUpdateResponse(BaseModel):
+    id: int
+    task_id: int
+    author_id: int
+    type: UpdateType
+    content: Optional[str]
+    old_status: Optional[str]
+    new_status: Optional[str]
+    progress_percent: Optional[int]
+    created_at: datetime
+
+    author: Optional[UserBrief] = None
+
+    model_config = {"from_attributes": True}
+
+
+# ── Kanban schema ─────────────────────────────────────────────────────────────
+
+
+class KanbanBoard(BaseModel):
+    new: list[TaskResponse] = []
+    in_progress: list[TaskResponse] = []
+    review: list[TaskResponse] = []
+    done: list[TaskResponse] = []
+    cancelled: list[TaskResponse] = []

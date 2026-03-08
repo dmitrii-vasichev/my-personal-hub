@@ -46,6 +46,17 @@ class ApiClient {
       body: body ? JSON.stringify(body) : undefined,
     });
   }
+
+  patch<T>(path: string, body?: unknown) {
+    return this.request<T>(path, {
+      method: "PATCH",
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  }
+
+  delete(path: string) {
+    return this.request<void>(path, { method: "DELETE" });
+  }
 }
 
 export const api = new ApiClient();
