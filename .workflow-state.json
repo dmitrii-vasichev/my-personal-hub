@@ -6,6 +6,7 @@
   "current_phase": 3,
   "next_phase": 4,
   "phase_2_merged": true,
+  "phase_3_merged": true,
   "history": [
     {
       "step": 0,
