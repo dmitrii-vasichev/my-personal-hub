@@ -73,3 +73,40 @@ class ApplicationResponse(BaseModel):
     status_history: list[StatusHistoryResponse]
 
     model_config = {"from_attributes": True}
+
+
+# ── Kanban schemas ─────────────────────────────────────────────────────────────
+
+
+class KanbanCardResponse(BaseModel):
+    """Lightweight application card used in the kanban board."""
+
+    id: int
+    job_id: int
+    status: ApplicationStatus
+    applied_date: Optional[date]
+    next_action: Optional[str]
+    next_action_date: Optional[date]
+    created_at: datetime
+    updated_at: datetime
+
+    job: JobSummary
+
+    model_config = {"from_attributes": True}
+
+
+class KanbanResponse(BaseModel):
+    """Kanban board: all 12 status columns with application cards."""
+
+    found: list[KanbanCardResponse] = []
+    saved: list[KanbanCardResponse] = []
+    resume_generated: list[KanbanCardResponse] = []
+    applied: list[KanbanCardResponse] = []
+    screening: list[KanbanCardResponse] = []
+    technical_interview: list[KanbanCardResponse] = []
+    final_interview: list[KanbanCardResponse] = []
+    offer: list[KanbanCardResponse] = []
+    accepted: list[KanbanCardResponse] = []
+    rejected: list[KanbanCardResponse] = []
+    ghosted: list[KanbanCardResponse] = []
+    withdrawn: list[KanbanCardResponse] = []

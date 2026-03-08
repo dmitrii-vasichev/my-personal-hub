@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import asc, desc, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -161,3 +162,93 @@ async def change_status(
 
     await db.commit()
     return await _load_application(db, application_id)
+
+
+# ── Kanban / List / History ────────────────────────────────────────────────────
+
+
+async def get_kanban(
+    db: AsyncSession,
+    current_user: User,
+) -> dict[str, list[Application]]:
+    """Return applications grouped by all 12 statuses for the kanban board."""
+    query = select(Application).options(selectinload(Application.job))
+    if current_user.role != UserRole.admin:
+        query = query.where(Application.user_id == current_user.id)
+
+    result = await db.execute(query)
+    applications = result.scalars().all()
+
+    # Initialise all 12 buckets so empty columns are always present
+    buckets: dict[str, list[Application]] = {status.value: [] for status in ApplicationStatus}
+    for app in applications:
+        buckets[app.status.value].append(app)
+
+    return buckets
+
+
+async def list_applications(
+    db: AsyncSession,
+    current_user: User,
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+    sort_by: str = "created_at",
+    sort_order: str = "desc",
+) -> list[Application]:
+    """List applications with optional filters and sorting."""
+    query = select(Application).options(selectinload(Application.job))
+
+    # Access control
+    if current_user.role != UserRole.admin:
+        query = query.where(Application.user_id == current_user.id)
+
+    # Status filter: comma-separated values
+    if status:
+        status_values = [s.strip() for s in status.split(",") if s.strip()]
+        if status_values:
+            query = query.where(Application.status.in_(status_values))
+
+    # Search filter: ILIKE on job.title and job.company
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.join(Application.job).where(
+            or_(
+                Job.title.ilike(search_pattern),
+                Job.company.ilike(search_pattern),
+            )
+        )
+
+    # Sorting
+    _sortable_columns = {
+        "created_at": Application.created_at,
+        "updated_at": Application.updated_at,
+        "applied_date": Application.applied_date,
+        "next_action_date": Application.next_action_date,
+    }
+    sort_column = _sortable_columns.get(sort_by, Application.created_at)
+    order_fn = asc if sort_order == "asc" else desc
+    query = query.order_by(order_fn(sort_column))
+
+    result = await db.execute(query)
+    return list(result.scalars().all())
+
+
+async def get_history(
+    db: AsyncSession,
+    application_id: int,
+    current_user: User,
+) -> list[StatusHistory] | None:
+    """Return status history for an application ordered by changed_at ASC.
+
+    Returns None when the application does not exist or the user lacks access.
+    """
+    application = await _load_application(db, application_id)
+    if application is None or not _can_access(application, current_user):
+        return None
+
+    result = await db.execute(
+        select(StatusHistory)
+        .where(StatusHistory.application_id == application_id)
+        .order_by(StatusHistory.changed_at.asc())
+    )
+    return list(result.scalars().all())
