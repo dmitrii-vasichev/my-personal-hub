@@ -1,0 +1,28 @@
+{
+  "project_name": "my-personal-hub",
+  "created_at": "2026-03-08T13:10:00Z",
+  "current_step": 2,
+  "current_step_name": "phasing",
+  "current_phase": null,
+  "history": [
+    {
+      "step": 0,
+      "action": "completed",
+      "timestamp": "2026-03-08T13:10:00Z",
+      "details": "Project initialized, GitHub connected"
+    },
+    {
+      "step": 1,
+      "action": "completed",
+      "timestamp": "2026-03-08T13:35:00Z",
+      "details": "PRD approved"
+    }
+  ],
+  "artifacts": {
+    "prd_file": "docs/prd-personal-hub.md",
+    "plan_files": [],
+    "issue_numbers": [],
+    "pr_numbers": [],
+    "project_board_number": null
+  }
+}
