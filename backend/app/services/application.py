@@ -47,6 +47,16 @@ async def create_application(
     ):
         return None  # type: ignore[return-value]
 
+    # Check for existing application
+    existing = await db.execute(
+        select(Application).where(
+            Application.job_id == data.job_id,
+            Application.user_id == current_user.id
+        )
+    )
+    if existing.scalars().first():
+        return "duplicate"  # sentinel value
+
     application = Application(
         user_id=current_user.id,
         job_id=data.job_id,
