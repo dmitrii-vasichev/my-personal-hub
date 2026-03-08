@@ -138,7 +138,7 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
             size="sm"
             onClick={() => onTrack(job)}
             disabled={isTracking}
-            className="h-7 px-2.5 text-xs bg-[#5B6AD0] hover:bg-[#6b79d8] text-white border-0"
+            className="h-7 px-2.5 text-xs bg-[#5B6AD0] hover:bg-[#6E7CE0] text-white border-0"
           >
             {isTracking ? "Adding…" : "Track"}
           </Button>

@@ -5,9 +5,8 @@ import { Plus, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { JobFiltersBar } from "@/components/jobs/job-filters";
 import { JobsList } from "@/components/jobs/jobs-list";
-import { useJobs } from "@/hooks/use-jobs";
+import { useJobs, useDeleteJob } from "@/hooks/use-jobs";
 import { useCreateApplication } from "@/hooks/use-applications";
-import { useDeleteJob } from "@/hooks/use-jobs";
 import type { Job, JobFilters } from "@/types/job";
 
 type Tab = "jobs" | "pipeline";
@@ -50,7 +49,7 @@ export default function JobsPage() {
         <h1 className="text-xl font-semibold text-[#EDEDEF]">Jobs</h1>
         <Button
           size="sm"
-          className="gap-1.5 bg-[#5B6AD0] hover:bg-[#6b79d8] text-white border-0"
+          className="gap-1.5 bg-[#5B6AD0] hover:bg-[#6E7CE0] text-white border-0"
           onClick={() => console.log("Open add-job dialog")}
         >
           <Plus className="h-4 w-4" />
