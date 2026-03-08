@@ -1,9 +1,9 @@
 {
   "project_name": "my-personal-hub",
   "created_at": "2026-03-08T13:10:00Z",
-  "current_step": 3,
-  "current_step_name": "phasing",
-  "current_phase": null,
+  "current_step": 4,
+  "current_step_name": "planning",
+  "current_phase": 1,
   "history": [
     {
       "step": 0,
@@ -22,6 +22,12 @@
       "action": "completed",
       "timestamp": "2026-03-08T14:15:00Z",
       "details": "Design brief approved — shadcn/ui, Linear-style dark theme, blue accent"
+    },
+    {
+      "step": 3,
+      "action": "completed",
+      "timestamp": "2026-03-08T14:30:00Z",
+      "details": "6 phases defined, starting Phase 1"
     }
   ],
   "artifacts": {

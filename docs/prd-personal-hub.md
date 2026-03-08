@@ -197,6 +197,39 @@ External integrations:
 
 ---
 
+## Implementation Phases
+
+### Phase 1: Foundation (Auth + Layout + DB)
+- Project scaffolding: Next.js 14, FastAPI, PostgreSQL, Alembic migrations
+- FR-1–FR-6: Authentication & user management (JWT, roles, password change)
+- FR-37–FR-39: Sidebar navigation, responsive layout, user profile
+- FR-43: Theme toggle (dark/light per design brief)
+
+### Phase 2: Task Manager
+- FR-7–FR-15: Full task management module (CRUD, Kanban, drag-and-drop, detail view, checklists, timeline, filters, assignment)
+
+### Phase 3: Job Hunt — Core
+- FR-16–FR-19: Job CRUD, application tracking pipeline, applications Kanban, application detail
+
+### Phase 4: Job Hunt — Search & AI
+- FR-20–FR-22: External job search (Adzuna, SerpAPI, JSearch), save results, auto-search
+- FR-23–FR-27: AI resume/cover letter generation, ATS audit, gap analysis, PDF
+- FR-28: Job Hunt analytics
+- FR-29: User settings (target roles, LLM provider, API keys)
+- FR-30: Fetch job description from URL
+
+### Phase 5: Calendar & Meetings
+- FR-31–FR-36: Google Calendar OAuth2, weekly/monthly view, bidirectional sync, meeting notes
+
+### Phase 6: Dashboard & Polish
+- FR-40: Dashboard home page with summary cards
+- FR-41: Task reminders
+- FR-42: Link tasks to calendar events
+- FR-44: Task Manager analytics
+- Production deployment (Vercel + Railway)
+
+---
+
 ## Out of Scope
 
 - Telegram bot integration (no aiogram, no Telegram login)
