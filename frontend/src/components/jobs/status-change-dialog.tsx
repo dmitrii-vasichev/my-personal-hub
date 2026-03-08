@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -64,6 +64,10 @@ export function StatusChangeDialog({
   );
   const [comment, setComment] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNewStatus(preselectedStatus ?? currentStatus);
+  }, [preselectedStatus, currentStatus]);
 
   const isLoading = changeStatus.isPending;
   const currentColor = APPLICATION_STATUS_COLORS[currentStatus];
@@ -186,7 +190,7 @@ export function StatusChangeDialog({
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => onOpenChange(false)}
+                onClick={() => handleOpenChange(false)}
                 disabled={isLoading}
               >
                 Cancel
