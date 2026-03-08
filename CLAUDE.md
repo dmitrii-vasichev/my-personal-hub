@@ -10,8 +10,9 @@ To be defined during PRD phase.
 To be defined after framework initialization.
 
 ## Rules
-- Follow workflow: PRD → Phases → Plan → Issues → Code → Review
+- Follow workflow: PRD → Design Brief → Phases → Plan → Issues → Code → Review
 - Never push to main directly — PRs only
 - Every commit references an issue: `closes #N`
 - Workflow state: `.workflow-state.json`
 - All documentation in English
+- Before any UI work, read docs/design-brief.md and follow its guidelines
