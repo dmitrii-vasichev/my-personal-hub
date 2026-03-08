@@ -196,7 +196,10 @@ async def list_applications(
     sort_order: str = "desc",
 ) -> list[Application]:
     """List applications with optional filters and sorting."""
-    query = select(Application).options(selectinload(Application.job))
+    query = select(Application).options(
+        selectinload(Application.job),
+        selectinload(Application.status_history),
+    )
 
     # Access control
     if current_user.role != UserRole.admin:
@@ -211,7 +214,7 @@ async def list_applications(
     # Search filter: ILIKE on job.title and job.company
     if search:
         search_pattern = f"%{search}%"
-        query = query.join(Application.job).where(
+        query = query.join(Job, Application.job_id == Job.id).where(
             or_(
                 Job.title.ilike(search_pattern),
                 Job.company.ilike(search_pattern),
