@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { JobFiltersBar } from "@/components/jobs/job-filters";
 import { JobsList } from "@/components/jobs/jobs-list";
 import { JobDialog } from "@/components/jobs/job-dialog";
+import { ApplicationKanban } from "@/components/jobs/application-kanban";
 import { useJobs, useDeleteJob } from "@/hooks/use-jobs";
 import { useCreateApplication } from "@/hooks/use-applications";
 import type { Job, JobFilters } from "@/types/job";
@@ -108,16 +109,8 @@ export default function JobsPage() {
           </div>
         </>
       ) : (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#131316] border border-[#232329]">
-            <GitBranch className="h-5 w-5 text-[#5C5C66]" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-[#8B8B93]">Pipeline view coming in Task 8</p>
-            <p className="mt-1 text-xs text-[#5C5C66]">
-              Kanban board for tracking application stages
-            </p>
-          </div>
+        <div className="flex-1 overflow-auto">
+          <ApplicationKanban />
         </div>
       )}
 
