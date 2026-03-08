@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { JobFiltersBar } from "@/components/jobs/job-filters";
@@ -13,8 +14,12 @@ import type { Job, JobFilters } from "@/types/job";
 
 type Tab = "jobs" | "pipeline";
 
-export default function JobsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("jobs");
+function JobsPageInner() {
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const tab = searchParams.get("tab");
+    return tab === "pipeline" ? "pipeline" : "jobs";
+  });
   const [filters, setFilters] = useState<JobFilters>({});
   const [trackingJobId, setTrackingJobId] = useState<number | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -126,5 +131,13 @@ export default function JobsPage() {
         }}
       />
     </div>
+  );
+}
+
+export default function JobsPage() {
+  return (
+    <Suspense fallback={null}>
+      <JobsPageInner />
+    </Suspense>
   );
 }

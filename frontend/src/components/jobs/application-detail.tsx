@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Briefcase,
   Calendar,
+  ChevronDown,
   Clock,
   Edit,
   Mail,
@@ -14,11 +15,10 @@ import {
   User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
 import { ApplicationEditDialog } from "@/components/jobs/application-edit-dialog";
 import { ApplicationTimeline } from "@/components/jobs/application-timeline";
+import { StatusChangeDialog } from "@/components/jobs/status-change-dialog";
 import {
-  useChangeApplicationStatus,
   useDeleteApplication,
   useStatusHistory,
 } from "@/hooks/use-applications";
@@ -26,24 +26,9 @@ import {
   APPLICATION_STATUS_COLORS,
   APPLICATION_STATUS_LABELS,
 } from "@/types/job";
-import type { Application, ApplicationStatus } from "@/types/job";
+import type { Application } from "@/types/job";
 
-const ALL_STATUSES: ApplicationStatus[] = [
-  "found",
-  "saved",
-  "resume_generated",
-  "applied",
-  "screening",
-  "technical_interview",
-  "final_interview",
-  "offer",
-  "accepted",
-  "rejected",
-  "ghosted",
-  "withdrawn",
-];
-
-const REJECTION_STATUSES: ApplicationStatus[] = ["rejected", "ghosted", "withdrawn"];
+const REJECTION_STATUSES = ["rejected", "ghosted", "withdrawn"] as const;
 
 interface ApplicationDetailProps {
   application: Application;
@@ -61,11 +46,10 @@ function formatDate(dateStr?: string): string {
 export function ApplicationDetail({ application }: ApplicationDetailProps) {
   const router = useRouter();
   const deleteApplication = useDeleteApplication();
-  const changeStatus = useChangeApplicationStatus();
   const { data: history = [] } = useStatusHistory(application.id);
 
   const [editOpen, setEditOpen] = useState(false);
-  const [isChangingStatus, setIsChangingStatus] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
 
   const handleDelete = async () => {
     if (
@@ -78,24 +62,10 @@ export function ApplicationDetail({ application }: ApplicationDetailProps) {
     router.push("/jobs?tab=pipeline");
   };
 
-  const handleStatusChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newStatus = e.target.value as ApplicationStatus;
-    if (newStatus === application.status) return;
-    setIsChangingStatus(true);
-    try {
-      await changeStatus.mutateAsync({
-        id: application.id,
-        data: { new_status: newStatus },
-      });
-    } finally {
-      setIsChangingStatus(false);
-    }
-  };
-
   const statusColor = APPLICATION_STATUS_COLORS[application.status];
   const statusLabel = APPLICATION_STATUS_LABELS[application.status];
   const showRejectionReason =
-    REJECTION_STATUSES.includes(application.status) && !!application.rejection_reason;
+    (REJECTION_STATUSES as readonly string[]).includes(application.status) && !!application.rejection_reason;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -149,23 +119,14 @@ export function ApplicationDetail({ application }: ApplicationDetailProps) {
             {statusLabel}
           </span>
 
-          <div className="w-44">
-            <Select
-              value={application.status}
-              onChange={handleStatusChange}
-              disabled={isChangingStatus}
-              aria-label="Change status"
-            >
-              {ALL_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {APPLICATION_STATUS_LABELS[s]}
-                </option>
-              ))}
-            </Select>
-          </div>
-          {isChangingStatus && (
-            <span className="text-xs text-[var(--text-tertiary)]">Updating…</span>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setStatusDialogOpen(true)}
+          >
+            Change Status
+            <ChevronDown className="h-3.5 w-3.5" />
+          </Button>
         </div>
       </div>
 
@@ -321,6 +282,15 @@ export function ApplicationDetail({ application }: ApplicationDetailProps) {
           onSuccess={() => setEditOpen(false)}
         />
       )}
+
+      {/* Status change dialog */}
+      <StatusChangeDialog
+        open={statusDialogOpen}
+        onOpenChange={setStatusDialogOpen}
+        applicationId={application.id}
+        currentStatus={application.status}
+        onSuccess={() => setStatusDialogOpen(false)}
+      />
     </div>
   );
 }

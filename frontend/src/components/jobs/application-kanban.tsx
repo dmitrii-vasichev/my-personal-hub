@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { GitBranch } from "lucide-react";
 import {
   DndContext,
   DragEndEvent,
@@ -61,6 +62,25 @@ export function ApplicationKanban() {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-sm text-[#E5484D]">Failed to load pipeline</p>
+      </div>
+    );
+  }
+
+  const allColumns = [...PIPELINE_COLUMNS, ...TERMINAL_STATUSES];
+  const isEmpty = !isLoading && allColumns.every((col) => (kanbanData[col] ?? []).length === 0);
+
+  if (isEmpty) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#131316] border border-[#232329]">
+          <GitBranch className="h-5 w-5 text-[#5C5C66]" />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-[#8B8B93]">No applications yet</p>
+          <p className="mt-1 text-xs text-[#5C5C66]">
+            Start tracking jobs from the Jobs tab
+          </p>
+        </div>
       </div>
     );
   }

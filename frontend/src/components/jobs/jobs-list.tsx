@@ -4,6 +4,16 @@ import { Briefcase } from "lucide-react";
 import { JobCard } from "@/components/jobs/job-card";
 import type { Job } from "@/types/job";
 
+function SkeletonCard() {
+  return (
+    <div className="bg-[#131316] border border-[#232329] rounded-lg p-4 animate-pulse">
+      <div className="h-4 bg-[#232329] rounded w-3/4 mb-2" />
+      <div className="h-3 bg-[#232329] rounded w-1/2 mb-4" />
+      <div className="h-3 bg-[#232329] rounded w-1/3" />
+    </div>
+  );
+}
+
 interface JobsListProps {
   jobs: Job[];
   isLoading: boolean;
@@ -25,8 +35,10 @@ export function JobsList({
 }: JobsListProps) {
   if (isLoading) {
     return (
-      <div className="flex flex-1 items-center justify-center text-[#5C5C66]">
-        Loading jobs…
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <SkeletonCard key={i} />
+        ))}
       </div>
     );
   }
