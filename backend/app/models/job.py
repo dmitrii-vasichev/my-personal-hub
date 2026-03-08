@@ -39,7 +39,7 @@ class Job(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -87,7 +87,7 @@ class Application(Base):
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
     job_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False
     )
 
     status: Mapped[ApplicationStatus] = mapped_column(
@@ -129,7 +129,7 @@ class StatusHistory(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     application_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False
     )
 
     # null for the initial status entry when an application is first created
