@@ -122,6 +122,7 @@ export default function JobsPage() {
       )}
 
       <JobDialog
+        key={editingJob?.id ?? "create"}
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={editingJob ? "edit" : "create"}
