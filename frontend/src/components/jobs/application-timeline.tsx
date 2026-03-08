@@ -50,7 +50,7 @@ export function ApplicationTimeline({ history }: ApplicationTimelineProps) {
                   className="flex-1 mt-1"
                   style={{
                     width: "2px",
-                    backgroundColor: "#232329",
+                    backgroundColor: "var(--border)",
                     minHeight: "24px",
                   }}
                 />
