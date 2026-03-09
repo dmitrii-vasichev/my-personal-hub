@@ -8,6 +8,6 @@ export function useDashboardSummary() {
   return useQuery<DashboardSummary>({
     queryKey: ["dashboard", "summary"],
     queryFn: () => api.get<DashboardSummary>("/api/dashboard/summary"),
-    refetchInterval: 60_000,
+    refetchInterval: 60_000, // refresh every minute
   });
 }
