@@ -113,15 +113,15 @@ export const TASK_STATUS_ORDER: TaskStatus[] = [
 ];
 
 export const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  urgent: "text-red-500",
-  high: "text-orange-500",
-  medium: "text-yellow-500",
-  low: "text-[var(--text-tertiary)]",
+  urgent: "text-destructive",
+  high: "text-accent-amber",
+  medium: "text-warning",
+  low: "text-tertiary",
 };
 
 export const PRIORITY_BG_COLORS: Record<TaskPriority, string> = {
-  urgent: "bg-red-500/15 text-red-400",
-  high: "bg-orange-500/15 text-orange-400",
-  medium: "bg-yellow-500/15 text-yellow-400",
-  low: "bg-[var(--surface-hover)] text-[var(--text-tertiary)]",
+  urgent: "bg-destructive-muted text-destructive",
+  high: "bg-accent-amber-muted text-accent-amber",
+  medium: "bg-accent-amber-muted text-warning",
+  low: "bg-surface-hover text-tertiary",
 };

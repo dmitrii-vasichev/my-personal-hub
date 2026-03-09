@@ -8,22 +8,22 @@ const actions = [
     label: "Create task",
     href: "/tasks",
     icon: Plus,
-    color: "#4f8fea",
-    colorMuted: "rgba(79,143,234,0.12)",
+    color: "var(--primary)",
+    colorMuted: "var(--accent-muted)",
   },
   {
     label: "Log application",
     href: "/jobs",
     icon: Briefcase,
-    color: "#3dd68c",
-    colorMuted: "rgba(61,214,140,0.12)",
+    color: "var(--accent-teal)",
+    colorMuted: "var(--accent-teal-muted)",
   },
   {
     label: "View calendar",
     href: "/calendar",
     icon: Calendar,
-    color: "#f0b849",
-    colorMuted: "rgba(240,184,73,0.12)",
+    color: "var(--accent-amber)",
+    colorMuted: "var(--accent-amber-muted)",
   },
 ] as const;
 
