@@ -115,6 +115,12 @@ class Application(Base):
     status_history: Mapped[list["StatusHistory"]] = relationship(
         "StatusHistory", back_populates="application", cascade="all, delete-orphan"
     )
+    resumes: Mapped[list["Resume"]] = relationship(  # type: ignore[name-defined]
+        "Resume", back_populates="application", cascade="all, delete-orphan"
+    )
+    cover_letters: Mapped[list["CoverLetter"]] = relationship(  # type: ignore[name-defined]
+        "CoverLetter", back_populates="application", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         Index("ix_applications_user_status", "user_id", "status"),

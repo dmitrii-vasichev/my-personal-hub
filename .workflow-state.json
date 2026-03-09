@@ -1,10 +1,10 @@
 {
   "project_name": "my-personal-hub",
   "created_at": "2026-03-08T13:10:00Z",
-  "current_step": 6,
-  "current_step_name": "phase_complete",
-  "current_phase": 3,
-  "next_phase": 4,
+  "current_step": 5,
+  "current_step_name": "issues_created",
+  "current_phase": 4,
+  "next_phase": 5,
   "phase_2_merged": true,
   "phase_3_merged": true,
   "history": [
@@ -85,6 +85,18 @@
       "action": "completed",
       "timestamp": "2026-03-08T20:00:00Z",
       "details": "Phase 3 implemented — all 10 tasks done, PR #33 open"
+    },
+    {
+      "step": 4,
+      "action": "completed",
+      "timestamp": "2026-03-08T21:00:00Z",
+      "details": "Phase 4 plan approved — 11 tasks (Job Hunt Search & AI)"
+    },
+    {
+      "step": 5,
+      "action": "completed",
+      "timestamp": "2026-03-08T21:10:00Z",
+      "details": "11 issues created (#35-#45), added to Project Board #4"
     }
   ],
   "artifacts": {
@@ -93,9 +105,10 @@
     "plan_files": [
       "docs/plans/2026-03-08-phase-1-foundation.md",
       "docs/plans/2026-03-08-phase-2-task-manager.md",
-      "docs/plans/2026-03-08-phase-3-job-hunt-core.md"
+      "docs/plans/2026-03-08-phase-3-job-hunt-core.md",
+      "docs/plans/2026-03-08-phase-4-job-hunt-search-ai.md"
     ],
-    "issue_numbers": [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32],
+    "issue_numbers": [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45],
     "pr_numbers": [10, 21, 33],
     "project_board_number": 4
   }
