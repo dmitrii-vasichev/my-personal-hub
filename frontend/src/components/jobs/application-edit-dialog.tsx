@@ -13,6 +13,7 @@ import {
   DialogPortal,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { DatePicker } from "@/components/ui/date-picker";
 import { useUpdateApplication } from "@/hooks/use-applications";
 import type { Application, ApplicationStatus } from "@/types/job";
 
@@ -140,16 +141,14 @@ export function ApplicationEditDialog({
             {/* Applied Date */}
             <div className="flex flex-col gap-1.5">
               <Label
-                htmlFor="app-applied-date"
                 className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
               >
                 Applied Date
               </Label>
-              <Input
-                id="app-applied-date"
-                type="date"
+              <DatePicker
                 value={appliedDate}
-                onChange={(e) => setAppliedDate(e.target.value)}
+                onChange={setAppliedDate}
+                placeholder="Select date"
               />
             </div>
 
@@ -172,16 +171,15 @@ export function ApplicationEditDialog({
 
               <div className="flex flex-col gap-1.5">
                 <Label
-                  htmlFor="app-next-action-date"
                   className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
                 >
                   Next Action Date
                 </Label>
-                <Input
-                  id="app-next-action-date"
-                  type="date"
+                <DatePicker
                   value={nextActionDate}
-                  onChange={(e) => setNextActionDate(e.target.value)}
+                  onChange={setNextActionDate}
+                  placeholder="No date"
+                  clearable
                 />
               </div>
             </div>

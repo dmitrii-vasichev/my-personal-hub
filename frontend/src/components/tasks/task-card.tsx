@@ -3,7 +3,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { Calendar, Eye, GripVertical, Lock, User } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Task } from "@/types/task";
 import { PRIORITY_BG_COLORS } from "@/types/task";
 
@@ -25,6 +25,7 @@ function isDeadlineOverdue(deadline: string): boolean {
 }
 
 export function TaskCard({ task, isDragging = false }: TaskCardProps) {
+  const router = useRouter();
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: task.id,
     data: { task, status: task.status },
@@ -34,21 +35,26 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
     ? { transform: CSS.Translate.toString(transform) }
     : undefined;
 
+  const handleClick = () => {
+    if (transform) return;
+    router.push(`/tasks/${task.id}`);
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
+      {...listeners}
+      {...attributes}
+      onClick={handleClick}
       className={`
-        group relative rounded-lg border bg-[var(--surface)] p-3 transition-shadow
-        ${isDragging ? "shadow-lg opacity-50 border-[var(--border-strong)]" : "border-[var(--border)] hover:border-[var(--border-strong)]"}
+        group relative rounded-lg border bg-[var(--surface)] p-3 transition-shadow cursor-pointer
+        ${isDragging ? "shadow-lg opacity-50 border-[var(--border-strong)] cursor-grabbing" : "border-[var(--border)] hover:border-[var(--border-strong)]"}
+        active:cursor-grabbing
       `}
     >
-      {/* Drag handle */}
-      <div
-        {...listeners}
-        {...attributes}
-        className="absolute left-1 top-1/2 -translate-y-1/2 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity text-[var(--text-tertiary)] active:cursor-grabbing"
-      >
+      {/* Drag handle (visual indicator only) */}
+      <div className="absolute left-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--text-tertiary)]">
         <GripVertical className="h-3 w-3" />
       </div>
 
@@ -75,12 +81,9 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
         </div>
 
         {/* Title */}
-        <Link
-          href={`/tasks/${task.id}`}
-          className="block text-sm font-medium text-[var(--text-primary)] hover:text-[var(--accent)] transition-colors line-clamp-2 mb-2"
-        >
+        <span className="block text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors line-clamp-2 mb-2">
           {task.title}
-        </Link>
+        </span>
 
         {/* Footer: deadline + assignee */}
         <div className="flex items-center justify-between gap-2 text-[var(--text-tertiary)]">

@@ -5,6 +5,7 @@ import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import type { TaskFilters } from "@/types/task";
 
 interface TaskFiltersBarProps {
@@ -67,13 +68,14 @@ export function TaskFiltersBar({ filters, onFiltersChange }: TaskFiltersBarProps
       {/* Deadline before */}
       <div className="flex items-center gap-1.5">
         <span className="text-xs text-[var(--text-tertiary)]">Due before</span>
-        <Input
-          type="date"
+        <DatePicker
           value={filters.deadline_before ?? ""}
-          onChange={(e) =>
-            onFiltersChange({ ...filters, deadline_before: e.target.value || undefined })
+          onChange={(v) =>
+            onFiltersChange({ ...filters, deadline_before: v || undefined })
           }
-          className="h-8 w-36 text-sm"
+          placeholder="Any date"
+          clearable
+          className="h-8 w-40"
         />
       </div>
 
