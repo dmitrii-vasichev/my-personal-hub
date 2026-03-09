@@ -44,6 +44,15 @@ class TaskUpdate(BaseModel):
     assignee_id: Optional[int] = None
 
 
+class LinkedEventBrief(BaseModel):
+    id: int
+    title: str
+    start_time: datetime
+    end_time: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class TaskResponse(BaseModel):
     id: int
     user_id: int
@@ -64,6 +73,7 @@ class TaskResponse(BaseModel):
 
     creator: Optional[UserBrief] = None
     assignee: Optional[UserBrief] = None
+    linked_events: list[LinkedEventBrief] = []
 
     model_config = {"from_attributes": True}
 
