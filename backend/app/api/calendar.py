@@ -21,6 +21,7 @@ from app.schemas.calendar import (
     GoogleOAuthStatus,
 )
 from app.services import calendar as calendar_service
+from app.services import google_calendar as gcal_service
 from app.services import google_oauth as oauth_service
 
 router = APIRouter(prefix="/api/calendar", tags=["calendar"])
@@ -223,3 +224,16 @@ async def google_oauth_disconnect(
 ):
     """Revoke Google OAuth2 tokens and remove from DB."""
     await oauth_service.disconnect(db, current_user)
+
+
+# ── Sync ──────────────────────────────────────────────────────────────────────
+
+
+@router.post("/sync")
+async def sync_calendar(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Trigger full bidirectional sync with Google Calendar."""
+    result = await gcal_service.sync_calendar(db, current_user)
+    return result
