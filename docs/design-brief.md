@@ -57,10 +57,10 @@
 ## Typography
 | Role | Font | Weight | Size |
 |------|------|--------|------|
-| Headings | Inter | 600 (semibold) | 20-28px |
-| Subheadings | Inter | 500 (medium) | 14-16px |
-| Body | Inter | 400 (regular) | 14px |
-| Small / Labels | Inter | 500 (medium) | 12px |
+| Headings | Unbounded | 600 (semibold) | 20-28px |
+| Subheadings | Unbounded | 500 (medium) | 14-16px |
+| Body | IBM Plex Sans | 400 (regular) | 14px |
+| Small / Labels | IBM Plex Sans | 500 (medium) | 12px |
 | Mono (code, IDs) | JetBrains Mono | 400 | 13px |
 
 - Line height: 1.5 for body, 1.3 for headings
