@@ -5,6 +5,8 @@
 **Phase:** 11
 **Depends on:** Phase 10 (Dark Theme & Components — merged)
 
+**Issues:** #134, #135, #136, #137, #138, #139, #140
+
 ---
 
 ## Overview
