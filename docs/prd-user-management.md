@@ -235,5 +235,35 @@ def can_edit(record, current_user):
 - [ ] AC-11: Role `user` migrated to `member` without breaking existing auth
 - [ ] AC-12: Existing tasks and events get `visibility=family` by default after migration
 
+## Implementation Phases
+
+### Phase 7: Role System & Database Migration
+Foundation — DB migration, role rename, visibility fields, auth hardening.
+- Rename role `user` → `member` (enum migration)
+- Add `is_blocked`, `last_login_at`, `theme` to `users`
+- Add `visibility` enum + column to `tasks` and `calendar_events`
+- Update backend models, security (block check, last_login_at tracking)
+- Migration script with safe defaults
+- FR covered: FR-6, FR-7, FR-10, FR-11, FR-19, FR-20, FR-21
+
+### Phase 8: User Management & Profile
+Admin panel + user profile page.
+- Backend: CRUD API for users, profile API, reset password
+- Frontend: User Management section in Settings (table, create form, actions)
+- Frontend: Profile page (name, avatar initials, theme, change password)
+- Frontend: Avatar component in sidebar
+- Settings: hide AI/API sections for member
+- FR covered: FR-1, FR-2, FR-3, FR-4, FR-5, FR-8, FR-9, FR-15, FR-16, FR-17, FR-18, FR-22, FR-23
+
+### Phase 9: Visibility & Access Control
+Data visibility enforcement + owner-based access control.
+- Backend: visibility-aware query filters for tasks and calendar_events
+- Backend: owner-based edit/delete restrictions for members
+- Backend: admin bypass (sees and edits everything)
+- Backend: jobs/applications strict user_id filter
+- Frontend: visibility toggle on task/event forms
+- Frontend: owner name on other users' records, edit/delete restrictions
+- FR covered: FR-12, FR-13, FR-14, FR-24, FR-25
+
 ## Open Questions
 - None at this time — all requirements clarified during discovery.
