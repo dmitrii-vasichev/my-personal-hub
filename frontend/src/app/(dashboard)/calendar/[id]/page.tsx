@@ -6,6 +6,7 @@ import { ArrowLeft, MapPin, Clock, Calendar, Globe, Edit, Trash2, RefreshCw } fr
 import { Button } from "@/components/ui/button";
 import { EventNotes } from "@/components/calendar/event-notes";
 import { EventDialog } from "@/components/calendar/event-dialog";
+import { LinkedTasks } from "@/components/calendar/linked-tasks";
 import { useCalendarEvent, useDeleteCalendarEvent } from "@/hooks/use-calendar";
 import { toast } from "sonner";
 
@@ -132,6 +133,11 @@ export default function EventDetailPage() {
           </p>
         </div>
       )}
+
+      {/* Linked Tasks */}
+      <div className="border-t border-[--border] pt-6">
+        <LinkedTasks eventId={event.id} />
+      </div>
 
       {/* Notes */}
       <div className="border-t border-[--border] pt-6">

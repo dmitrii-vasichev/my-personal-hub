@@ -9,6 +9,7 @@ import { ChecklistView } from "@/components/tasks/checklist-view";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { TaskTimeline } from "@/components/tasks/task-timeline";
 import { useTask, useUpdateTask, useDeleteTask } from "@/hooks/use-tasks";
+import { LinkedEvents } from "@/components/tasks/linked-events";
 import { PRIORITY_BG_COLORS, TASK_STATUS_LABELS, TASK_STATUS_ORDER } from "@/types/task";
 import type { TaskStatus } from "@/types/task";
 
@@ -183,6 +184,11 @@ export default function TaskDetailPage() {
               </div>
             </div>
           )}
+
+          {/* Linked Events */}
+          <div className="border-t border-[var(--border)] pt-4">
+            <LinkedEvents taskId={task.id} />
+          </div>
 
           {/* Dates */}
           <div className="border-t border-[var(--border)] pt-4 flex flex-col gap-2">
