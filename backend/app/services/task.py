@@ -5,15 +5,30 @@ from typing import Optional
 
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
-from app.models.task import Task, TaskStatus, TaskUpdate, UpdateType
+from app.models.task import Task, TaskStatus, TaskUpdate, UpdateType, Visibility
 from app.models.user import User, UserRole
 from app.schemas.task import TaskCreate, TaskUpdate as TaskUpdateSchema, TaskUpdateCreate
 
 
+class PermissionDeniedError(Exception):
+    """Raised when user lacks permission to edit/delete a resource."""
+
+
 def _can_access_task(task: Task, user: User) -> bool:
-    """Check if user can read/write this task."""
+    """Check if user can read this task."""
+    if user.role == UserRole.admin:
+        return True
+    return (
+        task.user_id == user.id
+        or task.assignee_id == user.id
+        or task.visibility == Visibility.family
+    )
+
+
+def _can_edit_task(task: Task, user: User) -> bool:
+    """Check if user can edit/delete this task."""
     if user.role == UserRole.admin:
         return True
     return task.user_id == user.id or task.assignee_id == user.id
@@ -25,11 +40,16 @@ def _task_query_for_user(user: User):
         select(Task)
         .options(
             selectinload(Task.updates),
+            joinedload(Task.owner),
         )
     )
     if user.role != UserRole.admin:
         q = q.where(
-            or_(Task.user_id == user.id, Task.assignee_id == user.id)
+            or_(
+                Task.user_id == user.id,
+                Task.assignee_id == user.id,
+                Task.visibility == Visibility.family,
+            )
         )
     return q
 
@@ -38,9 +58,9 @@ async def _load_task_with_users(db: AsyncSession, task_id: int) -> Task | None:
     result = await db.execute(
         select(Task)
         .where(Task.id == task_id)
-        .options(selectinload(Task.updates))
+        .options(selectinload(Task.updates), joinedload(Task.owner))
     )
-    return result.scalar_one_or_none()
+    return result.unique().scalar_one_or_none()
 
 
 async def create_task(
@@ -57,6 +77,7 @@ async def create_task(
         deadline=data.deadline,
         checklist=[item.model_dump() for item in data.checklist],
         assignee_id=_resolve_assignee(data.assignee_id, current_user),
+        visibility=data.visibility,
     )
     db.add(task)
     await db.flush()  # get task.id
@@ -96,8 +117,12 @@ async def update_task(
     current_user: User,
 ) -> Task | None:
     task = await _load_task_with_users(db, task_id)
-    if task is None or not _can_access_task(task, current_user):
+    if task is None:
         return None
+    if not _can_access_task(task, current_user):
+        return None
+    if not _can_edit_task(task, current_user):
+        raise PermissionDeniedError("You can only edit your own or assigned tasks")
 
     old_status = task.status
 
@@ -111,6 +136,8 @@ async def update_task(
         task.deadline = data.deadline
     if data.checklist is not None:
         task.checklist = [item.model_dump() for item in data.checklist]
+    if data.visibility is not None:
+        task.visibility = data.visibility
 
     # Handle assignee change
     if data.assignee_id is not None:
@@ -154,6 +181,8 @@ async def delete_task(
     task = await _load_task_with_users(db, task_id)
     if task is None or not _can_access_task(task, current_user):
         return False
+    if not _can_edit_task(task, current_user):
+        raise PermissionDeniedError("You can only delete your own or assigned tasks")
     await db.delete(task)
     await db.commit()
     return True
@@ -171,12 +200,16 @@ async def list_tasks(
     sort_by: str = "created_at",
     sort_order: str = "desc",
 ) -> list[Task]:
-    q = select(Task)
+    q = select(Task).options(joinedload(Task.owner))
 
-    # Access control
+    # Access control: own + assigned + family-visible
     if current_user.role != UserRole.admin:
         q = q.where(
-            or_(Task.user_id == current_user.id, Task.assignee_id == current_user.id)
+            or_(
+                Task.user_id == current_user.id,
+                Task.assignee_id == current_user.id,
+                Task.visibility == Visibility.family,
+            )
         )
 
     if status:
@@ -201,7 +234,7 @@ async def list_tasks(
     q = q.order_by(sort_col.desc() if sort_order == "desc" else sort_col.asc())
 
     result = await db.execute(q)
-    return list(result.scalars().all())
+    return list(result.unique().scalars().all())
 
 
 async def get_kanban_board(

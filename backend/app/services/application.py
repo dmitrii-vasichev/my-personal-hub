@@ -18,7 +18,10 @@ class DuplicateApplicationError(Exception):
 
 
 def _can_access(application: Application, user: User) -> bool:
-    """Return True if user may read or write this application."""
+    """Return True if user may read or write this application.
+
+    Applications are always private per user — no visibility field, no family sharing.
+    """
     if user.role == UserRole.admin:
         return True
     return application.user_id == user.id

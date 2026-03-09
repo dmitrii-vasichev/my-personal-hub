@@ -17,7 +17,7 @@ import {
 import { ChecklistEditor } from "./checklist-editor";
 import { useCreateTask, useUpdateTask } from "@/hooks/use-tasks";
 import { useAuth } from "@/lib/auth";
-import type { ChecklistItem, Task, TaskPriority } from "@/types/task";
+import type { ChecklistItem, Task, TaskPriority, Visibility } from "@/types/task";
 
 interface TaskDialogProps {
   mode: "create" | "edit";
@@ -40,6 +40,7 @@ export function TaskDialog({ mode, task, onClose }: TaskDialogProps) {
     task?.reminder_at ? task.reminder_at.slice(0, 16) : ""
   );
   const [checklist, setChecklist] = useState<ChecklistItem[]>(task?.checklist ?? []);
+  const [visibility, setVisibility] = useState<Visibility>(task?.visibility ?? "family");
   const [error, setError] = useState<string | null>(null);
 
   const isLoading = createTask.isPending || updateTask.isPending;
@@ -62,6 +63,7 @@ export function TaskDialog({ mode, task, onClose }: TaskDialogProps) {
           deadline: deadline || undefined,
           reminder_at: reminderAt || undefined,
           checklist,
+          visibility,
         });
       } else if (task) {
         await updateTask.mutateAsync({
@@ -73,6 +75,7 @@ export function TaskDialog({ mode, task, onClose }: TaskDialogProps) {
             deadline: deadline || null,
             reminder_at: reminderAt || null,
             checklist,
+            visibility,
           },
         });
       }
@@ -122,7 +125,7 @@ export function TaskDialog({ mode, task, onClose }: TaskDialogProps) {
               />
             </div>
 
-            {/* Priority + Deadline */}
+            {/* Priority + Visibility */}
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="priority" className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
@@ -141,17 +144,32 @@ export function TaskDialog({ mode, task, onClose }: TaskDialogProps) {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="deadline" className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
-                  Deadline
+                <Label htmlFor="visibility" className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                  Visibility
                 </Label>
-                <Input
-                  id="deadline"
-                  type="date"
-                  value={deadline}
-                  onChange={(e) => setDeadline(e.target.value)}
-                  className="text-sm"
-                />
+                <Select
+                  id="visibility"
+                  value={visibility}
+                  onChange={(e) => setVisibility(e.target.value as Visibility)}
+                >
+                  <option value="family">👨‍👩‍👧 Family</option>
+                  <option value="private">🔒 Private</option>
+                </Select>
               </div>
+            </div>
+
+            {/* Deadline */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="deadline" className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                Deadline
+              </Label>
+              <Input
+                id="deadline"
+                type="date"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+                className="text-sm"
+              />
             </div>
 
             {/* Reminder */}

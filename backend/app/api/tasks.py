@@ -16,11 +16,20 @@ from app.schemas.task import (
     TaskUpdateCreate,
     TaskUpdateResponse,
 )
+from app.services.task import PermissionDeniedError
 from app.services import task as task_service
 from app.services import task_event_link as link_service
 from app.services import task_reminders as reminder_service
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
+
+
+def _task_response(task) -> TaskResponse:
+    """Build TaskResponse with owner_name derived from loaded owner relationship."""
+    resp = TaskResponse.model_validate(task)
+    if hasattr(task, "owner") and task.owner is not None:
+        resp.owner_name = task.owner.display_name
+    return resp
 
 
 @router.post("/", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
@@ -30,7 +39,7 @@ async def create_task(
     current_user: User = Depends(get_current_user),
 ):
     task = await task_service.create_task(db, data, current_user)
-    return task
+    return _task_response(task)
 
 
 @router.get("/kanban", response_model=KanbanBoard)
@@ -52,7 +61,7 @@ async def get_kanban(
         deadline_before=deadline_before,
         deadline_after=deadline_after,
     )
-    return board
+    return {col: [_task_response(t) for t in tasks] for col, tasks in board.items()}
 
 
 @router.get("/", response_model=list[TaskResponse])
@@ -80,7 +89,7 @@ async def list_tasks(
         sort_by=sort_by,
         sort_order=sort_order,
     )
-    return tasks
+    return [_task_response(t) for t in tasks]
 
 
 @router.get("/{task_id}", response_model=TaskResponse)
@@ -92,7 +101,7 @@ async def get_task(
     task = await task_service.get_task(db, task_id, current_user)
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    return task
+    return _task_response(task)
 
 
 @router.patch("/{task_id}", response_model=TaskResponse)
@@ -102,10 +111,13 @@ async def update_task(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    task = await task_service.update_task(db, task_id, data, current_user)
+    try:
+        task = await task_service.update_task(db, task_id, data, current_user)
+    except PermissionDeniedError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    return task
+    return _task_response(task)
 
 
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -114,7 +126,10 @@ async def delete_task(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    deleted = await task_service.delete_task(db, task_id, current_user)
+    try:
+        deleted = await task_service.delete_task(db, task_id, current_user)
+    except PermissionDeniedError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 
@@ -160,7 +175,8 @@ async def get_due_reminders(
     current_user: User = Depends(get_current_user),
 ):
     """Return tasks where reminder_at is in the past or within 15 min and not dismissed."""
-    return await reminder_service.get_due_reminders(db, current_user)
+    tasks = await reminder_service.get_due_reminders(db, current_user)
+    return [_task_response(t) for t in tasks]
 
 
 @router.post("/{task_id}/reminders/dismiss", response_model=TaskResponse)
@@ -173,7 +189,7 @@ async def dismiss_reminder(
     task = await reminder_service.dismiss_reminder(db, task_id, current_user)
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
-    return task
+    return _task_response(task)
 
 
 # ── Task-Event links ──────────────────────────────────────────────────────────

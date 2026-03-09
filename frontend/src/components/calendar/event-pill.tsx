@@ -22,7 +22,13 @@ export function EventPill({ event, onClick }: EventPillProps) {
           {new Date(event.start_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </span>
       )}
+      {event.visibility === "private" && (
+        <span className="text-[--text-tertiary] mr-0.5" title="Private">🔒</span>
+      )}
       {event.title}
+      {event.owner_name && (
+        <span className="text-[--text-tertiary] ml-1">· {event.owner_name.split(" ")[0]}</span>
+      )}
     </button>
   );
 }

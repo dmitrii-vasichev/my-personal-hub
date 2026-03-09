@@ -20,6 +20,7 @@ from app.schemas.calendar import (
     GoogleOAuthConnectResponse,
     GoogleOAuthStatus,
 )
+from app.services.task import PermissionDeniedError
 from app.services import calendar as calendar_service
 from app.services import google_calendar as gcal_service
 from app.services import google_oauth as oauth_service
@@ -27,6 +28,19 @@ from app.services import task_event_link as link_service
 from app.schemas.calendar import LinkedTaskBrief
 
 router = APIRouter(prefix="/api/calendar", tags=["calendar"])
+
+
+def _event_response(event, response_cls=CalendarEventResponse, **extra):
+    """Build event response with owner_name derived from loaded owner relationship."""
+    notes_count = len(event.notes) if hasattr(event, "notes") and event.notes else 0
+    event_dict = {
+        **{c.key: getattr(event, c.key) for c in event.__table__.columns},
+        "notes_count": notes_count,
+        **extra,
+    }
+    if hasattr(event, "owner") and event.owner is not None:
+        event_dict["owner_name"] = event.owner.display_name
+    return response_cls.model_validate(event_dict)
 
 
 # ── Events ────────────────────────────────────────────────────────────────────
@@ -40,15 +54,7 @@ async def list_events(
     current_user: User = Depends(get_current_user),
 ):
     events = await calendar_service.list_events(db, current_user, start=start, end=end)
-    result = []
-    for event in events:
-        notes_count = len(event.notes)
-        event_dict = {
-            **{c.key: getattr(event, c.key) for c in event.__table__.columns},
-            "notes_count": notes_count,
-        }
-        result.append(CalendarEventResponse.model_validate(event_dict))
-    return result
+    return [_event_response(e) for e in events]
 
 
 @router.get("/events/{event_id}", response_model=CalendarEventDetailResponse)
@@ -60,13 +66,7 @@ async def get_event(
     event = await calendar_service.get_event(db, event_id, current_user)
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-    notes_count = len(event.notes)
-    event_dict = {
-        **{c.key: getattr(event, c.key) for c in event.__table__.columns},
-        "notes_count": notes_count,
-        "notes": event.notes,
-    }
-    return CalendarEventDetailResponse.model_validate(event_dict)
+    return _event_response(event, CalendarEventDetailResponse, notes=event.notes)
 
 
 @router.post("/events/", response_model=CalendarEventResponse, status_code=status.HTTP_201_CREATED)
@@ -81,11 +81,7 @@ async def create_event(
             detail="end_time must be after start_time",
         )
     event = await calendar_service.create_event(db, data, current_user)
-    event_dict = {
-        **{c.key: getattr(event, c.key) for c in event.__table__.columns},
-        "notes_count": 0,
-    }
-    return CalendarEventResponse.model_validate(event_dict)
+    return _event_response(event)
 
 
 @router.patch("/events/{event_id}", response_model=CalendarEventResponse)
@@ -95,15 +91,13 @@ async def update_event(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    event = await calendar_service.update_event(db, event_id, data, current_user)
+    try:
+        event = await calendar_service.update_event(db, event_id, data, current_user)
+    except PermissionDeniedError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
-    notes_count = len(event.notes)
-    event_dict = {
-        **{c.key: getattr(event, c.key) for c in event.__table__.columns},
-        "notes_count": notes_count,
-    }
-    return CalendarEventResponse.model_validate(event_dict)
+    return _event_response(event)
 
 
 @router.delete("/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -112,7 +106,10 @@ async def delete_event(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    deleted = await calendar_service.delete_event(db, event_id, current_user)
+    try:
+        deleted = await calendar_service.delete_event(db, event_id, current_user)
+    except PermissionDeniedError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
 
