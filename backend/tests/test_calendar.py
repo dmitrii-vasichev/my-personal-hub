@@ -14,7 +14,7 @@ from app.services import calendar as calendar_service
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
 
-def make_user(role: UserRole = UserRole.user, user_id: int = 1) -> User:
+def make_user(role: UserRole = UserRole.member, user_id: int = 1) -> User:
     u = User()
     u.id = user_id
     u.role = role

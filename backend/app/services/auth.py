@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import secrets
+from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,11 +18,16 @@ async def authenticate_user(db: AsyncSession, email: str, password: str) -> User
     return user
 
 
+async def update_last_login(db: AsyncSession, user: User) -> None:
+    user.last_login_at = datetime.now(timezone.utc)
+    await db.commit()
+
+
 async def create_user(
     db: AsyncSession,
     email: str,
     display_name: str,
-    role: str = "user",
+    role: str = "member",
 ) -> tuple[User, str]:
     temp_password = secrets.token_urlsafe(12)
     user = User(
