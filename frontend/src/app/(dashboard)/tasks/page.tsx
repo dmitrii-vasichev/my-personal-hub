@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import Link from "next/link";
+import { Plus, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KanbanBoard } from "@/components/tasks/kanban-board";
 import { TaskFiltersBar } from "@/components/tasks/task-filters";
@@ -68,14 +69,22 @@ export default function TasksPage() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-[var(--text-primary)]">Tasks</h1>
-        <Button
-          size="sm"
-          onClick={() => setShowCreateDialog(true)}
-          className="gap-1.5"
-        >
-          <Plus className="h-4 w-4" />
-          New Task
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link href="/tasks/analytics">
+            <Button variant="ghost" size="sm" className="gap-1.5">
+              <BarChart2 className="h-4 w-4" />
+              Analytics
+            </Button>
+          </Link>
+          <Button
+            size="sm"
+            onClick={() => setShowCreateDialog(true)}
+            className="gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            New Task
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
