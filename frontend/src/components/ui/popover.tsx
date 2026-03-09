@@ -24,10 +24,11 @@ function PopoverContent({
         side="bottom"
         align={align}
         sideOffset={sideOffset}
+        className="z-[100]"
       >
         <PopoverPrimitive.Popup
           className={cn(
-            "z-50 rounded-lg border border-border bg-popover p-0 text-popover-foreground shadow-md",
+            "rounded-lg border border-border bg-popover p-0 text-popover-foreground shadow-md",
             "outline-none",
             "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
             "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
