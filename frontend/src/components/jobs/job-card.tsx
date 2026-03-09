@@ -26,16 +26,16 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
   const hasApplication = !!job.application;
 
   return (
-    <div className="group bg-[#131316] border border-[#232329] rounded-lg p-4 hover:border-[#3a3a45] transition-colors">
+    <div className="group bg-[#171b26] border border-[#252a3a] rounded-lg p-4 hover:border-[#2f3445] transition-colors">
       {/* Header row: title + actions */}
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-[#EDEDEF] leading-snug line-clamp-1">
+          <h3 className="text-sm font-semibold text-[#e8eaf0] leading-snug line-clamp-1">
             {job.title}
           </h3>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <Briefcase className="h-3 w-3 text-[#8B8B93] shrink-0" />
-            <span className="text-xs text-[#8B8B93] truncate">{job.company}</span>
+            <Briefcase className="h-3 w-3 text-[#6b7280] shrink-0" />
+            <span className="text-xs text-[#6b7280] truncate">{job.company}</span>
           </div>
         </div>
 
@@ -43,14 +43,14 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
         <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={() => onEdit(job)}
-            className="p-1.5 rounded-md text-[#5C5C66] hover:text-[#EDEDEF] hover:bg-[#232329] transition-colors"
+            className="p-1.5 rounded-md text-[#4b5563] hover:text-[#e8eaf0] hover:bg-[#252a3a] transition-colors"
             title="Edit job"
           >
             <Pencil className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => onDelete(job)}
-            className="p-1.5 rounded-md text-[#5C5C66] hover:text-[#E5484D] hover:bg-[#232329] transition-colors"
+            className="p-1.5 rounded-md text-[#4b5563] hover:text-[#f87171] hover:bg-[#252a3a] transition-colors"
             title="Delete job"
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -62,35 +62,35 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
       <div className="flex items-center gap-3 mb-3 flex-wrap">
         {job.location && (
           <div className="flex items-center gap-1">
-            <MapPin className="h-3 w-3 text-[#5C5C66] shrink-0" />
-            <span className="text-xs text-[#8B8B93]">{job.location}</span>
+            <MapPin className="h-3 w-3 text-[#4b5563] shrink-0" />
+            <span className="text-xs text-[#6b7280]">{job.location}</span>
           </div>
         )}
         {salary && (
           <div className="flex items-center gap-1">
-            <DollarSign className="h-3 w-3 text-[#5C5C66] shrink-0" />
-            <span className="text-xs text-[#8B8B93]">{salary}</span>
+            <DollarSign className="h-3 w-3 text-[#4b5563] shrink-0" />
+            <span className="text-xs text-[#6b7280]">{salary}</span>
           </div>
         )}
         {job.source && (
-          <span className="text-xs text-[#5C5C66] font-mono">{job.source}</span>
+          <span className="text-xs text-[#4b5563] font-mono">{job.source}</span>
         )}
       </div>
 
       {/* Tags */}
       {job.tags.length > 0 && (
         <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-          <Tag className="h-3 w-3 text-[#5C5C66] shrink-0" />
+          <Tag className="h-3 w-3 text-[#4b5563] shrink-0" />
           {job.tags.slice(0, 5).map((tag) => (
             <span
               key={tag}
-              className="px-1.5 py-0.5 rounded text-[11px] bg-[#1a1a1f] border border-[#232329] text-[#8B8B93]"
+              className="px-1.5 py-0.5 rounded text-[11px] bg-[#1e2333] border border-[#252a3a] text-[#6b7280]"
             >
               {tag}
             </span>
           ))}
           {job.tags.length > 5 && (
-            <span className="text-[11px] text-[#5C5C66]">+{job.tags.length - 5}</span>
+            <span className="text-[11px] text-[#4b5563]">+{job.tags.length - 5}</span>
           )}
         </div>
       )}
@@ -103,10 +103,10 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
             <span
               className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${
                 job.match_score >= 80
-                  ? "bg-[#0d2d1f] text-[#30A46C]"
+                  ? "bg-[#0f2d22] text-[#34d399]"
                   : job.match_score >= 60
-                  ? "bg-[#2d2207] text-[#F5A623]"
-                  : "bg-[#1a1a1f] text-[#8B8B93]"
+                  ? "bg-[#2a2510] text-[#fbbf24]"
+                  : "bg-[#1e2333] text-[#6b7280]"
               }`}
             >
               {job.match_score}% match
@@ -129,7 +129,7 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
 
         {/* Track / Tracking button */}
         {hasApplication ? (
-          <div className="flex items-center gap-1 text-[11px] text-[#30A46C]">
+          <div className="flex items-center gap-1 text-[11px] text-[#34d399]">
             <CheckCircle2 className="h-3.5 w-3.5" />
             <span>Tracking</span>
           </div>
@@ -138,7 +138,7 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
             size="sm"
             onClick={() => onTrack(job)}
             disabled={isTracking}
-            className="h-7 px-2.5 text-xs bg-[#5B6AD0] hover:bg-[#6E7CE0] text-white border-0"
+            className="h-7 px-2.5 text-xs bg-[#4f8ef7] hover:bg-[#6ba3ff] text-white border-0"
           >
             {isTracking ? "Adding…" : "Track"}
           </Button>

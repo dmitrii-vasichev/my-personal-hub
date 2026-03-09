@@ -120,21 +120,21 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
 };
 
 // Color tokens for status badges
-// accent: #5B6AD0, danger: #E5484D, warning: #F5A623, success: #30A46C
-// text-tertiary: #5C5C66, orange: #F76B15
+// accent: #4f8ef7, danger: #f87171, warning: #fbbf24, success: #34d399
+// text-tertiary: #4b5563, orange: #fb923c
 export const APPLICATION_STATUS_COLORS: Record<ApplicationStatus, string> = {
-  found: "#5C5C66", // text-tertiary (neutral)
-  saved: "#5B6AD0", // accent
-  resume_generated: "#5B6AD0", // accent
-  applied: "#5B6AD0", // accent
-  screening: "#F5A623", // warning
-  technical_interview: "#F76B15", // orange
-  final_interview: "#F76B15", // orange
-  offer: "#30A46C", // success
-  accepted: "#30A46C", // success
-  rejected: "#E5484D", // danger
-  ghosted: "#5C5C66", // text-tertiary (neutral)
-  withdrawn: "#5C5C66", // text-tertiary (neutral)
+  found: "#4b5563", // text-tertiary (neutral)
+  saved: "#4f8ef7", // accent
+  resume_generated: "#4f8ef7", // accent
+  applied: "#4f8ef7", // accent
+  screening: "#fbbf24", // warning
+  technical_interview: "#fb923c", // orange
+  final_interview: "#fb923c", // orange
+  offer: "#34d399", // success
+  accepted: "#34d399", // success
+  rejected: "#f87171", // danger
+  ghosted: "#4b5563", // text-tertiary (neutral)
+  withdrawn: "#4b5563", // text-tertiary (neutral)
 };
 
 // Ordered pipeline columns for Kanban (excludes terminal statuses)
