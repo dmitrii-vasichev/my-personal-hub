@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { useCreateCalendarEvent, useUpdateCalendarEvent } from "@/hooks/use-calendar";
 import type { CalendarEvent, CalendarEventCreate } from "@/types/calendar";
 import type { Visibility } from "@/types/task";
@@ -143,26 +145,45 @@ export function EventDialog({ open, onClose, prefillDate, event }: EventDialogPr
             <Label htmlFor="all-day" className="cursor-pointer">All-day event</Label>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="start">{allDay ? "Start date" : "Start"}</Label>
-              <Input
-                id="start"
-                type={allDay ? "date" : "datetime-local"}
-                value={allDay ? startTime.split("T")[0] : startTime}
-                onChange={(e) => setStartTime(allDay ? e.target.value + "T00:00" : e.target.value)}
-              />
+          {allDay ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Start date</Label>
+                <DatePicker
+                  value={startTime.split("T")[0]}
+                  onChange={(v) => setStartTime(v ? v + "T00:00" : "")}
+                  placeholder="Start date"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>End date</Label>
+                <DatePicker
+                  value={endTime.split("T")[0]}
+                  onChange={(v) => setEndTime(v ? v + "T23:59" : "")}
+                  placeholder="End date"
+                />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="end">{allDay ? "End date" : "End"}</Label>
-              <Input
-                id="end"
-                type={allDay ? "date" : "datetime-local"}
-                value={allDay ? endTime.split("T")[0] : endTime}
-                onChange={(e) => setEndTime(allDay ? e.target.value + "T23:59" : e.target.value)}
-              />
+          ) : (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Start</Label>
+                <DateTimePicker
+                  value={startTime}
+                  onChange={setStartTime}
+                  placeholder="Start date & time"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>End</Label>
+                <DateTimePicker
+                  value={endTime}
+                  onChange={setEndTime}
+                  placeholder="End date & time"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="location">Location</Label>
