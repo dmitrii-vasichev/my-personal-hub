@@ -5,6 +5,7 @@ from app.api.analytics import router as analytics_router
 from app.api.dashboard import router as dashboard_router
 from app.api.task_analytics import router as task_analytics_router
 from app.api.calendar import router as calendar_router
+from app.api.health import router as health_router
 from app.api.applications import router as applications_router
 from app.api.auth import router as auth_router
 from app.api.cover_letters import router as cover_letters_router
@@ -18,6 +19,7 @@ from app.core.config import settings
 
 app = FastAPI(title="Personal Hub API", version="0.1.0")
 
+app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(tasks_router)
@@ -32,15 +34,11 @@ app.include_router(task_analytics_router)
 app.include_router(calendar_router)
 app.include_router(dashboard_router)
 
+_cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.get("/health")
-async def health_check():
-    return {"status": "ok", "env": settings.APP_ENV}
