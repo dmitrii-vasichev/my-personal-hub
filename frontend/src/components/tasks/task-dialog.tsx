@@ -15,6 +15,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ChecklistEditor } from "./checklist-editor";
+import { DatePicker } from "@/components/ui/date-picker";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { useCreateTask, useUpdateTask } from "@/hooks/use-tasks";
 import { useAuth } from "@/lib/auth";
 import type { ChecklistItem, Task, TaskPriority, Visibility } from "@/types/task";
@@ -162,29 +164,27 @@ export function TaskDialog({ mode, task, onClose, onSuccess }: TaskDialogProps) 
 
             {/* Deadline */}
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="deadline" className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+              <Label className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                 Deadline
               </Label>
-              <Input
-                id="deadline"
-                type="date"
+              <DatePicker
                 value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-                className="text-sm"
+                onChange={setDeadline}
+                placeholder="No deadline"
+                clearable
               />
             </div>
 
             {/* Reminder */}
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="reminder_at" className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+              <Label className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                 Reminder
               </Label>
-              <Input
-                id="reminder_at"
-                type="datetime-local"
+              <DateTimePicker
                 value={reminderAt}
-                onChange={(e) => setReminderAt(e.target.value)}
-                className="text-sm"
+                onChange={setReminderAt}
+                placeholder="No reminder"
+                clearable
               />
             </div>
 

@@ -199,4 +199,14 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-onest), ui-sans-serif, system-ui, sans-serif;
   }
+  button,
+  [role="button"],
+  a,
+  select,
+  [type="checkbox"],
+  [type="radio"],
+  label[for],
+  summary {
+    cursor: pointer;
+  }
 }
