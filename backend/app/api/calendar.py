@@ -16,7 +16,12 @@ from app.schemas.calendar import (
     EventNoteResponse,
     EventNoteUpdate,
 )
+from app.schemas.calendar import (
+    GoogleOAuthConnectResponse,
+    GoogleOAuthStatus,
+)
 from app.services import calendar as calendar_service
+from app.services import google_oauth as oauth_service
 
 router = APIRouter(prefix="/api/calendar", tags=["calendar"])
 
@@ -163,3 +168,58 @@ async def delete_note(
     deleted = await calendar_service.delete_note(db, note_id, current_user)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+
+
+# ── Google OAuth2 ─────────────────────────────────────────────────────────────
+
+
+@router.get("/oauth/status", response_model=GoogleOAuthStatus)
+async def google_oauth_status(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await oauth_service.get_status(db, current_user)
+    return GoogleOAuthStatus(**result)
+
+
+@router.get("/oauth/connect", response_model=GoogleOAuthConnectResponse)
+async def google_oauth_connect(
+    current_user: User = Depends(get_current_user),
+):
+    """Return Google OAuth2 authorization URL. Frontend redirects user to this URL."""
+    from app.core.config import settings as cfg
+    if not cfg.GOOGLE_CLIENT_ID:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google Calendar integration is not configured",
+        )
+    state = f"user_{current_user.id}"
+    auth_url = oauth_service.get_authorization_url(state)
+    return GoogleOAuthConnectResponse(auth_url=auth_url)
+
+
+@router.get("/oauth/callback")
+async def google_oauth_callback(
+    code: str = Query(...),
+    state: str = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Handle OAuth2 callback from Google. Exchange code for tokens."""
+    try:
+        await oauth_service.exchange_code_for_tokens(db, code, current_user)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to exchange authorization code: {e}",
+        )
+    return {"message": "Google Calendar connected successfully"}
+
+
+@router.post("/oauth/disconnect", status_code=status.HTTP_204_NO_CONTENT)
+async def google_oauth_disconnect(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Revoke Google OAuth2 tokens and remove from DB."""
+    await oauth_service.disconnect(db, current_user)

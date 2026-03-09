@@ -35,3 +35,8 @@ google-generativeai==0.8.5
 
 # PDF generation
 reportlab==4.4.0
+
+# Google Calendar integration
+google-auth==2.38.0
+google-auth-oauthlib==1.2.1
+google-api-python-client==2.165.0
