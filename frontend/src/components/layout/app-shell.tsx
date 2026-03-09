@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
+import { ReminderPoller } from "@/components/tasks/reminder-poller";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -33,6 +34,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden">
+      <ReminderPoller />
       {/* Desktop sidebar */}
       <div className="hidden md:block">
         <Sidebar
