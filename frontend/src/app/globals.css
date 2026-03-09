@@ -139,9 +139,9 @@
     @apply bg-background text-foreground;
   }
   html {
-    @apply font-sans;
+    font-family: var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-heading);
+    font-family: var(--font-unbounded), ui-sans-serif, system-ui, sans-serif;
   }
 }
