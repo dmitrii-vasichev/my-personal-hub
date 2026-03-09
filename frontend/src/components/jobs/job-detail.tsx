@@ -106,9 +106,9 @@ export function JobDetail({ job }: JobDetailProps) {
             <span
               className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${
                 job.match_score >= 80
-                  ? "bg-[#0d2d1f] text-[#30A46C]"
+                  ? "bg-[#0f2d22] text-[#34d399]"
                   : job.match_score >= 60
-                  ? "bg-[#2d2207] text-[#F5A623]"
+                  ? "bg-[#2a2510] text-[#fbbf24]"
                   : "bg-[var(--surface-hover)] text-[var(--text-tertiary)]"
               }`}
             >
@@ -213,7 +213,7 @@ export function JobDetail({ job }: JobDetailProps) {
                 size="sm"
                 onClick={handleStartTracking}
                 disabled={isTracking}
-                className="w-full justify-center text-xs bg-[#5B6AD0] hover:bg-[#6E7CE0] text-white border-0"
+                className="w-full justify-center text-xs bg-[#4f8ef7] hover:bg-[#6ba3ff] text-white border-0"
               >
                 {isTracking ? "Starting…" : "Start Tracking"}
               </Button>

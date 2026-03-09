@@ -41,12 +41,12 @@ export function JobFiltersBar({ filters, onFiltersChange }: JobFiltersBarProps) 
     <div className="flex items-center gap-2 flex-wrap">
       {/* Search input */}
       <div className="relative flex-1 min-w-48 max-w-72">
-        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#5C5C66] pointer-events-none" />
+        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#4b5563] pointer-events-none" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search jobs…"
-          className="pl-8 h-8 text-sm border-[#232329] bg-[#0A0A0B] focus-visible:border-[#5B6AD0]"
+          className="pl-8 h-8 text-sm border-[#252a3a] bg-[#0f1117] focus-visible:border-[#4f8ef7]"
         />
       </div>
 
@@ -77,8 +77,8 @@ export function JobFiltersBar({ filters, onFiltersChange }: JobFiltersBarProps) 
         }
         className={`h-8 px-3 rounded-lg text-sm font-medium border transition-colors ${
           filters.has_application === true
-            ? "bg-[#5B6AD0] border-[#5B6AD0] text-white"
-            : "border-[#232329] text-[#8B8B93] hover:border-[#3a3a45] hover:text-[#EDEDEF]"
+            ? "bg-[#4f8ef7] border-[#4f8ef7] text-white"
+            : "border-[#252a3a] text-[#6b7280] hover:border-[#2f3445] hover:text-[#e8eaf0]"
         }`}
       >
         Applied
@@ -90,11 +90,11 @@ export function JobFiltersBar({ filters, onFiltersChange }: JobFiltersBarProps) 
           variant="ghost"
           size="sm"
           onClick={clearAll}
-          className="gap-1 h-8 text-[#8B8B93] hover:text-[#EDEDEF]"
+          className="gap-1 h-8 text-[#6b7280] hover:text-[#e8eaf0]"
         >
           <X className="h-3.5 w-3.5" />
           Clear
-          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#5B6AD0] text-[10px] text-white">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#4f8ef7] text-[10px] text-white">
             {activeCount}
           </span>
         </Button>

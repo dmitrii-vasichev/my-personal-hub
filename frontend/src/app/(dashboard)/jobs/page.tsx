@@ -61,10 +61,10 @@ function JobsPageInner() {
     <div className="flex h-full flex-col gap-4">
       {/* Page header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-[#EDEDEF]">Jobs</h1>
+        <h1 className="text-xl font-semibold text-[#e8eaf0]">Jobs</h1>
         <Button
           size="sm"
-          className="gap-1.5 bg-[#5B6AD0] hover:bg-[#6E7CE0] text-white border-0"
+          className="gap-1.5 bg-[#4f8ef7] hover:bg-[#6ba3ff] text-white border-0"
           onClick={() => { setEditingJob(undefined); setDialogOpen(true); }}
         >
           <Plus className="h-4 w-4" />
@@ -73,26 +73,26 @@ function JobsPageInner() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex items-center gap-1 border-b border-[#232329]">
+      <div className="flex items-center gap-1 border-b border-[#252a3a]">
         <button
           onClick={() => setActiveTab("jobs")}
           className={`px-3 pb-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
             activeTab === "jobs"
-              ? "border-[#5B6AD0] text-[#EDEDEF]"
-              : "border-transparent text-[#8B8B93] hover:text-[#EDEDEF]"
+              ? "border-[#4f8ef7] text-[#e8eaf0]"
+              : "border-transparent text-[#6b7280] hover:text-[#e8eaf0]"
           }`}
         >
           Jobs
           {!isLoading && jobs.length > 0 && (
-            <span className="ml-1.5 text-xs text-[#5C5C66]">({jobs.length})</span>
+            <span className="ml-1.5 text-xs text-[#4b5563]">({jobs.length})</span>
           )}
         </button>
         <button
           onClick={() => setActiveTab("pipeline")}
           className={`flex items-center gap-1.5 px-3 pb-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
             activeTab === "pipeline"
-              ? "border-[#5B6AD0] text-[#EDEDEF]"
-              : "border-transparent text-[#8B8B93] hover:text-[#EDEDEF]"
+              ? "border-[#4f8ef7] text-[#e8eaf0]"
+              : "border-transparent text-[#6b7280] hover:text-[#e8eaf0]"
           }`}
         >
           <GitBranch className="h-3.5 w-3.5" />
@@ -102,8 +102,8 @@ function JobsPageInner() {
           onClick={() => setActiveTab("search")}
           className={`flex items-center gap-1.5 px-3 pb-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
             activeTab === "search"
-              ? "border-[#5B6AD0] text-[#EDEDEF]"
-              : "border-transparent text-[#8B8B93] hover:text-[#EDEDEF]"
+              ? "border-[#4f8ef7] text-[#e8eaf0]"
+              : "border-transparent text-[#6b7280] hover:text-[#e8eaf0]"
           }`}
         >
           <Search className="h-3.5 w-3.5" />
@@ -113,8 +113,8 @@ function JobsPageInner() {
           onClick={() => setActiveTab("analytics")}
           className={`flex items-center gap-1.5 px-3 pb-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
             activeTab === "analytics"
-              ? "border-[#5B6AD0] text-[#EDEDEF]"
-              : "border-transparent text-[#8B8B93] hover:text-[#EDEDEF]"
+              ? "border-[#4f8ef7] text-[#e8eaf0]"
+              : "border-transparent text-[#6b7280] hover:text-[#e8eaf0]"
           }`}
         >
           <BarChart2 className="h-3.5 w-3.5" />

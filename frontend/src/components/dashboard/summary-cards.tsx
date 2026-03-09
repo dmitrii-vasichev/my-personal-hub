@@ -14,31 +14,35 @@ interface SummaryCardProps {
   label: string;
   value: number | string;
   subtitle?: string;
-  accent?: "default" | "warning" | "danger";
+  accent?: "default" | "teal" | "violet" | "warning" | "danger";
 }
 
 function SummaryCard({ icon, label, value, subtitle, accent = "default" }: SummaryCardProps) {
-  const iconColor =
-    accent === "danger"
-      ? "text-[#E5484D]"
-      : accent === "warning"
-      ? "text-[#F5A623]"
-      : "text-[#5B6AD0]";
+  const accentConfig = {
+    default: { text: "text-primary", border: "border-t-primary", iconBg: "bg-primary/10" },
+    teal: { text: "text-accent-teal", border: "border-t-accent-teal", iconBg: "bg-accent-teal/10" },
+    violet: { text: "text-accent-violet", border: "border-t-accent-violet", iconBg: "bg-accent-violet/10" },
+    warning: { text: "text-accent-amber", border: "border-t-accent-amber", iconBg: "bg-accent-amber/10" },
+    danger: { text: "text-destructive", border: "border-t-destructive", iconBg: "bg-destructive/10" },
+  };
+  const config = accentConfig[accent];
 
   return (
-    <Card>
+    <Card className={`relative overflow-hidden border-t-2 ${config.border}`}>
       <CardHeader className="pb-2">
-        <div className="flex items-center gap-2">
-          <span className={iconColor}>{icon}</span>
-          <CardTitle className="text-sm font-medium text-muted-foreground">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xs font-normal text-muted-foreground">
             {label}
           </CardTitle>
+          <span className={`flex h-[30px] w-[30px] items-center justify-center rounded-lg ${config.iconBg} ${config.text}`}>
+            {icon}
+          </span>
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-3xl font-semibold tracking-tight">{value}</p>
+        <p className={`text-[28px] font-bold tracking-tight leading-none mb-2 ${config.text}`}>{value}</p>
         {subtitle && (
-          <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+          <p className="text-[11px] text-muted-foreground">{subtitle}</p>
         )}
       </CardContent>
     </Card>
@@ -90,13 +94,14 @@ export function SummaryCards({ data, isLoading }: SummaryCardsProps) {
             ? `${tasks.completion_rate}% completion rate`
             : undefined
         }
+        accent="default"
       />
       <SummaryCard
         icon={<AlertCircle size={16} />}
         label="Overdue Tasks"
         value={tasks?.overdue ?? 0}
         subtitle={tasks?.overdue ? "Need attention" : "All on track"}
-        accent={tasks?.overdue ? "danger" : "default"}
+        accent={tasks?.overdue ? "danger" : "teal"}
       />
       <SummaryCard
         icon={<Briefcase size={16} />}
@@ -107,13 +112,14 @@ export function SummaryCards({ data, isLoading }: SummaryCardsProps) {
             ? `${jobHunt.upcoming_interviews} interview${jobHunt.upcoming_interviews > 1 ? "s" : ""} upcoming`
             : "No interviews scheduled"
         }
-        accent={jobHunt?.upcoming_interviews ? "warning" : "default"}
+        accent="violet"
       />
       <SummaryCard
         icon={<CalendarDays size={16} />}
         label="Upcoming Events"
         value={calendar?.upcoming_count ?? 0}
         subtitle="Next 7 days"
+        accent="warning"
       />
     </div>
   );

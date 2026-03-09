@@ -32,7 +32,7 @@ function DialogPopup({ className, ...props }: DialogPrimitive.Popup.Props & { cl
   return (
     <DialogPrimitive.Popup
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-xl transition-all duration-150 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
+        "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 rounded-[14px] border border-[var(--border)] bg-[var(--surface)] shadow-xl transition-all duration-150 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
         className
       )}
       {...props}

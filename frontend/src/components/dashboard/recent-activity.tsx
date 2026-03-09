@@ -62,7 +62,7 @@ export function RecentActivity() {
       for (const task of sorted) {
         result.push({
           id: `task-${task.id}`,
-          icon: <CheckSquare size={14} className="text-[#5B6AD0]" />,
+          icon: <CheckSquare size={14} className="text-[#4f8ef7]" />,
           label: task.title,
           time: formatRelativeTime(task.updated_at),
           href: `/tasks/${task.id}`,
@@ -79,7 +79,7 @@ export function RecentActivity() {
         const jobTitle = app.job?.title ?? "Application";
         result.push({
           id: `app-${app.id}`,
-          icon: <Briefcase size={14} className="text-[#F5A623]" />,
+          icon: <Briefcase size={14} className="text-[#fbbf24]" />,
           label: `${jobTitle} — ${app.status.replace(/_/g, " ")}`,
           time: formatRelativeTime(app.updated_at),
           href: `/jobs/applications/${app.id}`,
@@ -92,7 +92,7 @@ export function RecentActivity() {
       for (const event of summary.calendar.upcoming_events.slice(0, 3)) {
         result.push({
           id: `event-${event.id}`,
-          icon: <CalendarDays size={14} className="text-[#30A46C]" />,
+          icon: <CalendarDays size={14} className="text-[#34d399]" />,
           label: event.title,
           time: formatEventTime(event.start_time),
           href: `/calendar/${event.id}`,

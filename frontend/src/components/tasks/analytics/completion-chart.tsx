@@ -35,18 +35,18 @@ export function CompletionRateChart({ data, isLoading }: Props) {
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <LineChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#232329" />
-            <XAxis dataKey="weekLabel" tick={{ fontSize: 11, fill: "#8B8B93" }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#252a3a" />
+            <XAxis dataKey="weekLabel" tick={{ fontSize: 11, fill: "#6b7280" }} />
             <YAxis
               domain={[0, 100]}
-              tick={{ fontSize: 11, fill: "#8B8B93" }}
+              tick={{ fontSize: 11, fill: "#6b7280" }}
               tickFormatter={(v) => `${v}%`}
             />
             <Tooltip formatter={(v) => [`${v}%`, "Completion rate"]} />
             <Line
               type="monotone"
               dataKey="rate"
-              stroke="#5B6AD0"
+              stroke="#4f8ef7"
               strokeWidth={2}
               dot={false}
             />

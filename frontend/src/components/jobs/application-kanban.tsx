@@ -30,18 +30,18 @@ function KanbanSkeleton() {
       {Array.from({ length: 5 }).map((_, colIdx) => (
         <div
           key={colIdx}
-          className="flex w-[240px] shrink-0 flex-col gap-2 rounded-lg bg-[#131316] border border-[#232329] p-3 animate-pulse"
+          className="flex w-[240px] shrink-0 flex-col gap-2 rounded-lg bg-[#171b26] border border-[#252a3a] p-3 animate-pulse"
         >
           {/* Column header skeleton */}
-          <div className="h-3.5 w-24 rounded bg-[#232329] mb-2" />
+          <div className="h-3.5 w-24 rounded bg-[#252a3a] mb-2" />
           {/* Card skeletons */}
           {Array.from({ length: colIdx === 0 ? 3 : colIdx === 1 ? 2 : 2 }).map((_, cardIdx) => (
             <div
               key={cardIdx}
-              className="rounded-md bg-[#0E0E12] border border-[#232329] p-3"
+              className="rounded-md bg-[#141825] border border-[#252a3a] p-3"
             >
-              <div className="h-3.5 bg-[#232329] rounded w-4/5 mb-2" />
-              <div className="h-3 bg-[#232329] rounded w-3/5" />
+              <div className="h-3.5 bg-[#252a3a] rounded w-4/5 mb-2" />
+              <div className="h-3 bg-[#252a3a] rounded w-3/5" />
             </div>
           ))}
         </div>
@@ -95,7 +95,7 @@ export function ApplicationKanban() {
   if (error || !kanbanData) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-[#E5484D]">Failed to load pipeline</p>
+        <p className="text-sm text-[#f87171]">Failed to load pipeline</p>
       </div>
     );
   }
@@ -106,12 +106,12 @@ export function ApplicationKanban() {
   if (isEmpty) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#131316] border border-[#232329]">
-          <GitBranch className="h-5 w-5 text-[#5C5C66]" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#171b26] border border-[#252a3a]">
+          <GitBranch className="h-5 w-5 text-[#4b5563]" />
         </div>
         <div>
-          <p className="text-sm font-medium text-[#8B8B93]">No applications yet</p>
-          <p className="mt-1 text-xs text-[#5C5C66]">
+          <p className="text-sm font-medium text-[#6b7280]">No applications yet</p>
+          <p className="mt-1 text-xs text-[#4b5563]">
             Start tracking jobs from the Jobs tab
           </p>
         </div>
@@ -140,7 +140,7 @@ export function ApplicationKanban() {
 
         {/* Terminal statuses section */}
         <div className="mt-6">
-          <p className="mb-3 text-[11px] font-medium uppercase tracking-wider text-[#5C5C66] px-1">
+          <p className="mb-3 text-[11px] font-medium uppercase tracking-wider text-[#4b5563] px-1">
             Completed
           </p>
           <div className="flex gap-4 overflow-x-auto pb-4">
