@@ -2,9 +2,10 @@
   "project_name": "my-personal-hub",
   "work_type": "new_feature",
   "created_at": "2026-03-08T13:10:00Z",
-  "current_step": 6,
-  "current_step_name": "implementation",
+  "current_step": 7,
+  "current_step_name": "done",
   "current_phase": 7,
+  "phase_7_merged": true,
   "phase_2_merged": true,
   "phase_3_merged": true,
   "phase_4_merged": true,
@@ -39,7 +40,8 @@
     {"step": 1, "action": "completed", "timestamp": "2026-03-09T10:00:00Z", "details": "PRD for User Management feature approved"},
     {"step": 4, "action": "completed", "timestamp": "2026-03-09T10:30:00Z", "details": "Phase 7 plan approved — 9 tasks (Role System & DB Migration)"},
     {"step": 5, "action": "completed", "timestamp": "2026-03-09T10:35:00Z", "details": "9 issues created (#92-#100), added to Project Board #4"},
-    {"step": 6, "action": "completed", "timestamp": "2026-03-09T11:30:00Z", "details": "Phase 7 implemented — all 9 tasks done, PR #101 created. 54 backend tests pass, frontend build clean."}
+    {"step": 6, "action": "completed", "timestamp": "2026-03-09T11:30:00Z", "details": "Phase 7 implemented — all 9 tasks done, PR #101 created. 54 backend tests pass, frontend build clean."},
+    {"step": 7, "action": "completed", "timestamp": "2026-03-09T12:00:00Z", "details": "Phase 7 review done — PR #101 squash-merged, branch deleted, all issues #92-#100 closed"}
   ],
   "artifacts": {
     "prd_file": "docs/prd-user-management.md",
