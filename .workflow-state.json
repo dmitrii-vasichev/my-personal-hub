@@ -1,9 +1,10 @@
 {
   "project_name": "my-personal-hub",
+  "work_type": "new_feature",
   "created_at": "2026-03-08T13:10:00Z",
-  "current_step": 7,
-  "current_step_name": "review",
-  "current_phase": 6,
+  "current_step": 2,
+  "current_step_name": "design_brief",
+  "current_phase": null,
   "phase_2_merged": true,
   "phase_3_merged": true,
   "phase_4_merged": true,
@@ -34,10 +35,11 @@
     {"step": 5, "action": "completed", "timestamp": "2026-03-08T23:45:00Z", "details": "10 issues created (#62-#71), added to Project Board #4"},
     {"step": 6, "action": "completed", "timestamp": "2026-03-08T23:55:00Z", "details": "Phase 6 implemented — all 10 tasks done, PRs #72-#81 created"},
     {"step": 7, "action": "completed", "timestamp": "2026-03-08T23:59:00Z", "details": "Phase 6 review done — all 10 PRs merged to main, 37 backend tests pass, frontend build clean"},
-    {"step": 7, "action": "chore", "timestamp": "2026-03-09T06:30:00Z", "details": "Visual redesign: new palette, Onest font, multi-accent cards — PR #90 merged"}
+    {"step": 7, "action": "chore", "timestamp": "2026-03-09T06:30:00Z", "details": "Visual redesign: new palette, Onest font, multi-accent cards — PR #90 merged"},
+    {"step": 1, "action": "completed", "timestamp": "2026-03-09T10:00:00Z", "details": "PRD for User Management feature approved"}
   ],
   "artifacts": {
-    "prd_file": "docs/prd-personal-hub.md",
+    "prd_file": "docs/prd-user-management.md",
     "design_brief_file": "docs/design-brief.md",
     "plan_files": [
       "docs/plans/2026-03-08-phase-1-foundation.md",
