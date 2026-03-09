@@ -1,5 +1,15 @@
 # Phase 9 Plan: Visibility & Access Control
 
+## GitHub Issues
+- #115 — Task 1: Visibility-aware task queries + owner edit/delete restrictions
+- #116 — Task 2: Visibility-aware calendar event queries + owner restrictions
+- #117 — Task 3: Verify and harden jobs/applications strict user_id filtering
+- #118 — Task 4: Backend tests for visibility and access control
+- #119 — Task 5: Frontend types and hooks for visibility + owner info
+- #120 — Task 6: Visibility toggle on task and calendar event forms
+- #121 — Task 7: Owner name display and visibility indicators on cards
+- #122 — Task 8: Frontend edit/delete restrictions for members
+
 ## Overview
 Implement data visibility enforcement and owner-based access control. Members see their own records plus family-visible records from other users. Members can only edit/delete their own records. Admins see and edit everything. Jobs/applications remain strictly private per user.
 
