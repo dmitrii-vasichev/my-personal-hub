@@ -23,9 +23,10 @@ interface TaskDialogProps {
   mode: "create" | "edit";
   task?: Task;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function TaskDialog({ mode, task, onClose }: TaskDialogProps) {
+export function TaskDialog({ mode, task, onClose, onSuccess }: TaskDialogProps) {
   useAuth(); // auth context (reserved for future admin assignee feature)
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -79,6 +80,7 @@ export function TaskDialog({ mode, task, onClose }: TaskDialogProps) {
           },
         });
       }
+      onSuccess?.();
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
