@@ -1,6 +1,8 @@
 from typing import Optional
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -8,6 +10,7 @@ from app.core.deps import get_current_user
 from app.models.user import User
 from app.schemas.job import JobCreate, JobResponse, JobUpdate
 from app.services import job as job_service
+from app.services.scraper import fetch_job_description
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -82,3 +85,36 @@ async def delete_job(
     deleted = await job_service.delete_job(db, job_id, current_user)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+
+
+class FetchDescriptionRequest(BaseModel):
+    url: str
+
+
+class FetchDescriptionResponse(BaseModel):
+    description: str
+
+
+@router.post("/fetch-description", response_model=FetchDescriptionResponse)
+async def fetch_description(
+    data: FetchDescriptionRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """Fetch and extract job description from a URL (SSRF-protected)."""
+    try:
+        description = await fetch_job_description(data.url)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=status.HTTP_408_REQUEST_TIMEOUT, detail="Request timed out")
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Remote server returned {exc.response.status_code}",
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to fetch the URL",
+        )
+    return FetchDescriptionResponse(description=description)
