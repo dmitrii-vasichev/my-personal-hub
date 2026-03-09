@@ -8,9 +8,27 @@
 
 Add Google Calendar integration with bidirectional sync, weekly/monthly calendar views, local event creation, and meeting notes. Users can connect their Google Calendar via OAuth2, view all events in the portal, create new events that sync back to Google, and attach local notes to any meeting.
 
+## GitHub Issues
+
+| Task | Issue | Title |
+|------|-------|-------|
+| 1 | #47 | DB Migration — Calendar Events, Event Notes, Google OAuth Tokens |
+| 2 | #48 | Pydantic Schemas for Calendar Module |
+| 3 | #49 | Backend — Calendar Events CRUD Service + Router |
+| 4 | #50 | Backend — Event Notes CRUD |
+| 5 | #51 | Backend — Google OAuth2 Flow |
+| 6 | #52 | Backend — Google Calendar Sync Service |
+| 7 | #53 | Frontend — Calendar Types + API Hooks |
+| 8 | #54 | Frontend — Calendar Page with Month View |
+| 9 | #55 | Frontend — Calendar Week View |
+| 10 | #56 | Frontend — Create/Edit Event Dialog |
+| 11 | #57 | Frontend — Event Detail Page + Notes |
+| 12 | #58 | Frontend — Google Calendar Connect UI |
+| 13 | #59 | Backend + Frontend Tests |
+
 ## Tasks
 
-### Task 1: DB Migration — Calendar Events, Event Notes, Google OAuth Tokens
+### Task 1: DB Migration — Calendar Events, Event Notes, Google OAuth Tokens (#47)
 
 **Description:** Create Alembic migration `005` with three tables: `calendar_events`, `event_notes`, and `google_oauth_tokens`. Create corresponding SQLAlchemy models.
 
