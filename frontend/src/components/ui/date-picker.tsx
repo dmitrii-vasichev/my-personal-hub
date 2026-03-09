@@ -76,20 +76,24 @@ export function DatePicker({
 
   function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
-      tryApplyInput();
+      tryApplyInput(true);
     }
   }
 
   function handleInputBlur() {
-    tryApplyInput();
+    // Only apply value — do NOT close popover.
+    // Closing on blur causes a race condition: the popover unmounts
+    // before the DayPicker onSelect callback can fire, so calendar
+    // day clicks are silently swallowed.
+    tryApplyInput(false);
   }
 
-  function tryApplyInput() {
+  function tryApplyInput(close: boolean) {
     if (!inputValue.trim()) return;
     const parsed = parse(inputValue, "dd.MM.yyyy", new Date());
     if (isValid(parsed) && parsed.getFullYear() >= 1900 && parsed.getFullYear() <= 2100) {
       onChange(format(parsed, "yyyy-MM-dd"));
-      setOpen(false);
+      if (close) setOpen(false);
     }
   }
 
