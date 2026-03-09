@@ -27,7 +27,7 @@ export function ApplicationTimeline({ history }: ApplicationTimelineProps) {
       {history.map((entry, index) => {
         const isLast = index === history.length - 1;
         const isFirst = entry.old_status === null || entry.old_status === undefined;
-        const statusColor = APPLICATION_STATUS_COLORS[entry.new_status as ApplicationStatus] ?? "#4b5563";
+        const statusColor = APPLICATION_STATUS_COLORS[entry.new_status as ApplicationStatus] ?? "var(--tertiary)";
         const statusLabel = APPLICATION_STATUS_LABELS[entry.new_status as ApplicationStatus] ?? entry.new_status;
 
         return (

@@ -3,7 +3,7 @@
 import { Briefcase, MapPin, DollarSign, Tag, Pencil, Trash2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Job } from "@/types/job";
-import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS } from "@/types/job";
+import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS, APPLICATION_STATUS_BG_COLORS } from "@/types/job";
 
 interface JobCardProps {
   job: Job;
@@ -119,7 +119,7 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
               className="px-1.5 py-0.5 rounded text-[11px] font-medium"
               style={{
                 color: APPLICATION_STATUS_COLORS[job.application.status],
-                backgroundColor: `${APPLICATION_STATUS_COLORS[job.application.status]}18`,
+                backgroundColor: APPLICATION_STATUS_BG_COLORS[job.application.status],
               }}
             >
               {APPLICATION_STATUS_LABELS[job.application.status]}

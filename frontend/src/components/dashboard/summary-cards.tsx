@@ -82,15 +82,15 @@ interface SummaryCardsProps {
   isLoading: boolean;
 }
 
-// Design-ref colors
-const BLUE = "#4f8fea";
-const BLUE_MUTED = "rgba(79,143,234,0.12)";
-const GREEN = "#3dd68c";
-const GREEN_MUTED = "rgba(61,214,140,0.12)";
-const AMBER = "#f0b849";
-const AMBER_MUTED = "rgba(240,184,73,0.12)";
-const RED = "#ef6464";
-const RED_MUTED = "rgba(239,100,100,0.12)";
+// CSS variable references — theme-aware
+const BLUE = "var(--primary)";
+const BLUE_MUTED = "var(--accent-muted)";
+const GREEN = "var(--accent-teal)";
+const GREEN_MUTED = "var(--accent-teal-muted)";
+const AMBER = "var(--accent-amber)";
+const AMBER_MUTED = "var(--accent-amber-muted)";
+const RED = "var(--destructive)";
+const RED_MUTED = "var(--destructive-muted)";
 
 export function SummaryCards({ data, isLoading }: SummaryCardsProps) {
   if (isLoading) {

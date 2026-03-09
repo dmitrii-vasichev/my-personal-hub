@@ -119,22 +119,36 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   withdrawn: "Withdrawn",
 };
 
-// Color tokens for status badges
-// accent: #4f8ef7, danger: #f87171, warning: #fbbf24, success: #34d399
-// text-tertiary: #4b5563, orange: #fb923c
+// CSS variable references — theme-aware status colors
 export const APPLICATION_STATUS_COLORS: Record<ApplicationStatus, string> = {
-  found: "#4b5563", // text-tertiary (neutral)
-  saved: "#4f8ef7", // accent
-  resume_generated: "#4f8ef7", // accent
-  applied: "#4f8ef7", // accent
-  screening: "#fbbf24", // warning
-  technical_interview: "#fb923c", // orange
-  final_interview: "#fb923c", // orange
-  offer: "#34d399", // success
-  accepted: "#34d399", // success
-  rejected: "#f87171", // danger
-  ghosted: "#4b5563", // text-tertiary (neutral)
-  withdrawn: "#4b5563", // text-tertiary (neutral)
+  found: "var(--tertiary)",
+  saved: "var(--primary)",
+  resume_generated: "var(--primary)",
+  applied: "var(--primary)",
+  screening: "var(--accent-amber)",
+  technical_interview: "var(--accent-amber)",
+  final_interview: "var(--accent-amber)",
+  offer: "var(--accent-teal)",
+  accepted: "var(--accent-teal)",
+  rejected: "var(--destructive)",
+  ghosted: "var(--tertiary)",
+  withdrawn: "var(--tertiary)",
+};
+
+// Muted background variants for status badges (used as inline style backgroundColor)
+export const APPLICATION_STATUS_BG_COLORS: Record<ApplicationStatus, string> = {
+  found: "var(--muted)",
+  saved: "var(--accent-muted)",
+  resume_generated: "var(--accent-muted)",
+  applied: "var(--accent-muted)",
+  screening: "var(--accent-amber-muted)",
+  technical_interview: "var(--accent-amber-muted)",
+  final_interview: "var(--accent-amber-muted)",
+  offer: "var(--accent-teal-muted)",
+  accepted: "var(--accent-teal-muted)",
+  rejected: "var(--destructive-muted)",
+  ghosted: "var(--muted)",
+  withdrawn: "var(--muted)",
 };
 
 // Ordered pipeline columns for Kanban (excludes terminal statuses)

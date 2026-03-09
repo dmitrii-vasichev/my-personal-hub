@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { JobDialog } from "@/components/jobs/job-dialog";
 import { useDeleteJob } from "@/hooks/use-jobs";
 import { useCreateApplication } from "@/hooks/use-applications";
-import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS } from "@/types/job";
+import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS, APPLICATION_STATUS_BG_COLORS } from "@/types/job";
 import type { Job } from "@/types/job";
 
 interface JobDetailProps {
@@ -194,7 +194,7 @@ export function JobDetail({ job }: JobDetailProps) {
                   className="inline-flex w-fit items-center rounded px-2 py-0.5 text-xs font-medium"
                   style={{
                     color: APPLICATION_STATUS_COLORS[job.application.status],
-                    backgroundColor: `${APPLICATION_STATUS_COLORS[job.application.status]}18`,
+                    backgroundColor: APPLICATION_STATUS_BG_COLORS[job.application.status],
                   }}
                 >
                   {APPLICATION_STATUS_LABELS[job.application.status]}
