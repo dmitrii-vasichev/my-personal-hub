@@ -12,6 +12,7 @@ function Calendar({
   className,
   classNames,
   showOutsideDays = true,
+  fixedWeeks = true,
   ...props
 }: CalendarProps) {
   const defaultClassNames = getDefaultClassNames();
@@ -19,6 +20,7 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
+      fixedWeeks={fixedWeeks}
       className={cn("p-3", className)}
       classNames={{
         root: cn("w-fit", defaultClassNames.root),
