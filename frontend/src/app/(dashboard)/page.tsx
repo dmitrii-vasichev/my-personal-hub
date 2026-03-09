@@ -1,4 +1,5 @@
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
+import { RecentActivity } from "@/components/dashboard/recent-activity";
 
 export default function DashboardPage() {
   return (
@@ -10,6 +11,7 @@ export default function DashboardPage() {
         </p>
       </div>
       <DashboardClient />
+      <RecentActivity />
     </div>
   );
 }
