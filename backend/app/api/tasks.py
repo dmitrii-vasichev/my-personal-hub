@@ -9,6 +9,7 @@ from app.core.deps import get_current_user
 from app.models.user import User
 from app.schemas.task import (
     KanbanBoard,
+    LinkedEventBrief,
     TaskCreate,
     TaskResponse,
     TaskUpdate,
@@ -16,6 +17,7 @@ from app.schemas.task import (
     TaskUpdateResponse,
 )
 from app.services import task as task_service
+from app.services import task_event_link as link_service
 from app.services import task_reminders as reminder_service
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
@@ -172,3 +174,42 @@ async def dismiss_reminder(
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     return task
+
+
+# ── Task-Event links ──────────────────────────────────────────────────────────
+
+
+@router.post("/{task_id}/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def link_task_to_event(
+    task_id: int,
+    event_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ok = await link_service.link_task_event(db, task_id, event_id, current_user)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task or event not found")
+
+
+@router.delete("/{task_id}/events/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def unlink_task_from_event(
+    task_id: int,
+    event_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ok = await link_service.unlink_task_event(db, task_id, event_id, current_user)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+
+
+@router.get("/{task_id}/events", response_model=list[LinkedEventBrief])
+async def get_task_linked_events(
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    events = await link_service.get_linked_events(db, task_id, current_user)
+    if events is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    return events
