@@ -2,8 +2,8 @@
   "project_name": "my-personal-hub",
   "work_type": "new_feature",
   "created_at": "2026-03-08T13:10:00Z",
-  "current_step": 4,
-  "current_step_name": "planning",
+  "current_step": 3,
+  "current_step_name": "phasing",
   "current_phase": 10,
   "phase_9_merged": true,
   "phase_8_merged": true,
@@ -54,7 +54,7 @@
     {"step": 7, "action": "completed", "timestamp": "2026-03-09T19:30:00Z", "details": "Phase 9 review done — PR #123 squash-merged, branch deleted, all issues #115-#122 closed"}
   ],
   "artifacts": {
-    "prd_file": "docs/prd-user-management.md",
+    "prd_file": "docs/prd-dashboard-redesign.md",
     "design_brief_file": "docs/design-brief.md",
     "plan_files": [
       "docs/plans/2026-03-08-phase-1-foundation.md",
