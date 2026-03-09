@@ -36,6 +36,9 @@ export function TaskDialog({ mode, task, onClose }: TaskDialogProps) {
   const [deadline, setDeadline] = useState(
     task?.deadline ? task.deadline.split("T")[0] : ""
   );
+  const [reminderAt, setReminderAt] = useState(
+    task?.reminder_at ? task.reminder_at.slice(0, 16) : ""
+  );
   const [checklist, setChecklist] = useState<ChecklistItem[]>(task?.checklist ?? []);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +60,7 @@ export function TaskDialog({ mode, task, onClose }: TaskDialogProps) {
           description: description.trim() || undefined,
           priority,
           deadline: deadline || undefined,
+          reminder_at: reminderAt || undefined,
           checklist,
         });
       } else if (task) {
@@ -67,6 +71,7 @@ export function TaskDialog({ mode, task, onClose }: TaskDialogProps) {
             description: description.trim() || undefined,
             priority,
             deadline: deadline || null,
+            reminder_at: reminderAt || null,
             checklist,
           },
         });
@@ -147,6 +152,20 @@ export function TaskDialog({ mode, task, onClose }: TaskDialogProps) {
                   className="text-sm"
                 />
               </div>
+            </div>
+
+            {/* Reminder */}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="reminder_at" className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                Reminder
+              </Label>
+              <Input
+                id="reminder_at"
+                type="datetime-local"
+                value={reminderAt}
+                onChange={(e) => setReminderAt(e.target.value)}
+                className="text-sm"
+              />
             </div>
 
             {/* Checklist */}
