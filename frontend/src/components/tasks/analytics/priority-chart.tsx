@@ -13,10 +13,10 @@ import {
 import type { PriorityDistributionItem } from "@/types/task-analytics";
 
 const PRIORITY_COLORS: Record<string, string> = {
-  urgent: "#E5484D",
-  high: "#F5A623",
-  medium: "#5B6AD0",
-  low: "#30A46C",
+  urgent: "#f87171",
+  high: "#fbbf24",
+  medium: "#4f8ef7",
+  low: "#34d399",
 };
 
 interface Props {
@@ -39,15 +39,15 @@ export function PriorityDistributionChart({ data, isLoading }: Props) {
       ) : (
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={filtered} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#232329" vertical={false} />
-            <XAxis dataKey="priority" tick={{ fontSize: 11, fill: "#8B8B93" }} />
-            <YAxis tick={{ fontSize: 11, fill: "#8B8B93" }} allowDecimals={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#252a3a" vertical={false} />
+            <XAxis dataKey="priority" tick={{ fontSize: 11, fill: "#6b7280" }} />
+            <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} allowDecimals={false} />
             <Tooltip />
             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
               {filtered.map((entry) => (
                 <Cell
                   key={entry.priority}
-                  fill={PRIORITY_COLORS[entry.priority] ?? "#5B6AD0"}
+                  fill={PRIORITY_COLORS[entry.priority] ?? "#4f8ef7"}
                 />
               ))}
             </Bar>

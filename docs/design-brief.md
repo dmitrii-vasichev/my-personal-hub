@@ -8,105 +8,124 @@
 
 ## Theme
 - Mode: Both (dark default, light available via toggle)
-- Style: Strict minimalism — Linear-inspired
+- Style: Vibrant dashboard — colorful accents, soft dark surfaces
 - Density: Compact, information-dense
 
 ## Reference
-- Primary inspiration: [Linear](https://linear.app) — clean, fast, minimal dark UI
-- Key traits: no visual noise, subtle borders, muted secondary text, compact spacing
+- Primary inspiration: Custom dashboard mockup (reports-dashboard-mockup.html)
+- Key traits: multi-accent colors, colored top borders on cards, JetBrains Mono for labels, soft rounded corners, gradient chart fills
 
 ## Color Palette
 
 ### Dark Theme (default)
 | Token | Hex | Usage |
 |-------|-----|-------|
-| `--background` | `#0A0A0B` | Page background |
-| `--surface` | `#131316` | Cards, panels, sidebar |
-| `--surface-hover` | `#1A1A1F` | Hover states on surfaces |
-| `--border` | `#232329` | Subtle borders, dividers |
-| `--border-strong` | `#2E2E36` | Focused/active borders |
-| `--text-primary` | `#EDEDEF` | Headings, primary text |
-| `--text-secondary` | `#8B8B93` | Descriptions, labels |
-| `--text-tertiary` | `#5C5C66` | Placeholders, disabled |
-| `--accent` | `#5B6AD0` | Primary actions, links, active states |
-| `--accent-hover` | `#6E7CE0` | Accent hover |
-| `--accent-muted` | `rgba(91,106,208,0.15)` | Accent backgrounds (badges, highlights) |
-| `--danger` | `#E5484D` | Errors, destructive actions |
-| `--warning` | `#F5A623` | Warnings, overdue |
-| `--success` | `#30A46C` | Completed, success states |
-| `--info` | `#5B6AD0` | Informational (same as accent) |
+| `--background` | `#0f1117` | Page background |
+| `--surface` | `#171b26` | Cards, panels, sidebar |
+| `--surface-hover` | `#1e2333` | Hover states on surfaces |
+| `--surface-2` | `#252a3a` | Elevated surfaces, dropdowns |
+| `--border` | `rgba(255,255,255,0.07)` | Subtle borders, dividers |
+| `--border-strong` | `rgba(255,255,255,0.12)` | Focused/active borders |
+| `--text-primary` | `#e8eaf0` | Headings, primary text |
+| `--text-secondary` | `#6b7280` | Descriptions, labels |
+| `--text-tertiary` | `#4b5563` | Placeholders, disabled, section labels |
+| `--accent` | `#4f8ef7` | Primary actions, links, active states (blue) |
+| `--accent-hover` | `#6ba3ff` | Accent hover |
+| `--accent-muted` | `rgba(79,142,247,0.08)` | Accent backgrounds (active nav, badges) |
+| `--accent-teal` | `#2dd4bf` | Secondary accent — success-like, badges |
+| `--accent-violet` | `#a78bfa` | Tertiary accent — charts, financial data |
+| `--accent-amber` | `#fbbf24` | Quaternary accent — warnings, highlights |
+| `--danger` | `#f87171` | Errors, destructive actions, negative deltas |
+| `--warning` | `#fbbf24` | Warnings, overdue (same as amber) |
+| `--success` | `#34d399` | Completed, success states, positive deltas |
+| `--info` | `#4f8ef7` | Informational (same as accent) |
 
 ### Light Theme
 | Token | Hex | Usage |
 |-------|-----|-------|
-| `--background` | `#FFFFFF` | Page background |
-| `--surface` | `#F8F8F9` | Cards, panels, sidebar |
-| `--surface-hover` | `#F0F0F2` | Hover states |
-| `--border` | `#E4E4E8` | Borders, dividers |
-| `--border-strong` | `#D1D1D8` | Focused/active borders |
-| `--text-primary` | `#131316` | Headings, primary text |
-| `--text-secondary` | `#6B6B76` | Descriptions, labels |
-| `--text-tertiary` | `#9C9CA8` | Placeholders, disabled |
-| `--accent` | `#5B6AD0` | Same accent across themes |
-| `--accent-hover` | `#4A59BF` | Accent hover (darker in light mode) |
-| `--accent-muted` | `rgba(91,106,208,0.10)` | Accent backgrounds |
-| `--danger` | `#E5484D` | Errors |
-| `--warning` | `#F5A623` | Warnings |
-| `--success` | `#30A46C` | Success |
+| `--background` | `#f8f9fb` | Page background |
+| `--surface` | `#ffffff` | Cards, panels, sidebar |
+| `--surface-hover` | `#f0f1f5` | Hover states |
+| `--surface-2` | `#e8eaef` | Elevated surfaces |
+| `--border` | `rgba(0,0,0,0.08)` | Borders, dividers |
+| `--border-strong` | `rgba(0,0,0,0.15)` | Focused/active borders |
+| `--text-primary` | `#111827` | Headings, primary text |
+| `--text-secondary` | `#6b7280` | Descriptions, labels |
+| `--text-tertiary` | `#9ca3af` | Placeholders, disabled |
+| `--accent` | `#3b7dd8` | Primary actions (slightly darker blue for contrast) |
+| `--accent-hover` | `#2b6dc8` | Accent hover |
+| `--accent-muted` | `rgba(59,125,216,0.08)` | Accent backgrounds |
+| `--accent-teal` | `#0d9488` | Secondary accent |
+| `--accent-violet` | `#7c3aed` | Tertiary accent |
+| `--accent-amber` | `#d97706` | Quaternary accent |
+| `--danger` | `#dc2626` | Errors |
+| `--warning` | `#d97706` | Warnings |
+| `--success` | `#059669` | Success |
 
 ## Typography
 | Role | Font | Weight | Size |
 |------|------|--------|------|
-| Headings | Unbounded | 600 (semibold) | 20-28px |
-| Subheadings | Unbounded | 500 (medium) | 14-16px |
-| Body | IBM Plex Sans | 400 (regular) | 14px |
-| Small / Labels | IBM Plex Sans | 500 (medium) | 12px |
-| Mono (code, IDs) | JetBrains Mono | 400 | 13px |
+| Headings | Onest | 700 (bold) | 17-28px |
+| Subheadings | Onest | 600 (semibold) | 13-15px |
+| Body | Onest | 400 (regular) | 14px |
+| Small / Labels | JetBrains Mono | 500 (medium) | 9-11px, uppercase, letter-spacing 1.5px |
+| Mono (code, IDs, data) | JetBrains Mono | 400 | 12-13px |
 
 - Line height: 1.5 for body, 1.3 for headings
-- Letter spacing: -0.01em for headings, normal for body
+- Letter spacing: -0.3px for headings, normal for body
 
 ## Layout
-- Navigation: Collapsible sidebar (left), 240px expanded / 48px collapsed
+- Navigation: Collapsible sidebar (left), 220px expanded / 48px collapsed
 - Content max width: 1200px (centered with auto margins)
-- Page padding: 24px (desktop), 16px (mobile)
+- Page padding: 24px 28px (desktop), 16px (mobile)
 - Sidebar background: `--surface`
-- Sidebar active item: `--accent-muted` background with `--accent` text
+- Sidebar active item: `--accent-muted` background with `--accent` text, 2px right border
 
 ## Spacing & Sizing
 - Base unit: 4px
-- Common gaps: 4px, 8px, 12px, 16px, 24px, 32px
-- Border radius: 6px (default), 8px (cards/modals), 4px (small elements like badges)
-- Icon size: 16px (inline), 20px (nav items)
+- Common gaps: 4px, 8px, 12px, 14px, 16px, 22px, 24px, 28px
+- Border radius: 8px (default), 14px (cards/modals), 6px (small elements like badges/tags)
+- Icon size: 16px (inline), 16px (nav items)
 
 ## Component Standards
 
 ### Buttons
-- Primary: `--accent` background, white text, 6px radius, 32px height
-- Secondary: transparent background, `--border` border, `--text-primary` text
+- Primary: `--accent` background at 15% opacity, `--accent` text, `--accent` border at 30%, 8px radius
+- Secondary: `--surface` background, `--border` border, `--text-secondary` text
 - Ghost: no border, `--text-secondary` text, hover → `--surface-hover` background
 - Destructive: `--danger` background, white text
 - Sizing: sm (28px), default (32px), lg (36px)
+- Font: Onest, 13px
 
 ### Cards
 - Background: `--surface`
 - Border: 1px solid `--border`
-- Radius: 8px
-- Padding: 16px
+- Radius: 14px
+- Padding: 18px 20px
+- Optional: 2px colored top border (blue/teal/violet/amber per context)
 - No shadow (flat design)
+
+### KPI Cards
+- Same as Cards but with colored top border accent
+- Value: 28px, bold, colored to match accent
+- Label: 12px, `--text-secondary`
+- Delta indicator: JetBrains Mono, 11.5px, green (up) / red (down)
+- Footer: delta + comparison text
 
 ### Forms / Inputs
 - Height: 32px
 - Background: `--background`
 - Border: 1px solid `--border`, focus → `--accent`
-- Radius: 6px
-- Label: `--text-secondary`, 12px, medium weight, uppercase optional
+- Radius: 8px
+- Label: `--text-secondary`, 12px, medium weight
 
 ### Tables
-- Header: `--text-secondary`, 12px, uppercase, medium weight
-- Rows: `--surface` background, hover → `--surface-hover`
-- Borders: horizontal only, `--border`
-- Compact row height: 40px
+- Header: `--text-tertiary`, 10.5px, uppercase, JetBrains Mono, letter-spacing 0.5px
+- Header background: `--surface-hover`
+- Rows: transparent background, hover → `--surface-hover`
+- Borders: horizontal only, `rgba(255,255,255,0.03)`
+- Row padding: 10px 16px
+- Data columns: JetBrains Mono for numbers/money/dates
 
 ### Kanban Board
 - Column background: transparent (no column cards)
@@ -115,23 +134,30 @@
 - Drag handle: subtle, appears on hover
 
 ### Sidebar Navigation
-- Section labels: `--text-tertiary`, 11px, uppercase, letter-spacing 0.05em
-- Nav items: `--text-secondary`, 14px, 32px height
-- Active item: `--accent` text, `--accent-muted` background, 6px radius
-- Hover: `--surface-hover` background
-- Icons: 16px, same color as text
+- Section labels: `--text-tertiary`, 9px, uppercase, letter-spacing 1.5px, JetBrains Mono
+- Nav items: `--text-secondary`, 13.5px, Onest, 32px height, gap 9px
+- Active item: `--accent` text, `--accent-muted` background, 2px right border solid `--accent`
+- Hover: `--surface-hover` background, `--text-primary` text
+- Icons: 16px, opacity 0.8, active → opacity 1
 
 ### Badges / Status Pills
-- Radius: 4px
-- Padding: 2px 8px
-- Font: 12px, medium weight
-- Priority colors: urgent → `--danger`, high → `#F76B15`, medium → `--warning`, low → `--text-tertiary`
-- Status colors: contextual per module
+- Radius: 6px
+- Padding: 3px 9px
+- Font: JetBrains Mono, 11px
+- Border: 1px solid with matching color at 20% opacity
+- Background: matching color at 10% opacity
+- Example (teal): bg `rgba(45,212,191,0.1)`, text `--accent-teal`, border `rgba(45,212,191,0.2)`
+
+### Date/Period Filter
+- Container: `--surface` background, `--border` border, 10px radius, 4px padding
+- Buttons: 12.5px Onest, 5px 14px padding, 7px radius
+- Active: `--accent` background, white text
+- Inactive: transparent, `--text-secondary` text
 
 ### Modals / Dialogs
 - Background: `--surface`
 - Border: 1px solid `--border`
-- Radius: 8px
+- Radius: 14px
 - Overlay: black 60% opacity
 - Max width: 480px (default), 640px (large)
 
@@ -139,5 +165,11 @@
 - Position: bottom-right
 - Background: `--surface`
 - Border: 1px solid `--border`
-- Radius: 8px
+- Radius: 14px
 - Auto-dismiss: 5 seconds
+
+## Animations
+- `fadeUp`: opacity 0 → 1, translateY(12px → 0), 0.4s ease
+- Staggered delays: 0.05s increments for card grids
+- `pulse`: opacity 1 → 0.35 → 1, 2s ease-in-out infinite (for status dots)
+- Transitions: all 0.15s for interactive elements

@@ -4,11 +4,11 @@ import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recha
 import type { StatusDistributionItem } from "@/types/task-analytics";
 
 const STATUS_COLORS: Record<string, string> = {
-  new: "#8B8B93",
-  in_progress: "#5B6AD0",
-  review: "#F5A623",
-  done: "#30A46C",
-  cancelled: "#E5484D",
+  new: "#6b7280",
+  in_progress: "#4f8ef7",
+  review: "#fbbf24",
+  done: "#34d399",
+  cancelled: "#f87171",
 };
 
 interface Props {
@@ -44,7 +44,7 @@ export function StatusDistributionChart({ data, isLoading }: Props) {
               labelLine={false}
             >
               {filtered.map((entry) => (
-                <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? "#5B6AD0"} />
+                <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? "#4f8ef7"} />
               ))}
             </Pie>
             <Tooltip

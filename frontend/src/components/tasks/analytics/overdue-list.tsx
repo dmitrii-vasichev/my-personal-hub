@@ -5,10 +5,10 @@ import { AlertCircle } from "lucide-react";
 import type { OverdueData } from "@/types/task-analytics";
 
 const PRIORITY_BADGE: Record<string, string> = {
-  urgent: "bg-[#E5484D]/20 text-[#E5484D]",
-  high: "bg-[#F5A623]/20 text-[#F5A623]",
-  medium: "bg-[#5B6AD0]/20 text-[#5B6AD0]",
-  low: "bg-[#30A46C]/20 text-[#30A46C]",
+  urgent: "bg-[#f87171]/20 text-[#f87171]",
+  high: "bg-[#fbbf24]/20 text-[#fbbf24]",
+  medium: "bg-[#4f8ef7]/20 text-[#4f8ef7]",
+  low: "bg-[#34d399]/20 text-[#34d399]",
 };
 
 function formatDeadline(iso: string): string {
@@ -33,11 +33,11 @@ export function OverdueTasksList({ data, isLoading }: Props) {
   return (
     <div className="rounded-xl border border-border">
       <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-        <AlertCircle size={14} className="text-[#E5484D]" />
+        <AlertCircle size={14} className="text-[#f87171]" />
         <h3 className="text-sm font-medium">
           Overdue Tasks
           {data && data.count > 0 && (
-            <span className="ml-2 rounded-full bg-[#E5484D]/20 px-2 py-0.5 text-xs text-[#E5484D]">
+            <span className="ml-2 rounded-full bg-[#f87171]/20 px-2 py-0.5 text-xs text-[#f87171]">
               {data.count}
             </span>
           )}
