@@ -16,6 +16,7 @@ from app.schemas.task import (
     TaskUpdateResponse,
 )
 from app.services import task as task_service
+from app.services import task_reminders as reminder_service
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
@@ -146,3 +147,28 @@ async def create_task_update(
     if update is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     return update
+
+
+# ── Reminders ─────────────────────────────────────────────────────────────────
+
+
+@router.get("/reminders/due", response_model=list[TaskResponse])
+async def get_due_reminders(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return tasks where reminder_at is in the past or within 15 min and not dismissed."""
+    return await reminder_service.get_due_reminders(db, current_user)
+
+
+@router.post("/{task_id}/reminders/dismiss", response_model=TaskResponse)
+async def dismiss_reminder(
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Mark a task reminder as dismissed."""
+    task = await reminder_service.dismiss_reminder(db, task_id, current_user)
+    if task is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    return task
