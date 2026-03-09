@@ -40,3 +40,16 @@ class SettingsResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class MemberSettingsResponse(BaseModel):
+    """Settings view for members — job search fields only, no API key visibility."""
+
+    id: int
+    user_id: int
+    default_location: Optional[str]
+    target_roles: list[str]
+    min_match_score: int
+    excluded_companies: list[str]
+    stale_threshold_days: int
+    updated_at: datetime

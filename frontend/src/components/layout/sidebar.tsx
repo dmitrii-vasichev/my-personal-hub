@@ -8,6 +8,7 @@ import {
   Briefcase,
   Calendar,
   Settings,
+  User,
   PanelLeftClose,
   PanelLeft,
 } from "lucide-react";
@@ -20,6 +21,7 @@ const navItems = [
   { label: "Job Hunt", href: "/jobs", icon: Briefcase },
   { label: "Calendar", href: "/calendar", icon: Calendar },
   { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Profile", href: "/profile", icon: User },
 ];
 
 interface SidebarProps {

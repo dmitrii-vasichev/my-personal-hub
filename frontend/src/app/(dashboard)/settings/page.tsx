@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
+import { useAuth } from "@/lib/auth";
+import { UserManagementTable } from "@/components/settings/user-management-table";
 import type { UpdateSettingsInput } from "@/types/settings";
 
 function TagInput({
@@ -66,13 +68,11 @@ function TagInput({
 
 function ApiKeyInput({
   label,
-  fieldName,
   hasKey,
   value,
   onChange,
 }: {
   label: string;
-  fieldName: string;
   hasKey: boolean;
   value: string;
   onChange: (v: string) => void;
@@ -101,9 +101,25 @@ function ApiKeyInput({
   );
 }
 
+// Type guard for admin settings response
+function hasApiKeys(s: unknown): s is {
+  has_api_key_openai: boolean;
+  has_api_key_anthropic: boolean;
+  has_api_key_gemini: boolean;
+  has_api_key_adzuna: boolean;
+  has_api_key_serpapi: boolean;
+  has_api_key_jsearch: boolean;
+  llm_provider: string;
+} {
+  return !!s && typeof s === "object" && "has_api_key_openai" in s;
+}
+
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const update = useUpdateSettings();
+  const { user } = useAuth();
+
+  const isAdmin = user?.role === "admin";
 
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
   const [excludedCompanies, setExcludedCompanies] = useState<string[]>([]);
@@ -122,14 +138,15 @@ export default function SettingsPage() {
   });
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize form from loaded settings
   if (settings && !initialized) {
     setTargetRoles(settings.target_roles ?? []);
     setExcludedCompanies(settings.excluded_companies ?? []);
     setLocation(settings.default_location ?? "");
     setMinScore(String(settings.min_match_score ?? 0));
     setStaleDays(String(settings.stale_threshold_days ?? 14));
-    setLlmProvider(settings.llm_provider ?? "openai");
+    if (hasApiKeys(settings)) {
+      setLlmProvider(settings.llm_provider ?? "openai");
+    }
     setInitialized(true);
   }
 
@@ -140,20 +157,24 @@ export default function SettingsPage() {
       default_location: location || undefined,
       min_match_score: parseInt(minScore) || 0,
       stale_threshold_days: parseInt(staleDays) || 14,
-      llm_provider: llmProvider,
     };
-    if (apiKeys.openai) payload.api_key_openai = apiKeys.openai;
-    if (apiKeys.anthropic) payload.api_key_anthropic = apiKeys.anthropic;
-    if (apiKeys.gemini) payload.api_key_gemini = apiKeys.gemini;
-    if (apiKeys.adzuna_id) payload.api_key_adzuna_id = apiKeys.adzuna_id;
-    if (apiKeys.adzuna_key) payload.api_key_adzuna_key = apiKeys.adzuna_key;
-    if (apiKeys.serpapi) payload.api_key_serpapi = apiKeys.serpapi;
-    if (apiKeys.jsearch) payload.api_key_jsearch = apiKeys.jsearch;
+
+    if (isAdmin) {
+      payload.llm_provider = llmProvider;
+      if (apiKeys.openai) payload.api_key_openai = apiKeys.openai;
+      if (apiKeys.anthropic) payload.api_key_anthropic = apiKeys.anthropic;
+      if (apiKeys.gemini) payload.api_key_gemini = apiKeys.gemini;
+      if (apiKeys.adzuna_id) payload.api_key_adzuna_id = apiKeys.adzuna_id;
+      if (apiKeys.adzuna_key) payload.api_key_adzuna_key = apiKeys.adzuna_key;
+      if (apiKeys.serpapi) payload.api_key_serpapi = apiKeys.serpapi;
+      if (apiKeys.jsearch) payload.api_key_jsearch = apiKeys.jsearch;
+    }
 
     try {
       await update.mutateAsync(payload);
-      // Clear plaintext key fields after save
-      setApiKeys({ openai: "", anthropic: "", gemini: "", adzuna_id: "", adzuna_key: "", serpapi: "", jsearch: "" });
+      if (isAdmin) {
+        setApiKeys({ openai: "", anthropic: "", gemini: "", adzuna_id: "", adzuna_key: "", serpapi: "", jsearch: "" });
+      }
       toast.success("Settings saved");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save settings");
@@ -168,6 +189,8 @@ export default function SettingsPage() {
     );
   }
 
+  const adminSettings = hasApiKeys(settings) ? settings : null;
+
   return (
     <div className="mx-auto max-w-2xl space-y-8 p-6">
       <div className="flex items-center justify-between">
@@ -177,6 +200,13 @@ export default function SettingsPage() {
           {update.isPending ? "Saving…" : "Save changes"}
         </Button>
       </div>
+
+      {/* User Management — admin only */}
+      {isAdmin && (
+        <section className="space-y-4 rounded-lg border border-border p-5">
+          <UserManagementTable />
+        </section>
+      )}
 
       {/* Job Search */}
       <section className="space-y-4 rounded-lg border border-border p-5">
@@ -238,81 +268,78 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* AI Provider */}
-      <section className="space-y-4 rounded-lg border border-border p-5">
-        <h2 className="text-sm font-medium">AI Provider</h2>
+      {/* AI Provider — admin only */}
+      {isAdmin && (
+        <section className="space-y-4 rounded-lg border border-border p-5">
+          <h2 className="text-sm font-medium">AI Provider</h2>
 
-        <div className="space-y-1">
-          <Label className="text-xs uppercase text-muted-foreground">Default LLM Provider</Label>
-          <Select
-            value={llmProvider}
-            onChange={(e) => setLlmProvider((e.target as HTMLSelectElement).value)}
-            className="text-sm"
-          >
-            <option value="openai">OpenAI</option>
-            <option value="anthropic">Anthropic</option>
-            <option value="gemini">Google Gemini</option>
-          </Select>
-        </div>
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">Default LLM Provider</Label>
+            <Select
+              value={llmProvider}
+              onChange={(e) => setLlmProvider((e.target as HTMLSelectElement).value)}
+              className="text-sm"
+            >
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic</option>
+              <option value="gemini">Google Gemini</option>
+            </Select>
+          </div>
 
-        <ApiKeyInput
-          label="OpenAI API Key"
-          fieldName="openai"
-          hasKey={settings?.has_api_key_openai ?? false}
-          value={apiKeys.openai}
-          onChange={(v) => setApiKeys((k) => ({ ...k, openai: v }))}
-        />
-        <ApiKeyInput
-          label="Anthropic API Key"
-          fieldName="anthropic"
-          hasKey={settings?.has_api_key_anthropic ?? false}
-          value={apiKeys.anthropic}
-          onChange={(v) => setApiKeys((k) => ({ ...k, anthropic: v }))}
-        />
-        <ApiKeyInput
-          label="Google Gemini API Key"
-          fieldName="gemini"
-          hasKey={settings?.has_api_key_gemini ?? false}
-          value={apiKeys.gemini}
-          onChange={(v) => setApiKeys((k) => ({ ...k, gemini: v }))}
-        />
-      </section>
-
-      {/* Job Search API Keys */}
-      <section className="space-y-4 rounded-lg border border-border p-5">
-        <h2 className="text-sm font-medium">Job Search API Keys</h2>
-
-        <div className="grid grid-cols-2 gap-4">
           <ApiKeyInput
-            label="Adzuna App ID"
-            fieldName="adzuna_id"
-            hasKey={settings?.has_api_key_adzuna ?? false}
-            value={apiKeys.adzuna_id}
-            onChange={(v) => setApiKeys((k) => ({ ...k, adzuna_id: v }))}
+            label="OpenAI API Key"
+            hasKey={adminSettings?.has_api_key_openai ?? false}
+            value={apiKeys.openai}
+            onChange={(v) => setApiKeys((k) => ({ ...k, openai: v }))}
           />
           <ApiKeyInput
-            label="Adzuna App Key"
-            fieldName="adzuna_key"
-            hasKey={settings?.has_api_key_adzuna ?? false}
-            value={apiKeys.adzuna_key}
-            onChange={(v) => setApiKeys((k) => ({ ...k, adzuna_key: v }))}
+            label="Anthropic API Key"
+            hasKey={adminSettings?.has_api_key_anthropic ?? false}
+            value={apiKeys.anthropic}
+            onChange={(v) => setApiKeys((k) => ({ ...k, anthropic: v }))}
           />
-        </div>
-        <ApiKeyInput
-          label="SerpAPI Key"
-          fieldName="serpapi"
-          hasKey={settings?.has_api_key_serpapi ?? false}
-          value={apiKeys.serpapi}
-          onChange={(v) => setApiKeys((k) => ({ ...k, serpapi: v }))}
-        />
-        <ApiKeyInput
-          label="JSearch (RapidAPI) Key"
-          fieldName="jsearch"
-          hasKey={settings?.has_api_key_jsearch ?? false}
-          value={apiKeys.jsearch}
-          onChange={(v) => setApiKeys((k) => ({ ...k, jsearch: v }))}
-        />
-      </section>
+          <ApiKeyInput
+            label="Google Gemini API Key"
+            hasKey={adminSettings?.has_api_key_gemini ?? false}
+            value={apiKeys.gemini}
+            onChange={(v) => setApiKeys((k) => ({ ...k, gemini: v }))}
+          />
+        </section>
+      )}
+
+      {/* Job Search API Keys — admin only */}
+      {isAdmin && (
+        <section className="space-y-4 rounded-lg border border-border p-5">
+          <h2 className="text-sm font-medium">Job Search API Keys</h2>
+
+          <div className="grid grid-cols-2 gap-4">
+            <ApiKeyInput
+              label="Adzuna App ID"
+              hasKey={adminSettings?.has_api_key_adzuna ?? false}
+              value={apiKeys.adzuna_id}
+              onChange={(v) => setApiKeys((k) => ({ ...k, adzuna_id: v }))}
+            />
+            <ApiKeyInput
+              label="Adzuna App Key"
+              hasKey={adminSettings?.has_api_key_adzuna ?? false}
+              value={apiKeys.adzuna_key}
+              onChange={(v) => setApiKeys((k) => ({ ...k, adzuna_key: v }))}
+            />
+          </div>
+          <ApiKeyInput
+            label="SerpAPI Key"
+            hasKey={adminSettings?.has_api_key_serpapi ?? false}
+            value={apiKeys.serpapi}
+            onChange={(v) => setApiKeys((k) => ({ ...k, serpapi: v }))}
+          />
+          <ApiKeyInput
+            label="JSearch (RapidAPI) Key"
+            hasKey={adminSettings?.has_api_key_jsearch ?? false}
+            value={apiKeys.jsearch}
+            onChange={(v) => setApiKeys((k) => ({ ...k, jsearch: v }))}
+          />
+        </section>
+      )}
     </div>
   );
 }
