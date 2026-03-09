@@ -19,3 +19,19 @@ pydantic-settings==2.7.1
 # Utils
 python-dotenv==1.0.1
 python-multipart==0.0.20
+
+# Encryption
+cryptography==44.0.2
+
+# HTTP client + HTML parsing (for URL scraping)
+httpx==0.28.1
+beautifulsoup4==4.13.3
+lxml==5.3.0
+
+# AI providers
+openai==1.68.2
+anthropic==0.50.0
+google-generativeai==0.8.5
+
+# PDF generation
+reportlab==4.4.0

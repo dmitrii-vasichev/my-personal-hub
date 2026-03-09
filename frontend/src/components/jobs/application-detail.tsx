@@ -17,6 +17,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { ApplicationEditDialog } from "@/components/jobs/application-edit-dialog";
 import { ApplicationTimeline } from "@/components/jobs/application-timeline";
+import { CoverLetterSection } from "@/components/jobs/cover-letter-section";
+import { ResumeSection } from "@/components/jobs/resume-section";
 import { StatusChangeDialog } from "@/components/jobs/status-change-dialog";
 import {
   useDeleteApplication,
@@ -263,6 +265,16 @@ export function ApplicationDetail({ application }: ApplicationDetailProps) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* AI Resume */}
+      <div className="mt-8">
+        <ResumeSection applicationId={application.id} />
+      </div>
+
+      {/* AI Cover Letter */}
+      <div className="mt-6">
+        <CoverLetterSection applicationId={application.id} />
       </div>
 
       {/* Status history timeline */}

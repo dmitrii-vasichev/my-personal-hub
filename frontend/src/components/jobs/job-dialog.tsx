@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, KeyboardEvent } from "react";
-import { X } from "lucide-react";
+import { X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useCreateJob, useUpdateJob } from "@/hooks/use-jobs";
+import { api } from "@/lib/api";
 import type { Job } from "@/types/job";
 
 interface JobDialogProps {
@@ -45,8 +46,22 @@ export function JobDialog({ open, onOpenChange, mode, job, onSuccess }: JobDialo
       : ""
   );
   const [errors, setErrors] = useState<{ title?: string; company?: string }>({});
+  const [isFetchingDesc, setIsFetchingDesc] = useState(false);
 
   const isLoading = createJob.isPending || updateJob.isPending;
+
+  const handleFetchDescription = async () => {
+    if (!url.trim()) return;
+    setIsFetchingDesc(true);
+    try {
+      const result = await api.post<{ description: string }>("/api/jobs/fetch-description", { url: url.trim() });
+      setDescription(result.description);
+    } catch (err) {
+      setErrors((prev) => ({ ...prev, title: err instanceof Error ? err.message : "Failed to fetch description" }));
+    } finally {
+      setIsFetchingDesc(false);
+    }
+  };
 
   const addTag = (value: string) => {
     const trimmed = value.trim().replace(/,+$/, "").trim();
@@ -227,12 +242,25 @@ export function JobDialog({ open, onOpenChange, mode, job, onSuccess }: JobDialo
 
             {/* Description */}
             <div className="flex flex-col gap-1.5">
-              <Label
-                htmlFor="job-description"
-                className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
-              >
-                Description
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label
+                  htmlFor="job-description"
+                  className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
+                >
+                  Description
+                </Label>
+                {url.trim() && (
+                  <button
+                    type="button"
+                    onClick={handleFetchDescription}
+                    disabled={isFetchingDesc}
+                    className="flex items-center gap-1 text-xs text-[var(--accent)] hover:underline disabled:opacity-50"
+                  >
+                    <Download className="h-3 w-3" />
+                    {isFetchingDesc ? "Fetching…" : "Fetch from URL"}
+                  </button>
+                )}
+              </div>
               <Textarea
                 id="job-description"
                 value={description}
