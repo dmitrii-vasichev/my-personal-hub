@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.analytics import router as analytics_router
+from app.api.calendar import router as calendar_router
 from app.api.applications import router as applications_router
 from app.api.auth import router as auth_router
 from app.api.cover_letters import router as cover_letters_router
@@ -25,6 +26,7 @@ app.include_router(search_router)
 app.include_router(resumes_router)
 app.include_router(cover_letters_router)
 app.include_router(analytics_router)
+app.include_router(calendar_router)
 
 app.add_middleware(
     CORSMiddleware,
