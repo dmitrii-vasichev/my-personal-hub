@@ -12,7 +12,13 @@ from app.schemas.auth import (
     RegisterResponse,
     UserResponse,
 )
-from app.services.auth import authenticate_user, change_user_password, create_user, generate_token
+from app.services.auth import (
+    authenticate_user,
+    change_user_password,
+    create_user,
+    generate_token,
+    update_last_login,
+)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -25,6 +31,12 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
+    if user.is_blocked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is blocked",
+        )
+    await update_last_login(db, user)
     token = generate_token(user)
     return LoginResponse(
         access_token=token,

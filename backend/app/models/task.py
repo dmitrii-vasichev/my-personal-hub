@@ -19,6 +19,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
 
+class Visibility(str, enum.Enum):
+    family = "family"
+    private = "private"
+
+
 class TaskStatus(str, enum.Enum):
     new = "new"
     in_progress = "in_progress"
@@ -72,6 +77,9 @@ class Task(Base):
     source: Mapped[TaskSource] = mapped_column(
         Enum(TaskSource), default=TaskSource.web, nullable=False
     )
+    visibility: Mapped[Visibility] = mapped_column(
+        Enum(Visibility), default=Visibility.family, nullable=False
+    )
 
     deadline: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     reminder_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -96,6 +104,7 @@ class Task(Base):
     __table_args__ = (
         Index("ix_tasks_user_status", "user_id", "status"),
         Index("ix_tasks_assignee_status", "assignee_id", "status"),
+        Index("ix_tasks_user_visibility", "user_id", "visibility"),
     )
 
 

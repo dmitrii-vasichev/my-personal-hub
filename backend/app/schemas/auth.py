@@ -1,3 +1,6 @@
+from datetime import datetime
+from typing import Optional
+
 from pydantic import BaseModel, EmailStr
 
 
@@ -15,7 +18,7 @@ class LoginResponse(BaseModel):
 class RegisterRequest(BaseModel):
     email: EmailStr
     display_name: str
-    role: str = "user"
+    role: str = "member"
 
 
 class RegisterResponse(BaseModel):
@@ -37,5 +40,8 @@ class UserResponse(BaseModel):
     display_name: str
     role: str
     must_change_password: bool
+    is_blocked: bool
+    theme: str
+    last_login_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}

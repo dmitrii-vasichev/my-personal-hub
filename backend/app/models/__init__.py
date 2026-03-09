@@ -1,5 +1,5 @@
 from app.models.user import User, UserRole
-from app.models.task import Task, TaskUpdate, TaskStatus, TaskPriority, TaskSource, UpdateType
+from app.models.task import Task, TaskUpdate, TaskStatus, TaskPriority, TaskSource, UpdateType, Visibility
 from app.models.job import Job, Application, StatusHistory, ApplicationStatus
 from app.models.settings import UserSettings
 from app.models.resume import Resume, CoverLetter
@@ -13,6 +13,7 @@ __all__ = [
     "TaskPriority",
     "TaskSource",
     "UpdateType",
+    "Visibility",
     "Job",
     "Application",
     "StatusHistory",

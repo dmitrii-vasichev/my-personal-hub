@@ -16,7 +16,7 @@ from app.services import task_reminders as svc
 def make_user(user_id: int = 1) -> User:
     u = User()
     u.id = user_id
-    u.role = UserRole.user
+    u.role = UserRole.member
     u.email = f"user{user_id}@example.com"
     u.display_name = f"User {user_id}"
     return u

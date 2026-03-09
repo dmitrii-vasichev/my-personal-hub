@@ -38,11 +38,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [pathname, refreshUser, router]);
 
   const login = async (email: string, password: string) => {
-    const data = await api.post<{
-      access_token: string;
-      must_change_password: boolean;
-    }>("/api/auth/login", { email, password });
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
+    if (response.status === 403) {
+      throw new Error("Account is blocked. Please contact the administrator.");
+    }
+
+    if (!response.ok) {
+      throw new Error("Invalid email or password");
+    }
+
+    const data: { access_token: string; must_change_password: boolean } = await response.json();
     localStorage.setItem("access_token", data.access_token);
 
     if (data.must_change_password) {

@@ -17,6 +17,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.models.task import Visibility
 
 
 class EventSource(str, enum.Enum):
@@ -43,6 +44,9 @@ class CalendarEvent(Base):
         Enum(EventSource), default=EventSource.local, nullable=False
     )
     synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    visibility: Mapped[Visibility] = mapped_column(
+        Enum(Visibility), default=Visibility.family, nullable=False
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -60,6 +64,7 @@ class CalendarEvent(Base):
 
     __table_args__ = (
         Index("ix_calendar_events_user_time", "user_id", "start_time"),
+        Index("ix_calendar_events_user_visibility", "user_id", "visibility"),
         UniqueConstraint("user_id", "google_event_id", name="uq_calendar_events_user_google"),
     )
 
