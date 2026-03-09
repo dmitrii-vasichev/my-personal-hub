@@ -2,9 +2,9 @@
   "project_name": "my-personal-hub",
   "work_type": "new_feature",
   "created_at": "2026-03-08T13:10:00Z",
-  "current_step": 7,
-  "current_step_name": "done",
-  "current_phase": 12,
+  "current_step": 3,
+  "current_step_name": "phasing",
+  "current_phase": 13,
   "phase_12_merged": true,
   "phase_11_merged": true,
   "phase_10_merged": true,
@@ -62,10 +62,11 @@
     {"step": 6, "action": "completed", "timestamp": "2026-03-09T23:00:00Z", "details": "Phase 11 implemented — all 7 tasks done, PR #141 created. Frontend build clean, 110 backend tests pass, 2 pre-existing lint errors unrelated to Phase 11."},
     {"step": 7, "action": "completed", "timestamp": "2026-03-09T23:30:00Z", "details": "Phase 11 review done — PR #141 squash-merged, branch deleted, all issues #134-#140 closed"},
     {"step": 1, "action": "completed", "timestamp": "2026-03-09T23:45:00Z", "details": "PRD for Dashboard Task Modal feature approved"},
-    {"step": 7, "action": "completed", "timestamp": "2026-03-10T00:30:00Z", "details": "Phase 12 review done — PR #146 squash-merged, branch deleted, all issues #143-#145 closed"}
+    {"step": 7, "action": "completed", "timestamp": "2026-03-10T00:30:00Z", "details": "Phase 12 review done — PR #146 squash-merged, branch deleted, all issues #143-#145 closed"},
+    {"step": 1, "action": "completed", "timestamp": "2026-03-09T01:00:00Z", "details": "PRD for UX Interactions Polish approved"}
   ],
   "artifacts": {
-    "prd_file": "docs/prd-dashboard-task-modal.md",
+    "prd_file": "docs/prd-ux-interactions.md",
     "design_brief_file": "docs/design-brief.md",
     "plan_files": [
       "docs/plans/2026-03-08-phase-1-foundation.md",
