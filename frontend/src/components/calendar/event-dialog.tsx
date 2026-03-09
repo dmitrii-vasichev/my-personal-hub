@@ -5,9 +5,11 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateCalendarEvent, useUpdateCalendarEvent } from "@/hooks/use-calendar";
 import type { CalendarEvent, CalendarEventCreate } from "@/types/calendar";
+import type { Visibility } from "@/types/task";
 
 interface EventDialogProps {
   open: boolean;
@@ -44,6 +46,7 @@ export function EventDialog({ open, onClose, prefillDate, event }: EventDialogPr
   const [endTime, setEndTime] = useState(
     event ? event.end_time.slice(0, 16) : toLocalDatetimeValue(endDefault)
   );
+  const [visibility, setVisibility] = useState<Visibility>(event?.visibility ?? "family");
   const [error, setError] = useState("");
 
   const createEvent = useCreateCalendarEvent();
@@ -81,6 +84,7 @@ export function EventDialog({ open, onClose, prefillDate, event }: EventDialogPr
       end_time: allDay
         ? new Date(endTime.split("T")[0]).toISOString()
         : new Date(endTime).toISOString(),
+      visibility,
     };
 
     try {
@@ -179,6 +183,18 @@ export function EventDialog({ open, onClose, prefillDate, event }: EventDialogPr
               placeholder="Optional description"
               rows={3}
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="visibility">Visibility</Label>
+            <Select
+              id="visibility"
+              value={visibility}
+              onChange={(e) => setVisibility(e.target.value as Visibility)}
+            >
+              <option value="family">👨‍👩‍👧 Family</option>
+              <option value="private">🔒 Private</option>
+            </Select>
           </div>
 
           {error && <p className="text-sm text-[--danger]">{error}</p>}

@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from app.models.task import TaskPriority, TaskSource, TaskStatus, UpdateType
+from app.models.task import TaskPriority, TaskSource, TaskStatus, UpdateType, Visibility
 
 
 class ChecklistItem(BaseModel):
@@ -31,6 +31,7 @@ class TaskCreate(BaseModel):
     reminder_at: Optional[datetime] = None
     checklist: list[ChecklistItem] = []
     assignee_id: Optional[int] = None
+    visibility: Visibility = Visibility.family
 
 
 class TaskUpdate(BaseModel):
@@ -42,6 +43,7 @@ class TaskUpdate(BaseModel):
     reminder_at: Optional[datetime] = None
     checklist: Optional[list[ChecklistItem]] = None
     assignee_id: Optional[int] = None
+    visibility: Optional[Visibility] = None
 
 
 class LinkedEventBrief(BaseModel):
@@ -64,6 +66,7 @@ class TaskResponse(BaseModel):
     priority: TaskPriority
     checklist: list[dict]
     source: TaskSource
+    visibility: Visibility
     deadline: Optional[datetime]
     reminder_at: Optional[datetime]
     reminder_dismissed: bool
@@ -73,6 +76,7 @@ class TaskResponse(BaseModel):
 
     creator: Optional[UserBrief] = None
     assignee: Optional[UserBrief] = None
+    owner_name: Optional[str] = None
     linked_events: list[LinkedEventBrief] = []
 
     model_config = {"from_attributes": True}

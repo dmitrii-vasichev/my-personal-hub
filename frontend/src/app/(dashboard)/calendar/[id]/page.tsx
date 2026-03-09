@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, MapPin, Clock, Calendar, Globe, Edit, Trash2, RefreshCw } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Calendar, Eye, Globe, Edit, Lock, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EventNotes } from "@/components/calendar/event-notes";
 import { EventDialog } from "@/components/calendar/event-dialog";
 import { LinkedTasks } from "@/components/calendar/linked-tasks";
 import { useCalendarEvent, useDeleteCalendarEvent } from "@/hooks/use-calendar";
+import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 
 export default function EventDetailPage() {
@@ -15,6 +16,7 @@ export default function EventDetailPage() {
   const router = useRouter();
   const eventId = Number(id);
 
+  const { user } = useAuth();
   const { data: event, isLoading } = useCalendarEvent(eventId);
   const deleteEvent = useDeleteCalendarEvent();
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -49,6 +51,8 @@ export default function EventDetailPage() {
     );
   }
 
+  const canEdit = user?.role === "admin" || event.user_id === user?.id;
+
   const startDate = new Date(event.start_time);
   const endDate = new Date(event.end_time);
 
@@ -71,20 +75,22 @@ export default function EventDetailPage() {
       {/* Title + actions */}
       <div className="flex items-start justify-between gap-4">
         <h1 className="text-2xl font-semibold text-[--text-primary] leading-tight">{event.title}</h1>
-        <div className="flex gap-1.5 flex-shrink-0">
-          <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
-            <Edit size={13} className="mr-1" /> Edit
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDelete}
-            disabled={deleteEvent.isPending}
-            className="text-[--danger] border-[--danger]/30 hover:bg-[--danger]/10"
-          >
-            <Trash2 size={13} className="mr-1" /> Delete
-          </Button>
-        </div>
+        {canEdit && (
+          <div className="flex gap-1.5 flex-shrink-0">
+            <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
+              <Edit size={13} className="mr-1" /> Edit
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDelete}
+              disabled={deleteEvent.isPending}
+              className="text-[--danger] border-[--danger]/30 hover:bg-[--danger]/10"
+            >
+              <Trash2 size={13} className="mr-1" /> Delete
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Meta */}
@@ -121,6 +127,22 @@ export default function EventDetailPage() {
               </span>
             )}
           </span>
+        </div>
+
+        {event.owner_name && (
+          <div className="flex items-center gap-2.5 text-sm text-[--text-primary]">
+            <User size={15} className="text-[--text-secondary] flex-shrink-0" />
+            <span>Created by {event.owner_name}</span>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2.5 text-sm text-[--text-primary]">
+          {event.visibility === "private" ? (
+            <Lock size={15} className="text-[--text-secondary] flex-shrink-0" />
+          ) : (
+            <Eye size={15} className="text-[--text-secondary] flex-shrink-0" />
+          )}
+          <span>{event.visibility === "private" ? "Private" : "Family"}</span>
         </div>
       </div>
 

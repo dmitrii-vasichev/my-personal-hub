@@ -1,5 +1,6 @@
 export type TaskStatus = "new" | "in_progress" | "review" | "done" | "cancelled";
 export type TaskPriority = "urgent" | "high" | "medium" | "low";
+export type Visibility = "family" | "private";
 export type UpdateType = "progress" | "status_change" | "comment" | "blocker";
 
 export interface ChecklistItem {
@@ -25,6 +26,7 @@ export interface Task {
   priority: TaskPriority;
   checklist: ChecklistItem[];
   source: string;
+  visibility: Visibility;
   deadline: string | null;
   reminder_at: string | null;
   completed_at: string | null;
@@ -32,6 +34,7 @@ export interface Task {
   updated_at: string;
   creator?: UserBrief;
   assignee?: UserBrief;
+  owner_name?: string;
 }
 
 export interface TaskUpdateItem {
@@ -63,6 +66,7 @@ export interface CreateTaskInput {
   reminder_at?: string;
   checklist?: ChecklistItem[];
   assignee_id?: number;
+  visibility?: Visibility;
 }
 
 export interface UpdateTaskInput {
@@ -74,6 +78,7 @@ export interface UpdateTaskInput {
   reminder_at?: string | null;
   checklist?: ChecklistItem[];
   assignee_id?: number | null;
+  visibility?: Visibility;
 }
 
 export interface CreateUpdateInput {
