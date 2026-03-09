@@ -28,6 +28,7 @@ class TaskCreate(BaseModel):
     description: Optional[str] = None
     priority: TaskPriority = TaskPriority.medium
     deadline: Optional[datetime] = None
+    reminder_at: Optional[datetime] = None
     checklist: list[ChecklistItem] = []
     assignee_id: Optional[int] = None
 
@@ -38,6 +39,7 @@ class TaskUpdate(BaseModel):
     status: Optional[TaskStatus] = None
     priority: Optional[TaskPriority] = None
     deadline: Optional[datetime] = None
+    reminder_at: Optional[datetime] = None
     checklist: Optional[list[ChecklistItem]] = None
     assignee_id: Optional[int] = None
 
@@ -55,6 +57,7 @@ class TaskResponse(BaseModel):
     source: TaskSource
     deadline: Optional[datetime]
     reminder_at: Optional[datetime]
+    reminder_dismissed: bool
     completed_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
