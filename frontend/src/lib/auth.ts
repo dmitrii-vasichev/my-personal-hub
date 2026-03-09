@@ -8,6 +8,9 @@ export interface User {
   display_name: string;
   role: string;
   must_change_password: boolean;
+  is_blocked: boolean;
+  theme: string;
+  last_login_at: string | null;
 }
 
 export interface AuthContextType {
