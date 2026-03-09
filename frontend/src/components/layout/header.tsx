@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { LogOut, Menu } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Avatar } from "@/components/ui/avatar";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -27,7 +29,9 @@ export function Header({ onMenuToggle, showMenuButton }: HeaderProps) {
         <ThemeToggle />
         {user && (
           <>
-            <span className="text-sm text-muted-foreground">{user.display_name}</span>
+            <Link href="/profile" className="hover:opacity-80 transition-opacity" title="View profile">
+              <Avatar name={user.display_name} size="sm" />
+            </Link>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={logout}>
               <LogOut className="h-4 w-4" />
             </Button>

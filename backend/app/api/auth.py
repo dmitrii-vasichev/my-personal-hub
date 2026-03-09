@@ -8,8 +8,10 @@ from app.schemas.auth import (
     ChangePasswordRequest,
     LoginRequest,
     LoginResponse,
+    ProfileResponse,
     RegisterRequest,
     RegisterResponse,
+    UpdateProfileRequest,
     UserResponse,
 )
 from app.services.auth import (
@@ -78,3 +80,23 @@ async def change_password(
             detail="Current password is incorrect",
         )
     return {"message": "Password changed successfully"}
+
+
+@router.get("/profile", response_model=ProfileResponse)
+async def get_profile(user: User = Depends(get_current_user)):
+    return user
+
+
+@router.put("/profile", response_model=ProfileResponse)
+async def update_profile(
+    data: UpdateProfileRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    if data.display_name is not None:
+        user.display_name = data.display_name
+    if data.theme is not None:
+        user.theme = data.theme
+    await db.commit()
+    await db.refresh(user)
+    return user
