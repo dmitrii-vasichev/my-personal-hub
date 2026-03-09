@@ -60,6 +60,7 @@ export interface CreateTaskInput {
   description?: string;
   priority?: TaskPriority;
   deadline?: string;
+  reminder_at?: string;
   checklist?: ChecklistItem[];
   assignee_id?: number;
 }
@@ -70,6 +71,7 @@ export interface UpdateTaskInput {
   status?: TaskStatus;
   priority?: TaskPriority;
   deadline?: string | null;
+  reminder_at?: string | null;
   checklist?: ChecklistItem[];
   assignee_id?: number | null;
 }
