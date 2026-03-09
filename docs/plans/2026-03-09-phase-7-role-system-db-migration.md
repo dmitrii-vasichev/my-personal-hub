@@ -4,6 +4,7 @@
 **PRD:** docs/prd-user-management.md
 **FR covered:** FR-6, FR-7, FR-10, FR-11, FR-19, FR-20, FR-21
 **Tasks:** 9
+**Issues:** #92, #93, #94, #95, #96, #97, #98, #99, #100
 
 ## Overview
 
