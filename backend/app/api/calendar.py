@@ -23,6 +23,8 @@ from app.schemas.calendar import (
 from app.services import calendar as calendar_service
 from app.services import google_calendar as gcal_service
 from app.services import google_oauth as oauth_service
+from app.services import task_event_link as link_service
+from app.schemas.calendar import LinkedTaskBrief
 
 router = APIRouter(prefix="/api/calendar", tags=["calendar"])
 
@@ -237,3 +239,42 @@ async def sync_calendar(
     """Trigger full bidirectional sync with Google Calendar."""
     result = await gcal_service.sync_calendar(db, current_user)
     return result
+
+
+# ── Event-Task links ──────────────────────────────────────────────────────────
+
+
+@router.post("/events/{event_id}/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def link_event_to_task(
+    event_id: int,
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ok = await link_service.link_task_event(db, task_id, event_id, current_user)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task or event not found")
+
+
+@router.delete("/events/{event_id}/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def unlink_event_from_task(
+    event_id: int,
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ok = await link_service.unlink_task_event(db, task_id, event_id, current_user)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+
+
+@router.get("/events/{event_id}/tasks", response_model=list[LinkedTaskBrief])
+async def get_event_linked_tasks(
+    event_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    tasks = await link_service.get_linked_tasks(db, event_id, current_user)
+    if tasks is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+    return tasks
