@@ -1,3 +1,4 @@
+import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 
 export default function DashboardPage() {
@@ -9,6 +10,7 @@ export default function DashboardPage() {
           Your personal hub overview
         </p>
       </div>
+      <DashboardClient />
       <RecentActivity />
     </div>
   );
