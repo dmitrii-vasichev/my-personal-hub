@@ -2,9 +2,10 @@
   "project_name": "my-personal-hub",
   "work_type": "new_feature",
   "created_at": "2026-03-08T13:10:00Z",
-  "current_step": 7,
-  "current_step_name": "review",
-  "current_phase": 8,
+  "current_step": 4,
+  "current_step_name": "planning",
+  "current_phase": 9,
+  "phase_8_merged": true,
   "phase_7_merged": true,
   "phase_2_merged": true,
   "phase_3_merged": true,
@@ -45,7 +46,7 @@
     {"step": 4, "action": "completed", "timestamp": "2026-03-09T14:00:00Z", "details": "Phase 8 plan approved — 10 tasks (User Management & Profile)"},
     {"step": 5, "action": "completed", "timestamp": "2026-03-09T14:10:00Z", "details": "10 issues created (#103-#112), added to Project Board #4"},
     {"step": 6, "action": "completed", "timestamp": "2026-03-09T15:00:00Z", "details": "Phase 8 implemented — all 10 tasks done, PR #113 created. 72 backend tests pass, frontend build clean."},
-    {"step": 7, "action": "started", "timestamp": "2026-03-09T15:00:00Z", "details": "Phase 8 review — PR #113"}
+    {"step": 7, "action": "completed", "timestamp": "2026-03-09T15:30:00Z", "details": "Phase 8 review done — PR #113 squash-merged, branch deleted, all issues #103-#112 closed"}
   ],
   "artifacts": {
     "prd_file": "docs/prd-user-management.md",
