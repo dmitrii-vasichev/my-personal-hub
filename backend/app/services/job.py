@@ -12,7 +12,10 @@ from app.schemas.job import JobCreate, JobUpdate
 
 
 def _can_access(job: Job, user: User) -> bool:
-    """Return True if user may read or write this job."""
+    """Return True if user may read or write this job.
+
+    Jobs are always private per user — no visibility field, no family sharing.
+    """
     if user.role == UserRole.admin:
         return True
     return job.user_id == user.id

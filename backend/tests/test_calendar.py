@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.models.calendar import CalendarEvent, EventNote, EventSource
+from app.models.task import Visibility
 from app.models.user import User, UserRole
 from app.schemas.calendar import CalendarEventCreate, CalendarEventUpdate, EventNoteCreate, EventNoteUpdate
 from app.services import calendar as calendar_service
@@ -23,7 +24,11 @@ def make_user(role: UserRole = UserRole.member, user_id: int = 1) -> User:
     return u
 
 
-def make_event(user_id: int = 1, event_id: int = 10) -> CalendarEvent:
+def make_event(
+    user_id: int = 1,
+    event_id: int = 10,
+    visibility: Visibility = Visibility.family,
+) -> CalendarEvent:
     e = CalendarEvent()
     e.id = event_id
     e.user_id = user_id
@@ -35,8 +40,19 @@ def make_event(user_id: int = 1, event_id: int = 10) -> CalendarEvent:
     e.all_day = False
     e.source = EventSource.local
     e.google_event_id = None
+    e.visibility = visibility
     e.notes = []
     return e
+
+
+def _mock_unique_result(value):
+    """Create mock result that supports .unique().scalar_one_or_none() chain."""
+    unique_mock = MagicMock()
+    unique_mock.scalar_one_or_none.return_value = value
+    mock_result = MagicMock()
+    mock_result.unique.return_value = unique_mock
+    mock_result.scalar_one_or_none.return_value = value
+    return mock_result
 
 
 def make_note(event_id: int = 10, note_id: int = 1, user_id: int = 1) -> EventNote:
@@ -57,15 +73,35 @@ class TestAccessControl:
         event = make_event(user_id=1)
         assert calendar_service._can_access_event(event, user) is True
 
-    def test_user_cannot_access_others_event(self):
+    def test_user_cannot_access_others_private_event(self):
         user = make_user(user_id=1)
-        event = make_event(user_id=2)
+        event = make_event(user_id=2, visibility=Visibility.private)
         assert calendar_service._can_access_event(event, user) is False
+
+    def test_user_can_access_others_family_event(self):
+        user = make_user(user_id=1)
+        event = make_event(user_id=2, visibility=Visibility.family)
+        assert calendar_service._can_access_event(event, user) is True
+
+    def test_user_cannot_edit_others_family_event(self):
+        user = make_user(user_id=1)
+        event = make_event(user_id=2, visibility=Visibility.family)
+        assert calendar_service._can_edit_event(event, user) is False
+
+    def test_user_can_edit_own_event(self):
+        user = make_user(user_id=1)
+        event = make_event(user_id=1)
+        assert calendar_service._can_edit_event(event, user) is True
 
     def test_admin_can_access_any_event(self):
         admin = make_user(role=UserRole.admin, user_id=99)
-        event = make_event(user_id=1)
+        event = make_event(user_id=1, visibility=Visibility.private)
         assert calendar_service._can_access_event(event, admin) is True
+
+    def test_admin_can_edit_any_event(self):
+        admin = make_user(role=UserRole.admin, user_id=99)
+        event = make_event(user_id=1)
+        assert calendar_service._can_edit_event(event, admin) is True
 
 
 # ── Event CRUD tests ──────────────────────────────────────────────────────────
@@ -100,13 +136,11 @@ class TestCalendarEventCRUD:
         assert event.title == "Team Meeting"
         assert event.user_id == user.id
 
-    async def test_get_event_returns_none_for_wrong_user(self):
+    async def test_get_event_returns_none_for_wrong_user_private(self):
         db = AsyncMock()
-        event = make_event(user_id=2, event_id=10)
+        event = make_event(user_id=2, event_id=10, visibility=Visibility.private)
 
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = event
-        db.execute = AsyncMock(return_value=mock_result)
+        db.execute = AsyncMock(return_value=_mock_unique_result(event))
 
         user = make_user(user_id=1)  # different user
         result = await calendar_service.get_event(db, 10, user)
@@ -116,17 +150,25 @@ class TestCalendarEventCRUD:
         db = AsyncMock()
         event = make_event(user_id=1, event_id=10)
 
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = event
-        db.execute = AsyncMock(return_value=mock_result)
+        db.execute = AsyncMock(return_value=_mock_unique_result(event))
 
         user = make_user(user_id=1)
         result = await calendar_service.get_event(db, 10, user)
         assert result == event
 
-    async def test_delete_event_returns_false_for_wrong_user(self):
+    async def test_get_event_returns_family_event_for_other_user(self):
         db = AsyncMock()
-        event = make_event(user_id=2, event_id=10)
+        event = make_event(user_id=2, event_id=10, visibility=Visibility.family)
+
+        db.execute = AsyncMock(return_value=_mock_unique_result(event))
+
+        user = make_user(user_id=1)
+        result = await calendar_service.get_event(db, 10, user)
+        assert result == event
+
+    async def test_delete_event_returns_false_for_private_other_user(self):
+        db = AsyncMock()
+        event = make_event(user_id=2, event_id=10, visibility=Visibility.private)
 
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = event
@@ -153,9 +195,7 @@ class TestCalendarEventCRUD:
 
     async def test_update_event_not_found(self):
         db = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
-        db.execute = AsyncMock(return_value=mock_result)
+        db.execute = AsyncMock(return_value=_mock_unique_result(None))
 
         user = make_user()
         result = await calendar_service.update_event(db, 999, CalendarEventUpdate(title="New"), user)
@@ -166,7 +206,7 @@ class TestCalendarEventCRUD:
         events = [make_event(user_id=1, event_id=1), make_event(user_id=1, event_id=2)]
 
         mock_result = MagicMock()
-        mock_result.scalars.return_value.all.return_value = events
+        mock_result.unique.return_value.scalars.return_value.all.return_value = events
         db.execute = AsyncMock(return_value=mock_result)
 
         user = make_user()
@@ -183,9 +223,7 @@ class TestCalendarEventCRUD:
 class TestEventNotes:
     async def test_create_note_returns_none_if_event_not_found(self):
         db = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
-        db.execute = AsyncMock(return_value=mock_result)
+        db.execute = AsyncMock(return_value=_mock_unique_result(None))
 
         user = make_user(user_id=1)
         result = await calendar_service.create_note(db, 999, EventNoteCreate(content="note"), user)

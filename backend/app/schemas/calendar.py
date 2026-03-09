@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from app.models.calendar import EventSource
+from app.models.task import Visibility
 
 
 # ── Calendar Event schemas ────────────────────────────────────────────────────
@@ -16,6 +17,7 @@ class CalendarEventCreate(BaseModel):
     end_time: datetime
     location: Optional[str] = None
     all_day: bool = False
+    visibility: Visibility = Visibility.family
 
 
 class CalendarEventUpdate(BaseModel):
@@ -25,6 +27,7 @@ class CalendarEventUpdate(BaseModel):
     end_time: Optional[datetime] = None
     location: Optional[str] = None
     all_day: Optional[bool] = None
+    visibility: Optional[Visibility] = None
 
 
 class EventNoteBrief(BaseModel):
@@ -48,8 +51,10 @@ class CalendarEventResponse(BaseModel):
     location: Optional[str]
     all_day: bool
     source: EventSource
+    visibility: Visibility
     synced_at: Optional[datetime]
     notes_count: int = 0
+    owner_name: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

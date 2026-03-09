@@ -1,6 +1,9 @@
 import enum
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 from sqlalchemy import (
     Boolean,
@@ -58,6 +61,9 @@ class CalendarEvent(Base):
         nullable=False,
     )
 
+    owner: Mapped["User"] = relationship(
+        "User", foreign_keys=[user_id], lazy="noload"
+    )
     notes: Mapped[list["EventNote"]] = relationship(
         "EventNote", back_populates="event", cascade="all, delete-orphan"
     )

@@ -3,11 +3,12 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.models.calendar import CalendarEvent, EventNote
+from app.models.task import Visibility
 from app.models.user import User, UserRole
 from app.schemas.calendar import (
     CalendarEventCreate,
@@ -15,21 +16,38 @@ from app.schemas.calendar import (
     EventNoteCreate,
     EventNoteUpdate,
 )
+from app.services.task import PermissionDeniedError
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
 def _can_access_event(event: CalendarEvent, user: User) -> bool:
+    """Check if user can read this event."""
+    if user.role == UserRole.admin:
+        return True
+    return event.user_id == user.id or event.visibility == Visibility.family
+
+
+def _can_edit_event(event: CalendarEvent, user: User) -> bool:
+    """Check if user can edit/delete this event."""
     if user.role == UserRole.admin:
         return True
     return event.user_id == user.id
 
 
 def _events_base_query(user: User):
-    q = select(CalendarEvent).options(selectinload(CalendarEvent.notes))
+    q = select(CalendarEvent).options(
+        selectinload(CalendarEvent.notes),
+        joinedload(CalendarEvent.owner),
+    )
     if user.role != UserRole.admin:
-        q = q.where(CalendarEvent.user_id == user.id)
+        q = q.where(
+            or_(
+                CalendarEvent.user_id == user.id,
+                CalendarEvent.visibility == Visibility.family,
+            )
+        )
     return q
 
 
@@ -49,7 +67,7 @@ async def list_events(
         q = q.where(CalendarEvent.start_time <= end)
     q = q.order_by(CalendarEvent.start_time.asc())
     result = await db.execute(q)
-    return list(result.scalars().all())
+    return list(result.unique().scalars().all())
 
 
 async def get_event(
@@ -60,9 +78,9 @@ async def get_event(
     result = await db.execute(
         select(CalendarEvent)
         .where(CalendarEvent.id == event_id)
-        .options(selectinload(CalendarEvent.notes))
+        .options(selectinload(CalendarEvent.notes), joinedload(CalendarEvent.owner))
     )
-    event = result.scalar_one_or_none()
+    event = result.unique().scalar_one_or_none()
     if event is None or not _can_access_event(event, user):
         return None
     return event
@@ -81,6 +99,7 @@ async def create_event(
         end_time=data.end_time,
         location=data.location,
         all_day=data.all_day,
+        visibility=data.visibility,
     )
     db.add(event)
     await db.commit()
@@ -97,11 +116,13 @@ async def update_event(
     result = await db.execute(
         select(CalendarEvent)
         .where(CalendarEvent.id == event_id)
-        .options(selectinload(CalendarEvent.notes))
+        .options(selectinload(CalendarEvent.notes), joinedload(CalendarEvent.owner))
     )
-    event = result.scalar_one_or_none()
+    event = result.unique().scalar_one_or_none()
     if event is None or not _can_access_event(event, user):
         return None
+    if not _can_edit_event(event, user):
+        raise PermissionDeniedError("You can only edit your own events")
 
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(event, field, value)
@@ -122,6 +143,8 @@ async def delete_event(
     event = result.scalar_one_or_none()
     if event is None or not _can_access_event(event, user):
         return False
+    if not _can_edit_event(event, user):
+        raise PermissionDeniedError("You can only delete your own events")
     await db.delete(event)
     await db.commit()
     return True

@@ -2,7 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Calendar, GripVertical, User } from "lucide-react";
+import { Calendar, Eye, GripVertical, Lock, User } from "lucide-react";
 import Link from "next/link";
 import type { Task } from "@/types/task";
 import { PRIORITY_BG_COLORS } from "@/types/task";
@@ -53,11 +53,20 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
       </div>
 
       <div className="pl-3">
-        {/* Header: ID + priority */}
+        {/* Header: ID + visibility + priority */}
         <div className="mb-1.5 flex items-center justify-between gap-2">
-          <span className="font-mono text-[11px] text-[var(--text-tertiary)]">
-            TASK-{task.id}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-[11px] text-[var(--text-tertiary)]">
+              TASK-{task.id}
+            </span>
+            <span title={task.visibility === "private" ? "Private" : "Family"}>
+              {task.visibility === "private" ? (
+                <Lock className="h-2.5 w-2.5 text-[var(--text-tertiary)]" />
+              ) : (
+                <Eye className="h-2.5 w-2.5 text-[var(--text-tertiary)]" />
+              )}
+            </span>
+          </div>
           <span
             className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${PRIORITY_BG_COLORS[task.priority]}`}
           >
@@ -86,12 +95,19 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
             <span />
           )}
 
-          {task.assignee ? (
-            <div className="flex items-center gap-1 text-[11px]">
-              <User className="h-3 w-3" />
-              <span>{task.assignee.display_name.split(" ")[0]}</span>
-            </div>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {task.owner_name && (
+              <span className="text-[11px] text-[var(--text-tertiary)]" title={`Owner: ${task.owner_name}`}>
+                {task.owner_name.split(" ")[0]}
+              </span>
+            )}
+            {task.assignee ? (
+              <div className="flex items-center gap-1 text-[11px]">
+                <User className="h-3 w-3" />
+                <span>{task.assignee.display_name.split(" ")[0]}</span>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
     </div>

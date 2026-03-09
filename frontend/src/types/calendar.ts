@@ -1,3 +1,5 @@
+import type { Visibility } from "./task";
+
 export type EventSource = "local" | "google";
 
 export interface CalendarEvent {
@@ -11,8 +13,10 @@ export interface CalendarEvent {
   location: string | null;
   all_day: boolean;
   source: EventSource;
+  visibility: Visibility;
   synced_at: string | null;
   notes_count: number;
+  owner_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -43,6 +47,7 @@ export interface CalendarEventCreate {
   end_time: string;
   location?: string;
   all_day?: boolean;
+  visibility?: Visibility;
 }
 
 export interface CalendarEventUpdate {
@@ -52,6 +57,7 @@ export interface CalendarEventUpdate {
   end_time?: string;
   location?: string;
   all_day?: boolean;
+  visibility?: Visibility;
 }
 
 export interface EventNoteCreate {

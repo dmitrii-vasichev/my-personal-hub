@@ -1,6 +1,9 @@
 import enum
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 from sqlalchemy import (
     Boolean,
@@ -97,6 +100,15 @@ class Task(Base):
         nullable=False,
     )
 
+    owner: Mapped["User"] = relationship(
+        "User", foreign_keys=[user_id], lazy="noload"
+    )
+    creator: Mapped["User"] = relationship(
+        "User", foreign_keys=[created_by_id], lazy="noload"
+    )
+    assignee_rel: Mapped[Optional["User"]] = relationship(
+        "User", foreign_keys=[assignee_id], lazy="noload"
+    )
     updates: Mapped[list["TaskUpdate"]] = relationship(
         "TaskUpdate", back_populates="task", cascade="all, delete-orphan"
     )
