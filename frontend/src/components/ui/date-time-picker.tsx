@@ -5,7 +5,7 @@ import { format } from "date-fns";
 
 import { cn } from "@/lib/utils";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Input } from "@/components/ui/input";
+import { TimePicker } from "@/components/ui/time-picker";
 
 interface DateTimePickerProps {
   /** Value as "YYYY-MM-DDTHH:MM" string or empty string */
@@ -29,7 +29,8 @@ export function DateTimePicker({
 }: DateTimePickerProps) {
   // Split value into date part and time part
   const datePart = value ? value.split("T")[0] : "";
-  const timePart = value && value.includes("T") ? value.split("T")[1].slice(0, 5) : "";
+  const timePart =
+    value && value.includes("T") ? value.split("T")[1].slice(0, 5) : "";
 
   function handleDateChange(newDate: string) {
     if (!newDate) {
@@ -40,8 +41,7 @@ export function DateTimePicker({
     onChange(`${newDate}T${time}`);
   }
 
-  function handleTimeChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const newTime = e.target.value;
+  function handleTimeChange(newTime: string) {
     if (!newTime) return;
     const date = datePart || format(new Date(), "yyyy-MM-dd");
     onChange(`${date}T${newTime}`);
@@ -57,12 +57,7 @@ export function DateTimePicker({
           clearable={clearable}
         />
       </div>
-      <Input
-        type="time"
-        value={timePart}
-        onChange={handleTimeChange}
-        className="h-8 w-28 text-sm"
-      />
+      <TimePicker value={timePart || "09:00"} onChange={handleTimeChange} />
     </div>
   );
 }
