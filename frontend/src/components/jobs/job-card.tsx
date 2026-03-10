@@ -23,7 +23,7 @@ function formatSalary(min?: number, max?: number, currency = "USD"): string | nu
 
 export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: JobCardProps) {
   const salary = formatSalary(job.salary_min, job.salary_max, job.salary_currency);
-  const hasApplication = !!job.application;
+  const hasStatus = !!job.status;
 
   return (
     <div className="group bg-[#171b26] border border-[#252a3a] rounded-lg p-4 hover:border-[#2f3445] transition-colors">
@@ -113,22 +113,22 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
             </span>
           )}
 
-          {/* Application status badge */}
-          {hasApplication && job.application && (
+          {/* Status badge */}
+          {hasStatus && job.status && (
             <span
               className="px-1.5 py-0.5 rounded text-[11px] font-medium"
               style={{
-                color: APPLICATION_STATUS_COLORS[job.application.status],
-                backgroundColor: APPLICATION_STATUS_BG_COLORS[job.application.status],
+                color: APPLICATION_STATUS_COLORS[job.status],
+                backgroundColor: APPLICATION_STATUS_BG_COLORS[job.status],
               }}
             >
-              {APPLICATION_STATUS_LABELS[job.application.status]}
+              {APPLICATION_STATUS_LABELS[job.status]}
             </span>
           )}
         </div>
 
         {/* Track / Tracking button */}
-        {hasApplication ? (
+        {hasStatus ? (
           <div className="flex items-center gap-1 text-[11px] text-[#34d399]">
             <CheckCircle2 className="h-3.5 w-3.5" />
             <span>Tracking</span>

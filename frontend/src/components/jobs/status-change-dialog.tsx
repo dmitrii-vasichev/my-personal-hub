@@ -14,7 +14,7 @@ import {
   DialogPortal,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useChangeApplicationStatus } from "@/hooks/use-applications";
+import { useChangeJobStatus } from "@/hooks/use-jobs";
 import {
   APPLICATION_STATUS_COLORS,
   APPLICATION_STATUS_LABELS,
@@ -39,7 +39,7 @@ const ALL_STATUSES: ApplicationStatus[] = [
 interface StatusChangeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  applicationId: number;
+  jobId: number;
   currentStatus: ApplicationStatus;
   /** Pre-select a target status (e.g. when triggered by drag-and-drop). */
   preselectedStatus?: ApplicationStatus;
@@ -51,13 +51,13 @@ interface StatusChangeDialogProps {
 export function StatusChangeDialog({
   open,
   onOpenChange,
-  applicationId,
+  jobId,
   currentStatus,
   preselectedStatus,
   onSuccess,
   onCancel,
 }: StatusChangeDialogProps) {
-  const changeStatus = useChangeApplicationStatus();
+  const changeStatus = useChangeJobStatus();
 
   const [newStatus, setNewStatus] = useState<ApplicationStatus>(
     preselectedStatus ?? currentStatus
@@ -84,7 +84,7 @@ export function StatusChangeDialog({
 
     try {
       await changeStatus.mutateAsync({
-        id: applicationId,
+        id: jobId,
         data: {
           new_status: newStatus,
           comment: comment.trim() || undefined,
@@ -102,7 +102,6 @@ export function StatusChangeDialog({
   const handleOpenChange = (isOpen: boolean) => {
     if (!isLoading) {
       if (!isOpen) {
-        // Reset form state when closing
         setNewStatus(preselectedStatus ?? currentStatus);
         setComment("");
         setError(null);

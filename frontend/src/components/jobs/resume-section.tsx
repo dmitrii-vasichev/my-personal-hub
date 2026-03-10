@@ -237,14 +237,14 @@ function ResumeCard({
   );
 }
 
-export function ResumeSection({ applicationId }: { applicationId: number }) {
-  const { data: resumes = [], isLoading } = useResumes(applicationId);
+export function ResumeSection({ jobId }: { jobId: number }) {
+  const { data: resumes = [], isLoading } = useResumes(jobId);
   const generate = useGenerateResume();
   const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
   const handleGenerate = async () => {
     try {
-      await generate.mutateAsync(applicationId);
+      await generate.mutateAsync(jobId);
       toast.success("Resume generated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Generation failed");

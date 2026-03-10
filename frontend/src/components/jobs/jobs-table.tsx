@@ -93,8 +93,7 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
         ),
         size: 280,
       }),
-      columnHelper.accessor((row) => row.application?.status, {
-        id: "status",
+      columnHelper.accessor("status", {
         header: "Status",
         cell: (info) => {
           const status = info.getValue();
