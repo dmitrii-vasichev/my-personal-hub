@@ -19,6 +19,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { JobDialog } from "@/components/jobs/job-dialog";
 import { StatusChangeDialog } from "@/components/jobs/status-change-dialog";
+import { JobMatchSection } from "@/components/jobs/job-match-section";
+import { LinkedTasksSection } from "@/components/jobs/linked-tasks-section";
+import { LinkedEventsSection } from "@/components/jobs/linked-events-section";
 import { useDeleteJob } from "@/hooks/use-jobs";
 import { useCreateApplication } from "@/hooks/use-applications";
 import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS, APPLICATION_STATUS_BG_COLORS } from "@/types/job";
@@ -146,6 +149,9 @@ export function JobDetail({ job }: JobDetailProps) {
             <p className="text-sm text-[var(--text-tertiary)] italic">No description provided.</p>
           )}
 
+          {/* AI Match Analysis */}
+          <JobMatchSection job={job} />
+
           {/* Source URL */}
           <div>
             <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
@@ -197,6 +203,12 @@ export function JobDetail({ job }: JobDetailProps) {
               </div>
             </div>
           )}
+
+          {/* Linked Tasks */}
+          <LinkedTasksSection jobId={job.id} />
+
+          {/* Linked Events */}
+          <LinkedEventsSection jobId={job.id} />
         </div>
 
         {/* Sidebar */}

@@ -19,6 +19,35 @@ class ApplicationSummary(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ── Linked item brief schemas ────────────────────────────────────────────────
+
+
+class LinkedTaskBrief(BaseModel):
+    id: int
+    title: str
+    status: str
+    priority: str
+
+    model_config = {"from_attributes": True}
+
+
+class LinkedEventBrief(BaseModel):
+    id: int
+    title: str
+    start_time: datetime
+    end_time: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class MatchResultResponse(BaseModel):
+    score: int
+    matched_skills: list[str]
+    missing_skills: list[str]
+    strengths: list[str]
+    recommendations: list[str]
+
+
 # ── Job schemas ───────────────────────────────────────────────────────────────
 
 

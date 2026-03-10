@@ -29,6 +29,12 @@ DEFAULT_INSTRUCTIONS = {
         "You are an expert cover letter writer. Write a professional, personalized cover letter "
         "(3-4 paragraphs, 250-350 words). Output only the cover letter text."
     ),
+    "job_matching": (
+        "You are a career match analyst. Analyze the match between the candidate profile and "
+        "the job description. Output ONLY valid JSON with this exact schema — no markdown, no extra text:\n"
+        '{"score": number (0-100), "matched_skills": [string], "missing_skills": [string], '
+        '"strengths": [string], "recommendations": [string]}'
+    ),
 }
 
 
