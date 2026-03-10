@@ -2,8 +2,9 @@
   "project_name": "my-personal-hub",
   "work_type": "new_feature",
   "created_at": "2026-03-08T13:10:00Z",
-  "current_step": 6,
-  "current_step_name": "implementation",
+  "current_step": 3,
+  "current_step_name": "phasing",
+  "phase_14_merged": true,
   "current_phase": 14,
   "phase_13_merged": true,
   "phase_12_merged": true,
@@ -69,10 +70,11 @@
     {"step": 5, "action": "completed", "timestamp": "2026-03-09T02:00:00Z", "details": "8 issues created (#147-#154), added to Project Board #4"},
     {"step": 6, "action": "completed", "timestamp": "2026-03-09T03:00:00Z", "details": "Phase 13 implemented — all 8 tasks done, PR #155 created. Custom DatePicker/DateTimePicker, cursor:pointer fix, Kanban full-card interaction."},
     {"step": 7, "action": "completed", "timestamp": "2026-03-09T04:00:00Z", "details": "Phase 13 review done — PR #155 squash-merged, branch deleted, all issues #147-#154 closed. Popover z-index fix included."},
-    {"step": 1, "action": "completed", "timestamp": "2026-03-09T12:00:00Z", "details": "PRD for Settings Tabs & Google Calendar Integration Config approved"}
+    {"step": 1, "action": "completed", "timestamp": "2026-03-09T12:00:00Z", "details": "PRD for Settings Tabs & Google Calendar Integration Config approved"},
+    {"step": 1, "action": "completed", "timestamp": "2026-03-10T10:00:00Z", "details": "PRD for Job Hunt Redesign approved — table view, AI KB, user profile, matching, linking"}
   ],
   "artifacts": {
-    "prd_file": "docs/prd-settings-tabs-integrations.md",
+    "prd_file": "docs/prd-job-hunt-redesign.md",
     "design_brief_file": "docs/design-brief.md",
     "plan_files": [
       "docs/plans/2026-03-08-phase-1-foundation.md",
