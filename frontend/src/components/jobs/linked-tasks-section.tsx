@@ -18,7 +18,7 @@ interface LinkedTasksSectionProps {
 
 const STATUS_COLORS: Record<string, string> = {
   todo: "bg-[var(--muted)] text-[var(--text-secondary)]",
-  in_progress: "bg-[var(--accent-muted)] text-[var(--accent)]",
+  in_progress: "bg-[var(--accent-muted)] text-[var(--accent-foreground)]",
   done: "bg-[#0f2d22] text-[#34d399]",
   cancelled: "bg-[var(--destructive-muted)] text-[var(--destructive)]",
 };

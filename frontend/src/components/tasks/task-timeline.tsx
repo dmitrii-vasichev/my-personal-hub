@@ -16,7 +16,7 @@ const UPDATE_ICONS: Record<UpdateType, typeof MessageSquare> = {
 
 const UPDATE_COLORS: Record<UpdateType, string> = {
   comment: "text-[var(--text-secondary)] bg-[var(--surface-hover)]",
-  status_change: "text-[var(--accent)] bg-[var(--accent-muted)]",
+  status_change: "text-[var(--accent-foreground)] bg-[var(--accent-muted)]",
   progress: "text-[var(--success)] bg-[var(--success)]/10",
   blocker: "text-[var(--danger)] bg-[var(--danger)]/10",
 };
