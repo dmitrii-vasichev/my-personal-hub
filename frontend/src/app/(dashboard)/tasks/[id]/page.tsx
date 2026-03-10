@@ -50,6 +50,7 @@ export default function TaskDetailPage() {
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const [checklistExpanded, setChecklistExpanded] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const patchTask = useCallback(
     async (data: UpdateTaskInput) => {
@@ -91,8 +92,6 @@ export default function TaskDetailPage() {
   const handleChecklistChange = async (items: ChecklistItem[]) => {
     await patchTask({ checklist: items });
   };
-
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleDelete = async () => {
     await deleteTask.mutateAsync(task.id);
