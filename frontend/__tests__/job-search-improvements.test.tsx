@@ -51,7 +51,7 @@ describe("JobSearch improvements", () => {
   it("renders Max results input with default value", () => {
     renderWithClient(<JobSearch />);
 
-    const limitInput = screen.getByTitle("Max results");
+    const limitInput = screen.getByPlaceholderText("Max results");
     expect(limitInput).toBeInTheDocument();
     expect(limitInput).toHaveValue(10);
   });

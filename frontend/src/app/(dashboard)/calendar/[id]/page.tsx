@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, MapPin, Clock, Calendar, Eye, Globe, Edit, Lock, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EventNotes } from "@/components/calendar/event-notes";
 import { EventDialog } from "@/components/calendar/event-dialog";
 import { LinkedTasks } from "@/components/calendar/linked-tasks";
@@ -21,8 +22,9 @@ export default function EventDetailPage() {
   const deleteEvent = useDeleteCalendarEvent();
   const [showEditDialog, setShowEditDialog] = useState(false);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const handleDelete = async () => {
-    if (!confirm("Delete this event?")) return;
     try {
       await deleteEvent.mutateAsync(eventId);
       toast.success("Event deleted");
@@ -83,7 +85,7 @@ export default function EventDetailPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={deleteEvent.isPending}
               className="text-[--danger] border-[--danger]/30 hover:bg-[--danger]/10"
             >
@@ -92,6 +94,17 @@ export default function EventDetailPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        title="Delete Event"
+        description="Delete this event? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteEvent.isPending}
+      />
 
       {/* Meta */}
       <div className="bg-[--surface] border border-[--border] rounded-lg p-4 space-y-3">

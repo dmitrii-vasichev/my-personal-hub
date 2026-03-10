@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from "react";
 import { Check, ChevronDown, ChevronUp, Pencil, X } from "lucide-react";
+import { Tooltip } from "@/components/ui/tooltip";
 
 const COLLAPSED_MAX_HEIGHT = 96;
 
@@ -73,12 +74,16 @@ export function CollapsibleDescription({
           placeholder={placeholder}
         />
         <div className="flex items-center gap-1 mt-1.5">
-          <button onClick={save} disabled={saving} className="rounded p-1 text-[var(--success)] hover:bg-[var(--surface-hover)] transition-colors" title="Save (Cmd+Enter)">
-            <Check className="h-3.5 w-3.5" />
-          </button>
-          <button onClick={cancel} disabled={saving} className="rounded p-1 text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] transition-colors" title="Cancel (Esc)">
-            <X className="h-3.5 w-3.5" />
-          </button>
+          <Tooltip content="Save (Cmd+Enter)">
+            <button onClick={save} disabled={saving} className="rounded p-1 text-[var(--success)] hover:bg-[var(--surface-hover)] transition-colors">
+              <Check className="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
+          <Tooltip content="Cancel (Esc)">
+            <button onClick={cancel} disabled={saving} className="rounded p-1 text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] transition-colors">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
           <span className="text-[10px] text-[var(--text-tertiary)] ml-1">Cmd+Enter to save, Esc to cancel</span>
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Calendar, Pencil, X } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { Tooltip } from "@/components/ui/tooltip";
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -106,14 +107,15 @@ export function InlineEditDate({
       </span>
       <Pencil className="h-3 w-3 shrink-0 text-[var(--text-tertiary)] opacity-0 group-hover/ie:opacity-100 transition-opacity" />
       {value && (
-        <button
-          onClick={handleClear}
-          disabled={saving}
-          className="rounded p-0.5 text-[var(--text-tertiary)] opacity-0 group-hover/ie:opacity-100 hover:text-[var(--danger)] transition-all"
-          title="Clear"
-        >
-          <X className="h-3 w-3" />
-        </button>
+        <Tooltip content="Clear">
+          <button
+            onClick={handleClear}
+            disabled={saving}
+            className="rounded p-0.5 text-[var(--text-tertiary)] opacity-0 group-hover/ie:opacity-100 hover:text-[var(--danger)] transition-all"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </Tooltip>
       )}
     </div>
   );

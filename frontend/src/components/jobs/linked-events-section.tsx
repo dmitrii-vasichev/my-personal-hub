@@ -5,6 +5,7 @@ import { Calendar, Link2, Plus, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogPortal, DialogBackdrop, DialogPopup, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   useJobLinkedEvents,
   useLinkJobToEvent,
@@ -111,13 +112,14 @@ export function LinkedEventsSection({ jobId }: LinkedEventsSectionProps) {
                   </span>
                 </div>
               </div>
-              <button
-                onClick={() => handleUnlink(event.id)}
-                className="shrink-0 p-1 rounded text-[var(--text-tertiary)] hover:text-[var(--destructive)] hover:bg-[var(--destructive-muted)] transition-colors"
-                title="Unlink event"
-              >
-                <X className="h-3 w-3" />
-              </button>
+              <Tooltip content="Unlink event">
+                <button
+                  onClick={() => handleUnlink(event.id)}
+                  className="shrink-0 p-1 rounded text-[var(--text-tertiary)] hover:text-[var(--destructive)] hover:bg-[var(--destructive-muted)] transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Tooltip>
             </div>
           ))}
         </div>

@@ -5,6 +5,7 @@ import { Link2, Plus, X, Loader2, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogPortal, DialogBackdrop, DialogPopup, DialogTitle, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   useJobLinkedTasks,
   useLinkJobToTask,
@@ -111,13 +112,14 @@ export function LinkedTasksSection({ jobId }: LinkedTasksSectionProps) {
                   {task.priority}
                 </span>
               </div>
-              <button
-                onClick={() => handleUnlink(task.id)}
-                className="shrink-0 p-1 rounded text-[var(--text-tertiary)] hover:text-[var(--destructive)] hover:bg-[var(--destructive-muted)] transition-colors"
-                title="Unlink task"
-              >
-                <X className="h-3 w-3" />
-              </button>
+              <Tooltip content="Unlink task">
+                <button
+                  onClick={() => handleUnlink(task.id)}
+                  className="shrink-0 p-1 rounded text-[var(--text-tertiary)] hover:text-[var(--destructive)] hover:bg-[var(--destructive-muted)] transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </Tooltip>
             </div>
           ))}
         </div>

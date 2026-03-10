@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Cloud, RefreshCw, Unlink, CheckCircle, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useGoogleOAuthStatus, useSyncCalendar, useDisconnectGoogle } from "@/hooks/use-calendar";
 import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
@@ -59,14 +61,16 @@ export function GoogleConnect() {
     }
   };
 
+  const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+
   const handleDisconnect = async () => {
-    if (!confirm("Disconnect Google Calendar? Local events will remain.")) return;
     try {
       await disconnectGoogle.mutateAsync();
       toast.success("Google Calendar disconnected");
     } catch {
       toast.error("Failed to disconnect");
     }
+    setShowDisconnectConfirm(false);
   };
 
   if (isLoading) return null;
@@ -86,25 +90,35 @@ export function GoogleConnect() {
         <CheckCircle size={12} />
         Google Calendar
       </span>
+      <Tooltip content="Sync now">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSync}
+          disabled={syncCalendar.isPending}
+        >
+          <RefreshCw size={14} className={syncCalendar.isPending ? "animate-spin" : ""} />
+        </Button>
+      </Tooltip>
       <Button
         variant="ghost"
         size="sm"
-        onClick={handleSync}
-        disabled={syncCalendar.isPending}
-        title="Sync now"
-      >
-        <RefreshCw size={14} className={syncCalendar.isPending ? "animate-spin" : ""} />
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleDisconnect}
+        onClick={() => setShowDisconnectConfirm(true)}
         disabled={disconnectGoogle.isPending}
-        title="Disconnect"
         className="text-[--text-tertiary] hover:text-[--danger]"
       >
         <Unlink size={14} />
       </Button>
+
+      <ConfirmDialog
+        open={showDisconnectConfirm}
+        onConfirm={handleDisconnect}
+        onCancel={() => setShowDisconnectConfirm(false)}
+        title="Disconnect Google Calendar"
+        description="Disconnect Google Calendar? Local events will remain."
+        confirmLabel="Disconnect"
+        loading={disconnectGoogle.isPending}
+      />
     </div>
   );
 }

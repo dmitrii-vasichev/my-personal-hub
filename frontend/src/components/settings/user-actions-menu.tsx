@@ -5,55 +5,23 @@ import { MoreHorizontal, ShieldCheck, ShieldOff, Lock, Trash2, Copy, Check } fro
 import { toast } from "sonner";
 import { useUpdateUser, useDeleteUser, useResetPassword } from "@/hooks/use-users";
 import { useAuth } from "@/lib/auth";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import {
+  Dialog,
+  DialogPortal,
+  DialogBackdrop,
+  DialogPopup,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import type { UserListItem } from "@/types/user";
 
 interface UserActionsMenuProps {
   user: UserListItem;
 }
 
-interface ConfirmDialogProps {
-  title: string;
-  message: string;
-  confirmLabel: string;
-  danger?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}
-
-function ConfirmDialog({ title, message, confirmLabel, danger, onConfirm, onCancel }: ConfirmDialogProps) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onCancel} />
-      <div className="relative w-full max-w-sm rounded-[14px] border border-border bg-surface p-6 shadow-xl">
-        <h3 className="mb-2 text-base font-semibold">{title}</h3>
-        <p className="mb-5 text-sm text-muted-foreground">{message}</p>
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-surface-hover"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium text-white ${
-              danger ? "bg-danger hover:bg-danger/80" : "bg-accent hover:bg-accent/80"
-            }`}
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-interface TempPasswordDialogProps {
-  password: string;
-  onClose: () => void;
-}
-
-function TempPasswordDialog({ password, onClose }: TempPasswordDialogProps) {
+function TempPasswordDialog({ password, onClose }: { password: string; onClose: () => void }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
     await navigator.clipboard.writeText(password);
@@ -61,24 +29,28 @@ function TempPasswordDialog({ password, onClose }: TempPasswordDialogProps) {
     setTimeout(() => setCopied(false), 2000);
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-sm rounded-[14px] border border-border bg-surface p-6 shadow-xl">
-        <h3 className="mb-2 text-base font-semibold">Temporary Password</h3>
-        <p className="mb-4 text-sm text-muted-foreground">Share this with the user. They must change it on next login.</p>
-        <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
-          <code className="flex-1 font-mono text-sm text-accent">{password}</code>
-          <button onClick={handleCopy} className="text-muted-foreground hover:text-foreground">
-            {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
-          </button>
-        </div>
-        <div className="mt-4 flex justify-end">
-          <button onClick={onClose} className="rounded-md px-3 py-1.5 text-sm font-medium text-white bg-accent hover:bg-accent/80">
-            Done
-          </button>
-        </div>
-      </div>
-    </div>
+    <Dialog open onOpenChange={(val) => !val && onClose()}>
+      <DialogPortal>
+        <DialogBackdrop />
+        <DialogPopup className="w-full max-w-sm p-6">
+          <DialogTitle>Temporary Password</DialogTitle>
+          <DialogDescription className="mt-2">
+            Share this with the user. They must change it on next login.
+          </DialogDescription>
+          <div className="mt-4 flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2">
+            <code className="flex-1 font-mono text-sm text-accent">{password}</code>
+            <button onClick={handleCopy} className="text-muted-foreground hover:text-foreground transition-colors">
+              {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+            </button>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <Button size="sm" onClick={onClose}>
+              Done
+            </Button>
+          </div>
+        </DialogPopup>
+      </DialogPortal>
+    </Dialog>
   );
 }
 
@@ -182,44 +154,40 @@ export function UserActionsMenu({ user }: UserActionsMenuProps) {
         </>
       )}
 
-      {confirm === "role" && (
-        <ConfirmDialog
-          title="Change Role"
-          message={`Change ${user.display_name}'s role to ${user.role === "admin" ? "member" : "admin"}?`}
-          confirmLabel="Change Role"
-          onConfirm={handleRoleToggle}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
-      {confirm === "block" && (
-        <ConfirmDialog
-          title="Block User"
-          message={`Block ${user.display_name}? They won't be able to log in.`}
-          confirmLabel="Block"
-          danger
-          onConfirm={handleBlockToggle}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
-      {confirm === "unblock" && (
-        <ConfirmDialog
-          title="Unblock User"
-          message={`Unblock ${user.display_name}? They will be able to log in again.`}
-          confirmLabel="Unblock"
-          onConfirm={handleBlockToggle}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
-      {confirm === "delete" && (
-        <ConfirmDialog
-          title="Delete User"
-          message={`Delete ${user.display_name}? This action cannot be undone.`}
-          confirmLabel="Delete"
-          danger
-          onConfirm={handleDelete}
-          onCancel={() => setConfirm(null)}
-        />
-      )}
+      <ConfirmDialog
+        open={confirm === "role"}
+        onConfirm={handleRoleToggle}
+        onCancel={() => setConfirm(null)}
+        title="Change Role"
+        description={`Change ${user.display_name}'s role to ${user.role === "admin" ? "member" : "admin"}?`}
+        confirmLabel="Change Role"
+      />
+      <ConfirmDialog
+        open={confirm === "block"}
+        onConfirm={handleBlockToggle}
+        onCancel={() => setConfirm(null)}
+        title="Block User"
+        description={`Block ${user.display_name}? They won't be able to log in.`}
+        confirmLabel="Block"
+        variant="danger"
+      />
+      <ConfirmDialog
+        open={confirm === "unblock"}
+        onConfirm={handleBlockToggle}
+        onCancel={() => setConfirm(null)}
+        title="Unblock User"
+        description={`Unblock ${user.display_name}? They will be able to log in again.`}
+        confirmLabel="Unblock"
+      />
+      <ConfirmDialog
+        open={confirm === "delete"}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirm(null)}
+        title="Delete User"
+        description={`Delete ${user.display_name}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+      />
       {tempPassword && (
         <TempPasswordDialog
           password={tempPassword}
