@@ -6,6 +6,9 @@ Flow:
 2. User visits URL, grants permissions, Google redirects to REDIRECT_URI with ?code=...
 3. GET /api/calendar/oauth/callback?code=... exchanges code for tokens, stores encrypted
 4. Subsequent calls use stored tokens; refresh automatically when expired
+
+Credential resolution:
+- DB first (admin's user_settings.google_client_id/secret) → env vars fallback
 """
 from __future__ import annotations
 
@@ -18,7 +21,7 @@ from google_auth_oauthlib.flow import Flow
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
+from app.core.config import settings as env_settings
 from app.core.encryption import decrypt_value, encrypt_value
 from app.models.calendar import GoogleOAuthToken
 from app.models.user import User
@@ -26,12 +29,48 @@ from app.models.user import User
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 
-def _build_flow(state: Optional[str] = None) -> Flow:
+async def get_oauth_config(
+    db: AsyncSession,
+) -> tuple[str, str, str]:
+    """Return (client_id, client_secret, redirect_uri) from DB or env vars.
+
+    Resolution order:
+    1. Admin's user_settings in DB (encrypted)
+    2. Environment variables (GOOGLE_CLIENT_ID, etc.)
+    Raises ValueError if neither source has credentials.
+    """
+    from app.services.settings import get_google_oauth_credentials
+
+    db_creds = await get_google_oauth_credentials(db)
+    if db_creds:
+        client_id, client_secret, redirect_uri = db_creds
+        # Use DB redirect_uri if set, otherwise fall back to env
+        if not redirect_uri:
+            redirect_uri = env_settings.GOOGLE_REDIRECT_URI
+        return (client_id, client_secret, redirect_uri)
+
+    # Fall back to environment variables
+    if env_settings.GOOGLE_CLIENT_ID and env_settings.GOOGLE_CLIENT_SECRET:
+        return (
+            env_settings.GOOGLE_CLIENT_ID,
+            env_settings.GOOGLE_CLIENT_SECRET,
+            env_settings.GOOGLE_REDIRECT_URI,
+        )
+
+    raise ValueError("Google Calendar integration is not configured")
+
+
+def _build_flow(
+    client_id: str,
+    client_secret: str,
+    redirect_uri: str,
+    state: Optional[str] = None,
+) -> Flow:
     client_config = {
         "web": {
-            "client_id": settings.GOOGLE_CLIENT_ID,
-            "client_secret": settings.GOOGLE_CLIENT_SECRET,
-            "redirect_uris": [settings.GOOGLE_REDIRECT_URI],
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uris": [redirect_uri],
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
         }
@@ -39,15 +78,16 @@ def _build_flow(state: Optional[str] = None) -> Flow:
     flow = Flow.from_client_config(
         client_config,
         scopes=SCOPES,
-        redirect_uri=settings.GOOGLE_REDIRECT_URI,
+        redirect_uri=redirect_uri,
         state=state,
     )
     return flow
 
 
-def get_authorization_url(state: str) -> str:
+async def get_authorization_url(db: AsyncSession, state: str) -> str:
     """Return Google OAuth2 authorization URL with given state."""
-    flow = _build_flow()
+    client_id, client_secret, redirect_uri = await get_oauth_config(db)
+    flow = _build_flow(client_id, client_secret, redirect_uri)
     auth_url, _ = flow.authorization_url(
         access_type="offline",
         include_granted_scopes="true",
@@ -63,7 +103,8 @@ async def exchange_code_for_tokens(
     user: User,
 ) -> GoogleOAuthToken:
     """Exchange authorization code for tokens and store encrypted."""
-    flow = _build_flow()
+    client_id, client_secret, redirect_uri = await get_oauth_config(db)
+    flow = _build_flow(client_id, client_secret, redirect_uri)
     flow.fetch_token(code=code)
     creds = flow.credentials
 
@@ -116,12 +157,20 @@ async def get_credentials(
     except ValueError:
         return None
 
+    # Resolve client credentials for token refresh
+    try:
+        client_id, client_secret, _ = await get_oauth_config(db)
+    except ValueError:
+        # If config is gone, we can still return existing non-expired credentials
+        client_id = env_settings.GOOGLE_CLIENT_ID or ""
+        client_secret = env_settings.GOOGLE_CLIENT_SECRET or ""
+
     creds = Credentials(
         token=access_token,
         refresh_token=refresh_token,
         token_uri="https://oauth2.googleapis.com/token",
-        client_id=settings.GOOGLE_CLIENT_ID,
-        client_secret=settings.GOOGLE_CLIENT_SECRET,
+        client_id=client_id,
+        client_secret=client_secret,
         scopes=SCOPES,
     )
 

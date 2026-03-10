@@ -19,6 +19,10 @@ class SettingsUpdate(BaseModel):
     api_key_adzuna_key: Optional[str] = None
     api_key_serpapi: Optional[str] = None
     api_key_jsearch: Optional[str] = None
+    # Google Calendar OAuth2 credentials (admin-only, encrypted before storage)
+    google_client_id: Optional[str] = None
+    google_client_secret: Optional[str] = None
+    google_redirect_uri: Optional[str] = None
 
 
 class SettingsResponse(BaseModel):
@@ -37,6 +41,10 @@ class SettingsResponse(BaseModel):
     has_api_key_adzuna: bool
     has_api_key_serpapi: bool
     has_api_key_jsearch: bool
+    # Google Calendar OAuth2
+    has_google_client_id: bool
+    has_google_client_secret: bool
+    google_redirect_uri: Optional[str]
     updated_at: datetime
 
     model_config = {"from_attributes": True}
