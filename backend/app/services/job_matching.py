@@ -10,6 +10,7 @@ from app.models.job import Job
 from app.models.profile import UserProfile
 from app.models.user import User
 from app.services.ai import get_llm_client
+from app.services.profile_utils import build_profile_text
 from app.services.prompt_assembly import assemble_prompt
 from app.services.settings import get_or_create_settings, get_decrypted_key
 
@@ -39,26 +40,7 @@ async def match_job(db: AsyncSession, job_id: int, user: User) -> dict:
         raise ValueError("No user profile found. Please set up your profile first.")
 
     # 3. Build profile text for context
-    profile_text_parts = []
-    if profile.summary:
-        profile_text_parts.append(f"Summary: {profile.summary}")
-    if profile.skills:
-        skill_names = [s.get("name", "") for s in profile.skills if isinstance(s, dict)]
-        profile_text_parts.append(f"Skills: {', '.join(skill_names)}")
-    if profile.experience:
-        for exp in profile.experience:
-            if isinstance(exp, dict):
-                line = f"- {exp.get('title', '')} at {exp.get('company', '')}"
-                if exp.get("description"):
-                    line += f": {exp['description']}"
-                profile_text_parts.append(line)
-    if profile.education:
-        for edu in profile.education:
-            if isinstance(edu, dict):
-                profile_text_parts.append(
-                    f"- {edu.get('degree', '')} from {edu.get('institution', '')}"
-                )
-    profile_text = "\n".join(profile_text_parts)
+    profile_text = build_profile_text(profile)
 
     # 4. Assemble prompt
     context = {

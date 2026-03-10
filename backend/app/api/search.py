@@ -27,7 +27,7 @@ async def search_jobs(
     """Search external job boards with the selected provider."""
     try:
         results = await search_service.search_jobs(
-            db, current_user, data.query, data.location, data.provider, data.page
+            db, current_user, data.query, data.location, data.provider, data.page, data.limit
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
@@ -95,7 +95,7 @@ async def auto_search(
 ):
     """Run auto-search using saved target roles and default location."""
     try:
-        results = await search_service.auto_search(db, current_user, data.page)
+        results = await search_service.auto_search(db, current_user, data.page, data.limit)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception:

@@ -18,4 +18,5 @@ export interface SearchRequest {
   location?: string;
   provider: SearchProvider;
   page?: number;
+  limit?: number;
 }

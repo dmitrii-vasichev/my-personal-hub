@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
+import type { Job } from "@/types/job";
 import type { SearchRequest, SearchResult } from "@/types/search";
 import { JOBS_KEY } from "./use-jobs";
 
@@ -19,10 +20,11 @@ export function useJobSearch() {
     setError(null);
     setPage(1);
     setLastRequest(req);
+    const limit = req.limit || 10;
     try {
       const data = await api.post<SearchResult[]>("/api/search/", { ...req, page: 1 });
       setResults(data);
-      setHasMore(data.length === 10);
+      setHasMore(data.length === limit);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Search failed");
       setResults([]);
@@ -34,12 +36,13 @@ export function useJobSearch() {
   const loadMore = async () => {
     if (!lastRequest || isSearching) return;
     const nextPage = page + 1;
+    const limit = lastRequest.limit || 10;
     setIsSearching(true);
     try {
       const data = await api.post<SearchResult[]>("/api/search/", { ...lastRequest, page: nextPage });
       setResults((prev) => [...prev, ...data]);
       setPage(nextPage);
-      setHasMore(data.length === 10);
+      setHasMore(data.length === limit);
     } catch {
       // silent
     } finally {
@@ -47,15 +50,15 @@ export function useJobSearch() {
     }
   };
 
-  const autoSearch = async () => {
+  const autoSearch = async (limit: number = 30) => {
     setIsSearching(true);
     setError(null);
     setPage(1);
     setLastRequest(null);
     try {
-      const data = await api.post<SearchResult[]>("/api/search/auto", { page: 1 });
+      const data = await api.post<SearchResult[]>("/api/search/auto", { page: 1, limit });
       setResults(data);
-      setHasMore(data.length >= 10);
+      setHasMore(data.length >= limit);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Auto-search failed");
       setResults([]);
@@ -71,7 +74,7 @@ export function useSaveSearchResult() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (result: SearchResult) =>
-      api.post("/api/search/save", result),
+      api.post<Job>("/api/search/save", result),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [JOBS_KEY] });
     },

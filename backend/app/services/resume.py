@@ -10,9 +10,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.job import Application
+from app.models.profile import UserProfile
 from app.models.resume import CoverLetter, Resume
 from app.models.user import User
 from app.services.ai import get_llm_client
+from app.services.profile_utils import build_profile_text
+from app.services.prompt_assembly import assemble_prompt
 from app.services.settings import get_or_create_settings, get_decrypted_key
 
 # ── Prompts ───────────────────────────────────────────────────────────────────
@@ -131,6 +134,17 @@ async def _get_llm(db: AsyncSession, user: User):
     return get_llm_client(provider, api_key)
 
 
+async def _load_profile_text(db: AsyncSession, user: User) -> str:
+    """Load user profile and build text representation for LLM context."""
+    result = await db.execute(
+        select(UserProfile).where(UserProfile.user_id == user.id)
+    )
+    profile = result.scalar_one_or_none()
+    if not profile:
+        return ""
+    return build_profile_text(profile)
+
+
 async def _next_version(db: AsyncSession, application_id: int, model_class) -> int:
     result = await db.execute(
         select(model_class).where(model_class.application_id == application_id)
@@ -151,14 +165,31 @@ async def generate_resume(db: AsyncSession, user: User, application_id: int) -> 
     job = app.job
     job_description = job.description or f"Position: {job.title} at {job.company}"
 
+    # Load user profile for personalized resume
+    profile_text = await _load_profile_text(db, user)
+
+    context = {
+        "job_description": job_description,
+        "job_title": job.title,
+        "company": job.company,
+    }
+    if profile_text:
+        context["user_profile"] = profile_text
+        context["extra_instructions"] = (
+            "Use the candidate's real profile data (skills, experience, education, contacts) "
+            "to create the resume. Do NOT invent fictional experience."
+        )
+    else:
+        context["extra_instructions"] = (
+            "No candidate profile available. Create realistic but generic content appropriate for the role."
+        )
+
+    system_prompt, user_prompt = await assemble_prompt(db, user, "resume_generation", context)
+
     llm = await _get_llm(db, user)
     raw = await llm.generate(
-        system_prompt=RESUME_SYSTEM,
-        user_prompt=RESUME_USER_TEMPLATE.format(
-            job_title=job.title,
-            company=job.company,
-            job_description=job_description,
-        ),
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
     )
 
     # Parse JSON — strip markdown fences if present
@@ -303,13 +334,20 @@ async def run_ats_audit(db: AsyncSession, user: User, resume_id: int) -> Resume:
     job_description = job.description or f"{job.title} at {job.company}"
     resume_text = _resume_to_text(resume.resume_json)
 
+    profile_text = await _load_profile_text(db, user)
+    context = {
+        "job_description": job_description,
+        "resume_text": resume_text,
+    }
+    if profile_text:
+        context["user_profile"] = profile_text
+
+    system_prompt, user_prompt = await assemble_prompt(db, user, "ats_audit", context)
+
     llm = await _get_llm(db, user)
     raw = await llm.generate(
-        system_prompt=ATS_SYSTEM,
-        user_prompt=ATS_USER_TEMPLATE.format(
-            job_description=job_description,
-            resume_text=resume_text,
-        ),
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
     )
 
     raw = raw.strip()
@@ -337,13 +375,20 @@ async def run_gap_analysis(db: AsyncSession, user: User, resume_id: int) -> Resu
     job_description = job.description or f"{job.title} at {job.company}"
     resume_text = _resume_to_text(resume.resume_json)
 
+    profile_text = await _load_profile_text(db, user)
+    context = {
+        "job_description": job_description,
+        "resume_text": resume_text,
+    }
+    if profile_text:
+        context["user_profile"] = profile_text
+
+    system_prompt, user_prompt = await assemble_prompt(db, user, "gap_analysis", context)
+
     llm = await _get_llm(db, user)
     raw = await llm.generate(
-        system_prompt=GAP_SYSTEM,
-        user_prompt=GAP_USER_TEMPLATE.format(
-            job_description=job_description,
-            resume_text=resume_text,
-        ),
+        system_prompt=system_prompt,
+        user_prompt=user_prompt,
     )
 
     raw = raw.strip()
