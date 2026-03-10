@@ -102,5 +102,20 @@ The Settings page is a monolithic list of sections without logical grouping. Whe
 - [ ] AC-5: Existing env var config continues to work when DB fields are empty
 - [ ] AC-6: All existing settings functionality preserved after tabs refactor
 
+## Implementation Phases
+
+### Phase 14: Settings Tabs & Google Calendar Integration Config
+Single phase covering all requirements:
+1. DB migration — add Google OAuth columns to `user_settings`
+2. Backend schema — extend Pydantic models
+3. Backend service — encryption/decryption for new fields
+4. Backend credential resolution — DB-first fallback to env
+5. Backend calendar error UX — actionable error message
+6. Frontend types — extend TypeScript interfaces
+7. Frontend Settings tabs — refactor page into tabbed layout
+8. Frontend Integrations tab — Google Calendar config UI
+9. Frontend Calendar UX — improve "Connect Google" error
+10. Tests — backend tests for new fields + credential resolution
+
 ## Open Questions
 - None
