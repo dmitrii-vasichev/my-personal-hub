@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Plus, RefreshCw, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MonthView } from "@/components/calendar/month-view";
@@ -8,6 +9,7 @@ import { WeekView } from "@/components/calendar/week-view";
 import { EventDialog } from "@/components/calendar/event-dialog";
 import { GoogleConnect } from "@/components/calendar/google-connect";
 import { useCalendarEvents } from "@/hooks/use-calendar";
+import { toast } from "sonner";
 
 type ViewMode = "month" | "week";
 
@@ -33,6 +35,25 @@ function formatWeekTitle(weekStart: Date) {
 }
 
 export default function CalendarPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Handle OAuth callback result (redirect from backend)
+  useEffect(() => {
+    const googleStatus = searchParams.get("google");
+    if (!googleStatus) return;
+
+    if (googleStatus === "connected") {
+      toast.success("Google Calendar connected successfully");
+    } else if (googleStatus === "error") {
+      const reason = searchParams.get("reason") || "unknown";
+      toast.error(`Failed to connect Google Calendar: ${reason}`);
+    }
+
+    // Clean up URL params
+    router.replace("/calendar");
+  }, [searchParams, router]);
+
   const today = new Date();
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
