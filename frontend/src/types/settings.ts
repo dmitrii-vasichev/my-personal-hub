@@ -16,6 +16,10 @@ export interface UserSettings {
   has_google_client_id: boolean;
   has_google_client_secret: boolean;
   google_redirect_uri: string | null;
+  instruction_resume: string | null;
+  instruction_ats_audit: string | null;
+  instruction_gap_analysis: string | null;
+  instruction_cover_letter: string | null;
   updated_at: string;
 }
 
@@ -36,4 +40,8 @@ export interface UpdateSettingsInput {
   google_client_id?: string;
   google_client_secret?: string;
   google_redirect_uri?: string;
+  instruction_resume?: string;
+  instruction_ats_audit?: string;
+  instruction_gap_analysis?: string;
+  instruction_cover_letter?: string;
 }
