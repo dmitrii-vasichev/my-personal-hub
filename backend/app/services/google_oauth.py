@@ -12,8 +12,12 @@ Credential resolution:
 """
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 from typing import Optional
+
+# Allow Google to return broader scopes than requested (e.g. openid, profile)
+os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
