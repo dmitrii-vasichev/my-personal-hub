@@ -163,7 +163,7 @@ export function JobDetail({ job }: JobDetailProps) {
                   href={job.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-[var(--accent-muted)] text-[var(--accent)] border border-[rgba(79,142,247,0.2)] hover:bg-[rgba(79,142,247,0.15)] transition-colors"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] font-semibold bg-[var(--accent-muted)] text-[var(--accent)] border border-[rgba(79,142,247,0.2)] hover:bg-[rgba(79,142,247,0.15)] transition-colors"
                 >
                   <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                   View Original Posting
