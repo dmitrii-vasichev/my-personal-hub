@@ -3,6 +3,7 @@
 **Date**: 2026-03-10
 **PRD Reference**: docs/prd-job-hunt-redesign.md
 **Requirements**: FR-7 (AI Job Matching), FR-12 (Job ↔ Task Linking), FR-13 (Job ↔ Calendar Event Linking), FR-3 complete (Job Detail Page)
+**Issues**: #220, #221, #222, #223, #224, #225, #226, #227, #228, #229, #230
 
 ## Overview
 
