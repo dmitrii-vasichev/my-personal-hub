@@ -38,8 +38,8 @@ function JobsPageInner() {
         <h1 className="text-xl font-semibold text-[var(--text-primary)]">Jobs</h1>
         <Button
           size="sm"
-          className="gap-1.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white border-0"
           onClick={() => { setEditingJob(undefined); setDialogOpen(true); }}
+          className="gap-1.5"
         >
           <Plus className="h-4 w-4" />
           Add Job

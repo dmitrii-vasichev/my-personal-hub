@@ -24,10 +24,10 @@ export function ApplicationColumn({ status, cards, activeCardId }: ApplicationCo
           className="h-1.5 w-1.5 rounded-full flex-shrink-0"
           style={{ backgroundColor: accentColor }}
         />
-        <h3 className="text-[11px] font-medium uppercase tracking-wider text-[#6b7280] truncate">
+        <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground truncate">
           {APPLICATION_STATUS_LABELS[status]}
         </h3>
-        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded bg-[#171b26] px-1.5 text-[11px] font-medium text-[#4b5563]">
+        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded bg-surface px-1.5 text-[11px] font-medium text-tertiary">
           {cards.length}
         </span>
       </div>
@@ -37,7 +37,7 @@ export function ApplicationColumn({ status, cards, activeCardId }: ApplicationCo
         ref={setNodeRef}
         className={`
           flex min-h-20 flex-col gap-2 rounded-lg p-1 transition-colors
-          ${isOver ? "bg-[#1e2333] ring-1 ring-[#4f8ef7]" : ""}
+          ${isOver ? "bg-surface-hover ring-1 ring-primary" : ""}
         `}
       >
         {cards.map((card) => (
@@ -49,7 +49,7 @@ export function ApplicationColumn({ status, cards, activeCardId }: ApplicationCo
         ))}
 
         {cards.length === 0 && (
-          <div className="flex h-14 items-center justify-center rounded border border-dashed border-[#252a3a] text-xs text-[#374151]">
+          <div className="flex h-14 items-center justify-center rounded border border-dashed border-border-subtle text-xs text-tertiary">
             Empty
           </div>
         )}

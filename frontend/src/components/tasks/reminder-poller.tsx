@@ -27,7 +27,7 @@ export function ReminderPoller() {
         description: task.deadline
           ? `Due: ${new Date(task.deadline).toLocaleDateString()}`
           : "Task reminder",
-        icon: <Bell size={14} className="text-[#fbbf24]" />,
+        icon: <Bell size={14} className="text-accent-amber" />,
         duration: Infinity, // keep until dismissed
         action: {
           label: "View",

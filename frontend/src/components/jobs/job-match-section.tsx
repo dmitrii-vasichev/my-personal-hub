@@ -10,10 +10,10 @@ interface JobMatchSectionProps {
 }
 
 function getScoreColor(score: number) {
-  if (score >= 80) return { text: "text-[#34d399]", bg: "bg-[#0f2d22]" };
-  if (score >= 60) return { text: "text-[#fbbf24]", bg: "bg-[#2a2510]" };
-  if (score >= 40) return { text: "text-[var(--accent-foreground)]", bg: "bg-[var(--accent-muted)]" };
-  return { text: "text-[var(--text-tertiary)]", bg: "bg-[var(--surface-hover)]" };
+  if (score >= 80) return { text: "text-accent-teal", bg: "bg-accent-teal-muted" };
+  if (score >= 60) return { text: "text-accent-amber", bg: "bg-accent-amber-muted" };
+  if (score >= 40) return { text: "text-accent-foreground", bg: "bg-accent-muted" };
+  return { text: "text-tertiary", bg: "bg-surface-hover" };
 }
 
 export function JobMatchSection({ job }: JobMatchSectionProps) {
@@ -43,7 +43,7 @@ export function JobMatchSection({ job }: JobMatchSectionProps) {
           <Button
             size="sm"
             onClick={handleMatch}
-            className="bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white border-0"
+            className="gap-1.5"
           >
             <Sparkles className="h-3.5 w-3.5" />
             Run Match
@@ -139,7 +139,7 @@ export function JobMatchSection({ job }: JobMatchSectionProps) {
         {result.matched_skills.length > 0 && (
           <div>
             <div className="flex items-center gap-1.5 mb-1.5">
-              <CheckCircle2 className="h-3.5 w-3.5 text-[#34d399]" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-accent-teal" />
               <span className="text-xs font-medium text-[var(--text-secondary)]">
                 Matched Skills
               </span>
@@ -148,7 +148,7 @@ export function JobMatchSection({ job }: JobMatchSectionProps) {
               {result.matched_skills.map((skill) => (
                 <span
                   key={skill}
-                  className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#0f2d22] text-[#34d399] border border-[rgba(52,211,153,0.2)]"
+                  className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-accent-teal-muted text-accent-teal border border-accent-teal/20"
                 >
                   {skill}
                 </span>
@@ -161,7 +161,7 @@ export function JobMatchSection({ job }: JobMatchSectionProps) {
         {result.missing_skills.length > 0 && (
           <div>
             <div className="flex items-center gap-1.5 mb-1.5">
-              <XCircle className="h-3.5 w-3.5 text-[#fbbf24]" />
+              <XCircle className="h-3.5 w-3.5 text-accent-amber" />
               <span className="text-xs font-medium text-[var(--text-secondary)]">
                 Missing Skills
               </span>
@@ -170,7 +170,7 @@ export function JobMatchSection({ job }: JobMatchSectionProps) {
               {result.missing_skills.map((skill) => (
                 <span
                   key={skill}
-                  className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-[#2a2510] text-[#fbbf24] border border-[rgba(251,191,36,0.2)]"
+                  className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-accent-amber-muted text-accent-amber border border-accent-amber/20"
                 >
                   {skill}
                 </span>

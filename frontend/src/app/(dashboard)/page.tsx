@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { TaskDialog } from "@/components/tasks/task-dialog";
@@ -14,22 +15,20 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Page header */}
-      <div
-        className="flex items-start justify-between"
-        style={{ animation: "fadeSlideUp 0.5s ease 0.1s both" }}
-      >
+      <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Dashboard</h1>
+          <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
           <p className="mt-1 text-sm text-tertiary">Your personal hub overview</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            size="sm"
             onClick={() => setShowCreateDialog(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground transition-opacity duration-150 hover:opacity-90"
+            className="gap-1.5"
           >
-            <Plus size={15} />
+            <Plus className="h-4 w-4" />
             New Task
-          </button>
+          </Button>
         </div>
       </div>
 

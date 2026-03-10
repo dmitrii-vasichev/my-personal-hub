@@ -135,19 +135,19 @@ export default function CalendarPage() {
       <div className="flex items-center justify-between flex-shrink-0">
         <h1 className="text-xl font-semibold text-[--text-primary] flex items-center gap-2">
           <Calendar size={20} className="text-[--text-secondary]" />
-          Calendar
+          Meetings
         </h1>
         <div className="flex items-center gap-2">
           <GoogleConnect />
           <Button
-            variant="outline"
             size="sm"
             onClick={() => {
               setShowDialog(true);
               setPrefillDate(null);
             }}
+            className="gap-1.5"
           >
-            <Plus size={14} className="mr-1" />
+            <Plus className="h-4 w-4" />
             New Event
           </Button>
         </div>
