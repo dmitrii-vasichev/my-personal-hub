@@ -11,10 +11,15 @@ from app.models.user import User
 from app.schemas.job import (
     JobCreate,
     JobResponse,
+    JobStatusChange,
+    JobTrackingUpdate,
     JobUpdate,
+    KanbanCardResponse,
+    KanbanResponse,
     LinkedTaskBrief,
     LinkedEventBrief,
     MatchResultResponse,
+    StatusHistoryResponse,
 )
 from app.services import job as job_service
 from app.services import job_task_link as jtl_service
@@ -35,6 +40,15 @@ async def create_job(
     return job
 
 
+@router.get("/kanban", response_model=KanbanResponse)
+async def get_kanban(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    buckets = await job_service.get_kanban(db, current_user)
+    return {key: [KanbanCardResponse.model_validate(j) for j in jobs] for key, jobs in buckets.items()}
+
+
 @router.get("/", response_model=list[JobResponse])
 async def list_jobs(
     db: AsyncSession = Depends(get_db),
@@ -42,7 +56,7 @@ async def list_jobs(
     search: Optional[str] = Query(None),
     company: Optional[str] = Query(None),
     source: Optional[str] = Query(None),
-    has_application: Optional[bool] = Query(None),
+    status_filter: Optional[str] = Query(None, alias="status"),
     tags: Optional[str] = Query(None),
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
@@ -53,7 +67,7 @@ async def list_jobs(
         search=search,
         company=company,
         source=source,
-        has_application=has_application,
+        status=status_filter,
         tags=tags,
         sort_by=sort_by,
         sort_order=sort_order,
@@ -95,6 +109,44 @@ async def delete_job(
     deleted = await job_service.delete_job(db, job_id, current_user)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+
+
+@router.patch("/{job_id}/status", response_model=JobResponse)
+async def change_job_status(
+    job_id: int,
+    data: JobStatusChange,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    job = await job_service.change_status(db, job_id, data, current_user)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    return job
+
+
+@router.get("/{job_id}/history", response_model=list[StatusHistoryResponse])
+async def get_job_history(
+    job_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    history = await job_service.get_history(db, job_id, current_user)
+    if history is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    return history
+
+
+@router.patch("/{job_id}/tracking", response_model=JobResponse)
+async def update_job_tracking(
+    job_id: int,
+    data: JobTrackingUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    job = await job_service.update_tracking(db, job_id, data, current_user)
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    return job
 
 
 class FetchDescriptionRequest(BaseModel):

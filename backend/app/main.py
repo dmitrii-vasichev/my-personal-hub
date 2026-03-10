@@ -8,7 +8,6 @@ from app.api.knowledge_base import router as knowledge_base_router
 from app.api.task_analytics import router as task_analytics_router
 from app.api.calendar import router as calendar_router
 from app.api.health import router as health_router
-from app.api.applications import router as applications_router
 from app.api.auth import router as auth_router
 from app.api.cover_letters import router as cover_letters_router
 from app.api.jobs import router as jobs_router
@@ -26,7 +25,6 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(tasks_router)
 app.include_router(jobs_router)
-app.include_router(applications_router)
 app.include_router(settings_router)
 app.include_router(search_router)
 app.include_router(resumes_router)

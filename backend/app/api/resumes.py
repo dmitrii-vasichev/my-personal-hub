@@ -17,7 +17,7 @@ async def generate_resume(
     current_user: User = Depends(get_current_user),
 ):
     try:
-        resume = await resume_service.generate_resume(db, current_user, data.application_id)
+        resume = await resume_service.generate_resume(db, current_user, data.job_id)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
@@ -28,14 +28,14 @@ async def generate_resume(
     return resume
 
 
-@router.get("/application/{application_id}", response_model=list[ResumeResponse])
+@router.get("/job/{job_id}", response_model=list[ResumeResponse])
 async def list_resumes(
-    application_id: int,
+    job_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     try:
-        resumes = await resume_service.get_resumes(db, current_user, application_id)
+        resumes = await resume_service.get_resumes(db, current_user, job_id)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     return resumes
