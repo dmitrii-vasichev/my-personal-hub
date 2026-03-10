@@ -100,5 +100,23 @@ src/components/ui/tooltip.tsx          — new shared component
 - [ ] AC-5: Both themes (dark/light) render correctly for all new components
 - [ ] AC-6: No visual regressions in existing dialogs
 
+## Implementation Phases
+
+### Phase 22: Popup & Overlay UI Redesign (single phase)
+
+| # | Task | Description |
+|---|------|-------------|
+| 1 | ConfirmDialog component | Create `ui/confirm-dialog.tsx` using @base-ui/react Dialog primitive |
+| 2 | Replace confirm() in job-detail | Replace native confirm in job-detail.tsx |
+| 3 | Replace confirm() in task detail | Replace native confirm in tasks/[id]/page.tsx |
+| 4 | Replace confirm() in calendar event | Replace native confirm in calendar/[id]/page.tsx |
+| 5 | Replace confirm() in google-connect | Replace native confirm in google-connect.tsx |
+| 6 | Replace confirm() in event-notes | Replace native confirm in event-notes.tsx |
+| 7 | Migrate user-actions-menu ConfirmDialog | Replace local ConfirmDialog with shared component |
+| 8 | Migrate EventDialog to Dialog primitive | Convert to base Dialog component, fix radius to 14px |
+| 9 | Migrate CreateUserDialog to Dialog primitive | Convert to base Dialog component |
+| 10 | Tooltip component | Create `ui/tooltip.tsx` using @base-ui/react Tooltip primitive |
+| 11 | Replace all title attributes | Replace ~11 native title attrs with Tooltip component |
+
 ## Open Questions
 - None
