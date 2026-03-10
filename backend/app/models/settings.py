@@ -46,6 +46,12 @@ class UserSettings(Base):
     google_client_secret: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     google_redirect_uri: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
+    # AI prompt instructions (custom per-user overrides for each operation)
+    instruction_resume: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    instruction_ats_audit: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    instruction_gap_analysis: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    instruction_cover_letter: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
