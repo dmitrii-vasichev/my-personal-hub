@@ -17,9 +17,9 @@ const mockUnlinkJobFromTask = vi.fn(() => ({
 }));
 
 vi.mock("@/hooks/use-job-links", () => ({
-  useJobLinkedTasks: (...args: any[]) => mockLinkedTasks(...args),
-  useLinkJobToTask: (...args: any[]) => mockLinkJobToTask(...args),
-  useUnlinkJobFromTask: (...args: any[]) => mockUnlinkJobFromTask(...args),
+  useJobLinkedTasks: (...args: unknown[]) => mockLinkedTasks(...args),
+  useLinkJobToTask: (...args: unknown[]) => mockLinkJobToTask(...args),
+  useUnlinkJobFromTask: (...args: unknown[]) => mockUnlinkJobFromTask(...args),
   useJobLinkedEvents: vi.fn(() => ({ data: [], isLoading: false })),
   useLinkJobToEvent: vi.fn(() => ({ mutateAsync: vi.fn() })),
   useUnlinkJobFromEvent: vi.fn(() => ({ mutateAsync: vi.fn() })),
@@ -37,9 +37,12 @@ function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
 }
 
 describe("LinkedTasksSection", () => {

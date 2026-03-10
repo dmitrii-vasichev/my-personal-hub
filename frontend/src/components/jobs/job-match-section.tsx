@@ -22,7 +22,7 @@ export function JobMatchSection({ job }: JobMatchSectionProps) {
 
   const handleMatch = () => {
     runMatch.mutate(undefined, {
-      onError: (error: Error) => {
+      onError: () => {
         // Error is handled by displaying inline
       },
     });

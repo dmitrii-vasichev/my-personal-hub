@@ -18,9 +18,12 @@ function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
+  function Wrapper({ children }: { children: React.ReactNode }) {
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+  }
+  return Wrapper;
 }
 
 const baseJob: Job = {
@@ -105,7 +108,7 @@ describe("JobMatchSection", () => {
       isPending: true,
       isError: false,
       error: null,
-    } as any);
+    } as ReturnType<typeof useRunJobMatch>);
 
     render(<JobMatchSection job={baseJob} />, { wrapper: createWrapper() });
     expect(screen.getByText("Analyzing match...")).toBeInTheDocument();
