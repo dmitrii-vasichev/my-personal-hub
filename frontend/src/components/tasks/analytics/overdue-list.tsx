@@ -5,10 +5,10 @@ import { AlertCircle } from "lucide-react";
 import type { OverdueData } from "@/types/task-analytics";
 
 const PRIORITY_BADGE: Record<string, string> = {
-  urgent: "bg-[#f87171]/20 text-[#f87171]",
-  high: "bg-[#fbbf24]/20 text-[#fbbf24]",
-  medium: "bg-[#4f8ef7]/20 text-[#4f8ef7]",
-  low: "bg-[#34d399]/20 text-[#34d399]",
+  urgent: "bg-destructive/20 text-destructive",
+  high: "bg-accent-amber/20 text-accent-amber",
+  medium: "bg-primary/20 text-primary",
+  low: "bg-accent-teal/20 text-accent-teal",
 };
 
 function formatDeadline(iso: string): string {

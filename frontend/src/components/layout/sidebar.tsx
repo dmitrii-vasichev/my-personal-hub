@@ -19,8 +19,8 @@ import { useAuth } from "@/lib/auth";
 const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
+  { label: "Meetings", href: "/calendar", icon: Calendar },
   { label: "Job Hunt", href: "/jobs", icon: Briefcase },
-  { label: "Calendar", href: "/calendar", icon: Calendar },
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Profile", href: "/profile", icon: User },
 ];

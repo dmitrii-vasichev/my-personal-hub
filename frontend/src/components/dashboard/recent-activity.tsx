@@ -103,10 +103,7 @@ export function RecentActivity() {
 
   if (items.length === 0) {
     return (
-      <div
-        className="flex flex-col items-center justify-center rounded-xl border border-border-subtle bg-card px-8 py-12 text-center"
-        style={{ animation: "fadeSlideUp 0.5s ease 0.5s both" }}
-      >
+      <div className="flex flex-col items-center justify-center rounded-xl border border-border-subtle bg-card px-8 py-12 text-center">
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent-muted text-primary">
           <Zap size={22} />
         </div>
@@ -117,7 +114,7 @@ export function RecentActivity() {
         <div className="flex gap-2.5">
           <Link
             href="/tasks"
-            className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-primary-foreground transition-all duration-150 hover:opacity-85"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors duration-150 hover:bg-primary/80"
           >
             <Plus size={14} />
             New Task
@@ -135,10 +132,7 @@ export function RecentActivity() {
   }
 
   return (
-    <div
-      className="rounded-xl border border-border-subtle bg-card"
-      style={{ animation: "fadeSlideUp 0.5s ease 0.5s both" }}
-    >
+    <div className="rounded-xl border border-border-subtle bg-card">
       <div className="border-b border-border-subtle px-4 py-3">
         <h2 className="text-sm font-medium text-foreground">Recent Activity</h2>
       </div>

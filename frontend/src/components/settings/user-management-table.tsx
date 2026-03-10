@@ -15,9 +15,9 @@ function RoleBadge({ role }: { role: string }) {
     <span
       className="inline-flex items-center rounded px-2 py-0.5 font-mono text-[11px]"
       style={{
-        background: isAdmin ? "rgba(79,142,247,0.10)" : "rgba(45,212,191,0.10)",
-        color: isAdmin ? "#4f8ef7" : "#2dd4bf",
-        border: `1px solid ${isAdmin ? "rgba(79,142,247,0.20)" : "rgba(45,212,191,0.20)"}`,
+        background: isAdmin ? "var(--accent-muted)" : "var(--accent-teal-muted)",
+        color: isAdmin ? "var(--primary)" : "var(--accent-teal)",
+        border: `1px solid ${isAdmin ? "rgba(79,143,234,0.20)" : "rgba(61,214,140,0.20)"}`,
       }}
     >
       {isAdmin ? "Admin" : "Member"}
@@ -31,9 +31,9 @@ function StatusBadge({ blocked }: { blocked: boolean }) {
       <span
         className="inline-flex items-center rounded px-2 py-0.5 font-mono text-[11px]"
         style={{
-          background: "rgba(248,113,113,0.10)",
-          color: "#f87171",
-          border: "1px solid rgba(248,113,113,0.20)",
+          background: "var(--destructive-muted)",
+          color: "var(--destructive)",
+          border: "1px solid rgba(239,100,100,0.20)",
         }}
       >
         Blocked
@@ -44,9 +44,9 @@ function StatusBadge({ blocked }: { blocked: boolean }) {
     <span
       className="inline-flex items-center rounded px-2 py-0.5 font-mono text-[11px]"
       style={{
-        background: "rgba(52,211,153,0.10)",
-        color: "#34d399",
-        border: "1px solid rgba(52,211,153,0.20)",
+        background: "var(--accent-teal-muted)",
+        color: "var(--accent-teal)",
+        border: "1px solid rgba(61,214,140,0.20)",
       }}
     >
       Active

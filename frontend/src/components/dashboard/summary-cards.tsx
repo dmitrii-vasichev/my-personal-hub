@@ -15,21 +15,11 @@ interface SummaryCardProps {
   subtitle?: string;
   color: string;         // CSS color value
   colorMuted: string;    // CSS color for muted bg
-  animationDelay: string;
 }
 
-function SummaryCard({ icon, label, value, subtitle, color, colorMuted, animationDelay }: SummaryCardProps) {
+function SummaryCard({ icon, label, value, subtitle, color, colorMuted }: SummaryCardProps) {
   return (
-    <div
-      className="relative overflow-hidden rounded-xl border border-border-subtle bg-card transition-all duration-200 ease-in-out hover:bg-card-hover hover:border-border hover:-translate-y-px cursor-pointer"
-      style={{ animation: `fadeSlideUp 0.5s ease ${animationDelay} both` }}
-    >
-      {/* Top accent line */}
-      <div
-        className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl"
-        style={{ background: color, opacity: 0.7 }}
-      />
-
+    <div className="rounded-xl border border-border-subtle bg-card transition-colors duration-150 hover:bg-card-hover hover:border-border">
       <div className="p-[20px_22px]">
         <div className="flex items-start justify-between mb-[14px]">
           <span className="text-[13px] font-medium text-muted-foreground tracking-[0.01em]">
@@ -58,13 +48,9 @@ function SummaryCard({ icon, label, value, subtitle, color, colorMuted, animatio
   );
 }
 
-function SummaryCardSkeleton({ animationDelay }: { animationDelay: string }) {
+function SummaryCardSkeleton() {
   return (
-    <div
-      className="relative overflow-hidden rounded-xl border border-border-subtle bg-card"
-      style={{ animation: `fadeSlideUp 0.5s ease ${animationDelay} both` }}
-    >
-      <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-border" />
+    <div className="rounded-xl border border-border-subtle bg-card">
       <div className="p-[20px_22px]">
         <div className="flex items-start justify-between mb-[14px]">
           <div className="h-4 w-24 rounded bg-muted animate-pulse" />
@@ -96,8 +82,8 @@ export function SummaryCards({ data, isLoading }: SummaryCardsProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {(["0.15s", "0.2s", "0.25s", "0.3s"] as const).map((delay, i) => (
-          <SummaryCardSkeleton key={i} animationDelay={delay} />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <SummaryCardSkeleton key={i} />
         ))}
       </div>
     );
@@ -119,7 +105,6 @@ export function SummaryCards({ data, isLoading }: SummaryCardsProps) {
         subtitle={tasks ? `${tasks.completion_rate}% completion rate` : undefined}
         color={BLUE}
         colorMuted={BLUE_MUTED}
-        animationDelay="0.15s"
       />
       <SummaryCard
         icon={<AlertCircle size={16} />}
@@ -128,7 +113,6 @@ export function SummaryCards({ data, isLoading }: SummaryCardsProps) {
         subtitle={tasks?.overdue ? "Need attention" : "All on track"}
         color={overdueColor}
         colorMuted={overdueMuted}
-        animationDelay="0.2s"
       />
       <SummaryCard
         icon={<Briefcase size={16} />}
@@ -141,7 +125,6 @@ export function SummaryCards({ data, isLoading }: SummaryCardsProps) {
         }
         color={AMBER}
         colorMuted={AMBER_MUTED}
-        animationDelay="0.25s"
       />
       <SummaryCard
         icon={<CalendarDays size={16} />}
@@ -150,7 +133,6 @@ export function SummaryCards({ data, isLoading }: SummaryCardsProps) {
         subtitle="Next 7 days"
         color={RED}
         colorMuted={RED_MUTED}
-        animationDelay="0.3s"
       />
     </div>
   );

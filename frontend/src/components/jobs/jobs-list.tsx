@@ -8,10 +8,10 @@ import type { Job } from "@/types/job";
 
 function SkeletonCard() {
   return (
-    <div className="bg-[#171b26] border border-[#252a3a] rounded-lg p-4 animate-pulse">
-      <div className="h-4 bg-[#252a3a] rounded w-3/4 mb-2" />
-      <div className="h-3 bg-[#252a3a] rounded w-1/2 mb-4" />
-      <div className="h-3 bg-[#252a3a] rounded w-1/3" />
+    <div className="bg-card border border-border-subtle rounded-lg p-4 animate-pulse">
+      <div className="h-4 bg-surface-hover rounded w-3/4 mb-2" />
+      <div className="h-3 bg-surface-hover rounded w-1/2 mb-4" />
+      <div className="h-3 bg-surface-hover rounded w-1/3" />
     </div>
   );
 }
@@ -54,7 +54,7 @@ export function JobsList({
 
   if (error) {
     return (
-      <div className="flex flex-1 items-center justify-center text-[#f87171]">
+      <div className="flex flex-1 items-center justify-center text-destructive">
         Failed to load jobs
       </div>
     );
@@ -63,12 +63,12 @@ export function JobsList({
   if (jobs.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#171b26] border border-[#252a3a]">
-          <Briefcase className="h-5 w-5 text-[#4b5563]" />
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface border border-border-subtle">
+          <Briefcase className="h-5 w-5 text-tertiary" />
         </div>
         <div>
-          <p className="text-sm font-medium text-[#6b7280]">No jobs found</p>
-          <p className="mt-1 text-xs text-[#4b5563]">
+          <p className="text-sm font-medium text-muted-foreground">No jobs found</p>
+          <p className="mt-1 text-xs text-tertiary">
             Add a job to start tracking your applications
           </p>
         </div>

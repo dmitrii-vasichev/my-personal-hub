@@ -135,10 +135,10 @@ export function JobDetail({ job }: JobDetailProps) {
             <span
               className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${
                 job.match_score >= 80
-                  ? "bg-[#0f2d22] text-[#34d399]"
+                  ? "bg-accent-teal-muted text-accent-teal"
                   : job.match_score >= 60
-                  ? "bg-[#2a2510] text-[#fbbf24]"
-                  : "bg-[var(--surface-hover)] text-[var(--text-tertiary)]"
+                  ? "bg-accent-amber-muted text-accent-amber"
+                  : "bg-surface-hover text-tertiary"
               }`}
             >
               {job.match_score}% match
