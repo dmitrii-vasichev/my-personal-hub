@@ -4,27 +4,25 @@ Job hunt analytics service — query-based aggregations.
 import json
 from collections import Counter
 from datetime import datetime, timedelta
-from typing import Optional
 
-from sqlalchemy import func, select, and_
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.job import Application, ApplicationStatus, Job
+from app.models.job import Job
 from app.models.resume import Resume
 from app.models.user import User
 
 
 async def get_funnel(db: AsyncSession, user: User) -> list[dict]:
-    """Applications count per status (all 12)."""
+    """Jobs count per status (all 12) — only jobs with status set."""
     result = await db.execute(
-        select(Application.status, func.count(Application.id).label("count"))
-        .where(Application.user_id == user.id)
-        .group_by(Application.status)
+        select(Job.status, func.count(Job.id).label("count"))
+        .where(Job.user_id == user.id, Job.status.isnot(None))
+        .group_by(Job.status)
     )
     rows = result.all()
     counts = {str(r.status.value): r.count for r in rows}
 
-    # Return all statuses in pipeline order
     order = [
         "found", "saved", "resume_generated", "applied",
         "screening", "technical_interview", "final_interview", "offer",
@@ -34,22 +32,20 @@ async def get_funnel(db: AsyncSession, user: User) -> list[dict]:
 
 
 async def get_timeline(db: AsyncSession, user: User, weeks: int = 12) -> list[dict]:
-    """Applications created per week for the last N weeks."""
+    """Jobs with status created per week for the last N weeks."""
     since = datetime.utcnow() - timedelta(weeks=weeks)
     result = await db.execute(
-        select(Application.created_at)
-        .where(Application.user_id == user.id, Application.created_at >= since)
-        .order_by(Application.created_at)
+        select(Job.created_at)
+        .where(Job.user_id == user.id, Job.status.isnot(None), Job.created_at >= since)
+        .order_by(Job.created_at)
     )
     rows = result.scalars().all()
 
-    # Group by week (ISO week label)
     weekly: dict[str, int] = {}
     for dt in rows:
         week_label = dt.strftime("%Y-W%W")
         weekly[week_label] = weekly.get(week_label, 0) + 1
 
-    # Fill in empty weeks
     points = []
     for i in range(weeks):
         d = datetime.utcnow() - timedelta(weeks=weeks - 1 - i)
@@ -93,9 +89,9 @@ async def get_sources(db: AsyncSession, user: User) -> list[dict]:
 async def get_response_rates(db: AsyncSession, user: User) -> dict:
     """Conversion rates at key funnel stages."""
     result = await db.execute(
-        select(Application.status, func.count(Application.id).label("count"))
-        .where(Application.user_id == user.id)
-        .group_by(Application.status)
+        select(Job.status, func.count(Job.id).label("count"))
+        .where(Job.user_id == user.id, Job.status.isnot(None))
+        .group_by(Job.status)
     )
     counts = {str(r.status.value): r.count for r in result.all()}
 
@@ -123,8 +119,8 @@ async def get_ats_scores(db: AsyncSession, user: User) -> dict:
     """Average ATS score and distribution buckets."""
     result = await db.execute(
         select(Resume.ats_score)
-        .join(Application, Application.id == Resume.application_id)
-        .where(Application.user_id == user.id, Resume.ats_score.isnot(None))
+        .join(Job, Job.id == Resume.job_id)
+        .where(Job.user_id == user.id, Resume.ats_score.isnot(None))
     )
     scores = [r for (r,) in result.all()]
     if not scores:
@@ -154,8 +150,8 @@ async def get_summary(db: AsyncSession, user: User) -> dict:
         select(func.count(Job.id)).where(Job.user_id == user.id)
     )).scalar_one()
 
-    total_apps = (await db.execute(
-        select(func.count(Application.id)).where(Application.user_id == user.id)
+    tracked_jobs = (await db.execute(
+        select(func.count(Job.id)).where(Job.user_id == user.id, Job.status.isnot(None))
     )).scalar_one()
 
     rates = await get_response_rates(db, user)
@@ -163,7 +159,7 @@ async def get_summary(db: AsyncSession, user: User) -> dict:
 
     return {
         "total_jobs": total_jobs,
-        "total_applications": total_apps,
+        "total_applications": tracked_jobs,
         "interview_rate": rates["interview_rate"],
         "offer_rate": rates["offer_rate"],
         "avg_ats_score": ats["average"],

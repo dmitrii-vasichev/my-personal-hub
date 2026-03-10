@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 
 class ResumeGenerateRequest(BaseModel):
-    application_id: int
+    job_id: int
 
 
 class AtsAuditResult(BaseModel):
@@ -25,7 +25,7 @@ class GapAnalysisResult(BaseModel):
 
 class ResumeResponse(BaseModel):
     id: int
-    application_id: int
+    job_id: int
     version: int
     resume_json: dict
     pdf_url: Optional[str]
@@ -38,12 +38,12 @@ class ResumeResponse(BaseModel):
 
 
 class CoverLetterGenerateRequest(BaseModel):
-    application_id: int
+    job_id: int
 
 
 class CoverLetterResponse(BaseModel):
     id: int
-    application_id: int
+    job_id: int
     version: int
     content: str
     created_at: datetime

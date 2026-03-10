@@ -9,7 +9,7 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.job import Application
+from app.models.job import Job
 from app.models.profile import UserProfile
 from app.models.resume import CoverLetter, Resume
 from app.models.user import User
@@ -116,10 +116,9 @@ def _resume_to_text(resume_json: dict) -> str:
     return "\n".join(parts)
 
 
-async def _get_app_with_job(db: AsyncSession, application_id: int, user: User) -> Optional[Application]:
+async def _get_job(db: AsyncSession, job_id: int, user: User) -> Optional[Job]:
     result = await db.execute(
-        select(Application)
-        .where(Application.id == application_id, Application.user_id == user.id)
+        select(Job).where(Job.id == job_id, Job.user_id == user.id)
     )
     return result.scalar_one_or_none()
 
@@ -145,9 +144,9 @@ async def _load_profile_text(db: AsyncSession, user: User) -> str:
     return build_profile_text(profile)
 
 
-async def _next_version(db: AsyncSession, application_id: int, model_class) -> int:
+async def _next_version(db: AsyncSession, job_id: int, model_class) -> int:
     result = await db.execute(
-        select(model_class).where(model_class.application_id == application_id)
+        select(model_class).where(model_class.job_id == job_id)
     )
     existing = result.scalars().all()
     return len(existing) + 1
@@ -155,17 +154,13 @@ async def _next_version(db: AsyncSession, application_id: int, model_class) -> i
 
 # ── Resume generation ─────────────────────────────────────────────────────────
 
-async def generate_resume(db: AsyncSession, user: User, application_id: int) -> Resume:
-    app = await _get_app_with_job(db, application_id, user)
-    if not app:
-        raise ValueError("Application not found")
+async def generate_resume(db: AsyncSession, user: User, job_id: int) -> Resume:
+    job = await _get_job(db, job_id, user)
+    if not job:
+        raise ValueError("Job not found")
 
-    # Load the job (eagerly loaded relationship)
-    await db.refresh(app, ["job"])
-    job = app.job
     job_description = job.description or f"Position: {job.title} at {job.company}"
 
-    # Load user profile for personalized resume
     profile_text = await _load_profile_text(db, user)
 
     context = {
@@ -192,7 +187,6 @@ async def generate_resume(db: AsyncSession, user: User, application_id: int) -> 
         user_prompt=user_prompt,
     )
 
-    # Parse JSON — strip markdown fences if present
     raw = raw.strip()
     if raw.startswith("```"):
         raw = raw.split("```")[1]
@@ -200,9 +194,9 @@ async def generate_resume(db: AsyncSession, user: User, application_id: int) -> 
             raw = raw[4:]
     resume_json = json.loads(raw)
 
-    version = await _next_version(db, application_id, Resume)
+    version = await _next_version(db, job_id, Resume)
     resume = Resume(
-        application_id=application_id,
+        job_id=job_id,
         version=version,
         resume_json=resume_json,
     )
@@ -212,13 +206,13 @@ async def generate_resume(db: AsyncSession, user: User, application_id: int) -> 
     return resume
 
 
-async def get_resumes(db: AsyncSession, user: User, application_id: int) -> list[Resume]:
-    app = await _get_app_with_job(db, application_id, user)
-    if not app:
-        raise ValueError("Application not found")
+async def get_resumes(db: AsyncSession, user: User, job_id: int) -> list[Resume]:
+    job = await _get_job(db, job_id, user)
+    if not job:
+        raise ValueError("Job not found")
     result = await db.execute(
         select(Resume)
-        .where(Resume.application_id == application_id)
+        .where(Resume.job_id == job_id)
         .order_by(Resume.version.desc())
     )
     return list(result.scalars().all())
@@ -229,9 +223,9 @@ async def get_resume(db: AsyncSession, user: User, resume_id: int) -> Optional[R
     resume = result.scalar_one_or_none()
     if not resume:
         return None
-    # Verify ownership via application
-    app = await _get_app_with_job(db, resume.application_id, user)
-    return resume if app else None
+    # Verify ownership via job
+    job = await _get_job(db, resume.job_id, user)
+    return resume if job else None
 
 
 def generate_pdf(resume_json: dict) -> bytes:
@@ -328,9 +322,8 @@ async def run_ats_audit(db: AsyncSession, user: User, resume_id: int) -> Resume:
     if not resume:
         raise ValueError("Resume not found")
 
-    await db.refresh(resume, ["application"])
-    await db.refresh(resume.application, ["job"])
-    job = resume.application.job
+    await db.refresh(resume, ["job"])
+    job = resume.job
     job_description = job.description or f"{job.title} at {job.company}"
     resume_text = _resume_to_text(resume.resume_json)
 
@@ -369,9 +362,8 @@ async def run_gap_analysis(db: AsyncSession, user: User, resume_id: int) -> Resu
     if not resume:
         raise ValueError("Resume not found")
 
-    await db.refresh(resume, ["application"])
-    await db.refresh(resume.application, ["job"])
-    job = resume.application.job
+    await db.refresh(resume, ["job"])
+    job = resume.job
     job_description = job.description or f"{job.title} at {job.company}"
     resume_text = _resume_to_text(resume.resume_json)
 
@@ -407,16 +399,14 @@ async def run_gap_analysis(db: AsyncSession, user: User, resume_id: int) -> Resu
 # ── Cover Letter ──────────────────────────────────────────────────────────────
 
 async def generate_cover_letter(
-    db: AsyncSession, user: User, application_id: int
+    db: AsyncSession, user: User, job_id: int
 ) -> CoverLetter:
-    app = await _get_app_with_job(db, application_id, user)
-    if not app:
-        raise ValueError("Application not found")
-    await db.refresh(app, ["job"])
-    job = app.job
+    job = await _get_job(db, job_id, user)
+    if not job:
+        raise ValueError("Job not found")
 
     # Use latest resume summary if available
-    resumes = await get_resumes(db, user, application_id)
+    resumes = await get_resumes(db, user, job_id)
     resume_summary = ""
     if resumes:
         resume_summary = _resume_to_text(resumes[0].resume_json)[:1500]
@@ -434,9 +424,9 @@ async def generate_cover_letter(
         ),
     )
 
-    version = await _next_version(db, application_id, CoverLetter)
+    version = await _next_version(db, job_id, CoverLetter)
     cover_letter = CoverLetter(
-        application_id=application_id,
+        job_id=job_id,
         version=version,
         content=content.strip(),
     )
@@ -447,14 +437,14 @@ async def generate_cover_letter(
 
 
 async def get_cover_letters(
-    db: AsyncSession, user: User, application_id: int
+    db: AsyncSession, user: User, job_id: int
 ) -> list[CoverLetter]:
-    app = await _get_app_with_job(db, application_id, user)
-    if not app:
-        raise ValueError("Application not found")
+    job = await _get_job(db, job_id, user)
+    if not job:
+        raise ValueError("Job not found")
     result = await db.execute(
         select(CoverLetter)
-        .where(CoverLetter.application_id == application_id)
+        .where(CoverLetter.job_id == job_id)
         .order_by(CoverLetter.version.desc())
     )
     return list(result.scalars().all())

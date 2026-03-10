@@ -7,7 +7,7 @@ from sqlalchemy import func, select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.calendar import CalendarEvent
-from app.models.job import Application, ApplicationStatus
+from app.models.job import ApplicationStatus, Job
 from app.models.task import Task, TaskStatus
 from app.models.user import User
 
@@ -58,19 +58,19 @@ async def get_summary(db: AsyncSession, user: User) -> dict:
     overdue_count = overdue_count_result.scalar_one()
 
     # ── Job hunt ───────────────────────────────────────────────────────────────
-    app_result = await db.execute(
-        select(Application.status, func.count(Application.id).label("count"))
-        .where(Application.user_id == user.id)
-        .group_by(Application.status)
+    job_result = await db.execute(
+        select(Job.status, func.count(Job.id).label("count"))
+        .where(Job.user_id == user.id, Job.status.isnot(None))
+        .group_by(Job.status)
     )
-    app_counts: dict[str, int] = {str(r.status.value): r.count for r in app_result.all()}
+    job_counts: dict[str, int] = {str(r.status.value): r.count for r in job_result.all()}
 
     active_applications = sum(
-        v for k, v in app_counts.items()
+        v for k, v in job_counts.items()
         if k not in {s.value for s in _INACTIVE_APP_STATUSES}
     )
     upcoming_interviews = sum(
-        app_counts.get(s.value, 0) for s in _INTERVIEW_STATUSES
+        job_counts.get(s.value, 0) for s in _INTERVIEW_STATUSES
     )
 
     # ── Calendar ───────────────────────────────────────────────────────────────

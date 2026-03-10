@@ -17,7 +17,7 @@ async def generate_cover_letter(
     current_user: User = Depends(get_current_user),
 ):
     try:
-        cl = await resume_service.generate_cover_letter(db, current_user, data.application_id)
+        cl = await resume_service.generate_cover_letter(db, current_user, data.job_id)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except Exception as exc:
@@ -28,14 +28,14 @@ async def generate_cover_letter(
     return cl
 
 
-@router.get("/application/{application_id}", response_model=list[CoverLetterResponse])
+@router.get("/job/{job_id}", response_model=list[CoverLetterResponse])
 async def list_cover_letters(
-    application_id: int,
+    job_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     try:
-        letters = await resume_service.get_cover_letters(db, current_user, application_id)
+        letters = await resume_service.get_cover_letters(db, current_user, job_id)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     return letters

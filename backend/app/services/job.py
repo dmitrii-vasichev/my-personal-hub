@@ -1,52 +1,37 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Optional
 
-from sqlalchemy import cast, or_, select, String
+from sqlalchemy import asc, cast, desc, or_, select, String
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from app.models.job import Application, Job
+from app.models.job import ApplicationStatus, Job, StatusHistory
 from app.models.user import User, UserRole
-from app.schemas.job import JobCreate, JobUpdate
+from app.schemas.job import JobCreate, JobStatusChange, JobTrackingUpdate, JobUpdate
 
 
 def _can_access(job: Job, user: User) -> bool:
-    """Return True if user may read or write this job.
-
-    Jobs are always private per user — no visibility field, no family sharing.
-    """
     if user.role == UserRole.admin:
         return True
     return job.user_id == user.id
 
 
 async def _load_job(db: AsyncSession, job_id: int) -> Job | None:
-    """Load job by id."""
+    result = await db.execute(
+        select(Job).where(Job.id == job_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def _load_job_with_history(db: AsyncSession, job_id: int) -> Job | None:
     result = await db.execute(
         select(Job)
         .where(Job.id == job_id)
+        .options(selectinload(Job.status_history))
     )
     return result.scalar_one_or_none()
-
-
-async def _get_user_application(
-    db: AsyncSession, job_id: int, user_id: int
-) -> Application | None:
-    """Return the application for this job belonging to user_id, or None."""
-    result = await db.execute(
-        select(Application).where(
-            Application.job_id == job_id,
-            Application.user_id == user_id,
-        )
-    )
-    return result.scalar_one_or_none()
-
-
-def _attach_application(job: Job, application: Application | None) -> Job:
-    """Attach application as a transient attribute for serialisation."""
-    job.application = application  # type: ignore[attr-defined]
-    return job
 
 
 # ── CRUD ──────────────────────────────────────────────────────────────────────
@@ -71,14 +56,26 @@ async def create_job(
         match_score=data.match_score,
         tags=data.tags,
         found_at=data.found_at,
+        status=data.status,
     )
+
+    if data.status == ApplicationStatus.applied:
+        job.applied_date = date.today()
+
     db.add(job)
     await db.flush()
+
+    # Create initial status history entry if status is set
+    if data.status is not None:
+        history_entry = StatusHistory(
+            job_id=job.id,
+            old_status=None,
+            new_status=data.status.value,
+        )
+        db.add(history_entry)
+
     await db.commit()
-    await db.refresh(job)
-    # No application yet at creation time
-    job.application = None  # type: ignore[attr-defined]
-    return job
+    return await _load_job_with_history(db, job.id)  # type: ignore[return-value]
 
 
 async def get_job(
@@ -86,14 +83,12 @@ async def get_job(
     job_id: int,
     current_user: User,
 ) -> Job | None:
-    job = await _load_job(db, job_id)
+    job = await _load_job_with_history(db, job_id)
     if job is None:
         return None
     if not _can_access(job, current_user):
         return None
-
-    application = await _get_user_application(db, job_id, current_user.id)
-    return _attach_application(job, application)
+    return job
 
 
 async def update_job(
@@ -112,10 +107,7 @@ async def update_job(
 
     job.updated_at = datetime.now(timezone.utc)
     await db.commit()
-    await db.refresh(job)
-
-    application = await _get_user_application(db, job_id, current_user.id)
-    return _attach_application(job, application)
+    return await _load_job_with_history(db, job_id)
 
 
 async def delete_job(
@@ -137,18 +129,16 @@ async def list_jobs(
     search: Optional[str] = None,
     company: Optional[str] = None,
     source: Optional[str] = None,
-    has_application: Optional[bool] = None,
+    status: Optional[str] = None,
     tags: Optional[str] = None,
     sort_by: str = "created_at",
     sort_order: str = "desc",
 ) -> list[Job]:
-    q = select(Job)
+    q = select(Job).options(selectinload(Job.status_history))
 
-    # Access control: regular users see only their own jobs
     if current_user.role != UserRole.admin:
         q = q.where(Job.user_id == current_user.id)
 
-    # Search: ILIKE across title, company, description
     if search:
         pattern = f"%{search}%"
         q = q.where(
@@ -159,62 +149,124 @@ async def list_jobs(
             )
         )
 
-    # Exact company filter (case-insensitive)
     if company:
         q = q.where(Job.company.ilike(company))
 
-    # Source filter (case-insensitive)
     if source:
         q = q.where(Job.source.ilike(source))
 
-    # Tags filter: check that the JSON array contains this tag string
+    # Status filter: comma-separated values
+    if status:
+        status_values = [s.strip() for s in status.split(",") if s.strip()]
+        if status_values:
+            q = q.where(Job.status.in_(status_values))
+
     if tags:
-        # Cast the JSON column to text and use ILIKE to check for the tag value.
-        # This is a simple approach; it also matches partial substrings, so we
-        # wrap the value in quotes to match how PostgreSQL serialises JSON strings.
         tag_pattern = f'%"{tags}"%'
         q = q.where(cast(Job.tags, String).ilike(tag_pattern))
 
     # Sorting
-    allowed_sort_fields = {"created_at", "company", "match_score", "title", "source", "found_at"}
+    allowed_sort_fields = {
+        "created_at", "company", "match_score", "title", "source", "found_at",
+        "updated_at", "applied_date", "next_action_date",
+    }
     sort_field = sort_by if sort_by in allowed_sort_fields else "created_at"
     sort_col = getattr(Job, sort_field, Job.created_at)
-    q = q.order_by(sort_col.desc() if sort_order == "desc" else sort_col.asc())
+    order_fn = asc if sort_order == "asc" else desc
+    q = q.order_by(order_fn(sort_col))
 
     result = await db.execute(q)
-    jobs = list(result.scalars().all())
+    return list(result.scalars().all())
 
-    # Attach application summaries
-    # For regular users we can look up all their applications in one query and
-    # match them in Python; for admins we skip (has_application filter excluded).
+
+# ── Status & Tracking ─────────────────────────────────────────────────────────
+
+
+async def change_status(
+    db: AsyncSession,
+    job_id: int,
+    data: JobStatusChange,
+    current_user: User,
+) -> Job | None:
+    job = await _load_job(db, job_id)
+    if job is None or not _can_access(job, current_user):
+        return None
+
+    if data.new_status == job.status:
+        return await _load_job_with_history(db, job_id)
+
+    old_status = job.status.value if job.status else None
+
+    if data.new_status == ApplicationStatus.applied and job.applied_date is None:
+        job.applied_date = date.today()
+
+    job.status = data.new_status
+    job.updated_at = datetime.now(timezone.utc)
+
+    history_entry = StatusHistory(
+        job_id=job.id,
+        old_status=old_status,
+        new_status=data.new_status.value,
+        comment=data.comment,
+    )
+    db.add(history_entry)
+
+    await db.commit()
+    return await _load_job_with_history(db, job_id)
+
+
+async def update_tracking(
+    db: AsyncSession,
+    job_id: int,
+    data: JobTrackingUpdate,
+    current_user: User,
+) -> Job | None:
+    job = await _load_job(db, job_id)
+    if job is None or not _can_access(job, current_user):
+        return None
+
+    update_data = data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(job, field, value)
+
+    job.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    return await _load_job_with_history(db, job_id)
+
+
+# ── Kanban & History ──────────────────────────────────────────────────────────
+
+
+async def get_kanban(
+    db: AsyncSession,
+    current_user: User,
+) -> dict[str, list[Job]]:
+    query = select(Job).where(Job.status.isnot(None))
     if current_user.role != UserRole.admin:
-        job_ids = [j.id for j in jobs]
-        if job_ids:
-            apps_result = await db.execute(
-                select(Application).where(
-                    Application.user_id == current_user.id,
-                    Application.job_id.in_(job_ids),
-                )
-            )
-            apps_by_job: dict[int, Application] = {
-                a.job_id: a for a in apps_result.scalars().all()
-            }
-        else:
-            apps_by_job = {}
+        query = query.where(Job.user_id == current_user.id)
 
-        # Apply has_application filter and attach
-        filtered: list[Job] = []
-        for job in jobs:
-            app = apps_by_job.get(job.id)
-            if has_application is True and app is None:
-                continue
-            if has_application is False and app is not None:
-                continue
-            job.application = app  # type: ignore[attr-defined]
-            filtered.append(job)
-        return filtered
-    else:
-        # Admin: has_application filter not applied (cross-user semantics unclear)
-        for job in jobs:
-            job.application = None  # type: ignore[attr-defined]
-        return jobs
+    result = await db.execute(query)
+    jobs = result.scalars().all()
+
+    buckets: dict[str, list[Job]] = {s.value: [] for s in ApplicationStatus}
+    for job in jobs:
+        buckets[job.status.value].append(job)
+
+    return buckets
+
+
+async def get_history(
+    db: AsyncSession,
+    job_id: int,
+    current_user: User,
+) -> list[StatusHistory] | None:
+    job = await _load_job(db, job_id)
+    if job is None or not _can_access(job, current_user):
+        return None
+
+    result = await db.execute(
+        select(StatusHistory)
+        .where(StatusHistory.job_id == job_id)
+        .order_by(StatusHistory.changed_at.asc())
+    )
+    return list(result.scalars().all())

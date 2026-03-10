@@ -11,8 +11,8 @@ class Resume(Base):
     __tablename__ = "resumes"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    application_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True
+    job_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, index=True
     )
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
@@ -27,15 +27,15 @@ class Resume(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    application: Mapped["Application"] = relationship("Application", back_populates="resumes")  # type: ignore[name-defined]
+    job: Mapped["Job"] = relationship("Job", back_populates="resumes")  # type: ignore[name-defined]
 
 
 class CoverLetter(Base):
     __tablename__ = "cover_letters"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    application_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True
+    job_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, index=True
     )
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -44,4 +44,4 @@ class CoverLetter(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    application: Mapped["Application"] = relationship("Application", back_populates="cover_letters")  # type: ignore[name-defined]
+    job: Mapped["Job"] = relationship("Job", back_populates="cover_letters")  # type: ignore[name-defined]

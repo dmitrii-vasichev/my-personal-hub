@@ -6,20 +6,7 @@ from pydantic import BaseModel
 from app.models.job import ApplicationStatus
 
 
-# ── Nested summary schema ─────────────────────────────────────────────────────
-
-
-class ApplicationSummary(BaseModel):
-    """Minimal application info embedded in JobResponse to avoid circular imports."""
-
-    id: int
-    status: ApplicationStatus
-    applied_date: Optional[date]
-
-    model_config = {"from_attributes": True}
-
-
-# ── Linked item brief schemas ────────────────────────────────────────────────
+# ── Nested schemas ───────────────────────────────────────────────────────────
 
 
 class LinkedTaskBrief(BaseModel):
@@ -48,7 +35,18 @@ class MatchResultResponse(BaseModel):
     recommendations: list[str]
 
 
-# ── Job schemas ───────────────────────────────────────────────────────────────
+class StatusHistoryResponse(BaseModel):
+    id: int
+    job_id: int
+    old_status: Optional[str]
+    new_status: str
+    comment: Optional[str]
+    changed_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ── Job schemas ──────────────────────────────────────────────────────────────
 
 
 class JobCreate(BaseModel):
@@ -64,6 +62,7 @@ class JobCreate(BaseModel):
     match_score: Optional[int] = None
     tags: list[str] = []
     found_at: Optional[datetime] = None
+    status: Optional[ApplicationStatus] = None
 
 
 class JobUpdate(BaseModel):
@@ -79,6 +78,30 @@ class JobUpdate(BaseModel):
     match_score: Optional[int] = None
     tags: Optional[list[str]] = None
     found_at: Optional[datetime] = None
+    # Tracking fields
+    status: Optional[ApplicationStatus] = None
+    notes: Optional[str] = None
+    recruiter_name: Optional[str] = None
+    recruiter_contact: Optional[str] = None
+    applied_date: Optional[date] = None
+    next_action: Optional[str] = None
+    next_action_date: Optional[date] = None
+    rejection_reason: Optional[str] = None
+
+
+class JobStatusChange(BaseModel):
+    new_status: ApplicationStatus
+    comment: Optional[str] = None
+
+
+class JobTrackingUpdate(BaseModel):
+    notes: Optional[str] = None
+    recruiter_name: Optional[str] = None
+    recruiter_contact: Optional[str] = None
+    applied_date: Optional[date] = None
+    next_action: Optional[str] = None
+    next_action_date: Optional[date] = None
+    rejection_reason: Optional[str] = None
 
 
 class JobResponse(BaseModel):
@@ -97,10 +120,51 @@ class JobResponse(BaseModel):
     match_result: Optional[dict] = None
     tags: list[str]
     found_at: Optional[datetime]
+    # Tracking fields
+    status: Optional[ApplicationStatus] = None
+    notes: Optional[str] = None
+    recruiter_name: Optional[str] = None
+    recruiter_contact: Optional[str] = None
+    applied_date: Optional[date] = None
+    next_action: Optional[str] = None
+    next_action_date: Optional[date] = None
+    rejection_reason: Optional[str] = None
+    status_history: list[StatusHistoryResponse] = []
+
     created_at: datetime
     updated_at: datetime
 
-    # Populated when the current user has a linked application for this job
-    application: Optional[ApplicationSummary] = None
+    model_config = {"from_attributes": True}
+
+
+# ── Kanban schemas ───────────────────────────────────────────────────────────
+
+
+class KanbanCardResponse(BaseModel):
+    id: int
+    title: str
+    company: str
+    location: Optional[str] = None
+    status: ApplicationStatus
+    match_score: Optional[int] = None
+    applied_date: Optional[date] = None
+    next_action: Optional[str] = None
+    next_action_date: Optional[date] = None
+    updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class KanbanResponse(BaseModel):
+    found: list[KanbanCardResponse] = []
+    saved: list[KanbanCardResponse] = []
+    resume_generated: list[KanbanCardResponse] = []
+    applied: list[KanbanCardResponse] = []
+    screening: list[KanbanCardResponse] = []
+    technical_interview: list[KanbanCardResponse] = []
+    final_interview: list[KanbanCardResponse] = []
+    offer: list[KanbanCardResponse] = []
+    accepted: list[KanbanCardResponse] = []
+    rejected: list[KanbanCardResponse] = []
+    ghosted: list[KanbanCardResponse] = []
+    withdrawn: list[KanbanCardResponse] = []
