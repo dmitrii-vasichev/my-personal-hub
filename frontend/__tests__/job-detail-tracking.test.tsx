@@ -16,6 +16,7 @@ vi.mock("next/navigation", () => ({
 // Mock hooks
 vi.mock("@/hooks/use-jobs", () => ({
   useDeleteJob: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateJob: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useChangeJobStatus: () => ({ mutateAsync: vi.fn() }),
   useStatusHistory: () => ({ data: [] }),
 }));
@@ -38,9 +39,6 @@ vi.mock("@/components/jobs/cover-letter-section", () => ({
 }));
 vi.mock("@/components/jobs/application-timeline", () => ({
   ApplicationTimeline: () => <div data-testid="timeline" />,
-}));
-vi.mock("@/components/jobs/job-dialog", () => ({
-  JobDialog: () => null,
 }));
 vi.mock("@/components/jobs/status-change-dialog", () => ({
   StatusChangeDialog: () => null,

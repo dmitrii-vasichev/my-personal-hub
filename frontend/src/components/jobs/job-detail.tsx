@@ -1,27 +1,29 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Briefcase,
   Calendar,
+  Check,
   ChevronDown,
   ChevronUp,
   Clock,
   Copy,
   DollarSign,
-  Edit,
   ExternalLink,
   Mail,
   MapPin,
+  Pencil,
+  Plus,
   Tag,
   Trash2,
   User,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { JobDialog } from "@/components/jobs/job-dialog";
 import { StatusChangeDialog } from "@/components/jobs/status-change-dialog";
 import { JobTrackingEditDialog } from "@/components/jobs/job-tracking-edit-dialog";
 import { JobMatchSection } from "@/components/jobs/job-match-section";
@@ -30,9 +32,9 @@ import { LinkedEventsSection } from "@/components/jobs/linked-events-section";
 import { ResumeSection } from "@/components/jobs/resume-section";
 import { CoverLetterSection } from "@/components/jobs/cover-letter-section";
 import { ApplicationTimeline } from "@/components/jobs/application-timeline";
-import { useDeleteJob, useChangeJobStatus, useStatusHistory } from "@/hooks/use-jobs";
+import { useDeleteJob, useUpdateJob, useChangeJobStatus, useStatusHistory } from "@/hooks/use-jobs";
 import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS, APPLICATION_STATUS_BG_COLORS } from "@/types/job";
-import type { Job } from "@/types/job";
+import type { Job, UpdateJobInput } from "@/types/job";
 
 interface JobDetailProps {
   job: Job;
@@ -57,14 +59,202 @@ function formatSalary(min?: number, max?: number, currency = "USD"): string | nu
 
 const REJECTION_STATUSES = ["rejected", "ghosted", "withdrawn"] as const;
 
-const COLLAPSED_MAX_HEIGHT = 96; // ~4 lines at text-sm leading-relaxed
+const COLLAPSED_MAX_HEIGHT = 96;
 
-function CollapsibleDescription({ description }: { description: string }) {
+// --- Inline Edit Components ---
+
+function InlineEditText({
+  value,
+  onSave,
+  className = "",
+  inputClassName = "",
+  placeholder = "Empty",
+  type = "text",
+}: {
+  value: string;
+  onSave: (v: string) => Promise<void>;
+  className?: string;
+  inputClassName?: string;
+  placeholder?: string;
+  type?: "text" | "number" | "url";
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setDraft(value); }, [value]);
+  useEffect(() => { if (editing) { inputRef.current?.focus(); inputRef.current?.select(); } }, [editing]);
+
+  const save = useCallback(async () => {
+    if (draft === value) { setEditing(false); return; }
+    setSaving(true);
+    try { await onSave(draft); setEditing(false); } catch { /* keep editing */ } finally { setSaving(false); }
+  }, [draft, value, onSave]);
+
+  const cancel = useCallback(() => { setDraft(value); setEditing(false); }, [value]);
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Escape") { e.preventDefault(); cancel(); }
+    else if (e.key === "Enter") { e.preventDefault(); save(); }
+  };
+
+  if (editing) {
+    return (
+      <span className={`inline-flex items-center gap-1 ${className}`}>
+        <input
+          ref={inputRef}
+          type={type}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={save}
+          disabled={saving}
+          placeholder={placeholder}
+          className={`rounded border border-[var(--accent)] bg-[var(--background)] px-1.5 py-0.5 outline-none ring-1 ring-[var(--accent)]/30 text-[var(--text-primary)] ${inputClassName}`}
+        />
+      </span>
+    );
+  }
+
+  return (
+    <span
+      className={`group/ie inline-flex items-center gap-1 cursor-pointer ${className}`}
+      onClick={() => setEditing(true)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter") setEditing(true); }}
+    >
+      <span className={value ? "" : "text-[var(--text-tertiary)] italic"}>
+        {value || placeholder}
+      </span>
+      <Pencil className="h-3 w-3 shrink-0 text-[var(--text-tertiary)] opacity-0 group-hover/ie:opacity-100 transition-opacity" />
+    </span>
+  );
+}
+
+function InlineEditTags({
+  tags,
+  onSave,
+}: {
+  tags: string[];
+  onSave: (tags: string[]) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<string[]>(tags);
+  const [input, setInput] = useState("");
+  const [saving, setSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setDraft(tags); }, [tags]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const addTag = (val: string) => {
+    const t = val.trim().replace(/,+$/, "").trim();
+    if (t && !draft.includes(t)) setDraft((prev) => [...prev, t]);
+    setInput("");
+  };
+
+  const removeTag = (tag: string) => setDraft((prev) => prev.filter((t) => t !== tag));
+
+  const save = useCallback(async () => {
+    if (input.trim()) addTag(input);
+    setSaving(true);
+    try { await onSave(draft); setEditing(false); } catch { /* keep editing */ } finally { setSaving(false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, input, onSave]);
+
+  const cancel = useCallback(() => { setDraft(tags); setInput(""); setEditing(false); }, [tags]);
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addTag(input); }
+    else if (e.key === "Backspace" && input === "" && draft.length > 0) setDraft((prev) => prev.slice(0, -1));
+    else if (e.key === "Escape") { e.preventDefault(); cancel(); }
+  };
+
+  if (editing) {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <div className="flex flex-wrap gap-1.5 rounded-md border border-[var(--accent)] bg-[var(--background)] px-2 py-1.5 ring-1 ring-[var(--accent)]/30 min-h-[32px]">
+          {draft.map((tag) => (
+            <span
+              key={tag}
+              className="flex items-center gap-1 rounded bg-[var(--surface-hover)] border border-[var(--border)] px-1.5 py-0.5 text-[11px] text-[var(--text-secondary)]"
+            >
+              {tag}
+              <button type="button" onClick={() => removeTag(tag)} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={draft.length === 0 ? "Type and press Enter…" : ""}
+            className="flex-1 min-w-[100px] bg-transparent text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] outline-none"
+            disabled={saving}
+          />
+        </div>
+        <div className="flex gap-1">
+          <button onClick={save} disabled={saving} className="rounded p-1 text-[var(--success)] hover:bg-[var(--surface-hover)] transition-colors" title="Save">
+            <Check className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={cancel} disabled={saving} className="rounded p-1 text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] transition-colors" title="Cancel">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="group/ie flex items-center gap-1.5 flex-wrap cursor-pointer"
+      onClick={() => setEditing(true)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter") setEditing(true); }}
+    >
+      <Tag className="h-3 w-3 text-[var(--text-tertiary)] shrink-0" />
+      {tags.length > 0 ? (
+        tags.map((tag) => (
+          <span
+            key={tag}
+            className="px-1.5 py-0.5 rounded text-[11px] bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-secondary)]"
+          >
+            {tag}
+          </span>
+        ))
+      ) : (
+        <span className="text-[var(--text-tertiary)] italic text-xs">No tags</span>
+      )}
+      <Pencil className="h-3 w-3 shrink-0 text-[var(--text-tertiary)] opacity-0 group-hover/ie:opacity-100 transition-opacity" />
+    </div>
+  );
+}
+
+// --- Collapsible Description ---
+
+function CollapsibleDescription({
+  description,
+  onSave,
+}: {
+  description: string;
+  onSave: (v: string) => Promise<void>;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [needsCollapse, setNeedsCollapse] = useState(false);
   const [fullHeight, setFullHeight] = useState<number>(0);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(description);
+  const [saving, setSaving] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => { setDraft(description); }, [description]);
   useEffect(() => {
     if (contentRef.current) {
       const h = contentRef.current.scrollHeight;
@@ -72,12 +262,69 @@ function CollapsibleDescription({ description }: { description: string }) {
       setNeedsCollapse(h > COLLAPSED_MAX_HEIGHT);
     }
   }, [description]);
+  useEffect(() => {
+    if (editing && textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(textareaRef.current.value.length, textareaRef.current.value.length);
+    }
+  }, [editing]);
+
+  const save = useCallback(async () => {
+    if (draft === description) { setEditing(false); return; }
+    setSaving(true);
+    try { await onSave(draft); setEditing(false); } catch { /* keep editing */ } finally { setSaving(false); }
+  }, [draft, description, onSave]);
+
+  const cancel = useCallback(() => { setDraft(description); setEditing(false); }, [description]);
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Escape") { e.preventDefault(); cancel(); }
+    else if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); save(); }
+  };
+
+  if (editing) {
+    return (
+      <div>
+        <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+          Description
+        </h3>
+        <textarea
+          ref={textareaRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={handleKeyDown}
+          disabled={saving}
+          rows={10}
+          className="w-full rounded-md border border-[var(--accent)] bg-[var(--background)] px-2.5 py-2 text-sm leading-relaxed text-[var(--text-primary)] outline-none ring-1 ring-[var(--accent)]/30 resize-y"
+          placeholder="Job description…"
+        />
+        <div className="flex items-center gap-1 mt-1.5">
+          <button onClick={save} disabled={saving} className="rounded p-1 text-[var(--success)] hover:bg-[var(--surface-hover)] transition-colors" title="Save (Cmd+Enter)">
+            <Check className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={cancel} disabled={saving} className="rounded p-1 text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] transition-colors" title="Cancel (Esc)">
+            <X className="h-3.5 w-3.5" />
+          </button>
+          <span className="text-[10px] text-[var(--text-tertiary)] ml-1">Cmd+Enter to save, Esc to cancel</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-        Description
-      </h3>
+    <div className="group/desc">
+      <div className="flex items-center gap-1.5 mb-2">
+        <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+          Description
+        </h3>
+        <button
+          onClick={() => setEditing(true)}
+          className="rounded p-0.5 text-[var(--text-tertiary)] opacity-0 group-hover/desc:opacity-100 hover:bg-[var(--surface-hover)] transition-all"
+          title="Edit description"
+        >
+          <Pencil className="h-3 w-3" />
+        </button>
+      </div>
       <div className="relative">
         <div
           ref={contentRef}
@@ -116,20 +363,144 @@ function CollapsibleDescription({ description }: { description: string }) {
   );
 }
 
+// --- Inline Salary Edit ---
+
+function InlineEditSalary({
+  min,
+  max,
+  currency,
+  onSave,
+}: {
+  min?: number;
+  max?: number;
+  currency: string;
+  onSave: (data: { salary_min: number | null; salary_max: number | null; salary_currency: string }) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draftMin, setDraftMin] = useState(min?.toString() ?? "");
+  const [draftMax, setDraftMax] = useState(max?.toString() ?? "");
+  const [draftCurrency, setDraftCurrency] = useState(currency);
+  const [saving, setSaving] = useState(false);
+  const minRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setDraftMin(min?.toString() ?? "");
+    setDraftMax(max?.toString() ?? "");
+    setDraftCurrency(currency);
+  }, [min, max, currency]);
+
+  useEffect(() => { if (editing) minRef.current?.focus(); }, [editing]);
+
+  const save = useCallback(async () => {
+    setSaving(true);
+    try {
+      await onSave({
+        salary_min: draftMin ? parseInt(draftMin, 10) : null,
+        salary_max: draftMax ? parseInt(draftMax, 10) : null,
+        salary_currency: draftCurrency || "USD",
+      });
+      setEditing(false);
+    } catch { /* keep editing */ } finally { setSaving(false); }
+  }, [draftMin, draftMax, draftCurrency, onSave]);
+
+  const cancel = useCallback(() => {
+    setDraftMin(min?.toString() ?? "");
+    setDraftMax(max?.toString() ?? "");
+    setDraftCurrency(currency);
+    setEditing(false);
+  }, [min, max, currency]);
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === "Escape") { e.preventDefault(); cancel(); }
+    else if (e.key === "Enter") { e.preventDefault(); save(); }
+  };
+
+  const formatted = formatSalary(min, max, currency);
+
+  if (editing) {
+    return (
+      <div className="flex flex-col gap-1.5">
+        <div className="grid grid-cols-3 gap-1.5">
+          <input
+            ref={minRef}
+            type="number"
+            value={draftMin}
+            onChange={(e) => setDraftMin(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Min"
+            disabled={saving}
+            className="w-full rounded border border-[var(--accent)] bg-[var(--background)] px-1.5 py-0.5 text-xs text-[var(--text-primary)] outline-none ring-1 ring-[var(--accent)]/30"
+          />
+          <input
+            type="number"
+            value={draftMax}
+            onChange={(e) => setDraftMax(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Max"
+            disabled={saving}
+            className="w-full rounded border border-[var(--accent)] bg-[var(--background)] px-1.5 py-0.5 text-xs text-[var(--text-primary)] outline-none ring-1 ring-[var(--accent)]/30"
+          />
+          <input
+            type="text"
+            value={draftCurrency}
+            onChange={(e) => setDraftCurrency(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="USD"
+            maxLength={5}
+            disabled={saving}
+            className="w-full rounded border border-[var(--accent)] bg-[var(--background)] px-1.5 py-0.5 text-xs text-[var(--text-primary)] outline-none ring-1 ring-[var(--accent)]/30"
+          />
+        </div>
+        <div className="flex gap-1">
+          <button onClick={save} disabled={saving} className="rounded p-1 text-[var(--success)] hover:bg-[var(--surface-hover)] transition-colors" title="Save">
+            <Check className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={cancel} disabled={saving} className="rounded p-1 text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] transition-colors" title="Cancel">
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="group/ie flex items-center gap-1.5 text-sm text-[var(--text-primary)] cursor-pointer"
+      onClick={() => setEditing(true)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter") setEditing(true); }}
+    >
+      <DollarSign className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+      <span className={formatted ? "" : "text-[var(--text-tertiary)] italic"}>{formatted ?? "Not set"}</span>
+      <Pencil className="h-3 w-3 shrink-0 text-[var(--text-tertiary)] opacity-0 group-hover/ie:opacity-100 transition-opacity" />
+    </div>
+  );
+}
+
+// --- Main Component ---
+
 export function JobDetail({ job }: JobDetailProps) {
   const router = useRouter();
   const deleteJob = useDeleteJob();
+  const updateJob = useUpdateJob();
   const changeJobStatus = useChangeJobStatus();
   const { data: history = [] } = useStatusHistory(job.id);
-  const [editOpen, setEditOpen] = useState(false);
   const [trackingEditOpen, setTrackingEditOpen] = useState(false);
   const [isStartingTracking, setIsStartingTracking] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
 
-  const salary = formatSalary(job.salary_min, job.salary_max, job.salary_currency);
   const hasStatus = !!job.status;
   const showRejectionReason =
     hasStatus && (REJECTION_STATUSES as readonly string[]).includes(job.status!) && !!job.rejection_reason;
+
+  const patchJob = useCallback(
+    async (data: UpdateJobInput) => {
+      await updateJob.mutateAsync({ id: job.id, data });
+      toast.success("Updated");
+    },
+    [job.id, updateJob]
+  );
 
   const handleDelete = async () => {
     if (!confirm(`Delete "${job.title}" at ${job.company}? This action cannot be undone.`)) return;
@@ -163,21 +534,15 @@ export function JobDetail({ job }: JobDetailProps) {
           <ArrowLeft className="h-4 w-4" />
           Jobs
         </button>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-            <Edit className="h-3.5 w-3.5" />
-            Edit
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            disabled={deleteJob.isPending}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Delete
-          </Button>
-        </div>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={handleDelete}
+          disabled={deleteJob.isPending}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+          Delete
+        </Button>
       </div>
 
       {/* Page header */}
@@ -199,11 +564,22 @@ export function JobDetail({ job }: JobDetailProps) {
           )}
         </div>
         <h1 className="text-2xl font-semibold text-[var(--text-primary)] leading-tight">
-          {job.title}
+          <InlineEditText
+            value={job.title}
+            onSave={(v) => patchJob({ title: v.trim() || job.title })}
+            inputClassName="text-2xl font-semibold w-full"
+            placeholder="Job title"
+          />
         </h1>
         <div className="flex items-center gap-1.5 mt-1">
           <Briefcase className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
-          <span className="text-sm text-[var(--text-secondary)]">{job.company}</span>
+          <InlineEditText
+            value={job.company}
+            onSave={(v) => patchJob({ company: v.trim() || job.company })}
+            className="text-sm text-[var(--text-secondary)]"
+            inputClassName="text-sm"
+            placeholder="Company"
+          />
         </div>
       </div>
 
@@ -212,19 +588,39 @@ export function JobDetail({ job }: JobDetailProps) {
         <div className="flex flex-col gap-6">
           {/* Description */}
           {job.description ? (
-            <CollapsibleDescription description={job.description} />
+            <CollapsibleDescription
+              description={job.description}
+              onSave={(v) => patchJob({ description: v.trim() || null })}
+            />
           ) : (
-            <p className="text-sm text-[var(--text-tertiary)] italic">No description provided.</p>
+            <div className="group/desc">
+              <div className="flex items-center gap-1.5 mb-2">
+                <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                  Description
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  // Trigger inline edit for empty description by providing a CollapsibleDescription with empty string
+                }}
+                className="text-sm text-[var(--text-tertiary)] italic flex items-center gap-1 hover:text-[var(--text-secondary)] transition-colors"
+              >
+                <Plus className="h-3 w-3" />
+                Add description
+              </button>
+            </div>
           )}
 
           {/* AI Match Analysis */}
           <JobMatchSection job={job} />
 
           {/* Source URL */}
-          <div>
-            <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-              Job Posting
-            </h3>
+          <div className="group/url">
+            <div className="flex items-center gap-1.5 mb-2">
+              <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Job Posting
+              </h3>
+            </div>
             {job.url ? (
               <div className="flex items-center gap-2">
                 <a
@@ -246,31 +642,35 @@ export function JobDetail({ job }: JobDetailProps) {
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </button>
+                <InlineEditText
+                  value={job.url}
+                  onSave={(v) => patchJob({ url: v.trim() || null })}
+                  className="text-xs text-[var(--text-tertiary)]"
+                  inputClassName="text-xs w-64"
+                  placeholder="URL"
+                />
               </div>
             ) : (
-              <p className="text-sm text-[var(--text-tertiary)]">No source link</p>
+              <InlineEditText
+                value=""
+                onSave={(v) => patchJob({ url: v.trim() || null })}
+                className="text-sm"
+                inputClassName="text-sm"
+                placeholder="Add URL"
+              />
             )}
           </div>
 
           {/* Tags */}
-          {job.tags.length > 0 && (
-            <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                Tags
-              </h3>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <Tag className="h-3 w-3 text-[var(--text-tertiary)] shrink-0" />
-                {job.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="px-1.5 py-0.5 rounded text-[11px] bg-[var(--surface-hover)] border border-[var(--border)] text-[var(--text-secondary)]"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          <div>
+            <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+              Tags
+            </h3>
+            <InlineEditTags
+              tags={job.tags}
+              onSave={(tags) => patchJob({ tags })}
+            />
+          </div>
 
           {/* Tracking info sections (only when tracked) */}
           {hasStatus && (
@@ -432,29 +832,35 @@ export function JobDetail({ job }: JobDetailProps) {
 
           <div className="border-t border-[var(--border)]" />
 
-          {job.location && (
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                Location
-              </span>
-              <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
-                <MapPin className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
-                {job.location}
-              </div>
+          {/* Location */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+              Location
+            </span>
+            <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
+              <MapPin className="h-3.5 w-3.5 text-[var(--text-tertiary)] shrink-0" />
+              <InlineEditText
+                value={job.location ?? ""}
+                onSave={(v) => patchJob({ location: v.trim() || null })}
+                className="text-sm"
+                inputClassName="text-sm"
+                placeholder="Add location"
+              />
             </div>
-          )}
+          </div>
 
-          {salary && (
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                Salary
-              </span>
-              <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
-                <DollarSign className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
-                {salary}
-              </div>
-            </div>
-          )}
+          {/* Salary */}
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+              Salary
+            </span>
+            <InlineEditSalary
+              min={job.salary_min}
+              max={job.salary_max}
+              currency={job.salary_currency ?? "USD"}
+              onSave={(data) => patchJob(data)}
+            />
+          </div>
 
           {job.source && (
             <div className="flex flex-col gap-1">
@@ -489,16 +895,6 @@ export function JobDetail({ job }: JobDetailProps) {
           </div>
         </div>
       </div>
-
-      {editOpen && (
-        <JobDialog
-          open={editOpen}
-          onOpenChange={setEditOpen}
-          mode="edit"
-          job={job}
-          onSuccess={() => setEditOpen(false)}
-        />
-      )}
 
       {trackingEditOpen && (
         <JobTrackingEditDialog
