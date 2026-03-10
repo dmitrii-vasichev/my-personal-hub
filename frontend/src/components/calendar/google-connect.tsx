@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Cloud, RefreshCw, Unlink, CheckCircle } from "lucide-react";
+import { Cloud, RefreshCw, Unlink, CheckCircle, Settings } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useGoogleOAuthStatus, useSyncCalendar, useDisconnectGoogle } from "@/hooks/use-calendar";
+import { useAuth } from "@/lib/auth";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -11,7 +13,11 @@ export function GoogleConnect() {
   const { data: status, isLoading } = useGoogleOAuthStatus();
   const syncCalendar = useSyncCalendar();
   const disconnectGoogle = useDisconnectGoogle();
+  const { user } = useAuth();
+  const router = useRouter();
   const [isConnecting, setIsConnecting] = useState(false);
+
+  const isAdmin = user?.role === "admin";
 
   const handleConnect = async () => {
     setIsConnecting(true);
@@ -19,7 +25,23 @@ export function GoogleConnect() {
       const { auth_url } = await api.get<{ auth_url: string }>("/api/calendar/oauth/connect");
       window.location.href = auth_url;
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Failed to connect Google Calendar");
+      const message = err instanceof Error ? err.message : "";
+      // Check if it's a "not configured" error (503)
+      if (message.includes("not configured")) {
+        if (isAdmin) {
+          toast.error("Google Calendar not configured", {
+            description: "Set up OAuth credentials in Settings → Integrations.",
+            action: {
+              label: "Go to Settings",
+              onClick: () => router.push("/settings"),
+            },
+          });
+        } else {
+          toast.error("Google Calendar is not configured. Contact your administrator.");
+        }
+      } else {
+        toast.error(message || "Failed to connect Google Calendar");
+      }
       setIsConnecting(false);
     }
   };

@@ -184,18 +184,19 @@ async def google_oauth_status(
 
 @router.get("/oauth/connect", response_model=GoogleOAuthConnectResponse)
 async def google_oauth_connect(
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Return Google OAuth2 authorization URL. Frontend redirects user to this URL."""
-    from app.core.config import settings as cfg
-    if not cfg.GOOGLE_CLIENT_ID:
+    try:
+        state = f"user_{current_user.id}"
+        auth_url = await oauth_service.get_authorization_url(db, state)
+        return GoogleOAuthConnectResponse(auth_url=auth_url)
+    except ValueError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Google Calendar integration is not configured",
+            detail="Google Calendar integration is not configured. Ask your admin to set it up in Settings → Integrations.",
         )
-    state = f"user_{current_user.id}"
-    auth_url = oauth_service.get_authorization_url(state)
-    return GoogleOAuthConnectResponse(auth_url=auth_url)
 
 
 @router.get("/oauth/callback")
