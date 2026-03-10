@@ -14,12 +14,13 @@ async def search(
     location: Optional[str],
     api_key: str,
     page: int = 1,
+    limit: int = 10,
 ) -> list[SearchResult]:
     q = f"{query} in {location}" if location else query
     params = {
         "query": q,
         "page": str(page),
-        "num_pages": "1",
+        "num_pages": str(max(1, (limit + 9) // 10)),
     }
     headers = {
         "X-RapidAPI-Key": api_key,
@@ -64,4 +65,4 @@ async def search(
             )
         )
 
-    return results
+    return results[:limit]

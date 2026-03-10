@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Sparkles, Bookmark, ExternalLink, ChevronDown } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Search, Sparkles, Bookmark, ExternalLink, ChevronDown, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { useJobSearch, useSaveSearchResult } from "@/hooks/use-search";
+import { SearchResultDetail } from "@/components/jobs/search-result-detail";
 import type { SearchProvider, SearchResult } from "@/types/search";
 
 const PROVIDERS: { value: SearchProvider; label: string }[] = [
@@ -28,15 +30,23 @@ function SearchResultCard({
   result,
   saved,
   onSave,
+  onClick,
 }: {
   result: SearchResult;
   saved: boolean;
   onSave: (r: SearchResult) => void;
+  onClick: () => void;
 }) {
   const salary = formatSalary(result.salary_min, result.salary_max, result.salary_currency);
 
   return (
-    <div className="rounded-lg border border-border bg-surface p-4 space-y-2 hover:border-border-strong transition-colors">
+    <div
+      className="rounded-lg border border-border bg-surface p-4 space-y-2 hover:border-border-strong transition-colors cursor-pointer"
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onClick(); }}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-medium text-foreground truncate">{result.title}</h3>
@@ -55,6 +65,7 @@ function SearchResultCard({
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground"
+              onClick={(e) => e.stopPropagation()}
             >
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
@@ -75,10 +86,10 @@ function SearchResultCard({
           size="sm"
           variant={saved ? "ghost" : "secondary"}
           disabled={saved}
-          onClick={() => onSave(result)}
+          onClick={(e) => { e.stopPropagation(); onSave(result); }}
           className="h-7 text-xs gap-1"
         >
-          <Bookmark className="h-3 w-3" />
+          {saved ? <CheckCircle className="h-3 w-3" /> : <Bookmark className="h-3 w-3" />}
           {saved ? "Saved" : "Save Job"}
         </Button>
       </div>
@@ -90,29 +101,43 @@ export function JobSearch() {
   const [query, setQuery] = useState("");
   const [location, setLocation] = useState("");
   const [provider, setProvider] = useState<SearchProvider>("adzuna");
+  const [limit, setLimit] = useState(10);
   const [savedUrls, setSavedUrls] = useState<Set<string>>(new Set());
+  const [detailResult, setDetailResult] = useState<SearchResult | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
+  const router = useRouter();
   const { results, isSearching, error, hasMore, search, loadMore, autoSearch } = useJobSearch();
   const saveResult = useSaveSearchResult();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
-    search({ query: query.trim(), location: location.trim() || undefined, provider });
+    search({ query: query.trim(), location: location.trim() || undefined, provider, limit });
   };
 
   const handleAutoSearch = () => {
-    autoSearch();
+    autoSearch(limit);
   };
 
   const handleSave = async (result: SearchResult) => {
     try {
-      await saveResult.mutateAsync(result);
+      const savedJob = await saveResult.mutateAsync(result);
       setSavedUrls((prev) => new Set(prev).add(result.url ?? result.title));
-      toast.success("Job saved to your list");
+      toast.success(`Saved: ${result.title} at ${result.company}`, {
+        action: savedJob?.id
+          ? { label: "View Job", onClick: () => router.push(`/jobs/${savedJob.id}`) }
+          : undefined,
+      });
+      setDetailOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save job");
     }
+  };
+
+  const handleCardClick = (result: SearchResult) => {
+    setDetailResult(result);
+    setDetailOpen(true);
   };
 
   return (
@@ -142,6 +167,17 @@ export function JobSearch() {
             </option>
           ))}
         </Select>
+        <Input
+          type="number"
+          value={limit}
+          onChange={(e) => setLimit(Math.min(100, Math.max(1, Number(e.target.value) || 10)))}
+          min={1}
+          max={100}
+          step={10}
+          title="Max results"
+          placeholder="Max results"
+          className="sm:w-24 text-sm"
+        />
         <Button type="submit" disabled={isSearching || !query.trim()} className="gap-1.5">
           <Search className="h-3.5 w-3.5" />
           {isSearching ? "Searching…" : "Search"}
@@ -178,6 +214,7 @@ export function JobSearch() {
               result={r}
               saved={savedUrls.has(r.url ?? r.title)}
               onSave={handleSave}
+              onClick={() => handleCardClick(r)}
             />
           ))}
           {hasMore && (
@@ -209,6 +246,15 @@ export function JobSearch() {
           </p>
         </div>
       )}
+
+      {/* Detail dialog */}
+      <SearchResultDetail
+        result={detailResult}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        onSave={handleSave}
+        saved={detailResult ? savedUrls.has(detailResult.url ?? detailResult.title) : false}
+      />
     </div>
   );
 }
