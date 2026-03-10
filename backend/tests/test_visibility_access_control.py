@@ -7,13 +7,12 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 from app.models.calendar import CalendarEvent, EventSource
-from app.models.job import Job, Application, ApplicationStatus
+from app.models.job import Job
 from app.models.task import Task, TaskStatus, TaskPriority, TaskSource, Visibility
 from app.models.user import User, UserRole
 from app.services import task as task_service
 from app.services import calendar as calendar_service
 from app.services import job as job_service
-from app.services import application as application_service
 from app.services.task import PermissionDeniedError
 
 
@@ -85,15 +84,6 @@ def make_job(user_id: int = 1, job_id: int = 10) -> Job:
     j.title = "Software Engineer"
     j.company = "TestCorp"
     return j
-
-
-def make_application(user_id: int = 1, app_id: int = 10, job_id: int = 1) -> Application:
-    a = Application()
-    a.id = app_id
-    a.user_id = user_id
-    a.job_id = job_id
-    a.status = ApplicationStatus.saved
-    return a
 
 
 def _mock_unique_result(value):
@@ -370,23 +360,3 @@ class TestJobsCRUDAccessControl:
         assert result is False
 
 
-# ── Applications access control tests ────────────────────────────────────────
-
-
-class TestApplicationsAccessControl:
-    """Applications are always private per user."""
-
-    def test_member_can_access_own_application(self):
-        user = make_user(user_id=1)
-        app = make_application(user_id=1)
-        assert application_service._can_access(app, user) is True
-
-    def test_member_cannot_access_others_application(self):
-        user = make_user(user_id=2)
-        app = make_application(user_id=1)
-        assert application_service._can_access(app, user) is False
-
-    def test_admin_can_access_any_application(self):
-        admin = make_user(role=UserRole.admin, user_id=99)
-        app = make_application(user_id=1)
-        assert application_service._can_access(app, admin) is True

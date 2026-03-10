@@ -41,16 +41,14 @@ def _make_settings(provider="openai"):
     return s
 
 
-def _make_application(app_id=1, user_id=1):
-    app = MagicMock()
-    app.id = app_id
-    app.user_id = user_id
+def _make_job(job_id=1, user_id=1):
     job = MagicMock()
+    job.id = job_id
+    job.user_id = user_id
     job.title = "Python Developer"
     job.company = "Acme Inc"
     job.description = "We need a Python developer with FastAPI skills."
-    app.job = job
-    return app
+    return job
 
 
 VALID_RESUME_JSON = json.dumps({
@@ -113,11 +111,11 @@ class TestResumeWithProfile:
     @patch("app.services.resume._get_llm")
     @patch("app.services.resume.assemble_prompt")
     @patch("app.services.resume._load_profile_text")
-    @patch("app.services.resume._get_app_with_job")
-    async def test_resume_includes_profile(self, mock_get_app, mock_profile, mock_assemble, mock_llm):
+    @patch("app.services.resume._get_job")
+    async def test_resume_includes_profile(self, mock_get_job, mock_profile, mock_assemble, mock_llm):
         """Resume generation passes profile data to prompt assembly."""
-        app = _make_application()
-        mock_get_app.return_value = app
+        job = _make_job()
+        mock_get_job.return_value = job
 
         mock_profile.return_value = "SUMMARY: Senior Python developer\nSKILLS: Python, FastAPI"
         mock_assemble.return_value = ("system prompt", "user prompt")
@@ -130,7 +128,7 @@ class TestResumeWithProfile:
         db.execute = AsyncMock(return_value=MagicMock(scalars=lambda: MagicMock(all=lambda: [])))
 
         user = _make_user()
-        resume = await generate_resume(db, user, application_id=1)
+        await generate_resume(db, user, job_id=1)
 
         # Verify assemble_prompt was called with user_profile in context
         mock_assemble.assert_awaited_once()
@@ -143,11 +141,11 @@ class TestResumeWithProfile:
     @patch("app.services.resume._get_llm")
     @patch("app.services.resume.assemble_prompt")
     @patch("app.services.resume._load_profile_text")
-    @patch("app.services.resume._get_app_with_job")
-    async def test_resume_without_profile_fallback(self, mock_get_app, mock_profile, mock_assemble, mock_llm):
+    @patch("app.services.resume._get_job")
+    async def test_resume_without_profile_fallback(self, mock_get_job, mock_profile, mock_assemble, mock_llm):
         """Resume generation works without profile (fallback)."""
-        app = _make_application()
-        mock_get_app.return_value = app
+        job = _make_job()
+        mock_get_job.return_value = job
 
         mock_profile.return_value = ""  # No profile
         mock_assemble.return_value = ("system prompt", "user prompt")
@@ -160,7 +158,7 @@ class TestResumeWithProfile:
         db.execute = AsyncMock(return_value=MagicMock(scalars=lambda: MagicMock(all=lambda: [])))
 
         user = _make_user()
-        resume = await generate_resume(db, user, application_id=1)
+        await generate_resume(db, user, job_id=1)
 
         mock_assemble.assert_awaited_once()
         call_args = mock_assemble.call_args

@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import pytest
 from datetime import datetime, timezone
-from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
 from app.models.job import Job
@@ -38,24 +37,20 @@ def make_job(
     j.source = source
     j.found_at = found_at
     j.tags = []
+    j.status = None
     j.created_at = datetime.now(timezone.utc)
     j.updated_at = datetime.now(timezone.utc)
     return j
 
 
-def make_db_with_jobs(jobs: list[Job], applications: list | None = None):
+def make_db_with_jobs(jobs: list[Job]):
     """Create a mocked async session that returns the given jobs list."""
     db = AsyncMock()
 
-    # First execute call: main job query
     jobs_result = MagicMock()
     jobs_result.scalars.return_value.all.return_value = jobs
 
-    # Second execute call: applications query
-    apps_result = MagicMock()
-    apps_result.scalars.return_value.all.return_value = applications or []
-
-    db.execute = AsyncMock(side_effect=[jobs_result, apps_result])
+    db.execute = AsyncMock(return_value=jobs_result)
     return db
 
 
@@ -71,10 +66,8 @@ async def test_sort_by_title_is_allowed():
 
     result = await job_service.list_jobs(db, user, sort_by="title", sort_order="asc")
 
-    # Should return jobs — the query was executed
     assert len(result) == 2
-    # Verify db.execute was called (sort_by accepted)
-    assert db.execute.call_count == 2
+    assert db.execute.call_count == 1
 
 
 @pytest.mark.asyncio
@@ -90,7 +83,7 @@ async def test_sort_by_source_is_allowed():
     result = await job_service.list_jobs(db, user, sort_by="source", sort_order="asc")
 
     assert len(result) == 2
-    assert db.execute.call_count == 2
+    assert db.execute.call_count == 1
 
 
 @pytest.mark.asyncio
@@ -106,7 +99,7 @@ async def test_sort_by_found_at_is_allowed():
     result = await job_service.list_jobs(db, user, sort_by="found_at", sort_order="desc")
 
     assert len(result) == 2
-    assert db.execute.call_count == 2
+    assert db.execute.call_count == 1
 
 
 @pytest.mark.asyncio
@@ -131,15 +124,13 @@ async def test_invalid_sort_field_falls_back_to_created_at():
     result = await job_service.list_jobs(db, user, sort_by="nonexistent_field")
 
     assert len(result) == 1
-    # Should still execute successfully (falls back to created_at)
-    assert db.execute.call_count == 2
+    assert db.execute.call_count == 1
 
 
 @pytest.mark.asyncio
 async def test_allowed_sort_fields_set():
-    """Verify that all 6 expected sort fields are in the allowed set."""
+    """Verify that all expected sort fields are in the allowed set."""
     expected = {"created_at", "company", "match_score", "title", "source", "found_at"}
-    # Read the source to confirm (this is a simple validation)
     import inspect
     source = inspect.getsource(job_service.list_jobs)
     for field in expected:
