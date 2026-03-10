@@ -1,18 +1,36 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Calendar, Clock, Edit, Eye, Lock, Trash2, User } from "lucide-react";
+import { ArrowLeft, Calendar, ChevronDown, ChevronUp, Clock, Eye, Lock, Trash2, User } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
-import { ChecklistView } from "@/components/tasks/checklist-view";
-import { TaskDialog } from "@/components/tasks/task-dialog";
+import { InlineEditText } from "@/components/ui/inline-edit-text";
+import { InlineEditSelect } from "@/components/ui/inline-edit-select";
+import { InlineEditDate } from "@/components/ui/inline-edit-date";
+import { CollapsibleDescription } from "@/components/ui/collapsible-description";
+import { ChecklistEditor } from "@/components/tasks/checklist-editor";
 import { TaskTimeline } from "@/components/tasks/task-timeline";
 import { useTask, useUpdateTask, useDeleteTask } from "@/hooks/use-tasks";
 import { LinkedEvents } from "@/components/tasks/linked-events";
 import { useAuth } from "@/lib/auth";
 import { PRIORITY_BG_COLORS, TASK_STATUS_LABELS, TASK_STATUS_ORDER } from "@/types/task";
-import type { TaskStatus } from "@/types/task";
+import type { ChecklistItem, TaskPriority, TaskStatus, UpdateTaskInput, Visibility } from "@/types/task";
+
+const CHECKLIST_COLLAPSE_THRESHOLD = 5;
+
+const PRIORITY_OPTIONS = [
+  { value: "urgent", label: "Urgent", className: PRIORITY_BG_COLORS.urgent },
+  { value: "high", label: "High", className: PRIORITY_BG_COLORS.high },
+  { value: "medium", label: "Medium", className: PRIORITY_BG_COLORS.medium },
+  { value: "low", label: "Low", className: PRIORITY_BG_COLORS.low },
+];
+
+const VISIBILITY_OPTIONS = [
+  { value: "family", label: "Family" },
+  { value: "private", label: "Private" },
+];
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -22,7 +40,6 @@ function formatDate(dateStr: string) {
   });
 }
 
-
 export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -31,7 +48,16 @@ export default function TaskDetailPage() {
   const { data: task, isLoading, error } = useTask(taskId);
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
-  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [checklistExpanded, setChecklistExpanded] = useState(false);
+
+  const patchTask = useCallback(
+    async (data: UpdateTaskInput) => {
+      if (!task) return;
+      await updateTask.mutateAsync({ taskId: task.id, data });
+      toast.success("Updated");
+    },
+    [task, updateTask]
+  );
 
   if (isLoading) {
     return (
@@ -61,11 +87,8 @@ export default function TaskDetailPage() {
     await updateTask.mutateAsync({ taskId: task.id, data: { status: newStatus } });
   };
 
-  const handleChecklistToggle = async (itemId: string) => {
-    const updated = task.checklist.map((item) =>
-      item.id === itemId ? { ...item, completed: !item.completed } : item
-    );
-    await updateTask.mutateAsync({ taskId: task.id, data: { checklist: updated } });
+  const handleChecklistChange = async (items: ChecklistItem[]) => {
+    await patchTask({ checklist: items });
   };
 
   const handleDelete = async () => {
@@ -73,6 +96,12 @@ export default function TaskDetailPage() {
     await deleteTask.mutateAsync(task.id);
     router.push("/tasks");
   };
+
+  const visibleChecklist = checklistExpanded || task.checklist.length <= CHECKLIST_COLLAPSE_THRESHOLD
+    ? task.checklist
+    : task.checklist.slice(0, CHECKLIST_COLLAPSE_THRESHOLD);
+  const hiddenCount = task.checklist.length - CHECKLIST_COLLAPSE_THRESHOLD;
+  const doneCount = task.checklist.filter((i) => i.completed).length;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -86,21 +115,15 @@ export default function TaskDetailPage() {
           Tasks
         </button>
         {canEdit && (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
-              <Edit className="h-3.5 w-3.5" />
-              Edit
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDelete}
-              disabled={deleteTask.isPending}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete
-            </Button>
-          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDelete}
+            disabled={deleteTask.isPending}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Delete
+          </Button>
         )}
       </div>
 
@@ -110,11 +133,28 @@ export default function TaskDetailPage() {
           {/* Title */}
           <div>
             <span className="font-mono text-xs text-[var(--text-tertiary)]">TASK-{task.id}</span>
-            <h1 className="mt-1 text-2xl font-semibold text-[var(--text-primary)]">{task.title}</h1>
+            <h1 className="mt-1 text-2xl font-semibold text-[var(--text-primary)] leading-tight">
+              {canEdit ? (
+                <InlineEditText
+                  value={task.title}
+                  onSave={(v) => patchTask({ title: v.trim() || task.title })}
+                  inputClassName="text-2xl font-semibold w-full"
+                  placeholder="Task title"
+                />
+              ) : (
+                task.title
+              )}
+            </h1>
           </div>
 
           {/* Description */}
-          {task.description && (
+          {canEdit ? (
+            <CollapsibleDescription
+              description={task.description ?? ""}
+              onSave={(v) => patchTask({ description: v.trim() || undefined })}
+              placeholder="Add description…"
+            />
+          ) : task.description ? (
             <div>
               <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                 Description
@@ -123,16 +163,82 @@ export default function TaskDetailPage() {
                 {task.description}
               </p>
             </div>
-          )}
+          ) : null}
 
           {/* Checklist */}
-          {task.checklist.length > 0 && (
-            <ChecklistView
-              items={task.checklist}
-              onToggle={handleChecklistToggle}
-              disabled={updateTask.isPending}
-            />
-          )}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Checklist
+              </span>
+              {task.checklist.length > 0 && (
+                <span className="text-xs text-[var(--text-tertiary)]">
+                  {doneCount}/{task.checklist.length}
+                </span>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            {task.checklist.length > 0 && (
+              <div className="h-1 w-full rounded-full bg-[var(--border)] mb-3">
+                <div
+                  className="h-1 rounded-full bg-[var(--success)] transition-all"
+                  style={{ width: `${(doneCount / task.checklist.length) * 100}%` }}
+                />
+              </div>
+            )}
+
+            {canEdit ? (
+              <>
+                <ChecklistEditor
+                  items={visibleChecklist}
+                  onChange={(items) => {
+                    if (checklistExpanded || task.checklist.length <= CHECKLIST_COLLAPSE_THRESHOLD) {
+                      handleChecklistChange(items);
+                    } else {
+                      handleChecklistChange([...items, ...task.checklist.slice(CHECKLIST_COLLAPSE_THRESHOLD)]);
+                    }
+                  }}
+                />
+                {task.checklist.length > CHECKLIST_COLLAPSE_THRESHOLD && (
+                  <button
+                    onClick={() => setChecklistExpanded(!checklistExpanded)}
+                    className="mt-2 flex items-center gap-1 text-xs text-[var(--accent-foreground)] hover:text-[var(--accent-hover)] transition-colors"
+                  >
+                    {checklistExpanded ? (
+                      <>
+                        <ChevronUp className="h-3.5 w-3.5" />
+                        Show less
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="h-3.5 w-3.5" />
+                        Show {hiddenCount} more
+                      </>
+                    )}
+                  </button>
+                )}
+              </>
+            ) : task.checklist.length > 0 ? (
+              <div className="flex flex-col gap-1.5">
+                {visibleChecklist.map((item) => (
+                  <label key={item.id} className="flex items-start gap-2 select-none">
+                    <input
+                      type="checkbox"
+                      checked={item.completed}
+                      readOnly
+                      className="mt-0.5 h-3.5 w-3.5 rounded border-[var(--border)] accent-[var(--accent)]"
+                    />
+                    <span className={`text-sm leading-snug ${item.completed ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-primary)]"}`}>
+                      {item.text}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--text-tertiary)] italic">No checklist items</p>
+            )}
+          </div>
 
           {/* Timeline */}
           <div className="border-t border-[var(--border)] pt-6">
@@ -164,9 +270,22 @@ export default function TaskDetailPage() {
             <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
               Priority
             </span>
-            <span className={`inline-flex w-fit items-center rounded px-2 py-0.5 text-xs font-medium ${PRIORITY_BG_COLORS[task.priority]}`}>
-              {task.priority}
-            </span>
+            {canEdit ? (
+              <InlineEditSelect
+                value={task.priority}
+                options={PRIORITY_OPTIONS}
+                onSave={(v) => patchTask({ priority: v as TaskPriority })}
+                renderValue={(opt) => (
+                  <span className={`inline-flex w-fit items-center rounded px-2 py-0.5 text-xs font-medium ${opt?.className ?? ""}`}>
+                    {opt?.label ?? task.priority}
+                  </span>
+                )}
+              />
+            ) : (
+              <span className={`inline-flex w-fit items-center rounded px-2 py-0.5 text-xs font-medium ${PRIORITY_BG_COLORS[task.priority]}`}>
+                {task.priority}
+              </span>
+            )}
           </div>
 
           {/* Created by */}
@@ -187,19 +306,37 @@ export default function TaskDetailPage() {
             <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
               Visibility
             </span>
-            <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
-              {task.visibility === "private" ? (
-                <>
-                  <Lock className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
-                  Private
-                </>
-              ) : (
-                <>
-                  <Eye className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
-                  Family
-                </>
-              )}
-            </div>
+            {canEdit ? (
+              <InlineEditSelect
+                value={task.visibility}
+                options={VISIBILITY_OPTIONS}
+                onSave={(v) => patchTask({ visibility: v as Visibility })}
+                renderValue={(opt) => (
+                  <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
+                    {opt?.value === "private" ? (
+                      <Lock className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                    ) : (
+                      <Eye className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                    )}
+                    {opt?.label}
+                  </div>
+                )}
+              />
+            ) : (
+              <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
+                {task.visibility === "private" ? (
+                  <>
+                    <Lock className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                    Private
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                    Family
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Assignee */}
@@ -216,17 +353,48 @@ export default function TaskDetailPage() {
           )}
 
           {/* Deadline */}
-          {task.deadline && (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                Deadline
-              </span>
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+              Deadline
+            </span>
+            {canEdit ? (
+              <InlineEditDate
+                value={task.deadline}
+                onSave={(v) => patchTask({ deadline: v })}
+                placeholder="No deadline"
+                mode="date"
+              />
+            ) : task.deadline ? (
               <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
                 <Calendar className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
                 {formatDate(task.deadline)}
               </div>
-            </div>
-          )}
+            ) : (
+              <span className="text-sm text-[var(--text-tertiary)] italic">No deadline</span>
+            )}
+          </div>
+
+          {/* Reminder */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+              Reminder
+            </span>
+            {canEdit ? (
+              <InlineEditDate
+                value={task.reminder_at}
+                onSave={(v) => patchTask({ reminder_at: v })}
+                placeholder="No reminder"
+                mode="datetime"
+              />
+            ) : task.reminder_at ? (
+              <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
+                <Calendar className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                {formatDate(task.reminder_at)}
+              </div>
+            ) : (
+              <span className="text-sm text-[var(--text-tertiary)] italic">No reminder</span>
+            )}
+          </div>
 
           {/* Linked Events */}
           <div className="border-t border-[var(--border)] pt-4">
@@ -248,14 +416,6 @@ export default function TaskDetailPage() {
           </div>
         </div>
       </div>
-
-      {showEditDialog && (
-        <TaskDialog
-          mode="edit"
-          task={task}
-          onClose={() => setShowEditDialog(false)}
-        />
-      )}
     </div>
   );
 }

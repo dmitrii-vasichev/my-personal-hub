@@ -42,7 +42,6 @@ export default function DashboardPage() {
       {/* Task creation modal */}
       {showCreateDialog && (
         <TaskDialog
-          mode="create"
           onClose={() => setShowCreateDialog(false)}
           onSuccess={() => router.push("/tasks")}
         />
