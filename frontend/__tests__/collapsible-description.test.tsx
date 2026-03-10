@@ -15,6 +15,7 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/hooks/use-jobs", () => ({
   useDeleteJob: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateJob: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useChangeJobStatus: () => ({ mutateAsync: vi.fn() }),
   useStatusHistory: () => ({ data: [] }),
 }));
@@ -36,9 +37,6 @@ vi.mock("@/components/jobs/cover-letter-section", () => ({
 }));
 vi.mock("@/components/jobs/application-timeline", () => ({
   ApplicationTimeline: () => <div data-testid="timeline" />,
-}));
-vi.mock("@/components/jobs/job-dialog", () => ({
-  JobDialog: () => null,
 }));
 vi.mock("@/components/jobs/status-change-dialog", () => ({
   StatusChangeDialog: () => null,
@@ -71,10 +69,10 @@ describe("CollapsibleDescription", () => {
     expect(screen.getByText("A short description.")).toBeInTheDocument();
   });
 
-  it("shows 'No description provided.' when no description", () => {
+  it("shows 'Add description' when no description", () => {
     render(<JobDetail job={baseJob} />);
 
-    expect(screen.getByText("No description provided.")).toBeInTheDocument();
+    expect(screen.getByText("Add description")).toBeInTheDocument();
   });
 
   it("does not show toggle button for short descriptions", () => {
