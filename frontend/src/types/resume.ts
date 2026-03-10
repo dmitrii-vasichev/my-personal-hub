@@ -47,7 +47,7 @@ export interface GapAnalysisResult {
 
 export interface Resume {
   id: number;
-  application_id: number;
+  job_id: number;
   version: number;
   resume_json: ResumeJson;
   pdf_url: string | null;
@@ -59,7 +59,7 @@ export interface Resume {
 
 export interface CoverLetter {
   id: number;
-  application_id: number;
+  job_id: number;
   version: number;
   content: string;
   created_at: string;

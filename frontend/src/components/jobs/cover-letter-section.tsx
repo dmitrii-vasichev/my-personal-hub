@@ -49,13 +49,13 @@ function CoverLetterCard({ cl }: { cl: CoverLetter }) {
   );
 }
 
-export function CoverLetterSection({ applicationId }: { applicationId: number }) {
-  const { data: letters = [], isLoading } = useCoverLetters(applicationId);
+export function CoverLetterSection({ jobId }: { jobId: number }) {
+  const { data: letters = [], isLoading } = useCoverLetters(jobId);
   const generate = useGenerateCoverLetter();
 
   const handleGenerate = async () => {
     try {
-      await generate.mutateAsync(applicationId);
+      await generate.mutateAsync(jobId);
       toast.success("Cover letter generated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Generation failed");

@@ -33,10 +33,9 @@ export function ApplicationCard({ card, isDragging = false }: ApplicationCardPro
   const accentColor = APPLICATION_STATUS_COLORS[card.status];
 
   const handleClick = (e: React.MouseEvent) => {
-    // Don't navigate if the user is dragging
     if (transform) return;
     e.stopPropagation();
-    router.push(`/jobs/applications/${card.id}`);
+    router.push(`/jobs/${card.id}`);
   };
 
   return (
@@ -53,13 +52,11 @@ export function ApplicationCard({ card, isDragging = false }: ApplicationCardPro
         }
       `}
     >
-      {/* Status accent border on left */}
       <div
         className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full"
         style={{ backgroundColor: accentColor }}
       />
 
-      {/* Drag handle */}
       <div
         {...listeners}
         {...attributes}
@@ -70,32 +67,29 @@ export function ApplicationCard({ card, isDragging = false }: ApplicationCardPro
       </div>
 
       <div className="px-3 py-2.5 pl-4 pr-7">
-        {/* Job title */}
         <p className="text-sm font-medium text-foreground leading-snug line-clamp-2 mb-0.5">
-          {card.job?.title ?? "Untitled Position"}
+          {card.title ?? "Untitled Position"}
         </p>
 
-        {/* Company + match score */}
         <div className="flex items-center gap-2 mb-2">
-          {card.job?.company && (
-            <p className="text-xs text-muted-foreground truncate">{card.job.company}</p>
+          {card.company && (
+            <p className="text-xs text-muted-foreground truncate">{card.company}</p>
           )}
-          {card.job?.match_score != null && (
+          {card.match_score != null && (
             <span
               className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${
-                card.job.match_score >= 80
+                card.match_score >= 80
                   ? "bg-[rgba(52,211,153,0.1)] text-[#34d399]"
-                  : card.job.match_score >= 60
+                  : card.match_score >= 60
                   ? "bg-[rgba(251,191,36,0.1)] text-[#fbbf24]"
                   : "bg-[var(--muted)] text-[var(--text-secondary)]"
               }`}
             >
-              {card.job.match_score}%
+              {card.match_score}%
             </span>
           )}
         </div>
 
-        {/* Applied date + next action */}
         <div className="flex flex-col gap-1">
           {card.applied_date && (
             <div className="flex items-center gap-1 text-[11px] text-tertiary">
@@ -121,7 +115,6 @@ export function ApplicationCard({ card, isDragging = false }: ApplicationCardPro
   );
 }
 
-// Overlay version shown while dragging
 export function ApplicationCardOverlay({ card }: { card: KanbanCard }) {
   const accentColor = APPLICATION_STATUS_COLORS[card.status];
 
@@ -133,10 +126,10 @@ export function ApplicationCardOverlay({ card }: { card: KanbanCard }) {
       />
       <div className="px-3 py-2.5 pl-4">
         <p className="text-sm font-medium text-foreground line-clamp-2">
-          {card.job?.title ?? "Untitled Position"}
+          {card.title ?? "Untitled Position"}
         </p>
-        {card.job?.company && (
-          <p className="text-xs text-muted-foreground mt-0.5">{card.job.company}</p>
+        {card.company && (
+          <p className="text-xs text-muted-foreground mt-0.5">{card.company}</p>
         )}
       </div>
     </div>

@@ -13,21 +13,6 @@ export type ApplicationStatus =
   | "ghosted"
   | "withdrawn";
 
-// Minimal summary types used as nested fields
-export interface JobSummary {
-  id: number;
-  title: string;
-  company: string;
-  location?: string;
-  match_score?: number;
-}
-
-export interface ApplicationSummary {
-  id: number;
-  status: ApplicationStatus;
-  applied_date?: string;
-}
-
 // Match result from AI job matching
 export interface MatchResult {
   score: number;
@@ -52,7 +37,17 @@ export interface LinkedEventBrief {
   end_time: string;
 }
 
-// Main entities
+// Status history entry — now linked to job directly
+export interface StatusHistoryEntry {
+  id: number;
+  job_id: number;
+  old_status?: string;
+  new_status: string;
+  comment?: string;
+  changed_at: string;
+}
+
+// Main Job entity — unified with tracking fields (formerly split between Job + Application)
 export interface Job {
   id: number;
   user_id: number;
@@ -71,23 +66,8 @@ export interface Job {
   found_at?: string;
   created_at: string;
   updated_at: string;
-  application?: ApplicationSummary; // linked application if exists
-}
-
-export interface StatusHistoryEntry {
-  id: number;
-  application_id: number;
-  old_status?: string;
-  new_status: string;
-  comment?: string;
-  changed_at: string;
-}
-
-export interface Application {
-  id: number;
-  user_id: number;
-  job_id: number;
-  status: ApplicationStatus;
+  // Tracking fields (formerly on Application)
+  status?: ApplicationStatus;
   notes?: string;
   recruiter_name?: string;
   recruiter_contact?: string;
@@ -95,23 +75,22 @@ export interface Application {
   next_action?: string;
   next_action_date?: string;
   rejection_reason?: string;
-  job?: JobSummary;
   status_history?: StatusHistoryEntry[];
-  created_at: string;
-  updated_at: string;
 }
 
-// Kanban card — lighter than full Application, used for board view
+// Kanban card — lighter view of Job for board display
 export interface KanbanCard {
   id: number;
-  job_id: number;
   status: ApplicationStatus;
+  title: string;
+  company: string;
+  location?: string;
+  match_score?: number;
   applied_date?: string;
   next_action?: string;
   next_action_date?: string;
   created_at: string;
   updated_at: string;
-  job?: JobSummary;
 }
 
 export interface KanbanData {
@@ -216,7 +195,7 @@ export interface CreateJobInput {
 export interface UpdateJobInput {
   title?: string;
   company?: string;
-  location?: string | null; // null to clear
+  location?: string | null;
   url?: string | null;
   source?: string;
   description?: string | null;
@@ -228,12 +207,7 @@ export interface UpdateJobInput {
   found_at?: string | null;
 }
 
-export interface CreateApplicationInput {
-  job_id: number;
-  status?: ApplicationStatus;
-}
-
-export interface UpdateApplicationInput {
+export interface UpdateJobTrackingInput {
   notes?: string | null;
   recruiter_name?: string | null;
   recruiter_contact?: string | null;
@@ -252,15 +226,8 @@ export interface JobFilters {
   search?: string;
   company?: string;
   source?: string;
-  has_application?: boolean;
+  status?: string;
   tags?: string;
   sort_by?: "created_at" | "company" | "match_score" | "title" | "source" | "found_at";
-  sort_order?: "asc" | "desc";
-}
-
-export interface ApplicationFilters {
-  status?: string;
-  search?: string;
-  sort_by?: "created_at" | "updated_at" | "applied_date" | "next_action_date";
   sort_order?: "asc" | "desc";
 }
