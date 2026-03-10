@@ -1,9 +1,14 @@
 from datetime import datetime
 from typing import Optional
 
+import logging
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 from app.core.config import settings as app_settings
 from app.core.database import get_db
@@ -232,8 +237,10 @@ async def google_oauth_callback(
 
     try:
         await oauth_service.exchange_code_for_tokens(db, code, user)
-    except Exception:
-        return RedirectResponse(f"{frontend}/calendar?google=error&reason=token_exchange_failed")
+    except Exception as e:
+        logger.exception("OAuth token exchange failed")
+        detail = quote(str(e)[:200])
+        return RedirectResponse(f"{frontend}/calendar?google=error&reason=token_exchange_failed&detail={detail}")
 
     return RedirectResponse(f"{frontend}/calendar?google=connected")
 

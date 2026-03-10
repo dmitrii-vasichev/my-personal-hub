@@ -47,7 +47,11 @@ export default function CalendarPage() {
       toast.success("Google Calendar connected successfully");
     } else if (googleStatus === "error") {
       const reason = searchParams.get("reason") || "unknown";
-      toast.error(`Failed to connect Google Calendar: ${reason}`);
+      const detail = searchParams.get("detail") || "";
+      toast.error(`Failed to connect Google Calendar: ${reason}`, {
+        description: detail || undefined,
+        duration: 10000,
+      });
     }
 
     // Clean up URL params
