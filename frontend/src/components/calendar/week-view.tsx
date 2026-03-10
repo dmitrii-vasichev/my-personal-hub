@@ -14,7 +14,7 @@ interface WeekViewProps {
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HOUR_HEIGHT = 60; // px per hour
 const DAY_START = 6; // visible from 6:00
-const DAY_END = 22; // visible to 22:00
+const DAY_END = 24; // visible to midnight
 
 function getWeekDays(weekStart: Date): Date[] {
   return Array.from({ length: 7 }, (_, i) => {
