@@ -16,6 +16,7 @@ class JobSummary(BaseModel):
     title: str
     company: str
     location: Optional[str]
+    match_score: Optional[int] = None
 
     model_config = {"from_attributes": True}
 

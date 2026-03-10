@@ -176,7 +176,7 @@ async def list_jobs(
         q = q.where(cast(Job.tags, String).ilike(tag_pattern))
 
     # Sorting
-    allowed_sort_fields = {"created_at", "company", "match_score"}
+    allowed_sort_fields = {"created_at", "company", "match_score", "title", "source", "found_at"}
     sort_field = sort_by if sort_by in allowed_sort_fields else "created_at"
     sort_col = getattr(Job, sort_field, Job.created_at)
     q = q.order_by(sort_col.desc() if sort_order == "desc" else sort_col.asc())
