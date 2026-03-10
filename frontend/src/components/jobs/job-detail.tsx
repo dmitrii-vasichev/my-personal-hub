@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Briefcase,
   Calendar,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Copy,
   DollarSign,
@@ -54,6 +56,65 @@ function formatSalary(min?: number, max?: number, currency = "USD"): string | nu
 }
 
 const REJECTION_STATUSES = ["rejected", "ghosted", "withdrawn"] as const;
+
+const COLLAPSED_MAX_HEIGHT = 96; // ~4 lines at text-sm leading-relaxed
+
+function CollapsibleDescription({ description }: { description: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const [needsCollapse, setNeedsCollapse] = useState(false);
+  const [fullHeight, setFullHeight] = useState<number>(0);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (contentRef.current) {
+      const h = contentRef.current.scrollHeight;
+      setFullHeight(h);
+      setNeedsCollapse(h > COLLAPSED_MAX_HEIGHT);
+    }
+  }, [description]);
+
+  return (
+    <div>
+      <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+        Description
+      </h3>
+      <div className="relative">
+        <div
+          ref={contentRef}
+          className="overflow-hidden transition-[max-height] duration-300 ease-in-out"
+          style={{
+            maxHeight: !needsCollapse || expanded ? fullHeight || "none" : COLLAPSED_MAX_HEIGHT,
+          }}
+        >
+          <p className="text-sm leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap">
+            {description}
+          </p>
+        </div>
+        {needsCollapse && !expanded && (
+          <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[var(--bg)] to-transparent pointer-events-none" />
+        )}
+      </div>
+      {needsCollapse && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="mt-1.5 flex items-center gap-1 text-xs text-[var(--accent-foreground)] hover:text-[var(--accent-hover)] transition-colors"
+        >
+          {expanded ? (
+            <>
+              <ChevronUp className="h-3.5 w-3.5" />
+              Show less
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-3.5 w-3.5" />
+              Show more
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
 
 export function JobDetail({ job }: JobDetailProps) {
   const router = useRouter();
@@ -151,14 +212,7 @@ export function JobDetail({ job }: JobDetailProps) {
         <div className="flex flex-col gap-6">
           {/* Description */}
           {job.description ? (
-            <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                Description
-              </h3>
-              <p className="text-sm leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap">
-                {job.description}
-              </p>
-            </div>
+            <CollapsibleDescription description={job.description} />
           ) : (
             <p className="text-sm text-[var(--text-tertiary)] italic">No description provided.</p>
           )}
