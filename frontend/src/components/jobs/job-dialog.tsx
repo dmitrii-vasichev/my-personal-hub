@@ -254,7 +254,7 @@ export function JobDialog({ open, onOpenChange, mode, job, onSuccess }: JobDialo
                     type="button"
                     onClick={handleFetchDescription}
                     disabled={isFetchingDesc}
-                    className="flex items-center gap-1 text-xs text-[var(--accent)] hover:underline disabled:opacity-50"
+                    className="flex items-center gap-1 text-xs text-[var(--accent-foreground)] hover:underline disabled:opacity-50"
                   >
                     <Download className="h-3 w-3" />
                     {isFetchingDesc ? "Fetching…" : "Fetch from URL"}

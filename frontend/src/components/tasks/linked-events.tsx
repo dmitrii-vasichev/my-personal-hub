@@ -100,7 +100,7 @@ export function LinkedEvents({ taskId }: Props) {
             >
               <button
                 onClick={() => router.push(`/calendar/${e.id}`)}
-                className="text-[var(--text-primary)] hover:text-[var(--accent)]"
+                className="text-[var(--text-primary)] hover:text-[var(--accent-foreground)]"
               >
                 {e.title}
               </button>

@@ -231,7 +231,7 @@ export function ApplicationDetail({ application }: ApplicationDetailProps) {
                 onClick={() => router.push(`/jobs/${application.job!.id}`)}
                 className="flex flex-col gap-1 text-left group"
               >
-                <span className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors leading-snug">
+                <span className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent-foreground)] transition-colors leading-snug">
                   {application.job.title}
                 </span>
                 <div className="flex items-center gap-1 text-xs text-[var(--text-tertiary)]">

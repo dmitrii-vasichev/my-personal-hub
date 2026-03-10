@@ -81,7 +81,7 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
         </div>
 
         {/* Title */}
-        <span className="block text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors line-clamp-2 mb-2">
+        <span className="block text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent-foreground)] transition-colors line-clamp-2 mb-2">
           {task.title}
         </span>
 
