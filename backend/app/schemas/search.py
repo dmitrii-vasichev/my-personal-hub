@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SearchRequest(BaseModel):
@@ -9,6 +9,7 @@ class SearchRequest(BaseModel):
     location: Optional[str] = None
     provider: str = "adzuna"
     page: int = 1
+    limit: int = Field(default=10, ge=1, le=100)
 
 
 class SearchResultSchema(BaseModel):
@@ -39,3 +40,4 @@ class SaveSearchResultRequest(BaseModel):
 
 class AutoSearchRequest(BaseModel):
     page: int = 1
+    limit: int = Field(default=30, ge=1, le=100)

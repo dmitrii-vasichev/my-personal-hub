@@ -14,12 +14,13 @@ async def search(
     location: Optional[str],
     api_key: str,
     page: int = 1,
+    limit: int = 10,
 ) -> list[SearchResult]:
     params = {
         "engine": "google_jobs",
         "q": query,
         "api_key": api_key,
-        "start": (page - 1) * 10,
+        "start": (page - 1) * limit,
     }
     if location:
         params["location"] = location
@@ -58,4 +59,4 @@ async def search(
             )
         )
 
-    return results
+    return results[:limit]

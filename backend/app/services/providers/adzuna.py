@@ -17,11 +17,12 @@ async def search(
     app_key: str,
     page: int = 1,
     country: str = DEFAULT_COUNTRY,
+    limit: int = 10,
 ) -> list[SearchResult]:
     params = {
         "app_id": app_id,
         "app_key": app_key,
-        "results_per_page": 10,
+        "results_per_page": min(limit, 50),
         "what": query,
         "content-type": "application/json",
         "page": page,
@@ -64,4 +65,4 @@ async def search(
             )
         )
 
-    return results
+    return results[:limit]

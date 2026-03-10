@@ -21,6 +21,7 @@ async def search_jobs(
     location: Optional[str],
     provider: str,
     page: int = 1,
+    limit: int = 10,
 ) -> list[SearchResult]:
     """Search external job boards with the selected provider."""
     settings = await get_or_create_settings(db, user)
@@ -30,19 +31,19 @@ async def search_jobs(
         app_key = get_decrypted_key(settings, "api_key_adzuna_key")
         if not app_id or not app_key:
             raise ValueError("Adzuna API credentials not configured. Set them in Settings.")
-        return await adzuna.search(query, location, app_id, app_key, page)
+        return await adzuna.search(query, location, app_id, app_key, page, limit=limit)
 
     elif provider == "serpapi":
         api_key = get_decrypted_key(settings, "api_key_serpapi")
         if not api_key:
             raise ValueError("SerpAPI key not configured. Set it in Settings.")
-        return await serpapi.search(query, location, api_key, page)
+        return await serpapi.search(query, location, api_key, page, limit=limit)
 
     elif provider == "jsearch":
         api_key = get_decrypted_key(settings, "api_key_jsearch")
         if not api_key:
             raise ValueError("JSearch API key not configured. Set it in Settings.")
-        return await jsearch.search(query, location, api_key, page)
+        return await jsearch.search(query, location, api_key, page, limit=limit)
 
     else:
         raise ValueError(f"Unknown provider: {provider}")
@@ -78,6 +79,7 @@ async def auto_search(
     db: AsyncSession,
     user: User,
     page: int = 1,
+    limit: int = 30,
 ) -> list[SearchResult]:
     """Run searches across all configured providers using saved target roles."""
     settings = await get_or_create_settings(db, user)
@@ -91,10 +93,15 @@ async def auto_search(
     query = " OR ".join(target_roles)
     results: list[SearchResult] = []
 
+    providers = ("adzuna", "serpapi", "jsearch")
+    per_provider = max(1, limit // len(providers))
+
     # Try each configured provider
-    for provider in ("adzuna", "serpapi", "jsearch"):
+    for provider in providers:
         try:
-            provider_results = await search_jobs(db, user, query, location, provider, page)
+            provider_results = await search_jobs(
+                db, user, query, location, provider, page, limit=per_provider
+            )
             results.extend(provider_results)
         except ValueError:
             pass  # Provider not configured — skip silently
@@ -108,4 +115,4 @@ async def auto_search(
             seen_urls.add(key)
             deduplicated.append(r)
 
-    return deduplicated
+    return deduplicated[:limit]
