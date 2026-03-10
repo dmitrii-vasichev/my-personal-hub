@@ -642,22 +642,9 @@ export function JobDetail({ job }: JobDetailProps) {
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </button>
-                <InlineEditText
-                  value={job.url}
-                  onSave={(v) => patchJob({ url: v.trim() || null })}
-                  className="text-xs text-[var(--text-tertiary)]"
-                  inputClassName="text-xs w-64"
-                  placeholder="URL"
-                />
               </div>
             ) : (
-              <InlineEditText
-                value=""
-                onSave={(v) => patchJob({ url: v.trim() || null })}
-                className="text-sm"
-                inputClassName="text-sm"
-                placeholder="Add URL"
-              />
+              <p className="text-sm text-[var(--text-tertiary)]">No URL</p>
             )}
           </div>
 

@@ -145,4 +145,26 @@ describe("Inline Editing", () => {
     const input = screen.getByDisplayValue("Remote");
     expect(input).toBeInTheDocument();
   });
+
+  it("does not show inline edit for URL field", () => {
+    const jobWithUrl: Job = {
+      ...baseJob,
+      url: "https://example.com/job/123",
+    };
+    render(<JobDetail job={jobWithUrl} />);
+
+    // The "View Original Posting" link should be present
+    const link = screen.getByText("View Original Posting");
+    expect(link).toBeInTheDocument();
+    expect(link.closest("a")).toHaveAttribute(
+      "href",
+      "https://example.com/job/123"
+    );
+
+    // No pencil/edit icon should appear for the URL
+    // The URL text itself should NOT be rendered as clickable-to-edit
+    expect(
+      screen.queryByDisplayValue("https://example.com/job/123")
+    ).not.toBeInTheDocument();
+  });
 });
