@@ -2,8 +2,9 @@
   "project_name": "my-personal-hub",
   "work_type": "new_feature",
   "created_at": "2026-03-08T13:10:00Z",
-  "current_step": 7,
-  "current_step_name": "idle",
+  "current_step": 6,
+  "current_step_name": "implementation",
+  "current_phase": 22,
   "phase_2_merged": true,
   "phase_3_merged": true,
   "phase_4_merged": true,
@@ -107,7 +108,7 @@
     {"step": 7, "action": "completed", "timestamp": "2026-03-10T20:30:00Z", "details": "Phase 21 review done — PR #275 squash-merged, all issues #261-#273 closed. Refactor issue #247 closed. Job Hunt Redesign PRD fully complete."}
   ],
   "artifacts": {
-    "prd_file": "docs/prd-job-hunt-redesign.md",
+    "prd_file": "docs/prd-popup-redesign.md",
     "design_brief_file": "docs/design-brief.md",
     "plan_files": [
       "docs/plans/2026-03-08-phase-1-foundation.md",

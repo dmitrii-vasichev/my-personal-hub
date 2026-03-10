@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +8,14 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
+import {
+  Dialog,
+  DialogPortal,
+  DialogBackdrop,
+  DialogPopup,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { useCreateCalendarEvent, useUpdateCalendarEvent } from "@/hooks/use-calendar";
 import type { CalendarEvent, CalendarEventCreate } from "@/types/calendar";
 import type { Visibility } from "@/types/task";
@@ -101,135 +108,130 @@ export function EventDialog({ open, onClose, prefillDate, event }: EventDialogPr
     }
   };
 
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div
-        className="relative z-10 bg-surface border border-border rounded-lg shadow-xl w-full max-w-[480px] mx-4"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-[--border]">
-          <h2 className="text-base font-semibold text-[--text-primary]">
-            {isEditing ? "Edit Event" : "New Event"}
-          </h2>
-          <button onClick={onClose} className="text-[--text-tertiary] hover:text-[--text-primary] transition-colors">
-            <X size={16} />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="title">Title *</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Event title"
-              autoFocus
-            />
+    <Dialog open={open} onOpenChange={(val) => !val && onClose()}>
+      <DialogPortal>
+        <DialogBackdrop />
+        <DialogPopup className="w-full max-w-[480px] mx-4">
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-[var(--border)]">
+            <DialogTitle>
+              {isEditing ? "Edit Event" : "New Event"}
+            </DialogTitle>
+            <DialogClose />
           </div>
 
-          {/* All-day toggle */}
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="all-day"
-              checked={allDay}
-              onChange={(e) => setAllDay(e.target.checked)}
-              className="w-4 h-4 accent-[--accent]"
-            />
-            <Label htmlFor="all-day" className="cursor-pointer">All-day event</Label>
-          </div>
-
-          {allDay ? (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Start date</Label>
-                <DatePicker
-                  value={startTime.split("T")[0]}
-                  onChange={(v) => setStartTime(v ? v + "T00:00" : "")}
-                  placeholder="Start date"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>End date</Label>
-                <DatePicker
-                  value={endTime.split("T")[0]}
-                  onChange={(v) => setEndTime(v ? v + "T23:59" : "")}
-                  placeholder="End date"
-                />
-              </div>
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="p-4 space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Event title"
+                autoFocus
+              />
             </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Label>Start</Label>
-                <DateTimePicker
-                  value={startTime}
-                  onChange={setStartTime}
-                  placeholder="Start date & time"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>End</Label>
-                <DateTimePicker
-                  value={endTime}
-                  onChange={setEndTime}
-                  placeholder="End date & time"
-                />
-              </div>
+
+            {/* All-day toggle */}
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="all-day"
+                checked={allDay}
+                onChange={(e) => setAllDay(e.target.checked)}
+                className="w-4 h-4 accent-[--accent]"
+              />
+              <Label htmlFor="all-day" className="cursor-pointer">All-day event</Label>
             </div>
-          )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="location">Location</Label>
-            <Input
-              id="location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Optional location"
-            />
-          </div>
+            {allDay ? (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label>Start date</Label>
+                  <DatePicker
+                    value={startTime.split("T")[0]}
+                    onChange={(v) => setStartTime(v ? v + "T00:00" : "")}
+                    placeholder="Start date"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>End date</Label>
+                  <DatePicker
+                    value={endTime.split("T")[0]}
+                    onChange={(v) => setEndTime(v ? v + "T23:59" : "")}
+                    placeholder="End date"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label>Start</Label>
+                  <DateTimePicker
+                    value={startTime}
+                    onChange={setStartTime}
+                    placeholder="Start date & time"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>End</Label>
+                  <DateTimePicker
+                    value={endTime}
+                    onChange={setEndTime}
+                    placeholder="End date & time"
+                  />
+                </div>
+              </div>
+            )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional description"
-              rows={3}
-            />
-          </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Optional location"
+              />
+            </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="visibility">Visibility</Label>
-            <Select
-              id="visibility"
-              value={visibility}
-              onChange={(e) => setVisibility(e.target.value as Visibility)}
-            >
-              <option value="family">👨‍👩‍👧 Family</option>
-              <option value="private">🔒 Private</option>
-            </Select>
-          </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Optional description"
+                rows={3}
+              />
+            </div>
 
-          {error && <p className="text-sm text-[--danger]">{error}</p>}
+            <div className="space-y-1.5">
+              <Label htmlFor="visibility">Visibility</Label>
+              <Select
+                id="visibility"
+                value={visibility}
+                onChange={(e) => setVisibility(e.target.value as Visibility)}
+              >
+                <option value="family">👨‍👩‍👧 Family</option>
+                <option value="private">🔒 Private</option>
+              </Select>
+            </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isPending}>
-              {isPending ? "Saving..." : isEditing ? "Save Changes" : "Create Event"}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+            {error && <p className="text-sm text-[--danger]">{error}</p>}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? "Saving..." : isEditing ? "Save Changes" : "Create Event"}
+              </Button>
+            </div>
+          </form>
+        </DialogPopup>
+      </DialogPortal>
+    </Dialog>
   );
 }

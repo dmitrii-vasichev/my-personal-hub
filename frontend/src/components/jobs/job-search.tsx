@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useJobSearch, useSaveSearchResult } from "@/hooks/use-search";
 import { SearchResultDetail } from "@/components/jobs/search-result-detail";
 import type { SearchProvider, SearchResult } from "@/types/search";
@@ -167,32 +168,34 @@ export function JobSearch() {
             </option>
           ))}
         </Select>
-        <Input
-          type="number"
-          value={limit}
-          onChange={(e) => setLimit(Math.min(100, Math.max(1, Number(e.target.value) || 10)))}
-          min={1}
-          max={100}
-          step={10}
-          title="Max results"
-          placeholder="Max results"
-          className="sm:w-24 text-sm"
-        />
+        <Tooltip content="Max results">
+          <Input
+            type="number"
+            value={limit}
+            onChange={(e) => setLimit(Math.min(100, Math.max(1, Number(e.target.value) || 10)))}
+            min={1}
+            max={100}
+            step={10}
+            placeholder="Max results"
+            className="sm:w-24 text-sm"
+          />
+        </Tooltip>
         <Button type="submit" disabled={isSearching || !query.trim()} className="gap-1.5">
           <Search className="h-3.5 w-3.5" />
           {isSearching ? "Searching…" : "Search"}
         </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={handleAutoSearch}
-          disabled={isSearching}
-          className="gap-1.5"
-          title="Search using saved target roles from Settings"
-        >
-          <Sparkles className="h-3.5 w-3.5" />
-          Auto
-        </Button>
+        <Tooltip content="Search using saved target roles from Settings">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleAutoSearch}
+            disabled={isSearching}
+            className="gap-1.5"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            Auto
+          </Button>
+        </Tooltip>
       </form>
 
       {/* Error */}

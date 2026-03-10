@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from "react";
 import { Check, DollarSign, Pencil, X } from "lucide-react";
+import { Tooltip } from "@/components/ui/tooltip";
 
 function formatSalary(min?: number, max?: number, currency = "USD"): string | null {
   if (!min && !max) return null;
@@ -96,12 +97,16 @@ export function InlineEditSalary({ min, max, currency, onSave }: InlineEditSalar
           />
         </div>
         <div className="flex gap-1">
-          <button onClick={save} disabled={saving} className="rounded p-1 text-[var(--success)] hover:bg-[var(--surface-hover)] transition-colors" title="Save">
-            <Check className="h-3.5 w-3.5" />
-          </button>
-          <button onClick={cancel} disabled={saving} className="rounded p-1 text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] transition-colors" title="Cancel">
-            <X className="h-3.5 w-3.5" />
-          </button>
+          <Tooltip content="Save">
+            <button onClick={save} disabled={saving} className="rounded p-1 text-[var(--success)] hover:bg-[var(--surface-hover)] transition-colors">
+              <Check className="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
+          <Tooltip content="Cancel">
+            <button onClick={cancel} disabled={saving} className="rounded p-1 text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] transition-colors">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
         </div>
       </div>
     );

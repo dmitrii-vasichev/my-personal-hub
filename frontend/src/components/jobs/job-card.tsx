@@ -2,6 +2,7 @@
 
 import { Briefcase, MapPin, DollarSign, Tag, Pencil, Trash2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import type { Job } from "@/types/job";
 import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS, APPLICATION_STATUS_BG_COLORS } from "@/types/job";
 
@@ -41,20 +42,22 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
 
         {/* Action buttons */}
         <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={() => onEdit(job)}
-            className="p-1.5 rounded-md text-[#4b5563] hover:text-[#e8eaf0] hover:bg-[#252a3a] transition-colors"
-            title="Edit job"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-          <button
-            onClick={() => onDelete(job)}
-            className="p-1.5 rounded-md text-[#4b5563] hover:text-[#f87171] hover:bg-[#252a3a] transition-colors"
-            title="Delete job"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          <Tooltip content="Edit job">
+            <button
+              onClick={() => onEdit(job)}
+              className="p-1.5 rounded-md text-[#4b5563] hover:text-[#e8eaf0] hover:bg-[#252a3a] transition-colors"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
+          <Tooltip content="Delete job">
+            <button
+              onClick={() => onDelete(job)}
+              className="p-1.5 rounded-md text-[#4b5563] hover:text-[#f87171] hover:bg-[#252a3a] transition-colors"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </Tooltip>
         </div>
       </div>
 

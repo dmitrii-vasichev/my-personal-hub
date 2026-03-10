@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Pencil, Trash2, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateEventNote, useUpdateEventNote, useDeleteEventNote } from "@/hooks/use-calendar";
 import type { EventNote } from "@/types/calendar";
@@ -35,13 +36,15 @@ function NoteItem({
     }
   };
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const handleDelete = async () => {
-    if (!confirm("Delete this note?")) return;
     try {
       await deleteNote.mutateAsync({ noteId: note.id, eventId });
     } catch {
       toast.error("Failed to delete note");
     }
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -74,7 +77,7 @@ function NoteItem({
               <Pencil size={13} />
             </button>
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               className="text-[--text-tertiary] hover:text-[--danger] p-0.5 transition-colors"
               disabled={deleteNote.isPending}
             >
@@ -86,6 +89,16 @@ function NoteItem({
       <p className="text-xs text-[--text-tertiary] mt-1.5">
         {new Date(note.created_at).toLocaleString()}
       </p>
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        title="Delete Note"
+        description="Delete this note? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteNote.isPending}
+      />
     </div>
   );
 }
