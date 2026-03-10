@@ -23,6 +23,11 @@ class SettingsUpdate(BaseModel):
     google_client_id: Optional[str] = None
     google_client_secret: Optional[str] = None
     google_redirect_uri: Optional[str] = None
+    # AI prompt instructions (custom per-user overrides)
+    instruction_resume: Optional[str] = None
+    instruction_ats_audit: Optional[str] = None
+    instruction_gap_analysis: Optional[str] = None
+    instruction_cover_letter: Optional[str] = None
 
 
 class SettingsResponse(BaseModel):
@@ -45,6 +50,11 @@ class SettingsResponse(BaseModel):
     has_google_client_id: bool
     has_google_client_secret: bool
     google_redirect_uri: Optional[str]
+    # AI prompt instructions
+    instruction_resume: Optional[str] = None
+    instruction_ats_audit: Optional[str] = None
+    instruction_gap_analysis: Optional[str] = None
+    instruction_cover_letter: Optional[str] = None
     updated_at: datetime
 
     model_config = {"from_attributes": True}

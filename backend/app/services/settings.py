@@ -69,6 +69,12 @@ async def update_settings(
         if data.google_redirect_uri is not None:
             settings.google_redirect_uri = data.google_redirect_uri or None
 
+    # AI prompt instructions — any user can set their own
+    for field in ("instruction_resume", "instruction_ats_audit", "instruction_gap_analysis", "instruction_cover_letter"):
+        value = getattr(data, field, None)
+        if value is not None:
+            setattr(settings, field, value or None)
+
     await db.commit()
     await db.refresh(settings)
     return settings
@@ -94,6 +100,10 @@ def to_response(settings: UserSettings) -> SettingsResponse:
         has_google_client_id=bool(settings.google_client_id),
         has_google_client_secret=bool(settings.google_client_secret),
         google_redirect_uri=settings.google_redirect_uri,
+        instruction_resume=settings.instruction_resume,
+        instruction_ats_audit=settings.instruction_ats_audit,
+        instruction_gap_analysis=settings.instruction_gap_analysis,
+        instruction_cover_letter=settings.instruction_cover_letter,
         updated_at=settings.updated_at,
     )
 

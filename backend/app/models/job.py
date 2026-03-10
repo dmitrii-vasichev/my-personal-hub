@@ -59,6 +59,9 @@ class Job(Base):
     # 0-100 match score, populated by AI matching in Phase 4
     match_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
 
+    # Detailed AI match result (skills overlap, gap analysis, etc.)
+    match_result: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
     tags: Mapped[list] = mapped_column(JSON, default=list, nullable=False, server_default="[]")
 
     found_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

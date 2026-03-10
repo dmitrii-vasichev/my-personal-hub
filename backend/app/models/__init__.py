@@ -3,6 +3,8 @@ from app.models.task import Task, TaskUpdate, TaskStatus, TaskPriority, TaskSour
 from app.models.job import Job, Application, StatusHistory, ApplicationStatus
 from app.models.settings import UserSettings
 from app.models.resume import Resume, CoverLetter
+from app.models.profile import UserProfile
+from app.models.knowledge_base import AiKnowledgeBase
 
 __all__ = [
     "User",
@@ -21,4 +23,6 @@ __all__ = [
     "UserSettings",
     "Resume",
     "CoverLetter",
+    "UserProfile",
+    "AiKnowledgeBase",
 ]
