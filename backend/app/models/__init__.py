@@ -5,6 +5,8 @@ from app.models.settings import UserSettings
 from app.models.resume import Resume, CoverLetter
 from app.models.profile import UserProfile
 from app.models.knowledge_base import AiKnowledgeBase
+from app.models.job_task_link import JobTaskLink
+from app.models.job_event_link import JobEventLink
 
 __all__ = [
     "User",
@@ -25,4 +27,6 @@ __all__ = [
     "CoverLetter",
     "UserProfile",
     "AiKnowledgeBase",
+    "JobTaskLink",
+    "JobEventLink",
 ]
