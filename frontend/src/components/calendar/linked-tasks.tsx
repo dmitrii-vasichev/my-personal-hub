@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckSquare, Plus, X } from "lucide-react";
+import { Plus, Square, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTasks } from "@/hooks/use-tasks";
 import {
@@ -80,7 +80,7 @@ export function LinkedTasks({ eventId }: Props) {
                   onClick={() => handleLink(t.id)}
                   className="flex items-center gap-2 rounded px-2 py-1 text-left text-sm text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
                 >
-                  <CheckSquare className="h-3.5 w-3.5 shrink-0 text-[var(--text-tertiary)]" />
+                  <Square className="h-3.5 w-3.5 shrink-0 text-[var(--text-tertiary)]" />
                   <span className="truncate">{t.title}</span>
                   <span className={`ml-auto shrink-0 rounded px-1.5 py-0.5 text-xs ${PRIORITY_BG_COLORS[t.priority as TaskPriority]}`}>
                     {t.priority}
