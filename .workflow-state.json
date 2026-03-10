@@ -7,6 +7,7 @@
   "phase_14_merged": true,
   "phase_15_merged": true,
   "phase_16_merged": true,
+  "phase_17_merged": true,
   "current_phase": 17,
   "phase_13_merged": true,
   "phase_12_merged": true,
@@ -84,7 +85,8 @@
     {"step": 7, "action": "completed", "timestamp": "2026-03-10T12:45:00Z", "details": "Phase 16 review done — PR #206 squash-merged, branch deleted, all issues #196-#205 closed"},
     {"step": 4, "action": "completed", "timestamp": "2026-03-10T13:00:00Z", "details": "Phase 17 plan approved — 10 tasks (Jobs Table View & Kanban Toggle)"},
     {"step": 5, "action": "completed", "timestamp": "2026-03-10T13:05:00Z", "details": "10 issues created (#208-#217), added to Project Board #4"},
-    {"step": 6, "action": "completed", "timestamp": "2026-03-10T14:00:00Z", "details": "Phase 17 implemented — all 10 tasks done, PR #218 created. 30 frontend tests pass, 156 backend tests pass, build clean."}
+    {"step": 6, "action": "completed", "timestamp": "2026-03-10T14:00:00Z", "details": "Phase 17 implemented — all 10 tasks done, PR #218 created. 30 frontend tests pass, 156 backend tests pass, build clean."},
+    {"step": 7, "action": "completed", "timestamp": "2026-03-10T14:30:00Z", "details": "Phase 17 review done — PR #218 squash-merged, branch deleted, all issues #208-#217 closed"}
   ],
   "artifacts": {
     "prd_file": "docs/prd-job-hunt-redesign.md",
