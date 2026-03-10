@@ -13,6 +13,9 @@ export interface UserSettings {
   has_api_key_adzuna: boolean;
   has_api_key_serpapi: boolean;
   has_api_key_jsearch: boolean;
+  has_google_client_id: boolean;
+  has_google_client_secret: boolean;
+  google_redirect_uri: string | null;
   updated_at: string;
 }
 
@@ -30,4 +33,7 @@ export interface UpdateSettingsInput {
   api_key_adzuna_key?: string;
   api_key_serpapi?: string;
   api_key_jsearch?: string;
+  google_client_id?: string;
+  google_client_secret?: string;
+  google_redirect_uri?: string;
 }

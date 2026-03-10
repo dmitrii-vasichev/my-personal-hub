@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text, UniqueConstraint, func
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -40,6 +40,11 @@ class UserSettings(Base):
     api_key_adzuna_key: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     api_key_serpapi: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     api_key_jsearch: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Google Calendar OAuth2 credentials (encrypted, admin-only)
+    google_client_id: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    google_client_secret: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    google_redirect_uri: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

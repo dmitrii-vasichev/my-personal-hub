@@ -1,18 +1,45 @@
 "use client";
 
 import { useState, KeyboardEvent } from "react";
-import { Save, X, Eye, EyeOff } from "lucide-react";
+import { Save } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
 import { useAuth } from "@/lib/auth";
+import { GeneralTab } from "@/components/settings/general-tab";
+import { AiApiKeysTab } from "@/components/settings/ai-api-keys-tab";
+import { IntegrationsTab } from "@/components/settings/integrations-tab";
 import { UserManagementTable } from "@/components/settings/user-management-table";
 import type { UpdateSettingsInput } from "@/types/settings";
 
-function TagInput({
+// Type guard for admin settings response
+function hasApiKeys(s: unknown): s is {
+  has_api_key_openai: boolean;
+  has_api_key_anthropic: boolean;
+  has_api_key_gemini: boolean;
+  has_api_key_adzuna: boolean;
+  has_api_key_serpapi: boolean;
+  has_api_key_jsearch: boolean;
+  has_google_client_id: boolean;
+  has_google_client_secret: boolean;
+  google_redirect_uri: string | null;
+  llm_provider: string;
+} {
+  return !!s && typeof s === "object" && "has_api_key_openai" in s;
+}
+
+const ADMIN_TABS = [
+  { id: "general", label: "General" },
+  { id: "ai-keys", label: "AI & API Keys" },
+  { id: "integrations", label: "Integrations" },
+  { id: "users", label: "Users" },
+] as const;
+
+type TabId = (typeof ADMIN_TABS)[number]["id"];
+
+// ── Shared sub-components ────────────────────────────────────────────────────
+
+export function TagInput({
   tags,
   onAdd,
   onRemove,
@@ -51,7 +78,7 @@ function TagInput({
             onClick={() => onRemove(tag)}
             className="hover:text-danger"
           >
-            <X className="h-3 w-3" />
+            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
           </button>
         </span>
       ))}
@@ -66,7 +93,7 @@ function TagInput({
   );
 }
 
-function ApiKeyInput({
+export function ApiKeyInput({
   label,
   hasKey,
   value,
@@ -80,39 +107,32 @@ function ApiKeyInput({
   const [show, setShow] = useState(false);
   return (
     <div className="space-y-1">
-      <Label className="text-xs uppercase text-muted-foreground">{label}</Label>
+      <label className="text-xs uppercase text-muted-foreground font-medium">{label}</label>
       <div className="relative">
-        <Input
+        <input
           type={show ? "text" : "password"}
           placeholder={hasKey ? "••••••••••••••• (set)" : "Not configured"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="pr-9 text-sm"
+          className="flex h-8 w-full rounded-lg border border-border bg-background px-3 pr-9 text-sm outline-none focus:border-accent transition-colors placeholder:text-muted-foreground"
         />
         <button
           type="button"
           onClick={() => setShow((s) => !s)}
           className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
         >
-          {show ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          {show ? (
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+          ) : (
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+          )}
         </button>
       </div>
     </div>
   );
 }
 
-// Type guard for admin settings response
-function hasApiKeys(s: unknown): s is {
-  has_api_key_openai: boolean;
-  has_api_key_anthropic: boolean;
-  has_api_key_gemini: boolean;
-  has_api_key_adzuna: boolean;
-  has_api_key_serpapi: boolean;
-  has_api_key_jsearch: boolean;
-  llm_provider: string;
-} {
-  return !!s && typeof s === "object" && "has_api_key_openai" in s;
-}
+// ── Main page ────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
@@ -120,12 +140,16 @@ export default function SettingsPage() {
   const { user } = useAuth();
 
   const isAdmin = user?.role === "admin";
+  const [activeTab, setActiveTab] = useState<TabId>("general");
 
+  // General tab state
   const [targetRoles, setTargetRoles] = useState<string[]>([]);
   const [excludedCompanies, setExcludedCompanies] = useState<string[]>([]);
   const [location, setLocation] = useState("");
   const [minScore, setMinScore] = useState("0");
   const [staleDays, setStaleDays] = useState("14");
+
+  // AI & API Keys tab state
   const [llmProvider, setLlmProvider] = useState("openai");
   const [apiKeys, setApiKeys] = useState({
     openai: "",
@@ -136,6 +160,14 @@ export default function SettingsPage() {
     serpapi: "",
     jsearch: "",
   });
+
+  // Integrations tab state
+  const [googleKeys, setGoogleKeys] = useState({
+    client_id: "",
+    client_secret: "",
+    redirect_uri: "",
+  });
+
   const [initialized, setInitialized] = useState(false);
 
   if (settings && !initialized) {
@@ -146,6 +178,10 @@ export default function SettingsPage() {
     setStaleDays(String(settings.stale_threshold_days ?? 14));
     if (hasApiKeys(settings)) {
       setLlmProvider(settings.llm_provider ?? "openai");
+      setGoogleKeys((k) => ({
+        ...k,
+        redirect_uri: settings.google_redirect_uri ?? "",
+      }));
     }
     setInitialized(true);
   }
@@ -168,12 +204,16 @@ export default function SettingsPage() {
       if (apiKeys.adzuna_key) payload.api_key_adzuna_key = apiKeys.adzuna_key;
       if (apiKeys.serpapi) payload.api_key_serpapi = apiKeys.serpapi;
       if (apiKeys.jsearch) payload.api_key_jsearch = apiKeys.jsearch;
+      if (googleKeys.client_id) payload.google_client_id = googleKeys.client_id;
+      if (googleKeys.client_secret) payload.google_client_secret = googleKeys.client_secret;
+      if (googleKeys.redirect_uri) payload.google_redirect_uri = googleKeys.redirect_uri;
     }
 
     try {
       await update.mutateAsync(payload);
       if (isAdmin) {
         setApiKeys({ openai: "", anthropic: "", gemini: "", adzuna_id: "", adzuna_key: "", serpapi: "", jsearch: "" });
+        setGoogleKeys((k) => ({ ...k, client_id: "", client_secret: "" }));
       }
       toast.success("Settings saved");
     } catch (err) {
@@ -190,9 +230,11 @@ export default function SettingsPage() {
   }
 
   const adminSettings = hasApiKeys(settings) ? settings : null;
+  const visibleTabs = isAdmin ? ADMIN_TABS : ADMIN_TABS.filter((t) => t.id === "general");
 
   return (
-    <div className="mx-auto max-w-2xl space-y-8 p-6">
+    <div className="mx-auto max-w-2xl space-y-6 p-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Settings</h1>
         <Button size="sm" onClick={handleSave} disabled={update.isPending}>
@@ -201,143 +243,65 @@ export default function SettingsPage() {
         </Button>
       </div>
 
-      {/* User Management — admin only */}
-      {isAdmin && (
+      {/* Tabs — only show if more than one tab */}
+      {visibleTabs.length > 1 && (
+        <div className="flex gap-1 border-b border-border">
+          {visibleTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-3 py-2 text-sm font-medium transition-colors relative ${
+                activeTab === tab.id
+                  ? "text-accent"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+              {activeTab === tab.id && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Tab content */}
+      {activeTab === "general" && (
+        <GeneralTab
+          targetRoles={targetRoles}
+          setTargetRoles={setTargetRoles}
+          excludedCompanies={excludedCompanies}
+          setExcludedCompanies={setExcludedCompanies}
+          location={location}
+          setLocation={setLocation}
+          minScore={minScore}
+          setMinScore={setMinScore}
+          staleDays={staleDays}
+          setStaleDays={setStaleDays}
+        />
+      )}
+
+      {activeTab === "ai-keys" && isAdmin && (
+        <AiApiKeysTab
+          llmProvider={llmProvider}
+          setLlmProvider={setLlmProvider}
+          apiKeys={apiKeys}
+          setApiKeys={setApiKeys}
+          adminSettings={adminSettings}
+        />
+      )}
+
+      {activeTab === "integrations" && isAdmin && (
+        <IntegrationsTab
+          googleKeys={googleKeys}
+          setGoogleKeys={setGoogleKeys}
+          adminSettings={adminSettings}
+        />
+      )}
+
+      {activeTab === "users" && isAdmin && (
         <section className="space-y-4 rounded-lg border border-border p-5">
           <UserManagementTable />
-        </section>
-      )}
-
-      {/* Job Search */}
-      <section className="space-y-4 rounded-lg border border-border p-5">
-        <h2 className="text-sm font-medium">Job Search</h2>
-
-        <div className="space-y-1">
-          <Label className="text-xs uppercase text-muted-foreground">Target Roles</Label>
-          <TagInput
-            tags={targetRoles}
-            onAdd={(t) => setTargetRoles((p) => [...p, t])}
-            onRemove={(t) => setTargetRoles((p) => p.filter((r) => r !== t))}
-            placeholder="e.g. Product Manager, UX Designer"
-          />
-          <p className="text-xs text-muted-foreground">Press Enter or comma to add</p>
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs uppercase text-muted-foreground">Default Location</Label>
-          <Input
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="e.g. London, UK or Remote"
-            className="text-sm"
-          />
-        </div>
-
-        <div className="space-y-1">
-          <Label className="text-xs uppercase text-muted-foreground">Excluded Companies</Label>
-          <TagInput
-            tags={excludedCompanies}
-            onAdd={(t) => setExcludedCompanies((p) => [...p, t])}
-            onRemove={(t) => setExcludedCompanies((p) => p.filter((c) => c !== t))}
-            placeholder="e.g. Company A, Company B"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label className="text-xs uppercase text-muted-foreground">Min Match Score</Label>
-            <Input
-              type="number"
-              min={0}
-              max={100}
-              value={minScore}
-              onChange={(e) => setMinScore(e.target.value)}
-              className="text-sm"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs uppercase text-muted-foreground">Stale After (days)</Label>
-            <Input
-              type="number"
-              min={1}
-              value={staleDays}
-              onChange={(e) => setStaleDays(e.target.value)}
-              className="text-sm"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* AI Provider — admin only */}
-      {isAdmin && (
-        <section className="space-y-4 rounded-lg border border-border p-5">
-          <h2 className="text-sm font-medium">AI Provider</h2>
-
-          <div className="space-y-1">
-            <Label className="text-xs uppercase text-muted-foreground">Default LLM Provider</Label>
-            <Select
-              value={llmProvider}
-              onChange={(e) => setLlmProvider((e.target as HTMLSelectElement).value)}
-              className="text-sm"
-            >
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic</option>
-              <option value="gemini">Google Gemini</option>
-            </Select>
-          </div>
-
-          <ApiKeyInput
-            label="OpenAI API Key"
-            hasKey={adminSettings?.has_api_key_openai ?? false}
-            value={apiKeys.openai}
-            onChange={(v) => setApiKeys((k) => ({ ...k, openai: v }))}
-          />
-          <ApiKeyInput
-            label="Anthropic API Key"
-            hasKey={adminSettings?.has_api_key_anthropic ?? false}
-            value={apiKeys.anthropic}
-            onChange={(v) => setApiKeys((k) => ({ ...k, anthropic: v }))}
-          />
-          <ApiKeyInput
-            label="Google Gemini API Key"
-            hasKey={adminSettings?.has_api_key_gemini ?? false}
-            value={apiKeys.gemini}
-            onChange={(v) => setApiKeys((k) => ({ ...k, gemini: v }))}
-          />
-        </section>
-      )}
-
-      {/* Job Search API Keys — admin only */}
-      {isAdmin && (
-        <section className="space-y-4 rounded-lg border border-border p-5">
-          <h2 className="text-sm font-medium">Job Search API Keys</h2>
-
-          <div className="grid grid-cols-2 gap-4">
-            <ApiKeyInput
-              label="Adzuna App ID"
-              hasKey={adminSettings?.has_api_key_adzuna ?? false}
-              value={apiKeys.adzuna_id}
-              onChange={(v) => setApiKeys((k) => ({ ...k, adzuna_id: v }))}
-            />
-            <ApiKeyInput
-              label="Adzuna App Key"
-              hasKey={adminSettings?.has_api_key_adzuna ?? false}
-              value={apiKeys.adzuna_key}
-              onChange={(v) => setApiKeys((k) => ({ ...k, adzuna_key: v }))}
-            />
-          </div>
-          <ApiKeyInput
-            label="SerpAPI Key"
-            hasKey={adminSettings?.has_api_key_serpapi ?? false}
-            value={apiKeys.serpapi}
-            onChange={(v) => setApiKeys((k) => ({ ...k, serpapi: v }))}
-          />
-          <ApiKeyInput
-            label="JSearch (RapidAPI) Key"
-            hasKey={adminSettings?.has_api_key_jsearch ?? false}
-            value={apiKeys.jsearch}
-            onChange={(v) => setApiKeys((k) => ({ ...k, jsearch: v }))}
-          />
         </section>
       )}
     </div>
