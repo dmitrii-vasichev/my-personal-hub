@@ -2,10 +2,13 @@ from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings as app_settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.services.auth import get_user_by_id
 from app.models.user import User
 from app.schemas.calendar import (
     CalendarEventCreate,
@@ -202,19 +205,37 @@ async def google_oauth_connect(
 @router.get("/oauth/callback")
 async def google_oauth_callback(
     code: str = Query(...),
-    state: str = Query(None),
+    state: str = Query(""),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
 ):
-    """Handle OAuth2 callback from Google. Exchange code for tokens."""
+    """Handle OAuth2 callback from Google.
+
+    This endpoint is PUBLIC (no JWT required) because Google redirects
+    the user here via browser navigation. The user is identified by the
+    ``state`` parameter (format: ``user_<id>``), which was set during
+    the ``/oauth/connect`` step.
+    """
+    frontend = app_settings.FRONTEND_URL.rstrip("/")
+
+    # Parse user ID from state
+    if not state.startswith("user_"):
+        return RedirectResponse(f"{frontend}/calendar?google=error&reason=invalid_state")
+
     try:
-        await oauth_service.exchange_code_for_tokens(db, code, current_user)
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to exchange authorization code: {e}",
-        )
-    return {"message": "Google Calendar connected successfully"}
+        user_id = int(state.split("_", 1)[1])
+    except (ValueError, IndexError):
+        return RedirectResponse(f"{frontend}/calendar?google=error&reason=invalid_state")
+
+    user = await get_user_by_id(db, user_id)
+    if user is None:
+        return RedirectResponse(f"{frontend}/calendar?google=error&reason=user_not_found")
+
+    try:
+        await oauth_service.exchange_code_for_tokens(db, code, user)
+    except Exception:
+        return RedirectResponse(f"{frontend}/calendar?google=error&reason=token_exchange_failed")
+
+    return RedirectResponse(f"{frontend}/calendar?google=connected")
 
 
 @router.post("/oauth/disconnect", status_code=status.HTTP_204_NO_CONTENT)

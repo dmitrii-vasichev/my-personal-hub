@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/calendar/oauth/callback"
 
+    # Frontend URL for OAuth redirects
+    FRONTEND_URL: str = "http://localhost:3000"
+
     # CORS — comma-separated list of allowed origins
     CORS_ORIGINS: str = "http://localhost:3000"
 
