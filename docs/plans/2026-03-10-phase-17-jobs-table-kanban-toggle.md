@@ -3,6 +3,7 @@
 **Date**: 2026-03-10
 **PRD Reference**: docs/prd-job-hunt-redesign.md
 **Requirements**: FR-1 (Jobs Table View), FR-2 (Table ↔ Kanban Toggle), FR-3 partial (Job Detail — source URL, status control)
+**Issues**: #208, #209, #210, #211, #212, #213, #214, #215, #216, #217
 
 ## Overview
 
