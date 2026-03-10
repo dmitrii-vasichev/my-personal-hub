@@ -105,7 +105,7 @@ export function LinkedTasks({ eventId }: Props) {
             >
               <button
                 onClick={() => router.push(`/tasks/${t.id}`)}
-                className="text-[var(--text-primary)] hover:text-[var(--accent)]"
+                className="text-[var(--text-primary)] hover:text-[var(--accent-foreground)]"
               >
                 {t.title}
               </button>

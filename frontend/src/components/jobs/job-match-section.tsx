@@ -12,7 +12,7 @@ interface JobMatchSectionProps {
 function getScoreColor(score: number) {
   if (score >= 80) return { text: "text-[#34d399]", bg: "bg-[#0f2d22]" };
   if (score >= 60) return { text: "text-[#fbbf24]", bg: "bg-[#2a2510]" };
-  if (score >= 40) return { text: "text-[var(--accent)]", bg: "bg-[var(--accent-muted)]" };
+  if (score >= 40) return { text: "text-[var(--accent-foreground)]", bg: "bg-[var(--accent-muted)]" };
   return { text: "text-[var(--text-tertiary)]", bg: "bg-[var(--surface-hover)]" };
 }
 
@@ -61,7 +61,7 @@ export function JobMatchSection({ job }: JobMatchSectionProps) {
           AI Match Analysis
         </h3>
         <div className="rounded-lg border border-[var(--border)] p-6 text-center">
-          <Loader2 className="mx-auto mb-2 h-6 w-6 text-[var(--accent)] animate-spin" />
+          <Loader2 className="mx-auto mb-2 h-6 w-6 text-[var(--accent-foreground)] animate-spin" />
           <p className="text-sm text-[var(--text-secondary)]">Analyzing match...</p>
         </div>
       </div>
@@ -183,7 +183,7 @@ export function JobMatchSection({ job }: JobMatchSectionProps) {
         {result.strengths.length > 0 && (
           <div>
             <div className="flex items-center gap-1.5 mb-1.5">
-              <Trophy className="h-3.5 w-3.5 text-[var(--accent)]" />
+              <Trophy className="h-3.5 w-3.5 text-[var(--accent-foreground)]" />
               <span className="text-xs font-medium text-[var(--text-secondary)]">
                 Strengths
               </span>
