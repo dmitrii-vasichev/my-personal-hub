@@ -10,6 +10,8 @@ import { GeneralTab } from "@/components/settings/general-tab";
 import { AiApiKeysTab } from "@/components/settings/ai-api-keys-tab";
 import { IntegrationsTab } from "@/components/settings/integrations-tab";
 import { UserManagementTable } from "@/components/settings/user-management-table";
+import { AiInstructionsTab } from "@/components/settings/ai-instructions-tab";
+import { AiKnowledgeBaseTab } from "@/components/settings/ai-knowledge-base-tab";
 import type { UpdateSettingsInput } from "@/types/settings";
 
 // Type guard for admin settings response
@@ -31,6 +33,8 @@ function hasApiKeys(s: unknown): s is {
 const ADMIN_TABS = [
   { id: "general", label: "General" },
   { id: "ai-keys", label: "AI & API Keys" },
+  { id: "ai-instructions", label: "AI Instructions" },
+  { id: "ai-kb", label: "AI Knowledge Base" },
   { id: "integrations", label: "Integrations" },
   { id: "users", label: "Users" },
 ] as const;
@@ -161,6 +165,14 @@ export default function SettingsPage() {
     jsearch: "",
   });
 
+  // AI Instructions tab state
+  const [instructions, setInstructions] = useState<Record<string, string>>({
+    instruction_resume: "",
+    instruction_ats_audit: "",
+    instruction_gap_analysis: "",
+    instruction_cover_letter: "",
+  });
+
   // Integrations tab state
   const [googleKeys, setGoogleKeys] = useState({
     client_id: "",
@@ -182,6 +194,12 @@ export default function SettingsPage() {
         ...k,
         redirect_uri: settings.google_redirect_uri ?? "",
       }));
+      setInstructions({
+        instruction_resume: settings.instruction_resume ?? "",
+        instruction_ats_audit: settings.instruction_ats_audit ?? "",
+        instruction_gap_analysis: settings.instruction_gap_analysis ?? "",
+        instruction_cover_letter: settings.instruction_cover_letter ?? "",
+      });
     }
     setInitialized(true);
   }
@@ -207,6 +225,10 @@ export default function SettingsPage() {
       if (googleKeys.client_id) payload.google_client_id = googleKeys.client_id;
       if (googleKeys.client_secret) payload.google_client_secret = googleKeys.client_secret;
       if (googleKeys.redirect_uri) payload.google_redirect_uri = googleKeys.redirect_uri;
+      payload.instruction_resume = instructions.instruction_resume || undefined;
+      payload.instruction_ats_audit = instructions.instruction_ats_audit || undefined;
+      payload.instruction_gap_analysis = instructions.instruction_gap_analysis || undefined;
+      payload.instruction_cover_letter = instructions.instruction_cover_letter || undefined;
     }
 
     try {
@@ -289,6 +311,17 @@ export default function SettingsPage() {
           setApiKeys={setApiKeys}
           adminSettings={adminSettings}
         />
+      )}
+
+      {activeTab === "ai-instructions" && isAdmin && (
+        <AiInstructionsTab
+          instructions={instructions}
+          setInstructions={setInstructions}
+        />
+      )}
+
+      {activeTab === "ai-kb" && isAdmin && (
+        <AiKnowledgeBaseTab />
       )}
 
       {activeTab === "integrations" && isAdmin && (
