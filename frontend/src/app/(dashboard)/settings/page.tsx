@@ -252,13 +252,13 @@ export default function SettingsPage() {
               onClick={() => setActiveTab(tab.id)}
               className={`px-3 py-2 text-sm font-medium transition-colors relative ${
                 activeTab === tab.id
-                  ? "text-accent"
+                  ? "text-accent-foreground"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {tab.label}
               {activeTab === tab.id && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent rounded-full" />
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-foreground rounded-full" />
               )}
             </button>
           ))}
