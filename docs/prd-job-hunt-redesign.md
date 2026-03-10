@@ -252,5 +252,37 @@ job_event_links:
 - [ ] AC-12: Linked tasks and events are visible on the job detail page
 - [ ] AC-13: All existing jobs, applications, and resumes remain intact after migration
 
+## Implementation Phases
+
+### Phase 15: User Profile & AI Knowledge Base (Backend Foundation)
+- FR-4: UserProfile model + CRUD API
+- FR-8 (backend): AiKnowledgeBase model + CRUD API + seed defaults
+- FR-8 (backend): UserSettings extensions (4 instruction fields)
+- FR-8 (backend): Prompt assembly service (instruction + KB docs + user data)
+- DB migrations for all new tables/columns
+
+### Phase 16: User Profile UI & Profile Import
+- FR-5: Profile page UI (sidebar link, editable sections)
+- FR-6: Import from text (paste → AI parse → fill profile)
+- FR-8 (frontend): Settings → AI Knowledge Base tab + AI Instructions tab
+
+### Phase 17: Jobs Table View & Kanban Toggle
+- FR-1: Jobs data table (TanStack Table, sortable columns)
+- FR-2: Table ↔ Kanban view switcher (localStorage persistence)
+- FR-3 (partial): Job detail page — source URL, status control redesign
+
+### Phase 18: Job Matching & Linking
+- FR-7: AI Job Matching (backend endpoint + frontend "Run Match" button + display)
+- FR-7: match_result JSON field + DB migration
+- FR-12: Job ↔ Task linking (model, API, UI)
+- FR-13: Job ↔ Calendar Event linking (model, API, UI)
+- FR-3 (complete): Job detail page — match section, linked items sections
+
+### Phase 19: Search Improvements & Integration
+- FR-9: Search result limit (frontend input + backend cap)
+- FR-10: Search result detail preview (clickable → dialog)
+- FR-11: Search save flow (save → Jobs, status "Found", toast)
+- FR-16 (P1): Resume generation uses user profile as context
+
 ## Open Questions
 - None at this time.
