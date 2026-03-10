@@ -8,7 +8,7 @@ import { KanbanBoard } from "@/components/tasks/kanban-board";
 import { TaskFiltersBar } from "@/components/tasks/task-filters";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { useKanbanTasks, useUpdateTask } from "@/hooks/use-tasks";
-import type { KanbanBoard as KanbanBoardType, Task, TaskFilters, TaskStatus } from "@/types/task";
+import type { KanbanBoard as KanbanBoardType, TaskFilters, TaskStatus } from "@/types/task";
 
 const EMPTY_BOARD: KanbanBoardType = {
   new: [],
@@ -21,7 +21,6 @@ const EMPTY_BOARD: KanbanBoardType = {
 export default function TasksPage() {
   const [filters, setFilters] = useState<TaskFilters>({});
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [editTask, setEditTask] = useState<Task | null>(null);
 
   const { data: board, isLoading, error } = useKanbanTasks(filters);
   const updateTask = useUpdateTask();
@@ -110,15 +109,7 @@ export default function TasksPage() {
       {/* Dialogs */}
       {showCreateDialog && (
         <TaskDialog
-          mode="create"
           onClose={() => setShowCreateDialog(false)}
-        />
-      )}
-      {editTask && (
-        <TaskDialog
-          mode="edit"
-          task={editTask}
-          onClose={() => setEditTask(null)}
         />
       )}
     </div>

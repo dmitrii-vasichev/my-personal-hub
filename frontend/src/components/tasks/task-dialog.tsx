@@ -17,36 +17,27 @@ import {
 import { ChecklistEditor } from "./checklist-editor";
 import { DatePicker } from "@/components/ui/date-picker";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
-import { useCreateTask, useUpdateTask } from "@/hooks/use-tasks";
-import { useAuth } from "@/lib/auth";
-import type { ChecklistItem, Task, TaskPriority, Visibility } from "@/types/task";
+import { useCreateTask } from "@/hooks/use-tasks";
+import type { ChecklistItem, TaskPriority, Visibility } from "@/types/task";
 
 interface TaskDialogProps {
-  mode: "create" | "edit";
-  task?: Task;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-export function TaskDialog({ mode, task, onClose, onSuccess }: TaskDialogProps) {
-  useAuth(); // auth context (reserved for future admin assignee feature)
+export function TaskDialog({ onClose, onSuccess }: TaskDialogProps) {
   const createTask = useCreateTask();
-  const updateTask = useUpdateTask();
 
-  const [title, setTitle] = useState(task?.title ?? "");
-  const [description, setDescription] = useState(task?.description ?? "");
-  const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? "medium");
-  const [deadline, setDeadline] = useState(
-    task?.deadline ? task.deadline.split("T")[0] : ""
-  );
-  const [reminderAt, setReminderAt] = useState(
-    task?.reminder_at ? task.reminder_at.slice(0, 16) : ""
-  );
-  const [checklist, setChecklist] = useState<ChecklistItem[]>(task?.checklist ?? []);
-  const [visibility, setVisibility] = useState<Visibility>(task?.visibility ?? "family");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [priority, setPriority] = useState<TaskPriority>("medium");
+  const [deadline, setDeadline] = useState("");
+  const [reminderAt, setReminderAt] = useState("");
+  const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+  const [visibility, setVisibility] = useState<Visibility>("family");
   const [error, setError] = useState<string | null>(null);
 
-  const isLoading = createTask.isPending || updateTask.isPending;
+  const isLoading = createTask.isPending;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,30 +49,15 @@ export function TaskDialog({ mode, task, onClose, onSuccess }: TaskDialogProps) 
     }
 
     try {
-      if (mode === "create") {
-        await createTask.mutateAsync({
-          title: title.trim(),
-          description: description.trim() || undefined,
-          priority,
-          deadline: deadline || undefined,
-          reminder_at: reminderAt || undefined,
-          checklist,
-          visibility,
-        });
-      } else if (task) {
-        await updateTask.mutateAsync({
-          taskId: task.id,
-          data: {
-            title: title.trim(),
-            description: description.trim() || undefined,
-            priority,
-            deadline: deadline || null,
-            reminder_at: reminderAt || null,
-            checklist,
-            visibility,
-          },
-        });
-      }
+      await createTask.mutateAsync({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        priority,
+        deadline: deadline || undefined,
+        reminder_at: reminderAt || undefined,
+        checklist,
+        visibility,
+      });
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -97,7 +73,7 @@ export function TaskDialog({ mode, task, onClose, onSuccess }: TaskDialogProps) 
           <DialogClose />
 
           <DialogTitle className="mb-5">
-            {mode === "create" ? "New Task" : "Edit Task"}
+            New Task
           </DialogTitle>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -140,10 +116,10 @@ export function TaskDialog({ mode, task, onClose, onSuccess }: TaskDialogProps) 
                   value={priority}
                   onChange={(e) => setPriority(e.target.value as TaskPriority)}
                 >
-                  <option value="urgent">🔴 Urgent</option>
-                  <option value="high">🟠 High</option>
-                  <option value="medium">🟡 Medium</option>
-                  <option value="low">⚪ Low</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
                 </Select>
               </div>
 
@@ -156,8 +132,8 @@ export function TaskDialog({ mode, task, onClose, onSuccess }: TaskDialogProps) 
                   value={visibility}
                   onChange={(e) => setVisibility(e.target.value as Visibility)}
                 >
-                  <option value="family">👨‍👩‍👧 Family</option>
-                  <option value="private">🔒 Private</option>
+                  <option value="family">Family</option>
+                  <option value="private">Private</option>
                 </Select>
               </div>
             </div>
@@ -207,13 +183,7 @@ export function TaskDialog({ mode, task, onClose, onSuccess }: TaskDialogProps) 
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>
-                {isLoading
-                  ? mode === "create"
-                    ? "Creating…"
-                    : "Saving…"
-                  : mode === "create"
-                    ? "Create Task"
-                    : "Save Changes"}
+                {isLoading ? "Creating…" : "Create Task"}
               </Button>
             </div>
           </form>

@@ -2,7 +2,7 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Calendar, Eye, GripVertical, Lock, User } from "lucide-react";
+import { Calendar, Eye, Lock, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Task } from "@/types/task";
 import { PRIORITY_BG_COLORS } from "@/types/task";
@@ -53,12 +53,7 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
         active:cursor-grabbing
       `}
     >
-      {/* Drag handle (visual indicator only) */}
-      <div className="absolute left-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--text-tertiary)]">
-        <GripVertical className="h-3 w-3" />
-      </div>
-
-      <div className="pl-3">
+      <div>
         {/* Header: ID + visibility + priority */}
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
@@ -81,7 +76,7 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
         </div>
 
         {/* Title */}
-        <span className="block text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent-foreground)] transition-colors line-clamp-2 mb-2">
+        <span className="block text-sm font-medium text-[var(--text-primary)] line-clamp-2 mb-2">
           {task.title}
         </span>
 
