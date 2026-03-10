@@ -79,10 +79,10 @@ export function ApplicationCard({ card, isDragging = false }: ApplicationCardPro
             <span
               className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${
                 card.match_score >= 80
-                  ? "bg-[rgba(52,211,153,0.1)] text-[#34d399]"
+                  ? "bg-accent-teal-muted text-accent-teal"
                   : card.match_score >= 60
-                  ? "bg-[rgba(251,191,36,0.1)] text-[#fbbf24]"
-                  : "bg-[var(--muted)] text-[var(--text-secondary)]"
+                  ? "bg-accent-amber-muted text-accent-amber"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               {card.match_score}%

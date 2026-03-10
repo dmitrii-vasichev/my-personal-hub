@@ -27,16 +27,16 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
   const hasStatus = !!job.status;
 
   return (
-    <div className="group bg-[#171b26] border border-[#252a3a] rounded-lg p-4 hover:border-[#2f3445] transition-colors">
+    <div className="group rounded-lg border border-border-subtle bg-card p-4 hover:border-border transition-colors">
       {/* Header row: title + actions */}
       <div className="flex items-start justify-between gap-3 mb-2">
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-[#e8eaf0] leading-snug line-clamp-1">
+          <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-1">
             {job.title}
           </h3>
           <div className="flex items-center gap-1.5 mt-0.5">
-            <Briefcase className="h-3 w-3 text-[#6b7280] shrink-0" />
-            <span className="text-xs text-[#6b7280] truncate">{job.company}</span>
+            <Briefcase className="h-3 w-3 text-muted-foreground shrink-0" />
+            <span className="text-xs text-muted-foreground truncate">{job.company}</span>
           </div>
         </div>
 
@@ -45,7 +45,7 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
           <Tooltip content="Edit job">
             <button
               onClick={() => onEdit(job)}
-              className="p-1.5 rounded-md text-[#4b5563] hover:text-[#e8eaf0] hover:bg-[#252a3a] transition-colors"
+              className="p-1.5 rounded-md text-tertiary hover:text-foreground hover:bg-surface-hover transition-colors"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
@@ -53,7 +53,7 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
           <Tooltip content="Delete job">
             <button
               onClick={() => onDelete(job)}
-              className="p-1.5 rounded-md text-[#4b5563] hover:text-[#f87171] hover:bg-[#252a3a] transition-colors"
+              className="p-1.5 rounded-md text-tertiary hover:text-destructive hover:bg-surface-hover transition-colors"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -65,35 +65,35 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
       <div className="flex items-center gap-3 mb-3 flex-wrap">
         {job.location && (
           <div className="flex items-center gap-1">
-            <MapPin className="h-3 w-3 text-[#4b5563] shrink-0" />
-            <span className="text-xs text-[#6b7280]">{job.location}</span>
+            <MapPin className="h-3 w-3 text-tertiary shrink-0" />
+            <span className="text-xs text-muted-foreground">{job.location}</span>
           </div>
         )}
         {salary && (
           <div className="flex items-center gap-1">
-            <DollarSign className="h-3 w-3 text-[#4b5563] shrink-0" />
-            <span className="text-xs text-[#6b7280]">{salary}</span>
+            <DollarSign className="h-3 w-3 text-tertiary shrink-0" />
+            <span className="text-xs text-muted-foreground">{salary}</span>
           </div>
         )}
         {job.source && (
-          <span className="text-xs text-[#4b5563] font-mono">{job.source}</span>
+          <span className="text-xs text-tertiary font-mono">{job.source}</span>
         )}
       </div>
 
       {/* Tags */}
       {job.tags.length > 0 && (
         <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-          <Tag className="h-3 w-3 text-[#4b5563] shrink-0" />
+          <Tag className="h-3 w-3 text-tertiary shrink-0" />
           {job.tags.slice(0, 5).map((tag) => (
             <span
               key={tag}
-              className="px-1.5 py-0.5 rounded text-[11px] bg-[#1e2333] border border-[#252a3a] text-[#6b7280]"
+              className="px-1.5 py-0.5 rounded text-[11px] bg-muted border border-border-subtle text-muted-foreground"
             >
               {tag}
             </span>
           ))}
           {job.tags.length > 5 && (
-            <span className="text-[11px] text-[#4b5563]">+{job.tags.length - 5}</span>
+            <span className="text-[11px] text-tertiary">+{job.tags.length - 5}</span>
           )}
         </div>
       )}
@@ -106,10 +106,10 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
             <span
               className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${
                 job.match_score >= 80
-                  ? "bg-[#0f2d22] text-[#34d399]"
+                  ? "bg-accent-teal-muted text-accent-teal"
                   : job.match_score >= 60
-                  ? "bg-[#2a2510] text-[#fbbf24]"
-                  : "bg-[#1e2333] text-[#6b7280]"
+                  ? "bg-accent-amber-muted text-accent-amber"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               {job.match_score}% match
@@ -132,7 +132,7 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
 
         {/* Track / Tracking button */}
         {hasStatus ? (
-          <div className="flex items-center gap-1 text-[11px] text-[#34d399]">
+          <div className="flex items-center gap-1 text-[11px] text-accent-teal">
             <CheckCircle2 className="h-3.5 w-3.5" />
             <span>Tracking</span>
           </div>
@@ -141,7 +141,6 @@ export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: 
             size="sm"
             onClick={() => onTrack(job)}
             disabled={isTracking}
-            className="h-7 px-2.5 text-xs bg-[#4f8ef7] hover:bg-[#6ba3ff] text-white border-0"
           >
             {isTracking ? "Adding…" : "Track"}
           </Button>

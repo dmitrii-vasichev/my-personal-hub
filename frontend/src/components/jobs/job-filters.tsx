@@ -58,12 +58,12 @@ export function JobFiltersBar({ filters, onFiltersChange }: JobFiltersBarProps) 
     <div className="flex items-center gap-2 flex-wrap">
       {/* Search input */}
       <div className="relative flex-1 min-w-48 max-w-72">
-        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#4b5563] pointer-events-none" />
+        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-tertiary pointer-events-none" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search jobs…"
-          className="pl-8 h-8 text-sm border-[#252a3a] bg-[#0f1117] focus-visible:border-[#4f8ef7]"
+          className="pl-8 h-8 text-sm border-border-subtle bg-surface focus-visible:border-primary"
         />
       </div>
 
@@ -105,11 +105,11 @@ export function JobFiltersBar({ filters, onFiltersChange }: JobFiltersBarProps) 
           variant="ghost"
           size="sm"
           onClick={clearAll}
-          className="gap-1 h-8 text-[#6b7280] hover:text-[#e8eaf0]"
+          className="gap-1 h-8 text-muted-foreground hover:text-foreground"
         >
           <X className="h-3.5 w-3.5" />
           Clear
-          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#4f8ef7] text-[10px] text-white">
+          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
             {activeCount}
           </span>
         </Button>
