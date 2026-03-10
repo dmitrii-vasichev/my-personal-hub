@@ -1,15 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Save, Key } from "lucide-react";
+import { Save, Key, User, Mail, Phone, Linkedin, MapPin } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
+import {
+  useUserProfile,
+  useUpdateUserProfile,
+} from "@/hooks/use-user-profile";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { api } from "@/lib/api";
+import { SkillsEditor } from "@/components/profile/skills-editor";
+import { ExperienceEditor } from "@/components/profile/experience-editor";
+import { EducationEditor } from "@/components/profile/education-editor";
+import { ProfileImportDialog } from "@/components/profile/profile-import-dialog";
+import type { ContactInfo, SkillEntry, ExperienceEntry, EducationEntry } from "@/types/profile";
 
 function RoleBadge({ role }: { role: string }) {
   const isAdmin = role === "admin";
@@ -32,6 +42,9 @@ export default function ProfilePage() {
   const { data: profile } = useProfile();
   const updateProfile = useUpdateProfile();
 
+  const { data: userProfile } = useUserProfile();
+  const updateUserProfile = useUpdateUserProfile();
+
   const [displayName, setDisplayName] = useState(user?.display_name ?? "");
   const [nameInitialized, setNameInitialized] = useState(false);
 
@@ -39,10 +52,29 @@ export default function ProfilePage() {
   const [newPwd, setNewPwd] = useState("");
   const [changingPwd, setChangingPwd] = useState(false);
 
+  // Professional profile state
+  const [contacts, setContacts] = useState<ContactInfo>({});
+  const [summary, setSummary] = useState("");
+  const [skills, setSkills] = useState<SkillEntry[]>([]);
+  const [experience, setExperience] = useState<ExperienceEntry[]>([]);
+  const [education, setEducation] = useState<EducationEntry[]>([]);
+  const [profInitialized, setProfInitialized] = useState(false);
+
   if (profile && !nameInitialized) {
     setDisplayName(profile.display_name);
     setNameInitialized(true);
   }
+
+  useEffect(() => {
+    if (userProfile && !profInitialized) {
+      setContacts(userProfile.contacts ?? {});
+      setSummary(userProfile.summary ?? "");
+      setSkills(userProfile.skills ?? []);
+      setExperience(userProfile.experience ?? []);
+      setEducation(userProfile.education ?? []);
+      setProfInitialized(true);
+    }
+  }, [userProfile, profInitialized]);
 
   const handleSaveName = async () => {
     try {
@@ -83,11 +115,33 @@ export default function ProfilePage() {
     }
   };
 
+  const handleSaveProfile = async () => {
+    try {
+      await updateUserProfile.mutateAsync({
+        contacts,
+        summary: summary || undefined,
+        skills,
+        experience,
+        education,
+      });
+      toast.success("Professional profile saved");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save profile"
+      );
+    }
+  };
+
   const name = profile?.display_name ?? user?.display_name ?? "";
 
   return (
     <div className="mx-auto max-w-xl space-y-8 p-6">
-      <h1 className="text-lg font-semibold">Profile</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold">Profile</h1>
+        <ProfileImportDialog
+          onSuccess={() => setProfInitialized(false)}
+        />
+      </div>
 
       {/* Avatar + identity */}
       <section className="flex items-center gap-5 rounded-[14px] border border-border bg-surface p-5">
@@ -166,6 +220,113 @@ export default function ProfilePage() {
           {changingPwd ? "Changing…" : "Change password"}
         </Button>
       </section>
+
+      {/* Contact Info */}
+      <section className="space-y-4 rounded-[14px] border border-border p-5">
+        <h2 className="flex items-center gap-2 text-sm font-medium">
+          <User className="h-4 w-4 text-muted-foreground" />
+          Contact Info
+        </h2>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">
+              <Mail className="mr-1 inline h-3 w-3" />
+              Email
+            </Label>
+            <Input
+              value={contacts.email ?? ""}
+              onChange={(e) =>
+                setContacts((c) => ({ ...c, email: e.target.value }))
+              }
+              placeholder="professional@email.com"
+              className="text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">
+              <Phone className="mr-1 inline h-3 w-3" />
+              Phone
+            </Label>
+            <Input
+              value={contacts.phone ?? ""}
+              onChange={(e) =>
+                setContacts((c) => ({ ...c, phone: e.target.value }))
+              }
+              placeholder="+1 (555) 123-4567"
+              className="text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">
+              <Linkedin className="mr-1 inline h-3 w-3" />
+              LinkedIn
+            </Label>
+            <Input
+              value={contacts.linkedin ?? ""}
+              onChange={(e) =>
+                setContacts((c) => ({ ...c, linkedin: e.target.value }))
+              }
+              placeholder="https://linkedin.com/in/..."
+              className="text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">
+              <MapPin className="mr-1 inline h-3 w-3" />
+              Location
+            </Label>
+            <Input
+              value={contacts.location ?? ""}
+              onChange={(e) =>
+                setContacts((c) => ({ ...c, location: e.target.value }))
+              }
+              placeholder="City, Country"
+              className="text-sm"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Professional Summary */}
+      <section className="space-y-4 rounded-[14px] border border-border p-5">
+        <h2 className="text-sm font-medium">Professional Summary</h2>
+        <Textarea
+          value={summary}
+          onChange={(e) => setSummary(e.target.value)}
+          placeholder="Brief professional summary — your background, expertise, and career goals..."
+          rows={4}
+          className="text-sm"
+        />
+      </section>
+
+      {/* Skills */}
+      <section className="space-y-4 rounded-[14px] border border-border p-5">
+        <h2 className="text-sm font-medium">Skills</h2>
+        <SkillsEditor skills={skills} onChange={setSkills} />
+      </section>
+
+      {/* Experience */}
+      <section className="space-y-4 rounded-[14px] border border-border p-5">
+        <h2 className="text-sm font-medium">Experience</h2>
+        <ExperienceEditor experience={experience} onChange={setExperience} />
+      </section>
+
+      {/* Education */}
+      <section className="space-y-4 rounded-[14px] border border-border p-5">
+        <h2 className="text-sm font-medium">Education</h2>
+        <EducationEditor education={education} onChange={setEducation} />
+      </section>
+
+      {/* Save professional profile button */}
+      <Button
+        onClick={handleSaveProfile}
+        disabled={updateUserProfile.isPending}
+      >
+        <Save className="mr-1.5 h-3.5 w-3.5" />
+        {updateUserProfile.isPending
+          ? "Saving…"
+          : "Save professional profile"}
+      </Button>
     </div>
   );
 }
