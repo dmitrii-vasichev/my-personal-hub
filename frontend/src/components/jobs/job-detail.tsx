@@ -7,6 +7,7 @@ import {
   Briefcase,
   Calendar,
   Clock,
+  Copy,
   DollarSign,
   Edit,
   ExternalLink,
@@ -14,8 +15,10 @@ import {
   Tag,
   Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { JobDialog } from "@/components/jobs/job-dialog";
+import { StatusChangeDialog } from "@/components/jobs/status-change-dialog";
 import { useDeleteJob } from "@/hooks/use-jobs";
 import { useCreateApplication } from "@/hooks/use-applications";
 import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS, APPLICATION_STATUS_BG_COLORS } from "@/types/job";
@@ -48,6 +51,7 @@ export function JobDetail({ job }: JobDetailProps) {
   const createApplication = useCreateApplication();
   const [editOpen, setEditOpen] = useState(false);
   const [isTracking, setIsTracking] = useState(false);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
 
   const salary = formatSalary(job.salary_min, job.salary_max, job.salary_currency);
   const hasApplication = !!job.application;
@@ -142,23 +146,37 @@ export function JobDetail({ job }: JobDetailProps) {
             <p className="text-sm text-[var(--text-tertiary)] italic">No description provided.</p>
           )}
 
-          {/* URL */}
-          {job.url && (
-            <div>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-                Job Posting
-              </h3>
-              <a
-                href={job.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors break-all"
-              >
-                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-                {job.url}
-              </a>
-            </div>
-          )}
+          {/* Source URL */}
+          <div>
+            <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+              Job Posting
+            </h3>
+            {job.url ? (
+              <div className="flex items-center gap-2">
+                <a
+                  href={job.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-[var(--accent-muted)] text-[var(--accent)] border border-[rgba(79,142,247,0.2)] hover:bg-[rgba(79,142,247,0.15)] transition-colors"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                  View Original Posting
+                </a>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(job.url!);
+                    toast.success("URL copied to clipboard");
+                  }}
+                  className="p-1.5 rounded-md text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
+                  title="Copy URL"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <p className="text-sm text-[var(--text-tertiary)]">No source link</p>
+            )}
+          </div>
 
           {/* Tags */}
           {job.tags.length > 0 && (
@@ -183,15 +201,16 @@ export function JobDetail({ job }: JobDetailProps) {
 
         {/* Sidebar */}
         <div className="flex flex-col gap-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 h-fit">
-          {/* Application section */}
+          {/* Application status section */}
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
               Application
             </span>
             {hasApplication && job.application ? (
               <div className="flex flex-col gap-2">
+                {/* Current status badge */}
                 <span
-                  className="inline-flex w-fit items-center rounded px-2 py-0.5 text-xs font-medium"
+                  className="inline-flex w-fit items-center rounded-md px-2.5 py-1 text-xs font-medium"
                   style={{
                     color: APPLICATION_STATUS_COLORS[job.application.status],
                     backgroundColor: APPLICATION_STATUS_BG_COLORS[job.application.status],
@@ -199,21 +218,31 @@ export function JobDetail({ job }: JobDetailProps) {
                 >
                   {APPLICATION_STATUS_LABELS[job.application.status]}
                 </span>
+
+                {/* Change status button */}
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => router.push(`/jobs/applications/${job.application!.id}`)}
+                  onClick={() => setStatusDialogOpen(true)}
                   className="w-full justify-center text-xs"
                 >
-                  View Application
+                  Change Status
                 </Button>
+
+                {/* View full application link */}
+                <button
+                  onClick={() => router.push(`/jobs/applications/${job.application!.id}`)}
+                  className="text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition-colors text-center"
+                >
+                  View Full Application
+                </button>
               </div>
             ) : (
               <Button
                 size="sm"
                 onClick={handleStartTracking}
                 disabled={isTracking}
-                className="w-full justify-center text-xs bg-[#4f8ef7] hover:bg-[#6ba3ff] text-white border-0"
+                className="w-full justify-center text-xs bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white border-0"
               >
                 {isTracking ? "Starting…" : "Start Tracking"}
               </Button>
@@ -294,6 +323,17 @@ export function JobDetail({ job }: JobDetailProps) {
           mode="edit"
           job={job}
           onSuccess={() => setEditOpen(false)}
+        />
+      )}
+
+      {/* Status change dialog */}
+      {hasApplication && job.application && statusDialogOpen && (
+        <StatusChangeDialog
+          open={statusDialogOpen}
+          onOpenChange={setStatusDialogOpen}
+          applicationId={job.application.id}
+          currentStatus={job.application.status}
+          onSuccess={() => setStatusDialogOpen(false)}
         />
       )}
     </div>
