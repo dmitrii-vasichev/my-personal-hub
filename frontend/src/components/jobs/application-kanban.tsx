@@ -13,7 +13,7 @@ import {
 } from "@dnd-kit/core";
 import type { ApplicationStatus, KanbanCard } from "@/types/job";
 import { PIPELINE_COLUMNS, TERMINAL_STATUSES } from "@/types/job";
-import { useApplicationKanban } from "@/hooks/use-applications";
+import { useJobKanban } from "@/hooks/use-jobs";
 import { ApplicationColumn } from "./application-column";
 import { ApplicationCardOverlay } from "./application-card";
 import { StatusChangeDialog } from "./status-change-dialog";
@@ -32,9 +32,7 @@ function KanbanSkeleton() {
           key={colIdx}
           className="flex w-[240px] shrink-0 flex-col gap-2 rounded-lg bg-[#171b26] border border-[#252a3a] p-3 animate-pulse"
         >
-          {/* Column header skeleton */}
           <div className="h-3.5 w-24 rounded bg-[#252a3a] mb-2" />
-          {/* Card skeletons */}
           {Array.from({ length: colIdx === 0 ? 3 : colIdx === 1 ? 2 : 2 }).map((_, cardIdx) => (
             <div
               key={cardIdx}
@@ -51,7 +49,7 @@ function KanbanSkeleton() {
 }
 
 export function ApplicationKanban() {
-  const { data: kanbanData, isLoading, error } = useApplicationKanban();
+  const { data: kanbanData, isLoading, error } = useJobKanban();
   const [activeCard, setActiveCard] = useState<KanbanCard | null>(null);
   const [pendingChange, setPendingChange] = useState<PendingChange | null>(null);
 
@@ -79,7 +77,6 @@ export function ApplicationKanban() {
     const oldStatus = (active.data.current?.status as ApplicationStatus) ?? null;
 
     if (newStatus !== oldStatus) {
-      // Show confirmation dialog before mutating — dialog owns the mutation
       setPendingChange({ cardId, oldStatus, newStatus });
     }
   };
@@ -110,7 +107,7 @@ export function ApplicationKanban() {
           <GitBranch className="h-5 w-5 text-[#4b5563]" />
         </div>
         <div>
-          <p className="text-sm font-medium text-[#6b7280]">No applications yet</p>
+          <p className="text-sm font-medium text-[#6b7280]">No tracked jobs yet</p>
           <p className="mt-1 text-xs text-[#4b5563]">
             Start tracking jobs from the Jobs tab
           </p>
@@ -126,7 +123,6 @@ export function ApplicationKanban() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        {/* Main pipeline board */}
         <div className="flex gap-4 overflow-x-auto pb-4">
           {PIPELINE_COLUMNS.map((status) => (
             <ApplicationColumn
@@ -138,7 +134,6 @@ export function ApplicationKanban() {
           ))}
         </div>
 
-        {/* Terminal statuses section */}
         <div className="mt-6">
           <p className="mb-3 text-[11px] font-medium uppercase tracking-wider text-[#4b5563] px-1">
             Completed
@@ -160,14 +155,13 @@ export function ApplicationKanban() {
         </DragOverlay>
       </DndContext>
 
-      {/* Status change confirmation dialog triggered by drag-and-drop */}
       {pendingChange && (
         <StatusChangeDialog
           open={true}
           onOpenChange={(open) => {
             if (!open) handleDialogCancel();
           }}
-          applicationId={pendingChange.cardId}
+          jobId={pendingChange.cardId}
           currentStatus={pendingChange.oldStatus}
           preselectedStatus={pendingChange.newStatus}
           onSuccess={() => setPendingChange(null)}

@@ -11,19 +11,24 @@ import {
   DollarSign,
   Edit,
   ExternalLink,
+  Mail,
   MapPin,
   Tag,
   Trash2,
+  User,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { JobDialog } from "@/components/jobs/job-dialog";
 import { StatusChangeDialog } from "@/components/jobs/status-change-dialog";
+import { JobTrackingEditDialog } from "@/components/jobs/job-tracking-edit-dialog";
 import { JobMatchSection } from "@/components/jobs/job-match-section";
 import { LinkedTasksSection } from "@/components/jobs/linked-tasks-section";
 import { LinkedEventsSection } from "@/components/jobs/linked-events-section";
-import { useDeleteJob } from "@/hooks/use-jobs";
-import { useCreateApplication } from "@/hooks/use-applications";
+import { ResumeSection } from "@/components/jobs/resume-section";
+import { CoverLetterSection } from "@/components/jobs/cover-letter-section";
+import { ApplicationTimeline } from "@/components/jobs/application-timeline";
+import { useDeleteJob, useChangeJobStatus, useStatusHistory } from "@/hooks/use-jobs";
 import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS, APPLICATION_STATUS_BG_COLORS } from "@/types/job";
 import type { Job } from "@/types/job";
 
@@ -48,16 +53,22 @@ function formatSalary(min?: number, max?: number, currency = "USD"): string | nu
   return `up to ${fmt(max!)}`;
 }
 
+const REJECTION_STATUSES = ["rejected", "ghosted", "withdrawn"] as const;
+
 export function JobDetail({ job }: JobDetailProps) {
   const router = useRouter();
   const deleteJob = useDeleteJob();
-  const createApplication = useCreateApplication();
+  const changeJobStatus = useChangeJobStatus();
+  const { data: history = [] } = useStatusHistory(job.id);
   const [editOpen, setEditOpen] = useState(false);
-  const [isTracking, setIsTracking] = useState(false);
+  const [trackingEditOpen, setTrackingEditOpen] = useState(false);
+  const [isStartingTracking, setIsStartingTracking] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
 
   const salary = formatSalary(job.salary_min, job.salary_max, job.salary_currency);
-  const hasApplication = !!job.application;
+  const hasStatus = !!job.status;
+  const showRejectionReason =
+    hasStatus && (REJECTION_STATUSES as readonly string[]).includes(job.status!) && !!job.rejection_reason;
 
   const handleDelete = async () => {
     if (!confirm(`Delete "${job.title}" at ${job.company}? This action cannot be undone.`)) return;
@@ -66,14 +77,17 @@ export function JobDetail({ job }: JobDetailProps) {
   };
 
   const handleStartTracking = async () => {
-    setIsTracking(true);
+    setIsStartingTracking(true);
     try {
-      const application = await createApplication.mutateAsync({ job_id: job.id });
-      router.push(`/jobs/applications/${application.id}`);
+      await changeJobStatus.mutateAsync({
+        id: job.id,
+        data: { new_status: "found" },
+      });
+      toast.success("Tracking started");
     } catch {
       // Stay on page if tracking fails
     } finally {
-      setIsTracking(false);
+      setIsStartingTracking(false);
     }
   };
 
@@ -204,34 +218,136 @@ export function JobDetail({ job }: JobDetailProps) {
             </div>
           )}
 
+          {/* Tracking info sections (only when tracked) */}
+          {hasStatus && (
+            <>
+              {job.notes && (
+                <div>
+                  <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Notes
+                  </h3>
+                  <p className="text-sm leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap">
+                    {job.notes}
+                  </p>
+                </div>
+              )}
+
+              {(job.recruiter_name || job.recruiter_contact) && (
+                <div>
+                  <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Recruiter
+                  </h3>
+                  <div className="flex flex-col gap-1.5">
+                    {job.recruiter_name && (
+                      <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
+                        <User className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                        {job.recruiter_name}
+                      </div>
+                    )}
+                    {job.recruiter_contact && (
+                      <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
+                        <Mail className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                        {job.recruiter_contact}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {(job.next_action || job.next_action_date) && (
+                <div>
+                  <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Next Action
+                  </h3>
+                  <div className="flex flex-col gap-1">
+                    {job.next_action && (
+                      <p className="text-sm text-[var(--text-primary)]">{job.next_action}</p>
+                    )}
+                    {job.next_action_date && (
+                      <div className="flex items-center gap-1.5 text-sm text-[var(--text-tertiary)]">
+                        <Calendar className="h-3.5 w-3.5" />
+                        {formatDate(job.next_action_date)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {job.applied_date && (
+                <div>
+                  <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Applied
+                  </h3>
+                  <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
+                    <Calendar className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                    {formatDate(job.applied_date)}
+                  </div>
+                </div>
+              )}
+
+              {showRejectionReason && (
+                <div>
+                  <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                    Rejection Reason
+                  </h3>
+                  <p className="text-sm leading-relaxed text-[var(--text-primary)] whitespace-pre-wrap">
+                    {job.rejection_reason}
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+
           {/* Linked Tasks */}
           <LinkedTasksSection jobId={job.id} />
 
           {/* Linked Events */}
           <LinkedEventsSection jobId={job.id} />
+
+          {/* Resume section (only when tracked) */}
+          {hasStatus && (
+            <div className="mt-2">
+              <ResumeSection jobId={job.id} />
+            </div>
+          )}
+
+          {/* Cover Letter section (only when tracked) */}
+          {hasStatus && (
+            <div>
+              <CoverLetterSection jobId={job.id} />
+            </div>
+          )}
+
+          {/* Status History (only when tracked) */}
+          {hasStatus && history.length > 0 && (
+            <div>
+              <h3 className="mb-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+                Status History
+              </h3>
+              <ApplicationTimeline history={history} />
+            </div>
+          )}
         </div>
 
         {/* Sidebar */}
         <div className="flex flex-col gap-5 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-4 h-fit">
-          {/* Application status section */}
+          {/* Tracking status section */}
           <div className="flex flex-col gap-2">
             <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
-              Application
+              Tracking
             </span>
-            {hasApplication && job.application ? (
+            {hasStatus && job.status ? (
               <div className="flex flex-col gap-2">
-                {/* Current status badge */}
                 <span
                   className="inline-flex w-fit items-center rounded-md px-2.5 py-1 text-xs font-medium"
                   style={{
-                    color: APPLICATION_STATUS_COLORS[job.application.status],
-                    backgroundColor: APPLICATION_STATUS_BG_COLORS[job.application.status],
+                    color: APPLICATION_STATUS_COLORS[job.status],
+                    backgroundColor: APPLICATION_STATUS_BG_COLORS[job.status],
                   }}
                 >
-                  {APPLICATION_STATUS_LABELS[job.application.status]}
+                  {APPLICATION_STATUS_LABELS[job.status]}
                 </span>
 
-                {/* Change status button */}
                 <Button
                   variant="outline"
                   size="sm"
@@ -241,30 +357,27 @@ export function JobDetail({ job }: JobDetailProps) {
                   Change Status
                 </Button>
 
-                {/* View full application link */}
                 <button
-                  onClick={() => router.push(`/jobs/applications/${job.application!.id}`)}
+                  onClick={() => setTrackingEditOpen(true)}
                   className="text-xs text-[var(--accent-foreground)] hover:text-[var(--accent-hover)] transition-colors text-center"
                 >
-                  View Full Application
+                  Edit Tracking Info
                 </button>
               </div>
             ) : (
               <Button
                 size="sm"
                 onClick={handleStartTracking}
-                disabled={isTracking}
+                disabled={isStartingTracking}
                 className="w-full justify-center text-xs bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white border-0"
               >
-                {isTracking ? "Starting…" : "Start Tracking"}
+                {isStartingTracking ? "Starting…" : "Start Tracking"}
               </Button>
             )}
           </div>
 
-          {/* Divider */}
           <div className="border-t border-[var(--border)]" />
 
-          {/* Location */}
           {job.location && (
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
@@ -277,7 +390,6 @@ export function JobDetail({ job }: JobDetailProps) {
             </div>
           )}
 
-          {/* Salary */}
           {salary && (
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
@@ -290,7 +402,6 @@ export function JobDetail({ job }: JobDetailProps) {
             </div>
           )}
 
-          {/* Source */}
           {job.source && (
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
@@ -300,7 +411,6 @@ export function JobDetail({ job }: JobDetailProps) {
             </div>
           )}
 
-          {/* Found at */}
           {job.found_at && (
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
@@ -313,7 +423,6 @@ export function JobDetail({ job }: JobDetailProps) {
             </div>
           )}
 
-          {/* Dates */}
           <div className="border-t border-[var(--border)] pt-3 flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5 text-xs text-[var(--text-tertiary)]">
               <Clock className="h-3 w-3" />
@@ -327,7 +436,6 @@ export function JobDetail({ job }: JobDetailProps) {
         </div>
       </div>
 
-      {/* Edit dialog */}
       {editOpen && (
         <JobDialog
           open={editOpen}
@@ -338,13 +446,21 @@ export function JobDetail({ job }: JobDetailProps) {
         />
       )}
 
-      {/* Status change dialog */}
-      {hasApplication && job.application && statusDialogOpen && (
+      {trackingEditOpen && (
+        <JobTrackingEditDialog
+          open={trackingEditOpen}
+          onOpenChange={setTrackingEditOpen}
+          job={job}
+          onSuccess={() => setTrackingEditOpen(false)}
+        />
+      )}
+
+      {hasStatus && job.status && statusDialogOpen && (
         <StatusChangeDialog
           open={statusDialogOpen}
           onOpenChange={setStatusDialogOpen}
-          applicationId={job.application.id}
-          currentStatus={job.application.status}
+          jobId={job.id}
+          currentStatus={job.status}
           onSuccess={() => setStatusDialogOpen(false)}
         />
       )}

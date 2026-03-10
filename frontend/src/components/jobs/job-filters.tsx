@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import type { JobFilters } from "@/types/job";
+import { APPLICATION_STATUS_LABELS } from "@/types/job";
+import type { ApplicationStatus } from "@/types/job";
 
 interface JobFiltersBarProps {
   filters: JobFilters;
@@ -13,6 +15,21 @@ interface JobFiltersBarProps {
 }
 
 const KNOWN_SOURCES = ["LinkedIn", "Indeed", "Glassdoor", "Greenhouse", "Lever", "Other"];
+
+const STATUS_OPTIONS: ApplicationStatus[] = [
+  "found",
+  "saved",
+  "resume_generated",
+  "applied",
+  "screening",
+  "technical_interview",
+  "final_interview",
+  "offer",
+  "accepted",
+  "rejected",
+  "ghosted",
+  "withdrawn",
+];
 
 export function JobFiltersBar({ filters, onFiltersChange }: JobFiltersBarProps) {
   const [search, setSearch] = useState(filters.search ?? "");
@@ -29,7 +46,7 @@ export function JobFiltersBar({ filters, onFiltersChange }: JobFiltersBarProps) 
   const activeCount = [
     filters.search,
     filters.source,
-    filters.has_application !== undefined ? String(filters.has_application) : undefined,
+    filters.status,
   ].filter(Boolean).length;
 
   const clearAll = () => {
@@ -66,23 +83,21 @@ export function JobFiltersBar({ filters, onFiltersChange }: JobFiltersBarProps) 
         ))}
       </Select>
 
-      {/* "Has application" toggle button */}
-      <button
-        onClick={() =>
-          onFiltersChange({
-            ...filters,
-            has_application:
-              filters.has_application === true ? undefined : true,
-          })
+      {/* Status filter */}
+      <Select
+        value={filters.status ?? ""}
+        onChange={(e) =>
+          onFiltersChange({ ...filters, status: e.target.value || undefined })
         }
-        className={`h-8 px-3 rounded-lg text-sm font-medium border transition-colors ${
-          filters.has_application === true
-            ? "bg-[#4f8ef7] border-[#4f8ef7] text-white"
-            : "border-[#252a3a] text-[#6b7280] hover:border-[#2f3445] hover:text-[#e8eaf0]"
-        }`}
+        className="w-44 h-8 text-sm"
       >
-        Applied
-      </button>
+        <option value="">All statuses</option>
+        {STATUS_OPTIONS.map((s) => (
+          <option key={s} value={s}>
+            {APPLICATION_STATUS_LABELS[s]}
+          </option>
+        ))}
+      </Select>
 
       {/* Clear all */}
       {activeCount > 0 && (

@@ -7,21 +7,21 @@ import type { CoverLetter, Resume } from "@/types/resume";
 const RESUMES_KEY = "resumes";
 const COVER_LETTERS_KEY = "cover_letters";
 
-export function useResumes(applicationId: number) {
+export function useResumes(jobId: number) {
   return useQuery<Resume[]>({
-    queryKey: [RESUMES_KEY, applicationId],
-    queryFn: () => api.get<Resume[]>(`/api/resumes/application/${applicationId}`),
-    enabled: !!applicationId,
+    queryKey: [RESUMES_KEY, jobId],
+    queryFn: () => api.get<Resume[]>(`/api/resumes/job/${jobId}`),
+    enabled: !!jobId,
   });
 }
 
 export function useGenerateResume() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (applicationId: number) =>
-      api.post<Resume>("/api/resumes/generate", { application_id: applicationId }),
-    onSuccess: (_, applicationId) => {
-      queryClient.invalidateQueries({ queryKey: [RESUMES_KEY, applicationId] });
+    mutationFn: (jobId: number) =>
+      api.post<Resume>("/api/resumes/generate", { job_id: jobId }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [RESUMES_KEY, data.job_id] });
     },
   });
 }
@@ -32,7 +32,7 @@ export function useRunAtsAudit() {
     mutationFn: (resumeId: number) =>
       api.post<Resume>(`/api/resumes/${resumeId}/ats-audit`, {}),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [RESUMES_KEY, data.application_id] });
+      queryClient.invalidateQueries({ queryKey: [RESUMES_KEY, data.job_id] });
     },
   });
 }
@@ -43,26 +43,26 @@ export function useRunGapAnalysis() {
     mutationFn: (resumeId: number) =>
       api.post<Resume>(`/api/resumes/${resumeId}/gap-analysis`, {}),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: [RESUMES_KEY, data.application_id] });
+      queryClient.invalidateQueries({ queryKey: [RESUMES_KEY, data.job_id] });
     },
   });
 }
 
-export function useCoverLetters(applicationId: number) {
+export function useCoverLetters(jobId: number) {
   return useQuery<CoverLetter[]>({
-    queryKey: [COVER_LETTERS_KEY, applicationId],
-    queryFn: () => api.get<CoverLetter[]>(`/api/cover-letters/application/${applicationId}`),
-    enabled: !!applicationId,
+    queryKey: [COVER_LETTERS_KEY, jobId],
+    queryFn: () => api.get<CoverLetter[]>(`/api/cover-letters/job/${jobId}`),
+    enabled: !!jobId,
   });
 }
 
 export function useGenerateCoverLetter() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (applicationId: number) =>
-      api.post<CoverLetter>("/api/cover-letters/generate", { application_id: applicationId }),
-    onSuccess: (_, applicationId) => {
-      queryClient.invalidateQueries({ queryKey: [COVER_LETTERS_KEY, applicationId] });
+    mutationFn: (jobId: number) =>
+      api.post<CoverLetter>("/api/cover-letters/generate", { job_id: jobId }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: [COVER_LETTERS_KEY, data.job_id] });
     },
   });
 }

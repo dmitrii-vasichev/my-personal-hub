@@ -11,7 +11,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useTasks } from "@/hooks/use-tasks";
-import { useApplications } from "@/hooks/use-applications";
+import { useJobs } from "@/hooks/use-jobs";
 import { useDashboardSummary } from "@/hooks/use-dashboard";
 
 interface ActivityItem {
@@ -50,7 +50,7 @@ function formatEventTime(iso: string): string {
 export function RecentActivity() {
   const router = useRouter();
   const { data: tasks } = useTasks();
-  const { data: applications } = useApplications();
+  const { data: trackedJobs } = useJobs({ status: "found,saved,resume_generated,applied,screening,technical_interview,final_interview,offer" });
   const { data: summary } = useDashboardSummary();
 
   const items = useMemo<ActivityItem[]>(() => {
@@ -71,18 +71,17 @@ export function RecentActivity() {
       }
     }
 
-    if (applications && Array.isArray(applications)) {
-      const sorted = [...applications]
+    if (trackedJobs && Array.isArray(trackedJobs)) {
+      const sorted = [...trackedJobs]
         .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
         .slice(0, 3);
-      for (const app of sorted) {
-        const jobTitle = app.job?.title ?? "Application";
+      for (const job of sorted) {
         result.push({
-          id: `app-${app.id}`,
+          id: `job-${job.id}`,
           icon: <Briefcase size={14} className="text-accent-amber" />,
-          label: `${jobTitle} — ${app.status.replace(/_/g, " ")}`,
-          time: formatRelativeTime(app.updated_at),
-          href: `/jobs/applications/${app.id}`,
+          label: `${job.title} — ${(job.status ?? "").replace(/_/g, " ")}`,
+          time: formatRelativeTime(job.updated_at),
+          href: `/jobs/${job.id}`,
         });
       }
     }
@@ -100,7 +99,7 @@ export function RecentActivity() {
     }
 
     return result.slice(0, 10);
-  }, [tasks, applications, summary]);
+  }, [tasks, trackedJobs, summary]);
 
   if (items.length === 0) {
     return (
@@ -108,13 +107,12 @@ export function RecentActivity() {
         className="flex flex-col items-center justify-center rounded-xl border border-border-subtle bg-card px-8 py-12 text-center"
         style={{ animation: "fadeSlideUp 0.5s ease 0.5s both" }}
       >
-        {/* Zap icon badge */}
         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-accent-muted text-primary">
           <Zap size={22} />
         </div>
         <p className="mb-1.5 text-[15px] font-medium text-foreground">No recent activity</p>
         <p className="mb-5 max-w-[300px] text-[13px] text-tertiary">
-          Start by creating a task or adding a job application to see your activity here
+          Start by creating a task or tracking a job to see your activity here
         </p>
         <div className="flex gap-2.5">
           <Link
@@ -129,7 +127,7 @@ export function RecentActivity() {
             className="flex items-center gap-1.5 rounded-lg border border-border px-4 py-2 text-[13px] font-medium text-muted-foreground transition-all duration-150 hover:border-tertiary hover:text-foreground"
           >
             <Briefcase size={14} />
-            Add Application
+            Track a Job
           </Link>
         </div>
       </div>
