@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
@@ -70,8 +72,9 @@ export function JobDetail({ job }: JobDetailProps) {
     [job.id, updateJob]
   );
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const handleDelete = async () => {
-    if (!confirm(`Delete "${job.title}" at ${job.company}? This action cannot be undone.`)) return;
     await deleteJob.mutateAsync(job.id);
     router.push("/jobs");
   };
@@ -105,13 +108,24 @@ export function JobDetail({ job }: JobDetailProps) {
         <Button
           variant="destructive"
           size="sm"
-          onClick={handleDelete}
+          onClick={() => setShowDeleteConfirm(true)}
           disabled={deleteJob.isPending}
         >
           <Trash2 className="h-3.5 w-3.5" />
           Delete
         </Button>
       </div>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        title="Delete Job"
+        description={`Delete "${job.title}" at ${job.company}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteJob.isPending}
+      />
 
       {/* Page header */}
       <div className="mb-6">
@@ -182,16 +196,17 @@ export function JobDetail({ job }: JobDetailProps) {
                   <ExternalLink className="h-3.5 w-3.5 shrink-0" />
                   View Original Posting
                 </a>
+                <Tooltip content="Copy URL">
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(job.url!);
                     toast.success("URL copied to clipboard");
                   }}
                   className="p-1.5 rounded-md text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors"
-                  title="Copy URL"
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </button>
+                </Tooltip>
               </div>
             ) : (
               <p className="text-sm text-[var(--text-tertiary)]">No URL</p>

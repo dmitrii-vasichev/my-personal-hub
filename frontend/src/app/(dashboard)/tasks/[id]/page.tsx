@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Calendar, ChevronDown, ChevronUp, Clock, Eye, Lock, Trash2, User } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Select } from "@/components/ui/select";
 import { InlineEditText } from "@/components/ui/inline-edit-text";
 import { InlineEditSelect } from "@/components/ui/inline-edit-select";
@@ -91,8 +92,9 @@ export default function TaskDetailPage() {
     await patchTask({ checklist: items });
   };
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const handleDelete = async () => {
-    if (!confirm("Delete this task? This action cannot be undone.")) return;
     await deleteTask.mutateAsync(task.id);
     router.push("/tasks");
   };
@@ -118,7 +120,7 @@ export default function TaskDetailPage() {
           <Button
             variant="destructive"
             size="sm"
-            onClick={handleDelete}
+            onClick={() => setShowDeleteConfirm(true)}
             disabled={deleteTask.isPending}
           >
             <Trash2 className="h-3.5 w-3.5" />
@@ -126,6 +128,17 @@ export default function TaskDetailPage() {
           </Button>
         )}
       </div>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+        title="Delete Task"
+        description="Delete this task? This action cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteTask.isPending}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
         {/* Main content */}

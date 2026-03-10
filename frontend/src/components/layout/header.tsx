@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar } from "@/components/ui/avatar";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface HeaderProps {
   onMenuToggle?: () => void;
@@ -29,9 +30,11 @@ export function Header({ onMenuToggle, showMenuButton }: HeaderProps) {
         <ThemeToggle />
         {user && (
           <>
-            <Link href="/profile" className="hover:opacity-80 transition-opacity" title="View profile">
-              <Avatar name={user.display_name} size="sm" />
-            </Link>
+            <Tooltip content="View profile">
+              <Link href="/profile" className="hover:opacity-80 transition-opacity">
+                <Avatar name={user.display_name} size="sm" />
+              </Link>
+            </Tooltip>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={logout}>
               <LogOut className="h-4 w-4" />
             </Button>
