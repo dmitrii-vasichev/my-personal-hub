@@ -72,7 +72,7 @@ describe("CollapsibleDescription", () => {
   it("shows 'Add description' when no description", () => {
     render(<JobDetail job={baseJob} />);
 
-    expect(screen.getByText("Add description")).toBeInTheDocument();
+    expect(screen.getByText("Add description…")).toBeInTheDocument();
   });
 
   it("does not show toggle button for short descriptions", () => {

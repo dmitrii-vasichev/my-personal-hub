@@ -99,11 +99,12 @@ export default function TaskDetailPage() {
     router.push("/tasks");
   };
 
-  const visibleChecklist = checklistExpanded || task.checklist.length <= CHECKLIST_COLLAPSE_THRESHOLD
-    ? task.checklist
-    : task.checklist.slice(0, CHECKLIST_COLLAPSE_THRESHOLD);
-  const hiddenCount = task.checklist.length - CHECKLIST_COLLAPSE_THRESHOLD;
-  const doneCount = task.checklist.filter((i) => i.completed).length;
+  const checklist = task.checklist ?? [];
+  const visibleChecklist = checklistExpanded || checklist.length <= CHECKLIST_COLLAPSE_THRESHOLD
+    ? checklist
+    : checklist.slice(0, CHECKLIST_COLLAPSE_THRESHOLD);
+  const hiddenCount = checklist.length - CHECKLIST_COLLAPSE_THRESHOLD;
+  const doneCount = checklist.filter((i) => i.completed).length;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -184,19 +185,19 @@ export default function TaskDetailPage() {
               <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                 Checklist
               </span>
-              {task.checklist.length > 0 && (
+              {checklist.length > 0 && (
                 <span className="text-xs text-[var(--text-tertiary)]">
-                  {doneCount}/{task.checklist.length}
+                  {doneCount}/{checklist.length}
                 </span>
               )}
             </div>
 
             {/* Progress bar */}
-            {task.checklist.length > 0 && (
+            {checklist.length > 0 && (
               <div className="h-1 w-full rounded-full bg-[var(--border)] mb-3">
                 <div
                   className="h-1 rounded-full bg-[var(--success)] transition-all"
-                  style={{ width: `${(doneCount / task.checklist.length) * 100}%` }}
+                  style={{ width: `${(doneCount / checklist.length) * 100}%` }}
                 />
               </div>
             )}
@@ -206,14 +207,14 @@ export default function TaskDetailPage() {
                 <ChecklistEditor
                   items={visibleChecklist}
                   onChange={(items) => {
-                    if (checklistExpanded || task.checklist.length <= CHECKLIST_COLLAPSE_THRESHOLD) {
+                    if (checklistExpanded || checklist.length <= CHECKLIST_COLLAPSE_THRESHOLD) {
                       handleChecklistChange(items);
                     } else {
-                      handleChecklistChange([...items, ...task.checklist.slice(CHECKLIST_COLLAPSE_THRESHOLD)]);
+                      handleChecklistChange([...items, ...checklist.slice(CHECKLIST_COLLAPSE_THRESHOLD)]);
                     }
                   }}
                 />
-                {task.checklist.length > CHECKLIST_COLLAPSE_THRESHOLD && (
+                {checklist.length > CHECKLIST_COLLAPSE_THRESHOLD && (
                   <button
                     onClick={() => setChecklistExpanded(!checklistExpanded)}
                     className="mt-2 flex items-center gap-1 text-xs text-[var(--accent-foreground)] hover:text-[var(--accent-hover)] transition-colors"
@@ -232,7 +233,7 @@ export default function TaskDetailPage() {
                   </button>
                 )}
               </>
-            ) : task.checklist.length > 0 ? (
+            ) : checklist.length > 0 ? (
               <div className="flex flex-col gap-1.5">
                 {visibleChecklist.map((item) => (
                   <label key={item.id} className="flex items-start gap-2 select-none">
