@@ -107,7 +107,7 @@ export function EventDialog({ open, onClose, prefillDate, event }: EventDialogPr
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div
-        className="relative z-10 bg-[--surface] border border-[--border] rounded-lg shadow-xl w-full max-w-[480px] mx-4"
+        className="relative z-10 bg-surface border border-border rounded-lg shadow-xl w-full max-w-[480px] mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
