@@ -3,6 +3,7 @@
 **Date**: 2026-03-10
 **PRD Reference**: docs/prd-job-hunt-redesign.md
 **Requirements**: FR-9 (Search Result Limit), FR-10 (Search Result Detail Preview), FR-11 (Search Save Flow), FR-16 (Resume Generation Uses Profile)
+**Issues**: #233, #234, #235, #236, #237, #238, #239, #240
 
 ## Overview
 
