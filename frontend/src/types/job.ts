@@ -28,6 +28,30 @@ export interface ApplicationSummary {
   applied_date?: string;
 }
 
+// Match result from AI job matching
+export interface MatchResult {
+  score: number;
+  matched_skills: string[];
+  missing_skills: string[];
+  strengths: string[];
+  recommendations: string[];
+}
+
+// Brief types for linked items display
+export interface LinkedTaskBrief {
+  id: number;
+  title: string;
+  status: string;
+  priority: string;
+}
+
+export interface LinkedEventBrief {
+  id: number;
+  title: string;
+  start_time: string;
+  end_time: string;
+}
+
 // Main entities
 export interface Job {
   id: number;
@@ -42,6 +66,7 @@ export interface Job {
   salary_max?: number;
   salary_currency: string;
   match_score?: number;
+  match_result?: MatchResult;
   tags: string[];
   found_at?: string;
   created_at: string;
