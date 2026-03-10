@@ -19,6 +19,7 @@ export interface JobSummary {
   title: string;
   company: string;
   location?: string;
+  match_score?: number;
 }
 
 export interface ApplicationSummary {
@@ -228,7 +229,7 @@ export interface JobFilters {
   source?: string;
   has_application?: boolean;
   tags?: string;
-  sort_by?: "created_at" | "company" | "match_score";
+  sort_by?: "created_at" | "company" | "match_score" | "title" | "source" | "found_at";
   sort_order?: "asc" | "desc";
 }
 

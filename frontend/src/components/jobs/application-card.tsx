@@ -75,10 +75,25 @@ export function ApplicationCard({ card, isDragging = false }: ApplicationCardPro
           {card.job?.title ?? "Untitled Position"}
         </p>
 
-        {/* Company */}
-        {card.job?.company && (
-          <p className="text-xs text-muted-foreground mb-2 truncate">{card.job.company}</p>
-        )}
+        {/* Company + match score */}
+        <div className="flex items-center gap-2 mb-2">
+          {card.job?.company && (
+            <p className="text-xs text-muted-foreground truncate">{card.job.company}</p>
+          )}
+          {card.job?.match_score != null && (
+            <span
+              className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${
+                card.job.match_score >= 80
+                  ? "bg-[rgba(52,211,153,0.1)] text-[#34d399]"
+                  : card.job.match_score >= 60
+                  ? "bg-[rgba(251,191,36,0.1)] text-[#fbbf24]"
+                  : "bg-[var(--muted)] text-[var(--text-secondary)]"
+              }`}
+            >
+              {card.job.match_score}%
+            </span>
+          )}
+        </div>
 
         {/* Applied date + next action */}
         <div className="flex flex-col gap-1">
