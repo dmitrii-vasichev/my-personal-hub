@@ -16,6 +16,7 @@ export interface UserSettings {
   has_google_client_id: boolean;
   has_google_client_secret: boolean;
   google_redirect_uri: string | null;
+  google_drive_notes_folder_id: string | null;
   instruction_resume: string | null;
   instruction_ats_audit: string | null;
   instruction_gap_analysis: string | null;
@@ -40,6 +41,7 @@ export interface UpdateSettingsInput {
   google_client_id?: string;
   google_client_secret?: string;
   google_redirect_uri?: string;
+  google_drive_notes_folder_id?: string;
   instruction_resume?: string;
   instruction_ats_audit?: string;
   instruction_gap_analysis?: string;

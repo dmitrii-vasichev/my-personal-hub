@@ -25,6 +25,7 @@ function hasApiKeys(s: unknown): s is {
   has_google_client_id: boolean;
   has_google_client_secret: boolean;
   google_redirect_uri: string | null;
+  google_drive_notes_folder_id: string | null;
   llm_provider: string;
 } {
   return !!s && typeof s === "object" && "has_api_key_openai" in s;
@@ -179,6 +180,7 @@ export default function SettingsPage() {
     client_secret: "",
     redirect_uri: "",
   });
+  const [notesFolderId, setNotesFolderId] = useState("");
 
   const [initialized, setInitialized] = useState(false);
 
@@ -194,6 +196,7 @@ export default function SettingsPage() {
         ...k,
         redirect_uri: settings.google_redirect_uri ?? "",
       }));
+      setNotesFolderId(settings.google_drive_notes_folder_id ?? "");
       setInstructions({
         instruction_resume: settings.instruction_resume ?? "",
         instruction_ats_audit: settings.instruction_ats_audit ?? "",
@@ -225,6 +228,7 @@ export default function SettingsPage() {
       if (googleKeys.client_id) payload.google_client_id = googleKeys.client_id;
       if (googleKeys.client_secret) payload.google_client_secret = googleKeys.client_secret;
       if (googleKeys.redirect_uri) payload.google_redirect_uri = googleKeys.redirect_uri;
+      if (notesFolderId) payload.google_drive_notes_folder_id = notesFolderId;
       payload.instruction_resume = instructions.instruction_resume || undefined;
       payload.instruction_ats_audit = instructions.instruction_ats_audit || undefined;
       payload.instruction_gap_analysis = instructions.instruction_gap_analysis || undefined;
@@ -329,6 +333,8 @@ export default function SettingsPage() {
           googleKeys={googleKeys}
           setGoogleKeys={setGoogleKeys}
           adminSettings={adminSettings}
+          notesFolderId={notesFolderId}
+          setNotesFolderId={setNotesFolderId}
         />
       )}
 
