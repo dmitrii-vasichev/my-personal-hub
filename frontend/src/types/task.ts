@@ -1,4 +1,4 @@
-export type TaskStatus = "new" | "in_progress" | "review" | "done" | "cancelled";
+export type TaskStatus = "backlog" | "new" | "in_progress" | "review" | "done" | "cancelled";
 export type TaskPriority = "urgent" | "high" | "medium" | "low";
 export type Visibility = "family" | "private";
 export type UpdateType = "progress" | "status_change" | "comment" | "blocker";
@@ -52,6 +52,7 @@ export interface TaskUpdateItem {
 }
 
 export interface KanbanBoard {
+  backlog: Task[];
   new: Task[];
   in_progress: Task[];
   review: Task[];
@@ -62,6 +63,7 @@ export interface KanbanBoard {
 export interface CreateTaskInput {
   title: string;
   description?: string;
+  status?: TaskStatus;
   priority?: TaskPriority;
   deadline?: string;
   reminder_at?: string;
@@ -96,6 +98,7 @@ export interface TaskFilters {
 }
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
+  backlog: "Backlog",
   new: "New",
   in_progress: "In Progress",
   review: "Review",
@@ -104,6 +107,7 @@ export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 export const TASK_STATUS_ORDER: TaskStatus[] = [
+  "backlog",
   "new",
   "in_progress",
   "review",

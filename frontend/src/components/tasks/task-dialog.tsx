@@ -19,7 +19,8 @@ import { ChecklistEditor } from "./checklist-editor";
 import { DatePicker } from "@/components/ui/date-picker";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { useCreateTask } from "@/hooks/use-tasks";
-import type { ChecklistItem, TaskPriority, Visibility } from "@/types/task";
+import type { ChecklistItem, TaskPriority, TaskStatus, Visibility } from "@/types/task";
+import { TASK_STATUS_LABELS } from "@/types/task";
 
 interface TaskDialogProps {
   onClose: () => void;
@@ -31,6 +32,7 @@ export function TaskDialog({ onClose, onSuccess }: TaskDialogProps) {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [status, setStatus] = useState<TaskStatus>("new");
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [deadline, setDeadline] = useState("");
   const [reminderAt, setReminderAt] = useState("");
@@ -53,6 +55,7 @@ export function TaskDialog({ onClose, onSuccess }: TaskDialogProps) {
       await createTask.mutateAsync({
         title: title.trim(),
         description: description.trim() || undefined,
+        status: status !== "new" ? status : undefined,
         priority,
         deadline: deadline || undefined,
         reminder_at: reminderAt || undefined,
@@ -106,8 +109,25 @@ export function TaskDialog({ onClose, onSuccess }: TaskDialogProps) {
               />
             </div>
 
-            {/* Priority + Visibility */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Status + Priority + Visibility */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                  Status
+                </Label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as TaskStatus)}
+                  className="h-9 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+                >
+                  {(["new", "backlog"] as TaskStatus[]).map((s) => (
+                    <option key={s} value={s}>
+                      {TASK_STATUS_LABELS[s]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                   Priority

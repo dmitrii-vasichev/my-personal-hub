@@ -14,6 +14,7 @@ import type { KanbanBoard as KanbanBoardType, TaskFilters, TaskStatus } from "@/
 import { DEFAULT_HIDDEN_COLUMNS } from "@/types/task";
 
 const EMPTY_BOARD: KanbanBoardType = {
+  backlog: [],
   new: [],
   in_progress: [],
   review: [],
@@ -68,6 +69,7 @@ export default function TasksPage() {
     // Build optimistic state
     const currentBoard = optimisticBoard ?? board;
     const newBoard: KanbanBoardType = {
+      backlog: [...currentBoard.backlog],
       new: [...currentBoard.new],
       in_progress: [...currentBoard.in_progress],
       review: [...currentBoard.review],
@@ -105,6 +107,7 @@ export default function TasksPage() {
     // Build optimistic state for reorder
     const currentBoard = optimisticBoard ?? board;
     const newBoard: KanbanBoardType = {
+      backlog: [...currentBoard.backlog],
       new: [...currentBoard.new],
       in_progress: [...currentBoard.in_progress],
       review: [...currentBoard.review],

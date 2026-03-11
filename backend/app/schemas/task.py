@@ -26,6 +26,7 @@ class UserBrief(BaseModel):
 class TaskCreate(BaseModel):
     title: str
     description: Optional[str] = None
+    status: TaskStatus = TaskStatus.new
     priority: TaskPriority = TaskPriority.medium
     deadline: Optional[datetime] = None
     reminder_at: Optional[datetime] = None
@@ -118,6 +119,7 @@ class TaskUpdateResponse(BaseModel):
 
 
 class KanbanBoard(BaseModel):
+    backlog: list[TaskResponse] = []
     new: list[TaskResponse] = []
     in_progress: list[TaskResponse] = []
     review: list[TaskResponse] = []
