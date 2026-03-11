@@ -38,6 +38,19 @@ def _capture_task_add(db_mock: AsyncMock) -> list[Task]:
     return captured
 
 
+def _make_create_db_mock() -> AsyncMock:
+    """Create a db mock that handles both kanban_order query and normal ops."""
+    db = AsyncMock()
+    db.flush = AsyncMock()
+    db.commit = AsyncMock()
+    db.refresh = AsyncMock()
+    # _get_min_kanban_order calls db.execute(...) then result.scalar()
+    kanban_result = MagicMock()
+    kanban_result.scalar.return_value = None
+    db.execute = AsyncMock(return_value=kanban_result)
+    return db
+
+
 @pytest.mark.asyncio
 async def test_create_task_saves_reminder_at():
     """reminder_at is set on the Task object during creation."""
@@ -45,10 +58,7 @@ async def test_create_task_saves_reminder_at():
     data = TaskCreate(title="Test task", reminder_at=reminder)
     user = make_user()
 
-    db = AsyncMock()
-    db.flush = AsyncMock()
-    db.commit = AsyncMock()
-    db.refresh = AsyncMock()
+    db = _make_create_db_mock()
 
     task = await create_task(db, data, user)
 
@@ -61,10 +71,7 @@ async def test_create_task_without_reminder():
     data = TaskCreate(title="No reminder task")
     user = make_user()
 
-    db = AsyncMock()
-    db.flush = AsyncMock()
-    db.commit = AsyncMock()
-    db.refresh = AsyncMock()
+    db = _make_create_db_mock()
 
     task = await create_task(db, data, user)
 

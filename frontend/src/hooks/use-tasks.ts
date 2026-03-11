@@ -81,6 +81,17 @@ export function useUpdateTask() {
   });
 }
 
+export function useReorderTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { task_id: number; after_task_id: number | null; before_task_id: number | null }) =>
+      api.post<Task>("/api/tasks/reorder", data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [KANBAN_KEY] });
+    },
+  });
+}
+
 export function useDeleteTask() {
   const qc = useQueryClient();
   return useMutation({

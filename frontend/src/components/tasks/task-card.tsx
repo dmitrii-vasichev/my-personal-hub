@@ -1,6 +1,6 @@
 "use client";
 
-import { useDraggable } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Calendar, Eye, Lock, User } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -26,18 +26,28 @@ function isDeadlineOverdue(deadline: string): boolean {
 
 export function TaskCard({ task, isDragging = false }: TaskCardProps) {
   const router = useRouter();
-  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging: isSortableDragging,
+  } = useSortable({
     id: task.id,
-    data: { task, status: task.status },
+    data: { task, status: task.status, type: "task" },
   });
 
+  const dragging = isDragging || isSortableDragging;
+
   const cardStyle = {
-    ...(transform ? { transform: CSS.Translate.toString(transform) } : {}),
+    transform: CSS.Transform.toString(transform),
+    transition,
     borderLeftColor: PRIORITY_BORDER_CSS_VARS[task.priority],
   };
 
   const handleClick = () => {
-    if (transform) return;
+    if (transform && (Math.abs(transform.x) > 5 || Math.abs(transform.y) > 5)) return;
     router.push(`/tasks/${task.id}`);
   };
 
@@ -51,7 +61,7 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
       title={`Priority: ${PRIORITY_LABELS[task.priority]}`}
       className={`
         group relative rounded-lg border border-l-[3px] bg-[var(--surface)] p-3 transition-shadow cursor-pointer
-        ${isDragging ? "shadow-lg opacity-50 border-[var(--border-strong)] cursor-grabbing" : "border-[var(--border)] hover:border-[var(--border-strong)]"}
+        ${dragging ? "shadow-lg opacity-50 border-[var(--border-strong)] cursor-grabbing z-10" : "border-[var(--border)] hover:border-[var(--border-strong)]"}
         active:cursor-grabbing
       `}
     >

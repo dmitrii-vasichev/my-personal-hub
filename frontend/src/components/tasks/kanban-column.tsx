@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { Task, TaskStatus } from "@/types/task";
 import { TASK_STATUS_LABELS } from "@/types/task";
@@ -31,6 +32,8 @@ export function KanbanColumn({ status, tasks, activeTaskId }: KanbanColumnProps)
   const shouldCollapse = isDone && tasks.length > DONE_COLLAPSE_LIMIT;
   const visibleTasks = shouldCollapse && !expanded ? tasks.slice(0, DONE_COLLAPSE_LIMIT) : tasks;
 
+  const taskIds = useMemo(() => visibleTasks.map((t) => t.id), [visibleTasks]);
+
   return (
     <div className="flex w-72 flex-shrink-0 flex-col gap-2">
       {/* Column header */}
@@ -52,13 +55,15 @@ export function KanbanColumn({ status, tasks, activeTaskId }: KanbanColumnProps)
           ${isOver ? "bg-[var(--accent-muted)] ring-1 ring-[var(--accent)]" : ""}
         `}
       >
-        {visibleTasks.map((task) => (
-          <TaskCard
-            key={task.id}
-            task={task}
-            isDragging={task.id === activeTaskId}
-          />
-        ))}
+        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+          {visibleTasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              isDragging={task.id === activeTaskId}
+            />
+          ))}
+        </SortableContext>
 
         {tasks.length === 0 && (
           <div className="flex h-16 items-center justify-center rounded border border-dashed border-[var(--border)] text-xs text-[var(--text-tertiary)]">

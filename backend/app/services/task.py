@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -63,11 +63,22 @@ async def _load_task_with_users(db: AsyncSession, task_id: int) -> Task | None:
     return result.unique().scalar_one_or_none()
 
 
+async def _get_min_kanban_order(db: AsyncSession, status: str) -> float:
+    """Get the minimum kanban_order for a given status column."""
+    result = await db.execute(
+        select(func.min(Task.kanban_order)).where(Task.status == status)
+    )
+    min_order = result.scalar()
+    return (min_order - 1) if min_order is not None else 0
+
+
 async def create_task(
     db: AsyncSession,
     data: TaskCreate,
     current_user: User,
 ) -> Task:
+    # Place new task at top of the "new" column
+    top_order = await _get_min_kanban_order(db, TaskStatus.new.value)
     task = Task(
         user_id=current_user.id,
         created_by_id=current_user.id,
@@ -79,6 +90,7 @@ async def create_task(
         checklist=[item.model_dump() for item in data.checklist],
         assignee_id=_resolve_assignee(data.assignee_id, current_user),
         visibility=data.visibility,
+        kanban_order=top_order,
     )
     db.add(task)
     await db.flush()  # get task.id
@@ -163,6 +175,10 @@ async def update_task(
         elif old_status == TaskStatus.done:
             task.completed_at = None
 
+        # Place moved task at top of target column
+        top_order = await _get_min_kanban_order(db, data.status.value)
+        task.kanban_order = top_order
+
         db.add(TaskUpdate(
             task_id=task.id,
             author_id=current_user.id,
@@ -246,7 +262,9 @@ async def get_kanban_board(
     current_user: User,
     **filter_kwargs,
 ) -> dict[str, list[Task]]:
-    tasks = await list_tasks(db, current_user, sort_order="asc", **filter_kwargs)
+    tasks = await list_tasks(
+        db, current_user, sort_by="kanban_order", sort_order="asc", **filter_kwargs
+    )
     board: dict[str, list[Task]] = {
         "new": [],
         "in_progress": [],
@@ -257,6 +275,53 @@ async def get_kanban_board(
     for task in tasks:
         board[task.status.value].append(task)
     return board
+
+
+async def reorder_task(
+    db: AsyncSession,
+    task_id: int,
+    after_task_id: int | None,
+    before_task_id: int | None,
+    current_user: User,
+) -> Task | None:
+    """Move task to a new position within its column.
+
+    Position is specified by the neighbouring tasks:
+    - after_task_id: the task above (None = place first)
+    - before_task_id: the task below (None = place last)
+    """
+    task = await _load_task_with_users(db, task_id)
+    if task is None or not _can_access_task(task, current_user):
+        return None
+    if not _can_edit_task(task, current_user):
+        raise PermissionDeniedError("You can only reorder your own or assigned tasks")
+
+    after_order: float | None = None
+    before_order: float | None = None
+
+    if after_task_id is not None:
+        after_task = await db.get(Task, after_task_id)
+        if after_task:
+            after_order = after_task.kanban_order
+
+    if before_task_id is not None:
+        before_task = await db.get(Task, before_task_id)
+        if before_task:
+            before_order = before_task.kanban_order
+
+    if after_order is not None and before_order is not None:
+        task.kanban_order = (after_order + before_order) / 2
+    elif after_order is not None:
+        task.kanban_order = after_order + 1
+    elif before_order is not None:
+        task.kanban_order = before_order - 1
+    else:
+        task.kanban_order = 0
+
+    task.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(task)
+    return task
 
 
 # ── Task updates ──────────────────────────────────────────────────────────────

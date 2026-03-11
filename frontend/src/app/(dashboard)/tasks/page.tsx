@@ -8,7 +8,7 @@ import { KanbanBoard } from "@/components/tasks/kanban-board";
 import { TaskFiltersBar } from "@/components/tasks/task-filters";
 import { ColumnVisibilityButton } from "@/components/tasks/column-visibility-button";
 import { TaskDialog } from "@/components/tasks/task-dialog";
-import { useKanbanTasks, useUpdateTask } from "@/hooks/use-tasks";
+import { useKanbanTasks, useUpdateTask, useReorderTask } from "@/hooks/use-tasks";
 import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
 import type { KanbanBoard as KanbanBoardType, TaskFilters, TaskStatus } from "@/types/task";
 import { DEFAULT_HIDDEN_COLUMNS } from "@/types/task";
@@ -27,6 +27,7 @@ export default function TasksPage() {
 
   const { data: board, isLoading, error } = useKanbanTasks(filters);
   const updateTask = useUpdateTask();
+  const reorderTask = useReorderTask();
 
   // Column visibility from settings
   const { data: settings } = useSettings();
@@ -74,12 +75,12 @@ export default function TasksPage() {
       cancelled: [...currentBoard.cancelled],
     };
 
-    // Find and move the task
+    // Find and move the task — place at TOP of target column
     for (const col of Object.keys(newBoard) as TaskStatus[]) {
       const idx = newBoard[col].findIndex((t) => t.id === taskId);
       if (idx !== -1) {
         const [task] = newBoard[col].splice(idx, 1);
-        newBoard[newStatus].push({ ...task, status: newStatus });
+        newBoard[newStatus].unshift({ ...task, status: newStatus });
         break;
       }
     }
@@ -89,6 +90,57 @@ export default function TasksPage() {
       await updateTask.mutateAsync({ taskId, data: { status: newStatus } });
     } catch {
       setOptimisticBoard(null); // Revert on error
+    } finally {
+      setOptimisticBoard(null);
+    }
+  };
+
+  const handleReorder = async (
+    taskId: number,
+    afterTaskId: number | null,
+    beforeTaskId: number | null
+  ) => {
+    if (!board) return;
+
+    // Build optimistic state for reorder
+    const currentBoard = optimisticBoard ?? board;
+    const newBoard: KanbanBoardType = {
+      new: [...currentBoard.new],
+      in_progress: [...currentBoard.in_progress],
+      review: [...currentBoard.review],
+      done: [...currentBoard.done],
+      cancelled: [...currentBoard.cancelled],
+    };
+
+    // Find the task and its column, reorder within column
+    for (const col of Object.keys(newBoard) as TaskStatus[]) {
+      const taskIdx = newBoard[col].findIndex((t) => t.id === taskId);
+      if (taskIdx !== -1) {
+        const [task] = newBoard[col].splice(taskIdx, 1);
+
+        // Find the target position based on after/before
+        if (afterTaskId !== null) {
+          const afterIdx = newBoard[col].findIndex((t) => t.id === afterTaskId);
+          newBoard[col].splice(afterIdx + 1, 0, task);
+        } else if (beforeTaskId !== null) {
+          const beforeIdx = newBoard[col].findIndex((t) => t.id === beforeTaskId);
+          newBoard[col].splice(Math.max(0, beforeIdx), 0, task);
+        } else {
+          newBoard[col].unshift(task);
+        }
+        break;
+      }
+    }
+    setOptimisticBoard(newBoard);
+
+    try {
+      await reorderTask.mutateAsync({
+        task_id: taskId,
+        after_task_id: afterTaskId,
+        before_task_id: beforeTaskId,
+      });
+    } catch {
+      setOptimisticBoard(null);
     } finally {
       setOptimisticBoard(null);
     }
@@ -144,6 +196,7 @@ export default function TasksPage() {
         <KanbanBoard
           board={displayBoard}
           onStatusChange={handleStatusChange}
+          onReorder={handleReorder}
           isPending={updateTask.isPending}
           hiddenColumns={hiddenColumns}
         />

@@ -38,6 +38,7 @@ const mockTask = {
   deadline: "2026-04-01",
   reminder_at: null,
   completed_at: null,
+  kanban_order: 0,
   created_at: "2026-03-10T12:00:00Z",
   updated_at: "2026-03-10T12:00:00Z",
   owner_name: "Test User",
