@@ -33,7 +33,9 @@ from app.services import calendar as calendar_service
 from app.services import google_calendar as gcal_service
 from app.services import google_oauth as oauth_service
 from app.services import task_event_link as link_service
+from app.services import note_event_link as nel_service
 from app.schemas.calendar import LinkedTaskBrief
+from app.schemas.note import LinkedNoteBrief
 
 router = APIRouter(prefix="/api/calendar", tags=["calendar"])
 
@@ -304,3 +306,18 @@ async def get_event_linked_tasks(
     if tasks is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
     return tasks
+
+
+# ── Event-Note links ─────────────────────────────────────────────────────────
+
+
+@router.get("/events/{event_id}/linked-notes", response_model=list[LinkedNoteBrief])
+async def get_event_linked_notes(
+    event_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    notes = await nel_service.get_event_linked_notes(db, event_id, current_user)
+    if notes is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
+    return notes

@@ -21,9 +21,11 @@ from app.schemas.job import (
     MatchResultResponse,
     StatusHistoryResponse,
 )
+from app.schemas.note import LinkedNoteBrief
 from app.services import job as job_service
 from app.services import job_task_link as jtl_service
 from app.services import job_event_link as jel_service
+from app.services import note_job_link as njl_service
 from app.services import job_matching as match_service
 from app.services.scraper import fetch_job_description
 
@@ -283,3 +285,18 @@ async def get_job_linked_events(
     if events is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     return events
+
+
+# ── Job-Note linking ────────────────────────────────────────────────────────
+
+
+@router.get("/{job_id}/linked-notes", response_model=list[LinkedNoteBrief])
+async def get_job_linked_notes(
+    job_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    notes = await njl_service.get_job_linked_notes(db, job_id, current_user)
+    if notes is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    return notes

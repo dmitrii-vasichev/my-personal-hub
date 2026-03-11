@@ -16,8 +16,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.user import User
-from app.schemas.note import NoteResponse, NoteTreeResponse
+from app.schemas.note import LinkedJobBrief, NoteResponse, NoteTreeResponse
+from app.schemas.task import LinkedEventBrief
+from app.schemas.calendar import LinkedTaskBrief
 from app.services import google_drive, google_oauth, note as note_service
+from app.services import note_task_link as ntl_service
+from app.services import note_job_link as njl_service
+from app.services import note_event_link as nel_service
 from app.services.settings import get_or_create_settings
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])
@@ -137,3 +142,120 @@ async def get_note(
             detail="Note not found",
         )
     return note
+
+
+# ── Note-Task links ──────────────────────────────────────────────────────────
+
+
+@router.post("/{note_id:int}/link-task/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def link_note_to_task(
+    note_id: int,
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ok = await ntl_service.link_note_task(db, note_id, task_id, current_user)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note or task not found")
+
+
+@router.delete("/{note_id:int}/link-task/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def unlink_note_from_task(
+    note_id: int,
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ok = await ntl_service.unlink_note_task(db, note_id, task_id, current_user)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+
+
+@router.get("/{note_id:int}/linked-tasks", response_model=list[LinkedTaskBrief])
+async def get_note_linked_tasks(
+    note_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    tasks = await ntl_service.get_note_linked_tasks(db, note_id, current_user)
+    if tasks is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+    return tasks
+
+
+# ── Note-Job links ───────────────────────────────────────────────────────────
+
+
+@router.post("/{note_id:int}/link-job/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def link_note_to_job(
+    note_id: int,
+    job_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ok = await njl_service.link_note_job(db, note_id, job_id, current_user)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note or job not found")
+
+
+@router.delete("/{note_id:int}/link-job/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def unlink_note_from_job(
+    note_id: int,
+    job_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ok = await njl_service.unlink_note_job(db, note_id, job_id, current_user)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+
+
+@router.get("/{note_id:int}/linked-jobs", response_model=list[LinkedJobBrief])
+async def get_note_linked_jobs(
+    note_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    jobs = await njl_service.get_note_linked_jobs(db, note_id, current_user)
+    if jobs is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+    return jobs
+
+
+# ── Note-Event links ─────────────────────────────────────────────────────────
+
+
+@router.post("/{note_id:int}/link-event/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def link_note_to_event(
+    note_id: int,
+    event_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ok = await nel_service.link_note_event(db, note_id, event_id, current_user)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note or event not found")
+
+
+@router.delete("/{note_id:int}/link-event/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def unlink_note_from_event(
+    note_id: int,
+    event_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ok = await nel_service.unlink_note_event(db, note_id, event_id, current_user)
+    if not ok:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+
+
+@router.get("/{note_id:int}/linked-events", response_model=list[LinkedEventBrief])
+async def get_note_linked_events(
+    note_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    events = await nel_service.get_note_linked_events(db, note_id, current_user)
+    if events is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
+    return events
