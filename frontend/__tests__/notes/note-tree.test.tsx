@@ -170,6 +170,33 @@ describe("NoteTree", () => {
     expect(screen.getByText("deploy-guide.md")).toBeInTheDocument();
   });
 
+  it("auto-expands parents when autoExpandFileId changes after mount", () => {
+    const { rerender } = render(
+      <NoteTree
+        tree={mockTree}
+        selectedFileId={null}
+        onSelectFile={vi.fn()}
+        autoExpandFileId={null}
+      />
+    );
+
+    // Backend folder should be collapsed initially
+    expect(screen.queryByText("deploy-guide.md")).not.toBeInTheDocument();
+
+    // Simulate deep link: autoExpandFileId changes after mount
+    rerender(
+      <NoteTree
+        tree={mockTree}
+        selectedFileId="file-1-id"
+        onSelectFile={vi.fn()}
+        autoExpandFileId="file-1-id"
+      />
+    );
+
+    // Backend folder should now be expanded to show the target file
+    expect(screen.getByText("deploy-guide.md")).toBeInTheDocument();
+  });
+
   it("sorts folders before files", () => {
     const { container } = render(
       <NoteTree tree={mockTree} selectedFileId={null} onSelectFile={vi.fn()} />
