@@ -55,6 +55,12 @@ class LinkedEventBrief(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class TaskReorder(BaseModel):
+    task_id: int
+    after_task_id: Optional[int] = None
+    before_task_id: Optional[int] = None
+
+
 class TaskResponse(BaseModel):
     id: int
     user_id: int
@@ -71,6 +77,7 @@ class TaskResponse(BaseModel):
     reminder_at: Optional[datetime]
     reminder_dismissed: bool
     completed_at: Optional[datetime]
+    kanban_order: float = 0
     created_at: datetime
     updated_at: datetime
 

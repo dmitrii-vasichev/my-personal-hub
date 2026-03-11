@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import type { Task, KanbanBoard as KanbanBoardType, TaskStatus } from "@/types/task";
 import {
-  PRIORITY_BORDER_COLORS,
+  PRIORITY_BORDER_CSS_VARS,
   DEFAULT_HIDDEN_COLUMNS,
   TASK_STATUS_ORDER,
 } from "@/types/task";
@@ -23,8 +23,24 @@ vi.mock("@dnd-kit/core", () => ({
   }),
 }));
 
+vi.mock("@dnd-kit/sortable", () => ({
+  SortableContext: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  verticalListSortingStrategy: {},
+  useSortable: () => ({
+    attributes: {},
+    listeners: {},
+    setNodeRef: () => {},
+    transform: null,
+    transition: null,
+    isDragging: false,
+  }),
+}));
+
 vi.mock("@dnd-kit/utilities", () => ({
-  CSS: { Translate: { toString: () => "" } },
+  CSS: {
+    Translate: { toString: () => "" },
+    Transform: { toString: () => "" },
+  },
 }));
 
 vi.mock("next/navigation", () => ({
@@ -51,6 +67,7 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     deadline: null,
     reminder_at: null,
     completed_at: null,
+    kanban_order: 0,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
     ...overrides,
@@ -82,7 +99,8 @@ describe("TaskCard — priority border", () => {
       );
       const card = container.firstChild as HTMLElement;
       expect(card.className).toContain("border-l-[3px]");
-      expect(card.className).toContain(PRIORITY_BORDER_COLORS[priority]);
+      // Border color is set via inline style, not Tailwind class
+      expect(card.style.borderLeftColor).toBe(PRIORITY_BORDER_CSS_VARS[priority]);
       unmount();
     }
   });
@@ -156,6 +174,7 @@ describe("KanbanBoard — column visibility", () => {
       <KanbanBoard
         board={board}
         onStatusChange={() => {}}
+        onReorder={() => {}}
         hiddenColumns={["review", "cancelled"]}
       />
     );
@@ -169,7 +188,7 @@ describe("KanbanBoard — column visibility", () => {
     const board = makeBoard();
 
     const { container } = render(
-      <KanbanBoard board={board} onStatusChange={() => {}} hiddenColumns={[]} />
+      <KanbanBoard board={board} onStatusChange={() => {}} onReorder={() => {}} hiddenColumns={[]} />
     );
 
     // All 5 status headers should be present

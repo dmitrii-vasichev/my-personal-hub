@@ -30,6 +30,7 @@ export interface Task {
   deadline: string | null;
   reminder_at: string | null;
   completed_at: string | null;
+  kanban_order: number;
   created_at: string;
   updated_at: string;
   creator?: UserBrief;
