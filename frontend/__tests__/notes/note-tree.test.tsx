@@ -123,7 +123,7 @@ describe("NoteTree", () => {
     );
 
     const fileButton = screen.getByText("README.md").closest("button");
-    expect(fileButton?.className).toContain("text-[var(--accent)]");
+    expect(fileButton?.className).toContain("text-[var(--accent-foreground)]");
   });
 
   it("expand all button expands all folders", async () => {
