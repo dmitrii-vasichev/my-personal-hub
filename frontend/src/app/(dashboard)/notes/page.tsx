@@ -1,19 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { RefreshCw, FileText, AlertCircle, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NoteTree } from "@/components/notes/note-tree";
 import { NoteViewer } from "@/components/notes/note-viewer";
 import { NoteBreadcrumb } from "@/components/notes/note-breadcrumb";
 import { useNotesTree, useNoteContent, useRefreshNotesTree } from "@/hooks/use-notes";
+import type { NoteTreeNode } from "@/types/note";
 import { useSettings } from "@/hooks/use-settings";
 import { useGoogleOAuthStatus } from "@/hooks/use-calendar";
 import Link from "next/link";
 
+function findFileInTree(
+  node: NoteTreeNode,
+  fileId: string,
+  parentPath: string
+): string | null {
+  const currentPath = parentPath ? `${parentPath}/${node.name}` : node.name;
+  if (node.type === "file" && node.google_file_id === fileId) return currentPath;
+  if (node.children) {
+    for (const child of node.children) {
+      const found = findFileInTree(child, fileId, currentPath);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 export default function NotesPage() {
+  const searchParams = useSearchParams();
+  const fileParam = searchParams.get("file");
+
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
+  const [urlParamApplied, setUrlParamApplied] = useState<string | null>(null);
 
   const { data: settings, isLoading: settingsLoading } = useSettings();
   const { data: oauthStatus, isLoading: oauthLoading } = useGoogleOAuthStatus();
@@ -21,10 +43,50 @@ export default function NotesPage() {
   const { data: content, isLoading: contentLoading, error: contentError } = useNoteContent(selectedFileId);
   const refreshTree = useRefreshNotesTree();
 
-  const handleSelectFile = (fileId: string, filePath: string) => {
+  const LAST_OPENED_KEY = "notes:lastOpenedFile";
+
+  // Auto-select file from URL ?file= parameter or localStorage
+  useEffect(() => {
+    if (!tree) return;
+
+    // URL param takes priority
+    if (fileParam && urlParamApplied !== fileParam) {
+      const filePath = findFileInTree(tree, fileParam, "");
+      if (filePath) {
+        setSelectedFileId(fileParam);
+        setSelectedFilePath(filePath);
+      }
+      setUrlParamApplied(fileParam);
+      return;
+    }
+
+    // Fallback to localStorage if no URL param and nothing selected yet
+    if (!fileParam && !selectedFileId) {
+      try {
+        const saved = localStorage.getItem(LAST_OPENED_KEY);
+        if (saved) {
+          const { fileId } = JSON.parse(saved) as { fileId: string; filePath: string };
+          const filePath = findFileInTree(tree, fileId, "");
+          if (filePath) {
+            setSelectedFileId(fileId);
+            setSelectedFilePath(filePath);
+          }
+        }
+      } catch {
+        // Ignore invalid localStorage data
+      }
+    }
+  }, [fileParam, tree, urlParamApplied, selectedFileId]);
+
+  const handleSelectFile = useCallback((fileId: string, filePath: string) => {
     setSelectedFileId(fileId);
     setSelectedFilePath(filePath);
-  };
+    try {
+      localStorage.setItem(LAST_OPENED_KEY, JSON.stringify({ fileId, filePath }));
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
 
   const isGoogleConnected = oauthStatus?.connected === true;
   const hasFolderConfigured = !!settings?.google_drive_notes_folder_id;
@@ -134,6 +196,7 @@ export default function NotesPage() {
                 tree={tree}
                 selectedFileId={selectedFileId}
                 onSelectFile={handleSelectFile}
+                autoExpandFileId={selectedFileId}
               />
             ) : (
               <div className="flex flex-col items-center gap-3 p-6 text-center">

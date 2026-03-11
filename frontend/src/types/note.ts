@@ -17,3 +17,10 @@ export interface Note {
   created_at: string;
   updated_at: string;
 }
+
+export interface LinkedNoteBrief {
+  id: number;
+  title: string;
+  folder_path: string | null;
+  google_file_id: string;
+}

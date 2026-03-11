@@ -8,6 +8,12 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EventNotes } from "@/components/calendar/event-notes";
 import { EventDialog } from "@/components/calendar/event-dialog";
 import { LinkedTasks } from "@/components/calendar/linked-tasks";
+import { LinkedNotesSection } from "@/components/notes/linked-notes-section";
+import {
+  useEventLinkedNotes,
+  useLinkNoteToEvent,
+  useUnlinkNoteFromEvent,
+} from "@/hooks/use-note-links";
 import { useCalendarEvent, useDeleteCalendarEvent } from "@/hooks/use-calendar";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
@@ -20,6 +26,9 @@ export default function EventDetailPage() {
   const { user } = useAuth();
   const { data: event, isLoading } = useCalendarEvent(eventId);
   const deleteEvent = useDeleteCalendarEvent();
+  const { data: linkedNotes = [], isLoading: notesLoading } = useEventLinkedNotes(eventId);
+  const linkNote = useLinkNoteToEvent(eventId);
+  const unlinkNote = useUnlinkNoteFromEvent(eventId);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -172,6 +181,17 @@ export default function EventDetailPage() {
       {/* Linked Tasks */}
       <div className="border-t border-[--border] pt-6">
         <LinkedTasks eventId={event.id} />
+      </div>
+
+      {/* Linked Notes */}
+      <div className="border-t border-[--border] pt-6">
+        <LinkedNotesSection
+          notes={linkedNotes}
+          isLoading={notesLoading}
+          onLink={(noteId) => linkNote.mutate(noteId)}
+          onUnlink={(noteId) => unlinkNote.mutate(noteId)}
+          isLinking={linkNote.isPending}
+        />
       </div>
 
       {/* Notes */}

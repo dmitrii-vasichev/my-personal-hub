@@ -31,6 +31,14 @@ vi.mock("@/components/jobs/linked-tasks-section", () => ({
 vi.mock("@/components/jobs/linked-events-section", () => ({
   LinkedEventsSection: () => <div data-testid="linked-events" />,
 }));
+vi.mock("@/components/notes/linked-notes-section", () => ({
+  LinkedNotesSection: () => <div data-testid="linked-notes" />,
+}));
+vi.mock("@/hooks/use-note-links", () => ({
+  useJobLinkedNotes: () => ({ data: [], isLoading: false }),
+  useLinkNoteToJob: () => ({ mutate: vi.fn(), isPending: false }),
+  useUnlinkNoteFromJob: () => ({ mutate: vi.fn() }),
+}));
 vi.mock("@/components/jobs/resume-section", () => ({
   ResumeSection: () => <div data-testid="resume-section" />,
 }));

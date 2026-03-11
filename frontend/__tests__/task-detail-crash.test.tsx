@@ -62,6 +62,16 @@ vi.mock("@/hooks/use-task-event-links", () => ({
   useUnlinkTaskFromEvent: () => ({ mutateAsync: vi.fn() }),
 }));
 
+vi.mock("@/hooks/use-note-links", () => ({
+  useTaskLinkedNotes: () => ({ data: [], isLoading: false }),
+  useLinkNoteToTask: () => ({ mutate: vi.fn(), isPending: false }),
+  useUnlinkNoteFromTask: () => ({ mutate: vi.fn() }),
+}));
+
+vi.mock("@/hooks/use-notes", () => ({
+  useNotes: () => ({ data: [] }),
+}));
+
 import TaskDetailPage from "@/app/(dashboard)/tasks/[id]/page";
 
 describe("TaskDetailPage", () => {
