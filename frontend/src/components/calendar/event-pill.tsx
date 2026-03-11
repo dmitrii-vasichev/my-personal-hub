@@ -14,8 +14,8 @@ export function EventPill({ event, onClick }: EventPillProps) {
         onClick={() => onClick(event)}
         className={`w-full text-left truncate text-xs px-1.5 py-0.5 rounded mb-0.5 transition-opacity hover:opacity-80 ${
           isGoogle
-            ? "bg-[--accent-muted] text-[--accent] border border-[--accent]/20"
-            : "bg-[--surface-hover] text-[--text-primary] border border-[--border]"
+            ? "bg-[--accent-muted] text-[--accent-foreground] border border-[--accent-foreground]/20"
+            : "bg-[--surface-hover] text-[--accent-foreground] border border-[--border]"
         }`}
       >
         {event.all_day ? null : (
