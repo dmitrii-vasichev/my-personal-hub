@@ -4,40 +4,34 @@ import { describe, it, expect, vi } from "vitest";
 import { NoteTree } from "@/components/notes/note-tree";
 import type { NoteTreeNode } from "@/types/note";
 
-const mockTree: NoteTreeNode = {
-  id: "root",
-  name: "Root",
-  type: "folder",
-  google_file_id: "root-id",
-  children: [
-    {
-      id: "folder-1",
-      name: "Backend",
-      type: "folder",
-      google_file_id: "folder-1-id",
-      children: [
-        {
-          id: "file-1",
-          name: "deploy-guide.md",
-          type: "file",
-          google_file_id: "file-1-id",
-        },
-        {
-          id: "file-2",
-          name: "api-docs.md",
-          type: "file",
-          google_file_id: "file-2-id",
-        },
-      ],
-    },
-    {
-      id: "file-3",
-      name: "README.md",
-      type: "file",
-      google_file_id: "file-3-id",
-    },
-  ],
-};
+const mockTree: NoteTreeNode[] = [
+  {
+    id: "folder-1",
+    name: "Backend",
+    type: "folder",
+    google_file_id: "folder-1-id",
+    children: [
+      {
+        id: "file-1",
+        name: "deploy-guide.md",
+        type: "file",
+        google_file_id: "file-1-id",
+      },
+      {
+        id: "file-2",
+        name: "api-docs.md",
+        type: "file",
+        google_file_id: "file-2-id",
+      },
+    ],
+  },
+  {
+    id: "file-3",
+    name: "README.md",
+    type: "file",
+    google_file_id: "file-3-id",
+  },
+];
 
 describe("NoteTree", () => {
   it("renders folder and file nodes", () => {

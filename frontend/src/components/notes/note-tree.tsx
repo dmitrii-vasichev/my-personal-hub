@@ -12,7 +12,7 @@ import type { NoteTreeNode } from "@/types/note";
 import { cn } from "@/lib/utils";
 
 interface NoteTreeProps {
-  tree: NoteTreeNode;
+  tree: NoteTreeNode[];
   selectedFileId: string | null;
   onSelectFile: (fileId: string, filePath: string) => void;
   autoExpandFileId?: string | null;
@@ -135,8 +135,8 @@ function TreeNode({
 
 export function NoteTree({ tree, selectedFileId, onSelectFile, autoExpandFileId }: NoteTreeProps) {
   const sortedChildren = useMemo(
-    () => (tree.children ? sortNodes(tree.children) : []),
-    [tree.children]
+    () => sortNodes(tree),
+    [tree]
   );
 
   return (
