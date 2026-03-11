@@ -24,7 +24,7 @@ const EMPTY_BOARD: KanbanBoardType = {
 
 export default function TasksPage() {
   const [filters, setFilters] = useState<TaskFilters>({});
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [createDialogStatus, setCreateDialogStatus] = useState<TaskStatus | null>(null);
 
   const { data: board, isLoading, error } = useKanbanTasks(filters);
   const updateTask = useUpdateTask();
@@ -165,7 +165,7 @@ export default function TasksPage() {
           </Link>
           <Button
             size="sm"
-            onClick={() => setShowCreateDialog(true)}
+            onClick={() => setCreateDialogStatus("new")}
             className="gap-1.5"
           >
             <Plus className="h-4 w-4" />
@@ -202,13 +202,15 @@ export default function TasksPage() {
           onReorder={handleReorder}
           isPending={updateTask.isPending}
           hiddenColumns={hiddenColumns}
+          onAddTask={setCreateDialogStatus}
         />
       )}
 
       {/* Dialogs */}
-      {showCreateDialog && (
+      {createDialogStatus !== null && (
         <TaskDialog
-          onClose={() => setShowCreateDialog(false)}
+          initialStatus={createDialogStatus}
+          onClose={() => setCreateDialogStatus(null)}
         />
       )}
     </div>
