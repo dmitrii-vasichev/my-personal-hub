@@ -1,7 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
   CheckSquare,
@@ -11,7 +13,6 @@ import {
   Settings,
   User,
   PanelLeftClose,
-  PanelLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,9 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { resolvedTheme } = useTheme();
+
+  const logoSrc = resolvedTheme === "light" ? "/logo-light.svg" : "/logo-dark.svg";
 
   const initials = user?.display_name
     ? user.display_name.slice(0, 1).toUpperCase()
@@ -49,18 +53,24 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
     >
       {/* Logo */}
       <div className={cn(
-        "flex items-center border-b border-border-subtle",
-        collapsed ? "h-12 justify-center px-3" : "flex-col items-start px-[18px] py-4 gap-0.5"
+        "flex items-center border-b border-border-subtle h-12",
+        collapsed ? "justify-center" : "justify-between px-3"
       )}>
-        {!collapsed && (
-          <div>
-            <div className="text-[15px] font-semibold tracking-tight text-foreground">Personal Hub</div>
-            <div className="text-[11px] uppercase tracking-[0.06em] text-tertiary font-medium mt-0.5">PORTAL</div>
-          </div>
+        {collapsed ? (
+          <button onClick={onToggle} className="flex items-center justify-center cursor-pointer" title="Expand sidebar">
+            <Image src={logoSrc} alt="Personal Hub" width={24} height={24} />
+          </button>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <Image src={logoSrc} alt="Personal Hub" width={24} height={24} className="shrink-0" />
+              <span className="text-[15px] font-semibold tracking-tight text-foreground">Personal Hub</span>
+            </div>
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={onToggle}>
+              <PanelLeftClose className="h-4 w-4" />
+            </Button>
+          </>
         )}
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onToggle}>
-          {collapsed ? <PanelLeft className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-        </Button>
       </div>
 
       {/* Nav */}
