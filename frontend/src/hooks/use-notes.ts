@@ -18,7 +18,10 @@ export function useNotesTree() {
 export function useNoteContent(fileId: string | null) {
   return useQuery<string>({
     queryKey: [NOTE_CONTENT_KEY, fileId],
-    queryFn: () => api.get<string>(`/api/notes/${fileId}/content`),
+    queryFn: async () => {
+      const res = await api.get<{ file_id: string; content: string }>(`/api/notes/${fileId}/content`);
+      return res.content;
+    },
     enabled: !!fileId,
     staleTime: 5 * 60 * 1000,
   });

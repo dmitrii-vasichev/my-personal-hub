@@ -88,7 +88,7 @@ function TreeNode({
           "flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-sm transition-colors",
           "hover:bg-[var(--surface-hover)]",
           isSelected &&
-            "bg-[rgba(79,142,247,0.1)] text-[var(--accent)] dark:bg-[rgba(79,142,247,0.1)]",
+            "bg-[rgba(79,142,247,0.1)] text-[var(--accent-foreground)] dark:bg-[rgba(79,142,247,0.1)]",
           !isSelected && "text-[var(--text-secondary)]"
         )}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
