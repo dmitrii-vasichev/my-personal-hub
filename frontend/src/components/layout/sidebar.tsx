@@ -7,6 +7,7 @@ import {
   CheckSquare,
   Briefcase,
   Calendar,
+  FileText,
   Settings,
   User,
   PanelLeftClose,
@@ -21,6 +22,7 @@ const navItems = [
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
   { label: "Meetings", href: "/calendar", icon: Calendar },
   { label: "Job Hunt", href: "/jobs", icon: Briefcase },
+  { label: "Notes", href: "/notes", icon: FileText },
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Profile", href: "/profile", icon: User },
 ];
