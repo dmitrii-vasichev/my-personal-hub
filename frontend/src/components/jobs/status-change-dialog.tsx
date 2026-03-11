@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -65,9 +65,13 @@ export function StatusChangeDialog({
   const [comment, setComment] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  // Sync newStatus when props change (React-recommended "adjust state during render" pattern)
+  const [prevStatusKey, setPrevStatusKey] = useState(`${preselectedStatus}-${currentStatus}`);
+  const statusKey = `${preselectedStatus}-${currentStatus}`;
+  if (statusKey !== prevStatusKey) {
+    setPrevStatusKey(statusKey);
     setNewStatus(preselectedStatus ?? currentStatus);
-  }, [preselectedStatus, currentStatus]);
+  }
 
   const isLoading = changeStatus.isPending;
   const currentColor = APPLICATION_STATUS_COLORS[currentStatus];
