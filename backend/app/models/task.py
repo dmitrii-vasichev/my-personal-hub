@@ -29,6 +29,7 @@ class Visibility(str, enum.Enum):
 
 
 class TaskStatus(str, enum.Enum):
+    backlog = "backlog"
     new = "new"
     in_progress = "in_progress"
     review = "review"
