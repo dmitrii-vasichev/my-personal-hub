@@ -51,7 +51,7 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
       className={`
         group relative rounded-lg border border-l-[3px] bg-[var(--surface)] p-3 transition-shadow cursor-pointer
         ${PRIORITY_BORDER_COLORS[task.priority]}
-        ${isDragging ? "shadow-lg opacity-50 border-[var(--border-strong)] cursor-grabbing" : "border-[var(--border)] hover:border-[var(--border-strong)]"}
+        ${isDragging ? "shadow-lg opacity-50 border-y-[var(--border-strong)] border-r-[var(--border-strong)] cursor-grabbing" : "border-y-[var(--border)] border-r-[var(--border)] hover:border-y-[var(--border-strong)] hover:border-r-[var(--border-strong)]"}
         active:cursor-grabbing
       `}
     >
@@ -107,7 +107,7 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
 // Overlay version (shown while dragging)
 export function TaskCardOverlay({ task }: { task: Task }) {
   return (
-    <div className={`rounded-lg border border-l-[3px] border-[var(--accent)] bg-[var(--surface)] p-3 shadow-xl cursor-grabbing ${PRIORITY_BORDER_COLORS[task.priority]}`}>
+    <div className={`rounded-lg border border-l-[3px] border-y-[var(--accent)] border-r-[var(--accent)] bg-[var(--surface)] p-3 shadow-xl cursor-grabbing ${PRIORITY_BORDER_COLORS[task.priority]}`}>
       <div className="mb-1.5 flex items-center justify-end gap-1.5">
         <span>
           {task.visibility === "private" ? (
