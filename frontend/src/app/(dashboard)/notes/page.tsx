@@ -201,11 +201,14 @@ export default function NotesPage() {
           {selectedFileId ? (
             <>
               {selectedFilePath && (
-                <div className="mb-4 flex items-center justify-between border-b border-[var(--border)] pb-3">
-                  <NoteBreadcrumb path={selectedFilePath} />
+                <div className="mb-4 flex items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
+                  <div className="min-w-0 flex-1">
+                    <NoteBreadcrumb path={selectedFilePath} />
+                  </div>
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    size="icon"
+                    variant="outline"
+                    className="size-8 shrink-0"
                     onClick={() => setIsExpanded(!isExpanded)}
                     title={isExpanded ? "Collapse (Esc)" : "Expand"}
                     data-testid="note-expand-toggle"
