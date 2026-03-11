@@ -27,6 +27,12 @@ import { JobTrackingEditDialog } from "@/components/jobs/job-tracking-edit-dialo
 import { JobMatchSection } from "@/components/jobs/job-match-section";
 import { LinkedTasksSection } from "@/components/jobs/linked-tasks-section";
 import { LinkedEventsSection } from "@/components/jobs/linked-events-section";
+import { LinkedNotesSection } from "@/components/notes/linked-notes-section";
+import {
+  useJobLinkedNotes,
+  useLinkNoteToJob,
+  useUnlinkNoteFromJob,
+} from "@/hooks/use-note-links";
 import { ResumeSection } from "@/components/jobs/resume-section";
 import { CoverLetterSection } from "@/components/jobs/cover-letter-section";
 import { ApplicationTimeline } from "@/components/jobs/application-timeline";
@@ -59,6 +65,10 @@ export function JobDetail({ job }: JobDetailProps) {
   const [trackingEditOpen, setTrackingEditOpen] = useState(false);
   const [isStartingTracking, setIsStartingTracking] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+
+  const { data: linkedNotes = [], isLoading: notesLoading } = useJobLinkedNotes(job.id);
+  const linkNote = useLinkNoteToJob(job.id);
+  const unlinkNote = useUnlinkNoteFromJob(job.id);
 
   const hasStatus = !!job.status;
   const showRejectionReason =
@@ -309,6 +319,15 @@ export function JobDetail({ job }: JobDetailProps) {
 
           {/* Linked Events */}
           <LinkedEventsSection jobId={job.id} />
+
+          {/* Linked Notes */}
+          <LinkedNotesSection
+            notes={linkedNotes}
+            isLoading={notesLoading}
+            onLink={(noteId) => linkNote.mutate(noteId)}
+            onUnlink={(noteId) => unlinkNote.mutate(noteId)}
+            isLinking={linkNote.isPending}
+          />
 
           {/* Resume section (only when tracked) */}
           {hasStatus && (
