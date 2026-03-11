@@ -44,57 +44,26 @@ export default function NotesPage() {
   const { data: content, isLoading: contentLoading, error: contentError } = useNoteContent(selectedFileId);
   const refreshTree = useRefreshNotesTree();
 
-  const LAST_OPENED_KEY = "notes:lastOpenedFile";
-
-  // Auto-select file from URL ?file= parameter or localStorage
+  // Auto-select file from URL ?file= parameter (deep links)
   useEffect(() => {
     if (!treeNodes.length) return;
+    if (!fileParam || urlParamApplied === fileParam) return;
 
-    // URL param takes priority
-    if (fileParam && urlParamApplied !== fileParam) {
-      let filePath: string | null = null;
-      for (const node of treeNodes) {
-        filePath = findFileInTree(node, fileParam, "");
-        if (filePath) break;
-      }
-      if (filePath) {
-        setSelectedFileId(fileParam);
-        setSelectedFilePath(filePath);
-      }
-      setUrlParamApplied(fileParam);
-      return;
+    let filePath: string | null = null;
+    for (const node of treeNodes) {
+      filePath = findFileInTree(node, fileParam, "");
+      if (filePath) break;
     }
-
-    // Fallback to localStorage if no URL param and nothing selected yet
-    if (!fileParam && !selectedFileId) {
-      try {
-        const saved = localStorage.getItem(LAST_OPENED_KEY);
-        if (saved) {
-          const { fileId } = JSON.parse(saved) as { fileId: string; filePath: string };
-          let filePath: string | null = null;
-          for (const node of treeNodes) {
-            filePath = findFileInTree(node, fileId, "");
-            if (filePath) break;
-          }
-          if (filePath) {
-            setSelectedFileId(fileId);
-            setSelectedFilePath(filePath);
-          }
-        }
-      } catch {
-        // Ignore invalid localStorage data
-      }
+    if (filePath) {
+      setSelectedFileId(fileParam);
+      setSelectedFilePath(filePath);
     }
-  }, [fileParam, treeNodes, urlParamApplied, selectedFileId]);
+    setUrlParamApplied(fileParam);
+  }, [fileParam, treeNodes, urlParamApplied]);
 
   const handleSelectFile = useCallback((fileId: string, filePath: string) => {
     setSelectedFileId(fileId);
     setSelectedFilePath(filePath);
-    try {
-      localStorage.setItem(LAST_OPENED_KEY, JSON.stringify({ fileId, filePath }));
-    } catch {
-      // Ignore storage errors
-    }
   }, []);
 
   const isGoogleConnected = oauthStatus?.connected === true;
