@@ -46,6 +46,11 @@ class UserSettings(Base):
     google_client_secret: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     google_redirect_uri: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
+    # Google Drive notes folder ID (plain text, not a secret)
+    google_drive_notes_folder_id: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True
+    )
+
     # AI prompt instructions (custom per-user overrides for each operation)
     instruction_resume: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     instruction_ats_audit: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

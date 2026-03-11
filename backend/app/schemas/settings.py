@@ -23,6 +23,8 @@ class SettingsUpdate(BaseModel):
     google_client_id: Optional[str] = None
     google_client_secret: Optional[str] = None
     google_redirect_uri: Optional[str] = None
+    # Google Drive notes folder ID (plain text)
+    google_drive_notes_folder_id: Optional[str] = None
     # AI prompt instructions (custom per-user overrides)
     instruction_resume: Optional[str] = None
     instruction_ats_audit: Optional[str] = None
@@ -50,6 +52,8 @@ class SettingsResponse(BaseModel):
     has_google_client_id: bool
     has_google_client_secret: bool
     google_redirect_uri: Optional[str]
+    # Google Drive notes
+    google_drive_notes_folder_id: Optional[str] = None
     # AI prompt instructions
     instruction_resume: Optional[str] = None
     instruction_ats_audit: Optional[str] = None
