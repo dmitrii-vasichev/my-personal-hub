@@ -137,47 +137,47 @@ export function JobDetail({ job }: JobDetailProps) {
         loading={deleteJob.isPending}
       />
 
-      {/* Page header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-mono text-xs text-[var(--text-tertiary)]">JOB-{job.id}</span>
-          {job.match_score !== undefined && job.match_score !== null && (
-            <span
-              className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${
-                job.match_score >= 80
-                  ? "bg-accent-teal-muted text-accent-teal"
-                  : job.match_score >= 60
-                  ? "bg-accent-amber-muted text-accent-amber"
-                  : "bg-surface-hover text-tertiary"
-              }`}
-            >
-              {job.match_score}% match
-            </span>
-          )}
-        </div>
-        <h1 className="text-2xl font-semibold text-[var(--text-primary)] leading-tight">
-          <InlineEditText
-            value={job.title}
-            onSave={(v) => patchJob({ title: v.trim() || job.title })}
-            inputClassName="text-2xl font-semibold w-full"
-            placeholder="Job title"
-          />
-        </h1>
-        <div className="flex items-center gap-1.5 mt-1">
-          <Briefcase className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
-          <InlineEditText
-            value={job.company}
-            onSave={(v) => patchJob({ company: v.trim() || job.company })}
-            className="text-sm text-[var(--text-secondary)]"
-            inputClassName="text-sm"
-            placeholder="Company"
-          />
-        </div>
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
         {/* Main content */}
         <div className="flex flex-col gap-6">
+          {/* Page header */}
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-mono text-xs text-[var(--text-tertiary)]">JOB-{job.id}</span>
+              {job.match_score !== undefined && job.match_score !== null && (
+                <span
+                  className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${
+                    job.match_score >= 80
+                      ? "bg-accent-teal-muted text-accent-teal"
+                      : job.match_score >= 60
+                      ? "bg-accent-amber-muted text-accent-amber"
+                      : "bg-surface-hover text-tertiary"
+                  }`}
+                >
+                  {job.match_score}% match
+                </span>
+              )}
+            </div>
+            <h1 className="text-2xl font-semibold text-[var(--text-primary)] leading-tight">
+              <InlineEditText
+                value={job.title}
+                onSave={(v) => patchJob({ title: v.trim() || job.title })}
+                inputClassName="text-2xl font-semibold w-full"
+                placeholder="Job title"
+              />
+            </h1>
+            <div className="flex items-center gap-1.5 mt-1">
+              <Briefcase className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+              <InlineEditText
+                value={job.company}
+                onSave={(v) => patchJob({ company: v.trim() || job.company })}
+                className="text-sm text-[var(--text-secondary)]"
+                inputClassName="text-sm"
+                placeholder="Company"
+              />
+            </div>
+          </div>
+
           {/* Description */}
           <CollapsibleDescription
             description={job.description ?? ""}
@@ -314,6 +314,20 @@ export function JobDetail({ job }: JobDetailProps) {
             </>
           )}
 
+          {/* Resume section (only when tracked) */}
+          {hasStatus && (
+            <div className="mt-2">
+              <ResumeSection jobId={job.id} />
+            </div>
+          )}
+
+          {/* Cover Letter section (only when tracked) */}
+          {hasStatus && (
+            <div>
+              <CoverLetterSection jobId={job.id} />
+            </div>
+          )}
+
           {/* Linked Tasks */}
           <LinkedTasksSection jobId={job.id} />
 
@@ -328,20 +342,6 @@ export function JobDetail({ job }: JobDetailProps) {
             onUnlink={(noteId) => unlinkNote.mutate(noteId)}
             isLinking={linkNote.isPending}
           />
-
-          {/* Resume section (only when tracked) */}
-          {hasStatus && (
-            <div className="mt-2">
-              <ResumeSection jobId={job.id} />
-            </div>
-          )}
-
-          {/* Cover Letter section (only when tracked) */}
-          {hasStatus && (
-            <div>
-              <CoverLetterSection jobId={job.id} />
-            </div>
-          )}
 
           {/* Status History (only when tracked) */}
           {hasStatus && history.length > 0 && (
