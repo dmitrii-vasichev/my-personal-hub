@@ -15,6 +15,12 @@ import { ChecklistEditor } from "@/components/tasks/checklist-editor";
 import { TaskTimeline } from "@/components/tasks/task-timeline";
 import { useTask, useUpdateTask, useDeleteTask } from "@/hooks/use-tasks";
 import { LinkedEvents } from "@/components/tasks/linked-events";
+import { LinkedNotesSection } from "@/components/notes/linked-notes-section";
+import {
+  useTaskLinkedNotes,
+  useLinkNoteToTask,
+  useUnlinkNoteFromTask,
+} from "@/hooks/use-note-links";
 import { useAuth } from "@/lib/auth";
 import { PRIORITY_BG_COLORS, TASK_STATUS_LABELS, TASK_STATUS_ORDER } from "@/types/task";
 import type { ChecklistItem, TaskPriority, TaskStatus, UpdateTaskInput, Visibility } from "@/types/task";
@@ -49,6 +55,9 @@ export default function TaskDetailPage() {
   const { data: task, isLoading, error } = useTask(taskId);
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
+  const { data: linkedNotes = [], isLoading: notesLoading } = useTaskLinkedNotes(taskId);
+  const linkNote = useLinkNoteToTask(taskId);
+  const unlinkNote = useUnlinkNoteFromTask(taskId);
   const [checklistExpanded, setChecklistExpanded] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -412,6 +421,17 @@ export default function TaskDetailPage() {
           {/* Linked Events */}
           <div className="border-t border-[var(--border)] pt-4">
             <LinkedEvents taskId={task.id} />
+          </div>
+
+          {/* Linked Notes */}
+          <div className="border-t border-[var(--border)] pt-4">
+            <LinkedNotesSection
+              notes={linkedNotes}
+              isLoading={notesLoading}
+              onLink={(noteId) => linkNote.mutate(noteId)}
+              onUnlink={(noteId) => unlinkNote.mutate(noteId)}
+              isLinking={linkNote.isPending}
+            />
           </div>
 
           {/* Dates */}

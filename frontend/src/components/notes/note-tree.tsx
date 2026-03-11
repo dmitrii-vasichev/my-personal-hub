@@ -15,6 +15,7 @@ interface NoteTreeProps {
   tree: NoteTreeNode;
   selectedFileId: string | null;
   onSelectFile: (fileId: string, filePath: string) => void;
+  autoExpandFileId?: string | null;
 }
 
 function sortNodes(nodes: NoteTreeNode[]): NoteTreeNode[] {
@@ -28,6 +29,14 @@ function buildPath(parentPath: string, name: string): string {
   return parentPath ? `${parentPath}/${name}` : name;
 }
 
+function containsFile(node: NoteTreeNode, fileId: string): boolean {
+  if (node.google_file_id === fileId) return true;
+  if (node.children) {
+    return node.children.some((child) => containsFile(child, fileId));
+  }
+  return false;
+}
+
 interface TreeNodeProps {
   node: NoteTreeNode;
   depth: number;
@@ -35,6 +44,7 @@ interface TreeNodeProps {
   selectedFileId: string | null;
   onSelectFile: (fileId: string, filePath: string) => void;
   defaultExpanded?: boolean;
+  autoExpandFileId?: string | null;
 }
 
 function TreeNode({
@@ -44,8 +54,14 @@ function TreeNode({
   selectedFileId,
   onSelectFile,
   defaultExpanded = false,
+  autoExpandFileId,
 }: TreeNodeProps) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const shouldAutoExpand =
+    defaultExpanded ||
+    (!!autoExpandFileId &&
+      node.type === "folder" &&
+      containsFile(node, autoExpandFileId));
+  const [expanded, setExpanded] = useState(shouldAutoExpand);
   const currentPath = buildPath(parentPath, node.name);
   const isSelected = node.google_file_id === selectedFileId;
 
@@ -108,6 +124,7 @@ function TreeNode({
               parentPath={currentPath}
               selectedFileId={selectedFileId}
               onSelectFile={onSelectFile}
+              autoExpandFileId={autoExpandFileId}
             />
           ))}
         </div>
@@ -116,7 +133,7 @@ function TreeNode({
   );
 }
 
-export function NoteTree({ tree, selectedFileId, onSelectFile }: NoteTreeProps) {
+export function NoteTree({ tree, selectedFileId, onSelectFile, autoExpandFileId }: NoteTreeProps) {
   const sortedChildren = useMemo(
     () => (tree.children ? sortNodes(tree.children) : []),
     [tree.children]
@@ -133,6 +150,7 @@ export function NoteTree({ tree, selectedFileId, onSelectFile }: NoteTreeProps) 
           selectedFileId={selectedFileId}
           onSelectFile={onSelectFile}
           defaultExpanded={child.type === "folder"}
+          autoExpandFileId={autoExpandFileId}
         />
       ))}
     </div>
