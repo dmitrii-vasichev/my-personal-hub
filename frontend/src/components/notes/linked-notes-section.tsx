@@ -101,7 +101,7 @@ export function LinkedNotesSection({
                   onClick={() =>
                     router.push(`/notes?file=${note.google_file_id}`)
                   }
-                  className="text-sm text-[var(--accent)] hover:text-[var(--accent-hover)] truncate transition-colors cursor-pointer"
+                  className="text-sm text-[var(--accent-foreground)] hover:text-[var(--accent-hover)] truncate transition-colors cursor-pointer"
                 >
                   {note.title}
                 </button>

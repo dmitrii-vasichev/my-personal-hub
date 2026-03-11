@@ -111,6 +111,9 @@
   --sidebar-accent-foreground: #4f8fea;
   --sidebar-border: #e2e4ea;
   --sidebar-ring: #4f8fea;
+  --text-primary: #1a1c23;
+  --text-secondary: #6b7280;
+  --text-tertiary: #4b5563;
 }
 
 /* Dark theme (default) */
@@ -160,6 +163,9 @@
   --sidebar-accent-foreground: #4f8fea;
   --sidebar-border: #1c2033;
   --sidebar-ring: #4f8fea;
+  --text-primary: #e8eaf0;
+  --text-secondary: #6b7280;
+  --text-tertiary: #4b5563;
 }
 
 @keyframes fadeSlideUp {
