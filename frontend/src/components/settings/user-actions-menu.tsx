@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { useUpdateUser, useDeleteUser, useResetPassword } from "@/hooks/use-users";
 import { useAuth } from "@/lib/auth";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
   Dialog,
   DialogPortal,
@@ -109,50 +110,45 @@ export function UserActionsMenu({ user }: UserActionsMenuProps) {
 
   return (
     <div className="relative">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="rounded p-1 text-muted-foreground hover:bg-surface-hover hover:text-foreground"
-      >
-        <MoreHorizontal className="h-4 w-4" />
-      </button>
-
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 z-20 mt-1 w-48 rounded-lg border border-border bg-surface-2 py-1 shadow-lg">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger
+          className="rounded p-1 text-muted-foreground hover:bg-surface-hover hover:text-foreground"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-48 py-1">
+          <button
+            onClick={() => { setOpen(false); setConfirm("role"); }}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-surface-hover"
+          >
+            {user.role === "admin" ? <ShieldOff className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+            {user.role === "admin" ? "Make Member" : "Make Admin"}
+          </button>
+          <button
+            onClick={() => { setOpen(false); setConfirm(user.is_blocked ? "unblock" : "block"); }}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-surface-hover"
+          >
+            <Lock className="h-3.5 w-3.5" />
+            {user.is_blocked ? "Unblock" : "Block"}
+          </button>
+          <button
+            onClick={() => { setOpen(false); handleResetPassword(); }}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-surface-hover"
+          >
+            <Lock className="h-3.5 w-3.5" />
+            Reset Password
+          </button>
+          {!isSelf && (
             <button
-              onClick={() => { setOpen(false); setConfirm("role"); }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-surface-hover"
+              onClick={() => { setOpen(false); setConfirm("delete"); }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-surface-hover"
             >
-              {user.role === "admin" ? <ShieldOff className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-              {user.role === "admin" ? "Make Member" : "Make Admin"}
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
             </button>
-            <button
-              onClick={() => { setOpen(false); setConfirm(user.is_blocked ? "unblock" : "block"); }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-surface-hover"
-            >
-              <Lock className="h-3.5 w-3.5" />
-              {user.is_blocked ? "Unblock" : "Block"}
-            </button>
-            <button
-              onClick={() => { setOpen(false); handleResetPassword(); }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-surface-hover"
-            >
-              <Lock className="h-3.5 w-3.5" />
-              Reset Password
-            </button>
-            {!isSelf && (
-              <button
-                onClick={() => { setOpen(false); setConfirm("delete"); }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-danger hover:bg-surface-hover"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Delete
-              </button>
-            )}
-          </div>
-        </>
-      )}
+          )}
+        </PopoverContent>
+      </Popover>
 
       <ConfirmDialog
         open={confirm === "role"}
