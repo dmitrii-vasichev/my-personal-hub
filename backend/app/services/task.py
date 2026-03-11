@@ -299,6 +299,7 @@ async def list_task_updates(
         .where(TaskUpdate.task_id == task_id)
         .options(joinedload(TaskUpdate.author))
         .order_by(TaskUpdate.created_at.desc())
+        .execution_options(populate_existing=True)
     )
     return list(result.scalars().all())
 
