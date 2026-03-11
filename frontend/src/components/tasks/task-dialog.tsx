@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { PriorityPicker } from "./priority-picker";
+import { VisibilityPicker } from "./visibility-picker";
 import {
   Dialog,
   DialogBackdrop,
@@ -108,33 +109,17 @@ export function TaskDialog({ onClose, onSuccess }: TaskDialogProps) {
             {/* Priority + Visibility */}
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="priority" className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                <Label className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                   Priority
                 </Label>
-                <Select
-                  id="priority"
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                >
-                  <option value="urgent">Urgent</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </Select>
+                <PriorityPicker value={priority} onChange={setPriority} />
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="visibility" className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                <Label className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                   Visibility
                 </Label>
-                <Select
-                  id="visibility"
-                  value={visibility}
-                  onChange={(e) => setVisibility(e.target.value as Visibility)}
-                >
-                  <option value="family">Family</option>
-                  <option value="private">Private</option>
-                </Select>
+                <VisibilityPicker value={visibility} onChange={setVisibility} />
               </div>
             </div>
 
