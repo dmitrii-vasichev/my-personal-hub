@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import type { Task, TaskStatus } from "@/types/task";
 import { TASK_STATUS_LABELS } from "@/types/task";
 import { TaskCard } from "./task-card";
@@ -19,8 +21,15 @@ const STATUS_ACCENT: Record<TaskStatus, string> = {
   cancelled: "bg-[var(--danger)]",
 };
 
+const DONE_COLLAPSE_LIMIT = 10;
+
 export function KanbanColumn({ status, tasks, activeTaskId }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const [expanded, setExpanded] = useState(false);
+
+  const isDone = status === "done";
+  const shouldCollapse = isDone && tasks.length > DONE_COLLAPSE_LIMIT;
+  const visibleTasks = shouldCollapse && !expanded ? tasks.slice(0, DONE_COLLAPSE_LIMIT) : tasks;
 
   return (
     <div className="flex w-72 flex-shrink-0 flex-col gap-2">
@@ -43,7 +52,7 @@ export function KanbanColumn({ status, tasks, activeTaskId }: KanbanColumnProps)
           ${isOver ? "bg-[var(--accent-muted)] ring-1 ring-[var(--accent)]" : ""}
         `}
       >
-        {tasks.map((task) => (
+        {visibleTasks.map((task) => (
           <TaskCard
             key={task.id}
             task={task}
@@ -55,6 +64,26 @@ export function KanbanColumn({ status, tasks, activeTaskId }: KanbanColumnProps)
           <div className="flex h-16 items-center justify-center rounded border border-dashed border-[var(--border)] text-xs text-[var(--text-tertiary)]">
             No tasks
           </div>
+        )}
+
+        {/* Show all / Show less toggle for Done column */}
+        {shouldCollapse && (
+          <button
+            onClick={() => setExpanded((prev) => !prev)}
+            className="flex items-center justify-center gap-1 rounded-md py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors"
+          >
+            {expanded ? (
+              <>
+                <ChevronUp className="h-3.5 w-3.5" />
+                Show less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3.5 w-3.5" />
+                Show all ({tasks.length})
+              </>
+            )}
+          </button>
         )}
       </div>
     </div>

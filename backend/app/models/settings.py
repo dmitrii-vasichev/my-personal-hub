@@ -51,6 +51,11 @@ class UserSettings(Base):
         String(255), nullable=True
     )
 
+    # Kanban board preferences
+    kanban_hidden_columns: Mapped[list] = mapped_column(
+        JSON, default=list, nullable=False, server_default="[]"
+    )
+
     # AI prompt instructions (custom per-user overrides for each operation)
     instruction_resume: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     instruction_ats_audit: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

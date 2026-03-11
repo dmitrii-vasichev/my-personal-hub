@@ -11,9 +11,10 @@ interface KanbanBoardProps {
   board: KanbanBoardType;
   onStatusChange: (taskId: number, newStatus: TaskStatus) => void;
   isPending?: boolean;
+  hiddenColumns?: TaskStatus[];
 }
 
-export function KanbanBoard({ board, onStatusChange, isPending }: KanbanBoardProps) {
+export function KanbanBoard({ board, onStatusChange, isPending, hiddenColumns = [] }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
@@ -43,6 +44,10 @@ export function KanbanBoard({ board, onStatusChange, isPending }: KanbanBoardPro
     }
   };
 
+  const visibleStatuses = TASK_STATUS_ORDER.filter(
+    (status) => !hiddenColumns.includes(status)
+  );
+
   return (
     <DndContext
       sensors={sensors}
@@ -52,7 +57,7 @@ export function KanbanBoard({ board, onStatusChange, isPending }: KanbanBoardPro
       <div
         className={`flex gap-4 overflow-x-auto pb-4 transition-opacity ${isPending ? "opacity-70" : ""}`}
       >
-        {TASK_STATUS_ORDER.map((status) => (
+        {visibleStatuses.map((status) => (
           <KanbanColumn
             key={status}
             status={status}

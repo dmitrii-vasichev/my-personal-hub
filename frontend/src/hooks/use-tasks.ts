@@ -18,8 +18,6 @@ function buildTaskQuery(filters: TaskFilters = {}): string {
   if (filters.priority) params.set("priority", filters.priority);
   if (filters.assignee_id) params.set("assignee_id", String(filters.assignee_id));
   if (filters.search) params.set("search", filters.search);
-  if (filters.deadline_before) params.set("deadline_before", filters.deadline_before);
-  if (filters.deadline_after) params.set("deadline_after", filters.deadline_after);
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }
