@@ -61,7 +61,7 @@ export function TaskFiltersBar({ filters, onFiltersChange }: TaskFiltersBarProps
         <option value="">All priorities</option>
         <option value="urgent">🔴 Urgent</option>
         <option value="high">🟠 High</option>
-        <option value="medium">🟡 Medium</option>
+        <option value="medium">🔵 Medium</option>
         <option value="low">⚪ Low</option>
       </Select>
 
