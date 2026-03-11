@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import type { Task, TaskStatus } from "@/types/task";
 import { TASK_STATUS_LABELS } from "@/types/task";
 import { TaskCard } from "./task-card";
@@ -12,6 +12,7 @@ interface KanbanColumnProps {
   status: TaskStatus;
   tasks: Task[];
   activeTaskId: number | null;
+  onAddTask?: () => void;
 }
 
 const STATUS_ACCENT: Record<TaskStatus, string> = {
@@ -25,7 +26,7 @@ const STATUS_ACCENT: Record<TaskStatus, string> = {
 
 const DONE_COLLAPSE_LIMIT = 10;
 
-export function KanbanColumn({ status, tasks, activeTaskId }: KanbanColumnProps) {
+export function KanbanColumn({ status, tasks, activeTaskId, onAddTask }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const [expanded, setExpanded] = useState(false);
 
@@ -36,7 +37,7 @@ export function KanbanColumn({ status, tasks, activeTaskId }: KanbanColumnProps)
   const taskIds = useMemo(() => visibleTasks.map((t) => t.id), [visibleTasks]);
 
   return (
-    <div className="flex w-72 flex-shrink-0 flex-col gap-2">
+    <div className="group/col flex w-72 flex-shrink-0 flex-col gap-2">
       {/* Column header */}
       <div className="flex items-center gap-2 px-1">
         <span className={`h-2 w-2 rounded-full ${STATUS_ACCENT[status]}`} />
@@ -46,6 +47,15 @@ export function KanbanColumn({ status, tasks, activeTaskId }: KanbanColumnProps)
         <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded bg-[var(--surface)] px-1.5 text-[11px] font-medium text-[var(--text-tertiary)]">
           {tasks.length}
         </span>
+        {onAddTask && (
+          <button
+            onClick={onAddTask}
+            className="flex h-5 w-5 items-center justify-center rounded text-[var(--text-tertiary)] opacity-0 transition-opacity hover:bg-[var(--surface-hover)] hover:text-[var(--text-secondary)] group-hover/col:opacity-100"
+            title={`Add task to ${TASK_STATUS_LABELS[status]}`}
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
 
       {/* Drop zone */}

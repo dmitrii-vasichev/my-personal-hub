@@ -20,19 +20,20 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { useCreateTask } from "@/hooks/use-tasks";
 import type { ChecklistItem, TaskPriority, TaskStatus, Visibility } from "@/types/task";
-import { TASK_STATUS_LABELS } from "@/types/task";
+import { TASK_STATUS_LABELS, TASK_STATUS_ORDER } from "@/types/task";
 
 interface TaskDialogProps {
   onClose: () => void;
   onSuccess?: () => void;
+  initialStatus?: TaskStatus;
 }
 
-export function TaskDialog({ onClose, onSuccess }: TaskDialogProps) {
+export function TaskDialog({ onClose, onSuccess, initialStatus }: TaskDialogProps) {
   const createTask = useCreateTask();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<TaskStatus>("new");
+  const [status, setStatus] = useState<TaskStatus>(initialStatus ?? "new");
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [deadline, setDeadline] = useState("");
   const [reminderAt, setReminderAt] = useState("");
@@ -55,7 +56,7 @@ export function TaskDialog({ onClose, onSuccess }: TaskDialogProps) {
       await createTask.mutateAsync({
         title: title.trim(),
         description: description.trim() || undefined,
-        status: status !== "new" ? status : undefined,
+        status,
         priority,
         deadline: deadline || undefined,
         reminder_at: reminderAt || undefined,
@@ -120,7 +121,7 @@ export function TaskDialog({ onClose, onSuccess }: TaskDialogProps) {
                   onChange={(e) => setStatus(e.target.value as TaskStatus)}
                   className="h-9 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                 >
-                  {(["new", "backlog"] as TaskStatus[]).map((s) => (
+                  {TASK_STATUS_ORDER.map((s) => (
                     <option key={s} value={s}>
                       {TASK_STATUS_LABELS[s]}
                     </option>

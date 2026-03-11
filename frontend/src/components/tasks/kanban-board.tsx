@@ -22,6 +22,7 @@ interface KanbanBoardProps {
   onReorder: (taskId: number, afterTaskId: number | null, beforeTaskId: number | null) => void;
   isPending?: boolean;
   hiddenColumns?: TaskStatus[];
+  onAddTask?: (status: TaskStatus) => void;
 }
 
 function findTaskColumn(board: KanbanBoardType, taskId: number): TaskStatus | null {
@@ -33,7 +34,7 @@ function findTaskColumn(board: KanbanBoardType, taskId: number): TaskStatus | nu
   return null;
 }
 
-export function KanbanBoard({ board, onStatusChange, onReorder, isPending, hiddenColumns = [] }: KanbanBoardProps) {
+export function KanbanBoard({ board, onStatusChange, onReorder, isPending, hiddenColumns = [], onAddTask }: KanbanBoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
   const sensors = useSensors(
@@ -127,6 +128,7 @@ export function KanbanBoard({ board, onStatusChange, onReorder, isPending, hidde
             status={status}
             tasks={board[status] ?? []}
             activeTaskId={activeTask?.id ?? null}
+            onAddTask={onAddTask ? () => onAddTask(status) : undefined}
           />
         ))}
       </div>
