@@ -5,7 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Calendar, Eye, Lock, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Task } from "@/types/task";
-import { PRIORITY_BG_COLORS } from "@/types/task";
+import { PRIORITY_BG_COLORS, PRIORITY_DOT_COLORS } from "@/types/task";
 
 interface TaskCardProps {
   task: Task;
@@ -54,24 +54,20 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
       `}
     >
       <div>
-        {/* Header: ID + visibility + priority */}
-        <div className="mb-1.5 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono text-[11px] text-[var(--text-tertiary)]">
-              TASK-{task.id}
+        {/* Header: visibility icon + priority badge (right-aligned) */}
+        <div className="mb-1.5 flex items-center justify-end gap-1.5">
+          <span title={task.visibility === "private" ? "Private" : "Family"}>
+            {task.visibility === "private" ? (
+              <Lock className="h-3 w-3 text-[var(--accent-violet)]" />
+            ) : (
+              <Eye className="h-3 w-3 text-[var(--accent-teal)]" />
+            )}
+          </span>
+          <span className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium">
+            <span className={`h-2 w-2 rounded-full ${PRIORITY_DOT_COLORS[task.priority]}`} />
+            <span className={PRIORITY_BG_COLORS[task.priority].split(" ").filter(c => c.startsWith("text-")).join(" ")}>
+              {task.priority}
             </span>
-            <span title={task.visibility === "private" ? "Private" : "Family"}>
-              {task.visibility === "private" ? (
-                <Lock className="h-2.5 w-2.5 text-[var(--text-tertiary)]" />
-              ) : (
-                <Eye className="h-2.5 w-2.5 text-[var(--text-tertiary)]" />
-              )}
-            </span>
-          </div>
-          <span
-            className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${PRIORITY_BG_COLORS[task.priority]}`}
-          >
-            {task.priority}
           </span>
         </div>
 
@@ -116,14 +112,19 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
 export function TaskCardOverlay({ task }: { task: Task }) {
   return (
     <div className="rounded-lg border border-[var(--accent)] bg-[var(--surface)] p-3 shadow-xl cursor-grabbing">
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className="font-mono text-[11px] text-[var(--text-tertiary)]">
-          TASK-{task.id}
+      <div className="mb-1.5 flex items-center justify-end gap-1.5">
+        <span>
+          {task.visibility === "private" ? (
+            <Lock className="h-3 w-3 text-[var(--accent-violet)]" />
+          ) : (
+            <Eye className="h-3 w-3 text-[var(--accent-teal)]" />
+          )}
         </span>
-        <span
-          className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${PRIORITY_BG_COLORS[task.priority]}`}
-        >
-          {task.priority}
+        <span className="flex items-center gap-1 text-[11px] font-medium">
+          <span className={`h-2 w-2 rounded-full ${PRIORITY_DOT_COLORS[task.priority]}`} />
+          <span className={PRIORITY_BG_COLORS[task.priority].split(" ").filter(c => c.startsWith("text-")).join(" ")}>
+            {task.priority}
+          </span>
         </span>
       </div>
       <p className="text-sm font-medium text-[var(--text-primary)] line-clamp-2">

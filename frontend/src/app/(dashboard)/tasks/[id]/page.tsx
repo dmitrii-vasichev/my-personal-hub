@@ -22,7 +22,7 @@ import {
   useUnlinkNoteFromTask,
 } from "@/hooks/use-note-links";
 import { useAuth } from "@/lib/auth";
-import { PRIORITY_BG_COLORS, TASK_STATUS_LABELS, TASK_STATUS_ORDER } from "@/types/task";
+import { PRIORITY_BG_COLORS, PRIORITY_DOT_COLORS, TASK_STATUS_LABELS, TASK_STATUS_ORDER } from "@/types/task";
 import type { ChecklistItem, TaskPriority, TaskStatus, UpdateTaskInput, Visibility } from "@/types/task";
 
 const CHECKLIST_COLLAPSE_THRESHOLD = 5;
@@ -154,8 +154,7 @@ export default function TaskDetailPage() {
         <div className="flex flex-col gap-6">
           {/* Title */}
           <div>
-            <span className="font-mono text-xs text-[var(--text-tertiary)]">TASK-{task.id}</span>
-            <h1 className="mt-1 text-2xl font-semibold text-[var(--text-primary)] leading-tight">
+            <h1 className="text-2xl font-semibold text-[var(--text-primary)] leading-tight">
               {canEdit ? (
                 <InlineEditText
                   value={task.title}
@@ -298,7 +297,8 @@ export default function TaskDetailPage() {
                 options={PRIORITY_OPTIONS}
                 onSave={(v) => patchTask({ priority: v as TaskPriority })}
                 renderValue={(opt) => (
-                  <span className={`inline-flex w-fit items-center rounded px-2 py-0.5 text-xs font-medium ${opt?.className ?? ""}`}>
+                  <span className={`inline-flex w-fit items-center gap-1.5 rounded px-2 py-0.5 text-xs font-medium ${opt?.className ?? ""}`}>
+                    <span className={`h-2 w-2 rounded-full ${PRIORITY_DOT_COLORS[task.priority]}`} />
                     {opt?.label ?? task.priority}
                   </span>
                 )}
@@ -336,9 +336,9 @@ export default function TaskDetailPage() {
                 renderValue={(opt) => (
                   <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
                     {opt?.value === "private" ? (
-                      <Lock className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                      <Lock className="h-3.5 w-3.5 text-[var(--accent-violet)]" />
                     ) : (
-                      <Eye className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                      <Eye className="h-3.5 w-3.5 text-[var(--accent-teal)]" />
                     )}
                     {opt?.label}
                   </div>
@@ -348,12 +348,12 @@ export default function TaskDetailPage() {
               <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">
                 {task.visibility === "private" ? (
                   <>
-                    <Lock className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                    <Lock className="h-3.5 w-3.5 text-[var(--accent-violet)]" />
                     Private
                   </>
                 ) : (
                   <>
-                    <Eye className="h-3.5 w-3.5 text-[var(--text-tertiary)]" />
+                    <Eye className="h-3.5 w-3.5 text-[var(--accent-teal)]" />
                     Family
                   </>
                 )}
