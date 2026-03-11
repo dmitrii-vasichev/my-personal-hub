@@ -201,7 +201,7 @@ export default function NotesPage() {
           {selectedFileId ? (
             <>
               {selectedFilePath && (
-                <div className="mb-4 flex items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
+                <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-6 pb-3 pt-6">
                   <div className="min-w-0 flex-1">
                     <NoteBreadcrumb path={selectedFilePath} />
                   </div>
