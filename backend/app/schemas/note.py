@@ -20,6 +20,24 @@ class NoteResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class LinkedNoteBrief(BaseModel):
+    id: int
+    title: str
+    folder_path: Optional[str] = None
+    google_file_id: str
+
+    model_config = {"from_attributes": True}
+
+
+class LinkedJobBrief(BaseModel):
+    id: int
+    title: str
+    company: Optional[str] = None
+    status: str
+
+    model_config = {"from_attributes": True}
+
+
 class NoteTreeNode(BaseModel):
     id: Optional[str] = None
     name: str

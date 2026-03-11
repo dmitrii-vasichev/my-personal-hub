@@ -8,6 +8,9 @@ from app.models.knowledge_base import AiKnowledgeBase
 from app.models.job_task_link import JobTaskLink
 from app.models.note import Note
 from app.models.job_event_link import JobEventLink
+from app.models.note_task_link import NoteTaskLink
+from app.models.note_job_link import NoteJobLink
+from app.models.note_event_link import NoteEventLink
 
 __all__ = [
     "User",
@@ -29,5 +32,8 @@ __all__ = [
     "AiKnowledgeBase",
     "JobTaskLink",
     "JobEventLink",
+    "NoteTaskLink",
+    "NoteJobLink",
+    "NoteEventLink",
     "Note",
 ]
