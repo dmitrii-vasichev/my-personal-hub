@@ -75,6 +75,7 @@ async def create_task(
         description=data.description,
         priority=data.priority,
         deadline=data.deadline,
+        reminder_at=data.reminder_at,
         checklist=[item.model_dump() for item in data.checklist],
         assignee_id=_resolve_assignee(data.assignee_id, current_user),
         visibility=data.visibility,
@@ -138,6 +139,9 @@ async def update_task(
         task.checklist = [item.model_dump() for item in data.checklist]
     if data.visibility is not None:
         task.visibility = data.visibility
+    if data.reminder_at is not None:
+        task.reminder_at = data.reminder_at
+        task.reminder_dismissed = False
 
     # Handle assignee change
     if data.assignee_id is not None:
