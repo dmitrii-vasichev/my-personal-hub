@@ -17,8 +17,10 @@ from app.schemas.task import (
     TaskUpdateResponse,
 )
 from app.services.task import PermissionDeniedError
+from app.schemas.note import LinkedNoteBrief
 from app.services import task as task_service
 from app.services import task_event_link as link_service
+from app.services import note_task_link as ntl_service
 from app.services import task_reminders as reminder_service
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
@@ -229,3 +231,18 @@ async def get_task_linked_events(
     if events is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     return events
+
+
+# ── Task-Note links ──────────────────────────────────────────────────────────
+
+
+@router.get("/{task_id}/linked-notes", response_model=list[LinkedNoteBrief])
+async def get_task_linked_notes(
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    notes = await ntl_service.get_task_linked_notes(db, task_id, current_user)
+    if notes is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    return notes
