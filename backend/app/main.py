@@ -5,6 +5,7 @@ from app.api.analytics import router as analytics_router
 from app.api.dashboard import router as dashboard_router
 from app.api.profile import router as profile_router
 from app.api.knowledge_base import router as knowledge_base_router
+from app.api.notes import router as notes_router
 from app.api.task_analytics import router as task_analytics_router
 from app.api.calendar import router as calendar_router
 from app.api.health import router as health_router
@@ -35,6 +36,7 @@ app.include_router(calendar_router)
 app.include_router(dashboard_router)
 app.include_router(profile_router)
 app.include_router(knowledge_base_router)
+app.include_router(notes_router)
 
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(

@@ -30,7 +30,10 @@ from app.core.encryption import decrypt_value, encrypt_value
 from app.models.calendar import GoogleOAuthToken
 from app.models.user import User
 
-SCOPES = ["https://www.googleapis.com/auth/calendar"]
+SCOPES = [
+    "https://www.googleapis.com/auth/calendar",
+    "https://www.googleapis.com/auth/drive.readonly",
+]
 
 
 async def get_oauth_config(
