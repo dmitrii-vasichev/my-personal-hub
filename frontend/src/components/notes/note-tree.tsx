@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import {
   ChevronRight,
   ChevronDown,
+  ChevronsUpDown,
   Folder,
   FolderOpen,
   FileText,
@@ -134,25 +135,46 @@ function TreeNode({
 }
 
 export function NoteTree({ tree, selectedFileId, onSelectFile, autoExpandFileId }: NoteTreeProps) {
+  const [allExpanded, setAllExpanded] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
+
   const sortedChildren = useMemo(
     () => sortNodes(tree),
     [tree]
   );
 
+  const toggleAll = useCallback(() => {
+    setAllExpanded((prev) => !prev);
+    setResetKey((prev) => prev + 1);
+  }, []);
+
   return (
-    <div className="overflow-y-auto py-1" data-testid="note-tree">
-      {sortedChildren.map((child) => (
-        <TreeNode
-          key={child.google_file_id}
-          node={child}
-          depth={0}
-          parentPath=""
-          selectedFileId={selectedFileId}
-          onSelectFile={onSelectFile}
-          defaultExpanded={child.type === "folder"}
-          autoExpandFileId={autoExpandFileId}
-        />
-      ))}
+    <div className="flex h-full flex-col" data-testid="note-tree">
+      <div className="flex items-center justify-end px-2 pt-1.5">
+        <button
+          type="button"
+          onClick={toggleAll}
+          className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-secondary)]"
+          title={allExpanded ? "Collapse all" : "Expand all"}
+        >
+          <ChevronsUpDown className="size-3.5" />
+          <span>{allExpanded ? "Collapse" : "Expand"}</span>
+        </button>
+      </div>
+      <div className="overflow-y-auto py-1">
+        {sortedChildren.map((child) => (
+          <TreeNode
+            key={`${child.google_file_id}-${resetKey}`}
+            node={child}
+            depth={0}
+            parentPath=""
+            selectedFileId={selectedFileId}
+            onSelectFile={onSelectFile}
+            defaultExpanded={allExpanded}
+            autoExpandFileId={autoExpandFileId}
+          />
+        ))}
+      </div>
     </div>
   );
 }

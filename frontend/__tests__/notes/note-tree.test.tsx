@@ -43,23 +43,37 @@ describe("NoteTree", () => {
     expect(screen.getByText("README.md")).toBeInTheDocument();
   });
 
-  it("shows folder children when expanded (folders default expanded)", () => {
+  it("folders are collapsed by default", () => {
     render(
       <NoteTree tree={mockTree} selectedFileId={null} onSelectFile={vi.fn()} />
     );
 
-    // Backend folder should be expanded by default (top-level folders)
-    expect(screen.getByText("api-docs.md")).toBeInTheDocument();
-    expect(screen.getByText("deploy-guide.md")).toBeInTheDocument();
+    // Backend folder should be collapsed — children not visible
+    expect(screen.queryByText("api-docs.md")).not.toBeInTheDocument();
+    expect(screen.queryByText("deploy-guide.md")).not.toBeInTheDocument();
   });
 
-  it("collapses folder on click and hides children", async () => {
+  it("expands folder on click and shows children", async () => {
     const user = userEvent.setup();
     render(
       <NoteTree tree={mockTree} selectedFileId={null} onSelectFile={vi.fn()} />
     );
 
-    // Click Backend folder to collapse
+    // Click Backend folder to expand
+    await user.click(screen.getByText("Backend"));
+    expect(screen.getByText("api-docs.md")).toBeInTheDocument();
+    expect(screen.getByText("deploy-guide.md")).toBeInTheDocument();
+  });
+
+  it("collapses folder on second click", async () => {
+    const user = userEvent.setup();
+    render(
+      <NoteTree tree={mockTree} selectedFileId={null} onSelectFile={vi.fn()} />
+    );
+
+    // Expand then collapse
+    await user.click(screen.getByText("Backend"));
+    expect(screen.getByText("deploy-guide.md")).toBeInTheDocument();
     await user.click(screen.getByText("Backend"));
     expect(screen.queryByText("deploy-guide.md")).not.toBeInTheDocument();
   });
@@ -90,6 +104,8 @@ describe("NoteTree", () => {
       />
     );
 
+    // Expand folder first, then click file
+    await user.click(screen.getByText("Backend"));
     await user.click(screen.getByText("deploy-guide.md"));
     expect(onSelectFile).toHaveBeenCalledWith(
       "file-1-id",
@@ -110,14 +126,60 @@ describe("NoteTree", () => {
     expect(fileButton?.className).toContain("text-[var(--accent)]");
   });
 
+  it("expand all button expands all folders", async () => {
+    const user = userEvent.setup();
+    render(
+      <NoteTree tree={mockTree} selectedFileId={null} onSelectFile={vi.fn()} />
+    );
+
+    // Folders collapsed by default
+    expect(screen.queryByText("api-docs.md")).not.toBeInTheDocument();
+
+    // Click "Expand" button
+    await user.click(screen.getByText("Expand"));
+    expect(screen.getByText("api-docs.md")).toBeInTheDocument();
+    expect(screen.getByText("deploy-guide.md")).toBeInTheDocument();
+  });
+
+  it("collapse all button collapses all folders", async () => {
+    const user = userEvent.setup();
+    render(
+      <NoteTree tree={mockTree} selectedFileId={null} onSelectFile={vi.fn()} />
+    );
+
+    // Expand all first
+    await user.click(screen.getByText("Expand"));
+    expect(screen.getByText("api-docs.md")).toBeInTheDocument();
+
+    // Collapse all
+    await user.click(screen.getByText("Collapse"));
+    expect(screen.queryByText("api-docs.md")).not.toBeInTheDocument();
+  });
+
+  it("auto-expands parents when autoExpandFileId is set", () => {
+    render(
+      <NoteTree
+        tree={mockTree}
+        selectedFileId="file-1-id"
+        onSelectFile={vi.fn()}
+        autoExpandFileId="file-1-id"
+      />
+    );
+
+    // Backend folder should auto-expand to show the selected file
+    expect(screen.getByText("deploy-guide.md")).toBeInTheDocument();
+  });
+
   it("sorts folders before files", () => {
     const { container } = render(
       <NoteTree tree={mockTree} selectedFileId={null} onSelectFile={vi.fn()} />
     );
 
-    const buttons = container.querySelectorAll("[data-testid='note-tree'] > div > button");
+    const treeDiv = container.querySelector("[data-testid='note-tree']");
+    const scrollableDiv = treeDiv?.querySelector(".overflow-y-auto");
+    const buttons = scrollableDiv?.querySelectorAll(":scope > div > button");
     // First button should be the folder (Backend), second should be the file (README.md)
-    expect(buttons[0]).toHaveTextContent("Backend");
-    expect(buttons[1]).toHaveTextContent("README.md");
+    expect(buttons?.[0]).toHaveTextContent("Backend");
+    expect(buttons?.[1]).toHaveTextContent("README.md");
   });
 });
