@@ -197,11 +197,11 @@ export default function NotesPage() {
         </div>
 
         {/* Content panel */}
-        <div className="h-[calc(100vh-180px)] overflow-y-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6">
+        <div className="flex h-[calc(100vh-180px)] flex-col rounded-xl border border-[var(--border)] bg-[var(--surface)]">
           {selectedFileId ? (
             <>
               {selectedFilePath && (
-                <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-6 pb-3 pt-6">
+                <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[var(--border)] px-6 py-3">
                   <div className="min-w-0 flex-1">
                     <NoteBreadcrumb path={selectedFilePath} />
                   </div>
@@ -221,23 +221,25 @@ export default function NotesPage() {
                   </Button>
                 </div>
               )}
-              {contentLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <RefreshCw className="size-4 animate-spin text-[var(--text-tertiary)]" />
-                </div>
-              ) : contentError ? (
-                <div className="flex flex-col items-center gap-3 py-12 text-center">
-                  <AlertCircle className="size-5 text-[var(--danger)]" />
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    Failed to load note content
-                  </p>
-                </div>
-              ) : content ? (
-                <NoteViewer content={content} />
-              ) : null}
+              <div className="flex-1 overflow-y-auto p-6">
+                {contentLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <RefreshCw className="size-4 animate-spin text-[var(--text-tertiary)]" />
+                  </div>
+                ) : contentError ? (
+                  <div className="flex flex-col items-center gap-3 py-12 text-center">
+                    <AlertCircle className="size-5 text-[var(--danger)]" />
+                    <p className="text-sm text-[var(--text-secondary)]">
+                      Failed to load note content
+                    </p>
+                  </div>
+                ) : content ? (
+                  <NoteViewer content={content} />
+                ) : null}
+              </div>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-3 py-20 text-center">
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 py-20 text-center">
               <FileText className="size-8 text-[var(--text-tertiary)]" />
               <p className="text-sm text-[var(--text-secondary)]">
                 Select a file from the tree to view its content
