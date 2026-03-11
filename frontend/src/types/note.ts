@@ -6,6 +6,11 @@ export interface NoteTreeNode {
   children?: NoteTreeNode[];
 }
 
+export interface NoteTreeResponse {
+  folder_id: string;
+  tree: NoteTreeNode[];
+}
+
 export interface Note {
   id: number;
   user_id: number;

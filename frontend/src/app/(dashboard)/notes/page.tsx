@@ -39,7 +39,8 @@ export default function NotesPage() {
 
   const { data: settings, isLoading: settingsLoading } = useSettings();
   const { data: oauthStatus, isLoading: oauthLoading } = useGoogleOAuthStatus();
-  const { data: tree, isLoading: treeLoading, error: treeError } = useNotesTree();
+  const { data: treeResponse, isLoading: treeLoading, error: treeError } = useNotesTree();
+  const treeNodes = treeResponse?.tree ?? [];
   const { data: content, isLoading: contentLoading, error: contentError } = useNoteContent(selectedFileId);
   const refreshTree = useRefreshNotesTree();
 
@@ -47,11 +48,15 @@ export default function NotesPage() {
 
   // Auto-select file from URL ?file= parameter or localStorage
   useEffect(() => {
-    if (!tree) return;
+    if (!treeNodes.length) return;
 
     // URL param takes priority
     if (fileParam && urlParamApplied !== fileParam) {
-      const filePath = findFileInTree(tree, fileParam, "");
+      let filePath: string | null = null;
+      for (const node of treeNodes) {
+        filePath = findFileInTree(node, fileParam, "");
+        if (filePath) break;
+      }
       if (filePath) {
         setSelectedFileId(fileParam);
         setSelectedFilePath(filePath);
@@ -66,7 +71,11 @@ export default function NotesPage() {
         const saved = localStorage.getItem(LAST_OPENED_KEY);
         if (saved) {
           const { fileId } = JSON.parse(saved) as { fileId: string; filePath: string };
-          const filePath = findFileInTree(tree, fileId, "");
+          let filePath: string | null = null;
+          for (const node of treeNodes) {
+            filePath = findFileInTree(node, fileId, "");
+            if (filePath) break;
+          }
           if (filePath) {
             setSelectedFileId(fileId);
             setSelectedFilePath(filePath);
@@ -76,7 +85,7 @@ export default function NotesPage() {
         // Ignore invalid localStorage data
       }
     }
-  }, [fileParam, tree, urlParamApplied, selectedFileId]);
+  }, [fileParam, treeNodes, urlParamApplied, selectedFileId]);
 
   const handleSelectFile = useCallback((fileId: string, filePath: string) => {
     setSelectedFileId(fileId);
@@ -190,22 +199,20 @@ export default function NotesPage() {
                 Retry
               </Button>
             </div>
-          ) : tree ? (
-            tree.children && tree.children.length > 0 ? (
-              <NoteTree
-                tree={tree}
-                selectedFileId={selectedFileId}
-                onSelectFile={handleSelectFile}
-                autoExpandFileId={selectedFileId}
-              />
-            ) : (
-              <div className="flex flex-col items-center gap-3 p-6 text-center">
-                <FolderOpen className="size-5 text-[var(--text-tertiary)]" />
-                <p className="text-sm text-[var(--text-secondary)]">
-                  No notes found in the configured folder
-                </p>
-              </div>
-            )
+          ) : treeNodes.length > 0 ? (
+            <NoteTree
+              tree={treeNodes}
+              selectedFileId={selectedFileId}
+              onSelectFile={handleSelectFile}
+              autoExpandFileId={selectedFileId}
+            />
+          ) : treeResponse ? (
+            <div className="flex flex-col items-center gap-3 p-6 text-center">
+              <FolderOpen className="size-5 text-[var(--text-tertiary)]" />
+              <p className="text-sm text-[var(--text-secondary)]">
+                No notes found in the configured folder
+              </p>
+            </div>
           ) : null}
         </div>
 

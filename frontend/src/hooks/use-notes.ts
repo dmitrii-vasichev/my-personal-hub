@@ -2,16 +2,16 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Note, NoteTreeNode } from "@/types/note";
+import type { Note, NoteTreeNode, NoteTreeResponse } from "@/types/note";
 
 export const NOTES_TREE_KEY = "notes-tree";
 export const NOTES_KEY = "notes";
 export const NOTE_CONTENT_KEY = "note-content";
 
 export function useNotesTree() {
-  return useQuery<NoteTreeNode>({
+  return useQuery<NoteTreeResponse>({
     queryKey: [NOTES_TREE_KEY],
-    queryFn: () => api.get<NoteTreeNode>("/api/notes/tree"),
+    queryFn: () => api.get<NoteTreeResponse>("/api/notes/tree"),
   });
 }
 
