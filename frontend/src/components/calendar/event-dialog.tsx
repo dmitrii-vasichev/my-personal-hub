@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,15 +62,15 @@ export function EventDialog({ open, onClose, prefillDate, event }: EventDialogPr
   const updateEvent = useUpdateCalendarEvent();
   const isPending = createEvent.isPending || updateEvent.isPending;
 
-  // Reset form when dialog opens with new prefillDate
-  useEffect(() => {
-    if (!isEditing && prefillDate) {
-      const s = roundToNextHour(prefillDate);
-      const e = new Date(s.getTime() + 60 * 60 * 1000);
-      setStartTime(toLocalDatetimeValue(s));
-      setEndTime(toLocalDatetimeValue(e));
-    }
-  }, [prefillDate, isEditing]);
+  // Reset times when prefillDate changes (React-recommended "adjust state during render" pattern)
+  const [prevPrefillDate, setPrevPrefillDate] = useState(prefillDate);
+  if (!isEditing && prefillDate && prefillDate !== prevPrefillDate) {
+    setPrevPrefillDate(prefillDate);
+    const s = roundToNextHour(prefillDate);
+    const e = new Date(s.getTime() + 60 * 60 * 1000);
+    setStartTime(toLocalDatetimeValue(s));
+    setEndTime(toLocalDatetimeValue(e));
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
