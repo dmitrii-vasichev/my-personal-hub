@@ -66,7 +66,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <Image src={logoSrc} alt="Personal Hub" width={24} height={24} className="shrink-0" />
               <span className="text-[15px] font-semibold tracking-tight text-foreground">Personal Hub</span>
             </div>
-            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={onToggle}>
+            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground" onClick={onToggle}>
               <PanelLeftClose className="h-4 w-4" />
             </Button>
           </>
