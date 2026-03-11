@@ -277,7 +277,7 @@ async def create_task_update(
     )
     db.add(update)
     await db.commit()
-    await db.refresh(update)
+    await db.refresh(update, attribute_names=["author"])
     return update
 
 
@@ -293,6 +293,7 @@ async def list_task_updates(
     result = await db.execute(
         select(TaskUpdate)
         .where(TaskUpdate.task_id == task_id)
+        .options(joinedload(TaskUpdate.author))
         .order_by(TaskUpdate.created_at.desc())
     )
     return list(result.scalars().all())
