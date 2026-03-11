@@ -30,6 +30,8 @@ class SettingsUpdate(BaseModel):
     instruction_ats_audit: Optional[str] = None
     instruction_gap_analysis: Optional[str] = None
     instruction_cover_letter: Optional[str] = None
+    # Kanban board preferences
+    kanban_hidden_columns: Optional[list[str]] = None
 
 
 class SettingsResponse(BaseModel):
@@ -59,6 +61,8 @@ class SettingsResponse(BaseModel):
     instruction_ats_audit: Optional[str] = None
     instruction_gap_analysis: Optional[str] = None
     instruction_cover_letter: Optional[str] = None
+    # Kanban board preferences
+    kanban_hidden_columns: list[str] = []
     updated_at: datetime
 
     model_config = {"from_attributes": True}

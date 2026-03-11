@@ -92,8 +92,6 @@ export interface TaskFilters {
   priority?: string;
   assignee_id?: number;
   search?: string;
-  deadline_before?: string;
-  deadline_after?: string;
 }
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
@@ -133,9 +131,18 @@ export const PRIORITY_DOT_COLORS: Record<TaskPriority, string> = {
   low: "bg-tertiary",
 };
 
+export const PRIORITY_BORDER_COLORS: Record<TaskPriority, string> = {
+  urgent: "border-l-[var(--danger)]",
+  high: "border-l-[var(--accent-amber)]",
+  medium: "border-l-[var(--accent)]",
+  low: "border-l-[var(--text-tertiary)]",
+};
+
 export const PRIORITY_LABELS: Record<TaskPriority, string> = {
   urgent: "Urgent",
   high: "High",
   medium: "Medium",
   low: "Low",
 };
+
+export const DEFAULT_HIDDEN_COLUMNS: TaskStatus[] = ["review", "cancelled"];
