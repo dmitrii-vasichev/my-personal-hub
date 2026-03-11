@@ -142,3 +142,4 @@ class TaskUpdate(Base):
     )
 
     task: Mapped["Task"] = relationship("Task", back_populates="updates")
+    author: Mapped["User"] = relationship("User", foreign_keys=[author_id], lazy="noload")
