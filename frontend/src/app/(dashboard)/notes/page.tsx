@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { RefreshCw, FileText, AlertCircle, FolderOpen } from "lucide-react";
+import { RefreshCw, FileText, AlertCircle, FolderOpen, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NoteTree } from "@/components/notes/note-tree";
 import { NoteViewer } from "@/components/notes/note-viewer";
@@ -36,6 +36,7 @@ export default function NotesPage() {
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const [urlParamApplied, setUrlParamApplied] = useState<string | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const { data: settings, isLoading: settingsLoading } = useSettings();
   const { data: oauthStatus, isLoading: oauthLoading } = useGoogleOAuthStatus();
@@ -65,6 +66,16 @@ export default function NotesPage() {
     setSelectedFileId(fileId);
     setSelectedFilePath(filePath);
   }, []);
+
+  // Escape exits expanded mode
+  useEffect(() => {
+    if (!isExpanded) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsExpanded(false);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isExpanded]);
 
   const isGoogleConnected = oauthStatus?.connected === true;
   const hasFolderConfigured = !!settings?.google_drive_notes_folder_id;
@@ -147,9 +158,9 @@ export default function NotesPage() {
       </div>
 
       {/* Two-panel layout */}
-      <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
+      <div className={`grid gap-4 transition-[grid-template-columns] duration-300 ease-in-out ${isExpanded ? "grid-cols-1" : "lg:grid-cols-[300px_1fr]"}`}>
         {/* Tree panel */}
-        <div className="h-[calc(100vh-180px)] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+        <div className={`h-[calc(100vh-180px)] overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)] transition-all duration-300 ease-in-out ${isExpanded ? "hidden" : ""}`}>
           {treeLoading ? (
             <div className="flex items-center justify-center py-12">
               <RefreshCw className="size-4 animate-spin text-[var(--text-tertiary)]" />
@@ -190,8 +201,21 @@ export default function NotesPage() {
           {selectedFileId ? (
             <>
               {selectedFilePath && (
-                <div className="mb-4 border-b border-[var(--border)] pb-3">
+                <div className="mb-4 flex items-center justify-between border-b border-[var(--border)] pb-3">
                   <NoteBreadcrumb path={selectedFilePath} />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    title={isExpanded ? "Collapse (Esc)" : "Expand"}
+                    data-testid="note-expand-toggle"
+                  >
+                    {isExpanded ? (
+                      <Minimize2 className="size-4" />
+                    ) : (
+                      <Maximize2 className="size-4" />
+                    )}
+                  </Button>
                 </div>
               )}
               {contentLoading ? (
