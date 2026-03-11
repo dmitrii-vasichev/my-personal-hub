@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+  <defs>
+    <radialGradient id="rg-light" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#2563eb"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softglow">
+      <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <path d="M80 80 m65 0 a65 65 0 0 1 -45 50" stroke="#2563eb" stroke-width="1.2" fill="none" opacity="0.10" stroke-linecap="round"/>
+  <path d="M80 80 m50 -20 a55 55 0 0 1 -55 52" stroke="#2563eb" stroke-width="1.5" fill="none" opacity="0.18" stroke-linecap="round"/>
+  <path d="M80 80 m30 -42 a50 50 0 0 1 -62 30" stroke="#2563eb" stroke-width="1.8" fill="none" opacity="0.30" stroke-linecap="round"/>
+  <path d="M80 80 m-5 -45 a42 42 0 0 1 -38 -20" stroke="#2563eb" stroke-width="1.8" fill="none" opacity="0.22" stroke-linecap="round"/>
+  <path d="M80 80 m-38 -22 a38 38 0 0 1 10 -36" stroke="#2563eb" stroke-width="1.5" fill="none" opacity="0.14" stroke-linecap="round"/>
+
+  <path d="M80 80 m-65 0 a65 65 0 0 1 45 -50" stroke="#2563eb" stroke-width="1.2" fill="none" opacity="0.10" stroke-linecap="round"/>
+  <path d="M80 80 m-50 20 a55 55 0 0 1 55 -52" stroke="#2563eb" stroke-width="1.5" fill="none" opacity="0.18" stroke-linecap="round"/>
+  <path d="M80 80 m-30 42 a50 50 0 0 1 62 -30" stroke="#2563eb" stroke-width="1.8" fill="none" opacity="0.30" stroke-linecap="round"/>
+
+  <path d="M80 80 m22 0 a22 22 0 0 1 -10 20 a18 18 0 0 1 -18 -5 a14 14 0 0 1 5 -14 a10 10 0 0 1 10 0"
+        stroke="#2563eb" stroke-width="2" fill="none" opacity="0.60" stroke-linecap="round" filter="url(#softglow)"/>
+
+  <circle cx="80" cy="80" r="10" stroke="#2563eb" stroke-width="2.2" fill="none" opacity="0.80" filter="url(#softglow)"/>
+
+  <circle cx="80" cy="80" r="5" fill="url(#rg-light)" filter="url(#glow)"/>
+  <circle cx="80" cy="80" r="2" fill="#eff6ff"/>
+</svg>
