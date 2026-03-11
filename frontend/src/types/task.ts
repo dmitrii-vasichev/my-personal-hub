@@ -138,6 +138,13 @@ export const PRIORITY_BORDER_COLORS: Record<TaskPriority, string> = {
   low: "border-l-[var(--text-tertiary)]",
 };
 
+export const PRIORITY_BORDER_CSS_VARS: Record<TaskPriority, string> = {
+  urgent: "var(--danger)",
+  high: "var(--accent-amber)",
+  medium: "var(--accent)",
+  low: "var(--text-tertiary)",
+};
+
 export const PRIORITY_LABELS: Record<TaskPriority, string> = {
   urgent: "Urgent",
   high: "High",

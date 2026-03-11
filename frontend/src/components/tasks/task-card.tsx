@@ -5,7 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Calendar, Eye, Lock, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Task } from "@/types/task";
-import { PRIORITY_BORDER_COLORS, PRIORITY_LABELS } from "@/types/task";
+import { PRIORITY_BORDER_CSS_VARS, PRIORITY_LABELS } from "@/types/task";
 
 interface TaskCardProps {
   task: Task;
@@ -31,9 +31,10 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
     data: { task, status: task.status },
   });
 
-  const style = transform
-    ? { transform: CSS.Translate.toString(transform) }
-    : undefined;
+  const cardStyle = {
+    ...(transform ? { transform: CSS.Translate.toString(transform) } : {}),
+    borderLeftColor: PRIORITY_BORDER_CSS_VARS[task.priority],
+  };
 
   const handleClick = () => {
     if (transform) return;
@@ -43,15 +44,14 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={cardStyle}
       {...listeners}
       {...attributes}
       onClick={handleClick}
       title={`Priority: ${PRIORITY_LABELS[task.priority]}`}
       className={`
         group relative rounded-lg border border-l-[3px] bg-[var(--surface)] p-3 transition-shadow cursor-pointer
-        ${PRIORITY_BORDER_COLORS[task.priority]}
-        ${isDragging ? "shadow-lg opacity-50 border-y-[var(--border-strong)] border-r-[var(--border-strong)] cursor-grabbing" : "border-y-[var(--border)] border-r-[var(--border)] hover:border-y-[var(--border-strong)] hover:border-r-[var(--border-strong)]"}
+        ${isDragging ? "shadow-lg opacity-50 border-[var(--border-strong)] cursor-grabbing" : "border-[var(--border)] hover:border-[var(--border-strong)]"}
         active:cursor-grabbing
       `}
     >
@@ -107,7 +107,10 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
 // Overlay version (shown while dragging)
 export function TaskCardOverlay({ task }: { task: Task }) {
   return (
-    <div className={`rounded-lg border border-l-[3px] border-y-[var(--accent)] border-r-[var(--accent)] bg-[var(--surface)] p-3 shadow-xl cursor-grabbing ${PRIORITY_BORDER_COLORS[task.priority]}`}>
+    <div
+      style={{ borderLeftColor: PRIORITY_BORDER_CSS_VARS[task.priority] }}
+      className="rounded-lg border border-l-[3px] border-[var(--accent)] bg-[var(--surface)] p-3 shadow-xl cursor-grabbing"
+    >
       <div className="mb-1.5 flex items-center justify-end gap-1.5">
         <span>
           {task.visibility === "private" ? (
