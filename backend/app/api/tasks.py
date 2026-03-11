@@ -11,6 +11,7 @@ from app.schemas.task import (
     KanbanBoard,
     LinkedEventBrief,
     TaskCreate,
+    TaskReorder,
     TaskResponse,
     TaskUpdate,
     TaskUpdateCreate,
@@ -64,6 +65,23 @@ async def get_kanban(
         deadline_after=deadline_after,
     )
     return {col: [_task_response(t) for t in tasks] for col, tasks in board.items()}
+
+
+@router.post("/reorder", response_model=TaskResponse)
+async def reorder_task(
+    data: TaskReorder,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        task = await task_service.reorder_task(
+            db, data.task_id, data.after_task_id, data.before_task_id, current_user
+        )
+    except task_service.PermissionDeniedError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    if task is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+    return _task_response(task)
 
 
 @router.get("/", response_model=list[TaskResponse])
