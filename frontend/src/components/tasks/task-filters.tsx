@@ -5,15 +5,15 @@ import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { DatePicker } from "@/components/ui/date-picker";
 import type { TaskFilters } from "@/types/task";
 
 interface TaskFiltersBarProps {
   filters: TaskFilters;
   onFiltersChange: (filters: TaskFilters) => void;
+  extraButtons?: React.ReactNode;
 }
 
-export function TaskFiltersBar({ filters, onFiltersChange }: TaskFiltersBarProps) {
+export function TaskFiltersBar({ filters, onFiltersChange, extraButtons }: TaskFiltersBarProps) {
   const [search, setSearch] = useState(filters.search ?? "");
 
   // Debounce search
@@ -28,8 +28,6 @@ export function TaskFiltersBar({ filters, onFiltersChange }: TaskFiltersBarProps
   const activeCount = [
     filters.search,
     filters.priority,
-    filters.deadline_before,
-    filters.deadline_after,
   ].filter(Boolean).length;
 
   const clearAll = () => {
@@ -65,19 +63,8 @@ export function TaskFiltersBar({ filters, onFiltersChange }: TaskFiltersBarProps
         <option value="low">⚪ Low</option>
       </Select>
 
-      {/* Deadline before */}
-      <div className="flex items-center gap-1.5">
-        <span className="text-xs text-[var(--text-tertiary)]">Due before</span>
-        <DatePicker
-          value={filters.deadline_before ?? ""}
-          onChange={(v) =>
-            onFiltersChange({ ...filters, deadline_before: v || undefined })
-          }
-          placeholder="Any date"
-          clearable
-          className="h-8 w-40"
-        />
-      </div>
+      {/* Extra buttons (e.g. Columns) */}
+      {extraButtons}
 
       {/* Clear all */}
       {activeCount > 0 && (

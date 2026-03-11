@@ -5,7 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Calendar, Eye, Lock, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Task } from "@/types/task";
-import { PRIORITY_BG_COLORS, PRIORITY_DOT_COLORS } from "@/types/task";
+import { PRIORITY_BORDER_COLORS, PRIORITY_LABELS } from "@/types/task";
 
 interface TaskCardProps {
   task: Task;
@@ -47,14 +47,16 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
       {...listeners}
       {...attributes}
       onClick={handleClick}
+      title={`Priority: ${PRIORITY_LABELS[task.priority]}`}
       className={`
-        group relative rounded-lg border bg-[var(--surface)] p-3 transition-shadow cursor-pointer
+        group relative rounded-lg border border-l-[3px] bg-[var(--surface)] p-3 transition-shadow cursor-pointer
+        ${PRIORITY_BORDER_COLORS[task.priority]}
         ${isDragging ? "shadow-lg opacity-50 border-[var(--border-strong)] cursor-grabbing" : "border-[var(--border)] hover:border-[var(--border-strong)]"}
         active:cursor-grabbing
       `}
     >
       <div>
-        {/* Header: visibility icon + priority badge (right-aligned) */}
+        {/* Header: visibility icon */}
         <div className="mb-1.5 flex items-center justify-end gap-1.5">
           <span title={task.visibility === "private" ? "Private" : "Family"}>
             {task.visibility === "private" ? (
@@ -62,12 +64,6 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
             ) : (
               <Eye className="h-3 w-3 text-[var(--accent-teal)]" />
             )}
-          </span>
-          <span className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium">
-            <span className={`h-2 w-2 rounded-full ${PRIORITY_DOT_COLORS[task.priority]}`} />
-            <span className={PRIORITY_BG_COLORS[task.priority].split(" ").filter(c => c.startsWith("text-")).join(" ")}>
-              {task.priority}
-            </span>
           </span>
         </div>
 
@@ -111,7 +107,7 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
 // Overlay version (shown while dragging)
 export function TaskCardOverlay({ task }: { task: Task }) {
   return (
-    <div className="rounded-lg border border-[var(--accent)] bg-[var(--surface)] p-3 shadow-xl cursor-grabbing">
+    <div className={`rounded-lg border border-l-[3px] border-[var(--accent)] bg-[var(--surface)] p-3 shadow-xl cursor-grabbing ${PRIORITY_BORDER_COLORS[task.priority]}`}>
       <div className="mb-1.5 flex items-center justify-end gap-1.5">
         <span>
           {task.visibility === "private" ? (
@@ -119,12 +115,6 @@ export function TaskCardOverlay({ task }: { task: Task }) {
           ) : (
             <Eye className="h-3 w-3 text-[var(--accent-teal)]" />
           )}
-        </span>
-        <span className="flex items-center gap-1 text-[11px] font-medium">
-          <span className={`h-2 w-2 rounded-full ${PRIORITY_DOT_COLORS[task.priority]}`} />
-          <span className={PRIORITY_BG_COLORS[task.priority].split(" ").filter(c => c.startsWith("text-")).join(" ")}>
-            {task.priority}
-          </span>
         </span>
       </div>
       <p className="text-sm font-medium text-[var(--text-primary)] line-clamp-2">

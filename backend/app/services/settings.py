@@ -43,6 +43,8 @@ async def update_settings(
         settings.excluded_companies = data.excluded_companies
     if data.stale_threshold_days is not None:
         settings.stale_threshold_days = data.stale_threshold_days
+    if data.kanban_hidden_columns is not None:
+        settings.kanban_hidden_columns = data.kanban_hidden_columns
 
     # Only admins can change AI provider and API keys
     if user.role == UserRole.admin:
@@ -111,6 +113,7 @@ def to_response(settings: UserSettings) -> SettingsResponse:
         instruction_ats_audit=settings.instruction_ats_audit,
         instruction_gap_analysis=settings.instruction_gap_analysis,
         instruction_cover_letter=settings.instruction_cover_letter,
+        kanban_hidden_columns=settings.kanban_hidden_columns or [],
         updated_at=settings.updated_at,
     )
 

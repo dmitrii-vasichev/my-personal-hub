@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Plus, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KanbanBoard } from "@/components/tasks/kanban-board";
 import { TaskFiltersBar } from "@/components/tasks/task-filters";
+import { ColumnVisibilityButton } from "@/components/tasks/column-visibility-button";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { useKanbanTasks, useUpdateTask } from "@/hooks/use-tasks";
+import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
 import type { KanbanBoard as KanbanBoardType, TaskFilters, TaskStatus } from "@/types/task";
+import { DEFAULT_HIDDEN_COLUMNS } from "@/types/task";
 
 const EMPTY_BOARD: KanbanBoardType = {
   new: [],
@@ -24,6 +27,36 @@ export default function TasksPage() {
 
   const { data: board, isLoading, error } = useKanbanTasks(filters);
   const updateTask = useUpdateTask();
+
+  // Column visibility from settings
+  const { data: settings } = useSettings();
+  const updateSettings = useUpdateSettings();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Derive hidden columns: use saved setting if non-empty, else defaults
+  const savedHidden = settings?.kanban_hidden_columns;
+  const [hiddenColumns, setHiddenColumns] = useState<TaskStatus[]>(DEFAULT_HIDDEN_COLUMNS);
+
+  // Sync from server settings once loaded
+  useEffect(() => {
+    if (savedHidden !== undefined) {
+      setHiddenColumns(
+        savedHidden.length > 0 ? (savedHidden as TaskStatus[]) : DEFAULT_HIDDEN_COLUMNS
+      );
+    }
+  }, [savedHidden]);
+
+  const handleHiddenColumnsChange = useCallback(
+    (columns: TaskStatus[]) => {
+      setHiddenColumns(columns);
+      // Debounced save to API
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        updateSettings.mutate({ kanban_hidden_columns: columns });
+      }, 500);
+    },
+    [updateSettings]
+  );
 
   // Optimistic status change
   const [optimisticBoard, setOptimisticBoard] = useState<KanbanBoardType | null>(null);
@@ -87,7 +120,16 @@ export default function TasksPage() {
       </div>
 
       {/* Filters */}
-      <TaskFiltersBar filters={filters} onFiltersChange={setFilters} />
+      <TaskFiltersBar
+        filters={filters}
+        onFiltersChange={setFilters}
+        extraButtons={
+          <ColumnVisibilityButton
+            hiddenColumns={hiddenColumns}
+            onHiddenColumnsChange={handleHiddenColumnsChange}
+          />
+        }
+      />
 
       {/* Board */}
       {isLoading ? (
@@ -103,6 +145,7 @@ export default function TasksPage() {
           board={displayBoard}
           onStatusChange={handleStatusChange}
           isPending={updateTask.isPending}
+          hiddenColumns={hiddenColumns}
         />
       )}
 
