@@ -77,13 +77,15 @@ async def create_task(
     data: TaskCreate,
     current_user: User,
 ) -> Task:
-    # Place new task at top of the "new" column
-    top_order = await _get_min_kanban_order(db, TaskStatus.new.value)
+    # Place new task at top of the target status column
+    initial_status = data.status if data.status else TaskStatus.new
+    top_order = await _get_min_kanban_order(db, initial_status.value)
     task = Task(
         user_id=current_user.id,
         created_by_id=current_user.id,
         title=data.title,
         description=data.description,
+        status=initial_status,
         priority=data.priority,
         deadline=data.deadline,
         reminder_at=data.reminder_at,
@@ -101,7 +103,7 @@ async def create_task(
         author_id=current_user.id,
         type=UpdateType.status_change,
         old_status=None,
-        new_status=TaskStatus.new.value,
+        new_status=initial_status.value,
         content="Task created",
     )
     db.add(initial_update)
@@ -266,6 +268,7 @@ async def get_kanban_board(
         db, current_user, sort_by="kanban_order", sort_order="asc", **filter_kwargs
     )
     board: dict[str, list[Task]] = {
+        "backlog": [],
         "new": [],
         "in_progress": [],
         "review": [],

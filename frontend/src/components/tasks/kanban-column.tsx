@@ -15,6 +15,7 @@ interface KanbanColumnProps {
 }
 
 const STATUS_ACCENT: Record<TaskStatus, string> = {
+  backlog: "bg-[var(--accent-violet)]",
   new: "bg-[var(--text-tertiary)]",
   in_progress: "bg-[var(--accent)]",
   review: "bg-yellow-500",
