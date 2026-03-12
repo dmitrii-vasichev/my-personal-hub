@@ -19,6 +19,7 @@ import { ChecklistEditor } from "./checklist-editor";
 import { DatePicker } from "@/components/ui/date-picker";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { useCreateTask } from "@/hooks/use-tasks";
+import { TagPicker } from "./tag-picker";
 import type { ChecklistItem, TaskPriority, TaskStatus, Visibility } from "@/types/task";
 import { TASK_STATUS_LABELS, TASK_STATUS_ORDER } from "@/types/task";
 
@@ -39,6 +40,7 @@ export function TaskDialog({ onClose, onSuccess, initialStatus }: TaskDialogProp
   const [reminderAt, setReminderAt] = useState("");
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [visibility, setVisibility] = useState<Visibility>("family");
+  const [tagIds, setTagIds] = useState<number[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const isLoading = createTask.isPending;
@@ -62,6 +64,7 @@ export function TaskDialog({ onClose, onSuccess, initialStatus }: TaskDialogProp
         reminder_at: reminderAt || undefined,
         checklist,
         visibility,
+        tag_ids: tagIds.length > 0 ? tagIds : undefined,
       });
       onSuccess?.();
       onClose();
@@ -142,6 +145,14 @@ export function TaskDialog({ onClose, onSuccess, initialStatus }: TaskDialogProp
                 </Label>
                 <VisibilityPicker value={visibility} onChange={setVisibility} />
               </div>
+            </div>
+
+            {/* Tags */}
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                Tags
+              </Label>
+              <TagPicker selectedTagIds={tagIds} onChange={setTagIds} />
             </div>
 
             {/* Deadline */}

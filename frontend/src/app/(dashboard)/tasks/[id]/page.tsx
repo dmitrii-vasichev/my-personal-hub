@@ -22,6 +22,8 @@ import {
   useUnlinkNoteFromTask,
 } from "@/hooks/use-note-links";
 import { useAuth } from "@/lib/auth";
+import { TagPicker } from "@/components/tasks/tag-picker";
+import { TagPill } from "@/components/tasks/tag-pill";
 import { PRIORITY_BG_COLORS, PRIORITY_DOT_COLORS, TASK_STATUS_LABELS, TASK_STATUS_ORDER } from "@/types/task";
 import type { ChecklistItem, TaskPriority, TaskStatus, UpdateTaskInput, Visibility } from "@/types/task";
 
@@ -307,6 +309,27 @@ export default function TaskDetailPage() {
               <span className={`inline-flex w-fit items-center rounded px-2 py-0.5 text-xs font-medium ${PRIORITY_BG_COLORS[task.priority]}`}>
                 {task.priority}
               </span>
+            )}
+          </div>
+
+          {/* Tags */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+              Tags
+            </span>
+            {canEdit ? (
+              <TagPicker
+                selectedTagIds={task.tags?.map((t) => t.id) ?? []}
+                onChange={(ids) => patchTask({ tag_ids: ids })}
+              />
+            ) : task.tags && task.tags.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {task.tags.map((tag) => (
+                  <TagPill key={tag.id} tag={tag} />
+                ))}
+              </div>
+            ) : (
+              <span className="text-sm text-[var(--text-tertiary)] italic">No tags</span>
             )}
           </div>
 
