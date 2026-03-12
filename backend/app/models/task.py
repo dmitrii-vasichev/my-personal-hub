@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
+    from app.models.tag import Tag
     from app.models.user import User
 
 from sqlalchemy import (
@@ -116,6 +117,9 @@ class Task(Base):
     )
     updates: Mapped[list["TaskUpdate"]] = relationship(
         "TaskUpdate", back_populates="task", cascade="all, delete-orphan"
+    )
+    tags: Mapped[list["Tag"]] = relationship(
+        "Tag", secondary="task_tags", lazy="noload"
     )
 
     __table_args__ = (

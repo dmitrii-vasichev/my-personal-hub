@@ -19,6 +19,8 @@ from app.schemas.task import (
 )
 from app.services.task import PermissionDeniedError
 from app.schemas.note import LinkedNoteBrief
+from app.schemas.tag import BulkTagRequest, BulkTagResponse
+from app.services import tag as tag_service
 from app.services import task as task_service
 from app.services import task_event_link as link_service
 from app.services import note_task_link as ntl_service
@@ -54,6 +56,7 @@ async def get_kanban(
     assignee_id: Optional[int] = Query(None),
     deadline_before: Optional[datetime] = Query(None),
     deadline_after: Optional[datetime] = Query(None),
+    tag_id: Optional[int] = Query(None),
 ):
     board = await task_service.get_kanban_board(
         db,
@@ -63,6 +66,7 @@ async def get_kanban(
         assignee_id=assignee_id,
         deadline_before=deadline_before,
         deadline_after=deadline_after,
+        tag_id=tag_id,
     )
     return {col: [_task_response(t) for t in tasks] for col, tasks in board.items()}
 
@@ -84,6 +88,16 @@ async def reorder_task(
     return _task_response(task)
 
 
+@router.post("/bulk-tag", response_model=BulkTagResponse)
+async def bulk_tag_tasks(
+    data: BulkTagRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    affected = await tag_service.bulk_tag(db, current_user.id, data)
+    return BulkTagResponse(affected_tasks=affected)
+
+
 @router.get("/", response_model=list[TaskResponse])
 async def list_tasks(
     db: AsyncSession = Depends(get_db),
@@ -96,6 +110,7 @@ async def list_tasks(
     deadline_after: Optional[datetime] = Query(None),
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
+    tag_id: Optional[int] = Query(None),
 ):
     tasks = await task_service.list_tasks(
         db,
@@ -108,6 +123,7 @@ async def list_tasks(
         deadline_after=deadline_after,
         sort_by=sort_by,
         sort_order=sort_order,
+        tag_id=tag_id,
     )
     return [_task_response(t) for t in tasks]
 

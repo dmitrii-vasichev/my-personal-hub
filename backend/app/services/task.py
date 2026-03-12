@@ -7,9 +7,11 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
+from app.models.tag import TaskTag
 from app.models.task import Task, TaskStatus, TaskUpdate, UpdateType, Visibility
 from app.models.user import User, UserRole
 from app.schemas.task import TaskCreate, TaskUpdate as TaskUpdateSchema, TaskUpdateCreate
+from app.services.tag import sync_task_tags
 
 
 class PermissionDeniedError(Exception):
@@ -58,7 +60,11 @@ async def _load_task_with_users(db: AsyncSession, task_id: int) -> Task | None:
     result = await db.execute(
         select(Task)
         .where(Task.id == task_id)
-        .options(selectinload(Task.updates), joinedload(Task.owner))
+        .options(
+            selectinload(Task.updates),
+            joinedload(Task.owner),
+            selectinload(Task.tags),
+        )
     )
     return result.unique().scalar_one_or_none()
 
@@ -96,6 +102,10 @@ async def create_task(
     )
     db.add(task)
     await db.flush()  # get task.id
+
+    # Sync tags
+    if data.tag_ids:
+        await sync_task_tags(db, task.id, data.tag_ids, current_user.id)
 
     # Auto-create initial status update
     initial_update = TaskUpdate(
@@ -189,6 +199,10 @@ async def update_task(
             new_status=data.status.value,
         ))
 
+    # Sync tags if provided
+    if data.tag_ids is not None:
+        await sync_task_tags(db, task.id, data.tag_ids, current_user.id)
+
     task.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(task)
@@ -221,8 +235,9 @@ async def list_tasks(
     deadline_after: Optional[datetime] = None,
     sort_by: str = "created_at",
     sort_order: str = "desc",
+    tag_id: Optional[int] = None,
 ) -> list[Task]:
-    q = select(Task).options(joinedload(Task.owner))
+    q = select(Task).options(joinedload(Task.owner), selectinload(Task.tags))
 
     # Access control: own + assigned + family-visible
     if current_user.role != UserRole.admin:
@@ -250,6 +265,8 @@ async def list_tasks(
         q = q.where(Task.deadline <= deadline_before)
     if deadline_after:
         q = q.where(Task.deadline >= deadline_after)
+    if tag_id is not None:
+        q = q.join(TaskTag, TaskTag.task_id == Task.id).where(TaskTag.tag_id == tag_id)
 
     # Sorting
     sort_col = getattr(Task, sort_by, Task.created_at)
