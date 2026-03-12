@@ -43,6 +43,7 @@ const mockTask = {
   updated_at: "2026-03-10T12:00:00Z",
   owner_name: "Test User",
   assignee: null,
+  tags: [],
 };
 
 vi.mock("@/hooks/use-tasks", () => ({

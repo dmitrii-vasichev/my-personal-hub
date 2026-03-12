@@ -36,6 +36,7 @@ export interface Task {
   creator?: UserBrief;
   assignee?: UserBrief;
   owner_name?: string;
+  tags: import("./tag").TagBrief[];
 }
 
 export interface TaskUpdateItem {
@@ -70,6 +71,7 @@ export interface CreateTaskInput {
   checklist?: ChecklistItem[];
   assignee_id?: number;
   visibility?: Visibility;
+  tag_ids?: number[];
 }
 
 export interface UpdateTaskInput {
@@ -82,6 +84,7 @@ export interface UpdateTaskInput {
   checklist?: ChecklistItem[];
   assignee_id?: number | null;
   visibility?: Visibility;
+  tag_ids?: number[];
 }
 
 export interface CreateUpdateInput {
@@ -95,6 +98,7 @@ export interface TaskFilters {
   priority?: string;
   assignee_id?: number;
   search?: string;
+  tag_id?: number;
 }
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {
