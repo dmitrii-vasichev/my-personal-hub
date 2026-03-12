@@ -11,6 +11,7 @@ from app.models.job_event_link import JobEventLink
 from app.models.note_task_link import NoteTaskLink
 from app.models.note_job_link import NoteJobLink
 from app.models.note_event_link import NoteEventLink
+from app.models.tag import Tag, TaskTag
 
 __all__ = [
     "User",
@@ -36,4 +37,6 @@ __all__ = [
     "NoteJobLink",
     "NoteEventLink",
     "Note",
+    "Tag",
+    "TaskTag",
 ]
