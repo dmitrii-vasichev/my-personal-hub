@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from app.models.task import TaskPriority, TaskSource, TaskStatus, UpdateType, Visibility
+from app.schemas.tag import TagBrief
 
 
 class ChecklistItem(BaseModel):
@@ -33,6 +34,7 @@ class TaskCreate(BaseModel):
     checklist: list[ChecklistItem] = []
     assignee_id: Optional[int] = None
     visibility: Visibility = Visibility.family
+    tag_ids: list[int] = []
 
 
 class TaskUpdate(BaseModel):
@@ -45,6 +47,7 @@ class TaskUpdate(BaseModel):
     checklist: Optional[list[ChecklistItem]] = None
     assignee_id: Optional[int] = None
     visibility: Optional[Visibility] = None
+    tag_ids: Optional[list[int]] = None
 
 
 class LinkedEventBrief(BaseModel):
@@ -86,6 +89,7 @@ class TaskResponse(BaseModel):
     assignee: Optional[UserBrief] = None
     owner_name: Optional[str] = None
     linked_events: list[LinkedEventBrief] = []
+    tags: list[TagBrief] = []
 
     model_config = {"from_attributes": True}
 
