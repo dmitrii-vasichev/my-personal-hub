@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Plus, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KanbanBoard } from "@/components/tasks/kanban-board";
@@ -23,8 +24,27 @@ const EMPTY_BOARD: KanbanBoardType = {
 };
 
 export default function TasksPage() {
-  const [filters, setFilters] = useState<TaskFilters>({});
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const initialTagId = searchParams.get("tag") ? Number(searchParams.get("tag")) : undefined;
+  const [filters, setFilters] = useState<TaskFilters>({
+    tag_id: initialTagId,
+  });
   const [createDialogStatus, setCreateDialogStatus] = useState<TaskStatus | null>(null);
+
+  // Sync tag filter to URL
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (filters.tag_id) {
+      params.set("tag", String(filters.tag_id));
+    } else {
+      params.delete("tag");
+    }
+    const newUrl = params.toString() ? `?${params.toString()}` : "/tasks";
+    router.replace(newUrl, { scroll: false });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.tag_id]);
 
   const { data: board, isLoading, error } = useKanbanTasks(filters);
   const updateTask = useUpdateTask();
