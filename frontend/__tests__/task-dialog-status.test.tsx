@@ -10,6 +10,11 @@ vi.mock("@/hooks/use-tasks", () => ({
   }),
 }));
 
+vi.mock("@/hooks/use-tags", () => ({
+  useTags: () => ({ data: [] }),
+  useCreateTag: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+
 describe("TaskDialog — initialStatus", () => {
   it("defaults status to 'new' when no initialStatus", async () => {
     const { TaskDialog } = await import("@/components/tasks/task-dialog");

@@ -54,6 +54,7 @@ function makeTask(overrides = {}) {
     updated_at: "2026-03-10T12:00:00Z",
     owner_name: null,
     assignee: null,
+    tags: [],
     ...overrides,
   };
 }

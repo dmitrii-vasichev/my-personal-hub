@@ -19,6 +19,12 @@ vi.mock("@/lib/auth", () => ({
   }),
 }));
 
+// Mock tag hooks
+vi.mock("@/hooks/use-tags", () => ({
+  useTags: () => ({ data: [] }),
+  useCreateTag: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
+
 // Mock task hooks
 const mockTask = {
   id: 1,
@@ -43,6 +49,7 @@ const mockTask = {
   updated_at: "2026-03-10T12:00:00Z",
   owner_name: "Test User",
   assignee: null,
+  tags: [],
 };
 
 vi.mock("@/hooks/use-tasks", () => ({

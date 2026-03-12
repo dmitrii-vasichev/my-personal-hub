@@ -6,6 +6,7 @@ import { Calendar, Eye, Lock, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { Task } from "@/types/task";
 import { PRIORITY_BORDER_CSS_VARS, PRIORITY_LABELS } from "@/types/task";
+import { TagPills } from "./tag-pill";
 
 interface TaskCardProps {
   task: Task;
@@ -82,6 +83,13 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
           {task.title}
         </span>
 
+        {/* Tag pills */}
+        {task.tags && task.tags.length > 0 && (
+          <div className="mb-2">
+            <TagPills tags={task.tags} limit={2} />
+          </div>
+        )}
+
         {/* Footer: deadline + assignee */}
         <div className="flex items-center justify-between gap-2 text-[var(--text-tertiary)]">
           {task.deadline ? (
@@ -133,6 +141,11 @@ export function TaskCardOverlay({ task }: { task: Task }) {
       <p className="text-sm font-medium text-[var(--text-primary)] line-clamp-2">
         {task.title}
       </p>
+      {task.tags && task.tags.length > 0 && (
+        <div className="mt-2">
+          <TagPills tags={task.tags} limit={2} />
+        </div>
+      )}
     </div>
   );
 }
