@@ -15,7 +15,7 @@ export function TagPicker({ selectedTagIds, onChange }: TagPickerProps) {
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newColor, setNewColor] = useState(TAG_PRESET_COLORS[0].hex);
+  const [newColor, setNewColor] = useState<string>(TAG_PRESET_COLORS[0].hex);
   const ref = useRef<HTMLDivElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,10 +66,12 @@ export function TagPicker({ selectedTagIds, onChange }: TagPickerProps) {
 
   return (
     <div ref={ref} className="relative">
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-1.5 text-sm text-[var(--text-primary)] transition-colors hover:border-[var(--border-strong)] focus:border-[var(--accent)] outline-none min-h-[34px]"
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setOpen(!open); }}
+        className="flex w-full items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--background)] px-3 py-1.5 text-sm text-[var(--text-primary)] transition-colors hover:border-[var(--border-strong)] focus:border-[var(--accent)] outline-none min-h-[34px] cursor-pointer"
       >
         {selectedTags.length > 0 ? (
           <span className="flex flex-1 flex-wrap gap-1">
@@ -85,7 +87,7 @@ export function TagPicker({ selectedTagIds, onChange }: TagPickerProps) {
           <span className="flex-1 text-left text-[var(--text-tertiary)]">Select tags…</span>
         )}
         <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-[var(--text-tertiary)] transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
+      </div>
 
       {open && (
         <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--popover)] shadow-md">
