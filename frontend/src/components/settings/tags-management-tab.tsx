@@ -64,8 +64,9 @@ function InlineCreateRow({ onDone }: { onDone: () => void }) {
       await createTag.mutateAsync({ name: trimmed, color });
       toast.success(`Tag "${trimmed}" created`);
       onDone();
-    } catch {
-      toast.error("Failed to create tag — name may already exist");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create tag";
+      toast.error(message);
     }
   };
 
@@ -325,7 +326,7 @@ function DeleteConfirmDialog({
 // ── Main Component ──────────────────────────────────────────────────────────
 
 export function TagsManagementTab() {
-  const { data: tags = [], isLoading } = useTags();
+  const { data: tags = [], isLoading, isError } = useTags();
   const deleteTag = useDeleteTag();
   const [creating, setCreating] = useState(false);
   const [tagToDelete, setTagToDelete] = useState<Tag | null>(null);
@@ -347,6 +348,14 @@ export function TagsManagementTab() {
     return (
       <div className="flex h-32 items-center justify-center text-sm text-[var(--text-tertiary)]">
         Loading tags…
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex h-32 items-center justify-center text-sm text-[var(--danger)]">
+        Failed to load tags — check backend connection
       </div>
     );
   }
