@@ -11,6 +11,8 @@ import { TagPills } from "./tag-pill";
 interface TaskCardProps {
   task: Task;
   isDragging?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (taskId: number) => void;
 }
 
 function formatDeadline(deadline: string): string {
@@ -25,7 +27,7 @@ function isDeadlineOverdue(deadline: string): boolean {
   return new Date(deadline) < new Date();
 }
 
-export function TaskCard({ task, isDragging = false }: TaskCardProps) {
+export function TaskCard({ task, isDragging = false, selected = false, onToggleSelect }: TaskCardProps) {
   const router = useRouter();
   const {
     attributes,
@@ -47,9 +49,21 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
     borderLeftColor: PRIORITY_BORDER_CSS_VARS[task.priority],
   };
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
     if (transform && (Math.abs(transform.x) > 5 || Math.abs(transform.y) > 5)) return;
+    // If shift-click or there's already a selection, toggle select instead of navigating
+    if (e.shiftKey && onToggleSelect) {
+      e.stopPropagation();
+      onToggleSelect(task.id);
+      return;
+    }
     router.push(`/tasks/${task.id}`);
+  };
+
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    onToggleSelect?.(task.id);
   };
 
   return (
@@ -63,9 +77,28 @@ export function TaskCard({ task, isDragging = false }: TaskCardProps) {
       className={`
         group relative rounded-lg border border-l-[3px] bg-[var(--surface)] p-3 transition-shadow cursor-pointer
         ${dragging ? "shadow-lg opacity-50 border-[var(--border-strong)] cursor-grabbing z-10" : "border-[var(--border)] hover:border-[var(--border-strong)]"}
+        ${selected ? "ring-2 ring-[var(--accent)] border-[var(--accent)]" : ""}
         active:cursor-grabbing
       `}
     >
+      {/* Checkbox for multi-select */}
+      {onToggleSelect && (
+        <div
+          onClick={handleCheckboxClick}
+          className={`absolute top-2 left-2 z-10 flex h-4 w-4 items-center justify-center rounded border cursor-pointer transition-all ${
+            selected
+              ? "border-[var(--accent)] bg-[var(--accent)]"
+              : "border-[var(--border-strong)] bg-[var(--background)] opacity-0 group-hover:opacity-100"
+          }`}
+        >
+          {selected && (
+            <svg className="h-3 w-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
+        </div>
+      )}
+
       <div>
         {/* Header: visibility icon */}
         <div className="mb-1.5 flex items-center justify-end gap-1.5">
