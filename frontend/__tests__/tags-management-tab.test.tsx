@@ -13,8 +13,10 @@ const mockCreateTag = vi.fn().mockResolvedValue({ id: 4, name: "New Tag", color:
 const mockUpdateTag = vi.fn().mockResolvedValue({});
 const mockDeleteTag = vi.fn().mockResolvedValue(undefined);
 
+const mockUseTags = vi.fn().mockReturnValue({ data: mockTags, isLoading: false, isError: false });
+
 vi.mock("@/hooks/use-tags", () => ({
-  useTags: () => ({ data: mockTags, isLoading: false }),
+  useTags: (...args: unknown[]) => mockUseTags(...args),
   useCreateTag: () => ({
     mutateAsync: mockCreateTag,
     isPending: false,
@@ -132,6 +134,35 @@ describe("TagsManagementTab", () => {
 
     await waitFor(() => {
       expect(mockDeleteTag).toHaveBeenCalledWith(1);
+    });
+  });
+
+  it("shows error state when tags fail to load", () => {
+    mockUseTags.mockReturnValue({ data: undefined, isLoading: false, isError: true });
+    render(
+      <Wrapper>
+        <TagsManagementTab />
+      </Wrapper>
+    );
+    expect(screen.getByText(/Failed to load tags/)).toBeInTheDocument();
+  });
+
+  it("shows actual backend error on create failure", async () => {
+    const { toast } = await import("sonner");
+    mockUseTags.mockReturnValue({ data: mockTags, isLoading: false, isError: false });
+    mockCreateTag.mockRejectedValueOnce(new Error("Tag with this name already exists"));
+    render(
+      <Wrapper>
+        <TagsManagementTab />
+      </Wrapper>
+    );
+    fireEvent.click(screen.getByText("Create tag"));
+    const input = screen.getByPlaceholderText("Tag name");
+    fireEvent.change(input, { target: { value: "Work" } });
+    fireEvent.click(screen.getByText("Create"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("Tag with this name already exists");
     });
   });
 });
