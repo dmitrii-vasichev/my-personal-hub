@@ -30,7 +30,14 @@ class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: "Request failed" }));
-      throw new Error(error.detail || "Request failed");
+      let message = "Request failed";
+      if (typeof error.detail === "string") {
+        message = error.detail;
+      } else if (Array.isArray(error.detail) && error.detail.length > 0) {
+        // Pydantic validation errors: extract readable messages
+        message = error.detail.map((e: { msg?: string }) => e.msg ?? String(e)).join("; ");
+      }
+      throw new Error(message);
     }
 
     if (response.status === 204 || response.headers.get("content-length") === "0") {

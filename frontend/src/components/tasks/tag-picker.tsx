@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { ChevronDown, Plus, Check } from "lucide-react";
+import { toast } from "sonner";
 import { useTags, useCreateTag } from "@/hooks/use-tags";
 import { TAG_PRESET_COLORS } from "@/types/tag";
 import { TagPill } from "./tag-pill";
@@ -57,8 +58,9 @@ export function TagPicker({ selectedTagIds, onChange }: TagPickerProps) {
       setNewName("");
       setNewColor(TAG_PRESET_COLORS[0].hex);
       setCreating(false);
-    } catch {
-      // error handled by mutation
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to create tag";
+      toast.error(message);
     }
   };
 
