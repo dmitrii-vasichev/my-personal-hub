@@ -10,14 +10,14 @@ export const TAGS_KEY = "tags";
 export function useTags() {
   return useQuery<Tag[]>({
     queryKey: [TAGS_KEY],
-    queryFn: () => api.get<Tag[]>("/api/tags"),
+    queryFn: () => api.get<Tag[]>("/api/tags/"),
   });
 }
 
 export function useCreateTag() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: CreateTagInput) => api.post<Tag>("/api/tags", data),
+    mutationFn: (data: CreateTagInput) => api.post<Tag>("/api/tags/", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [TAGS_KEY] });
     },
