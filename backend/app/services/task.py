@@ -235,7 +235,7 @@ async def list_tasks(
     deadline_after: Optional[datetime] = None,
     sort_by: str = "created_at",
     sort_order: str = "desc",
-    tag_id: Optional[int] = None,
+    tag_ids: Optional[str] = None,
 ) -> list[Task]:
     q = select(Task).options(joinedload(Task.owner), selectinload(Task.tags))
 
@@ -265,8 +265,19 @@ async def list_tasks(
         q = q.where(Task.deadline <= deadline_before)
     if deadline_after:
         q = q.where(Task.deadline >= deadline_after)
-    if tag_id is not None:
-        q = q.join(TaskTag, TaskTag.task_id == Task.id).where(TaskTag.tag_id == tag_id)
+    if tag_ids is not None:
+        parts = [p.strip() for p in tag_ids.split(",") if p.strip()]
+        include_untagged = "untagged" in parts
+        numeric_ids = [int(p) for p in parts if p != "untagged"]
+        conditions = []
+        if numeric_ids:
+            tagged_task_ids = select(TaskTag.task_id).where(TaskTag.tag_id.in_(numeric_ids))
+            conditions.append(Task.id.in_(tagged_task_ids))
+        if include_untagged:
+            has_any_tag = select(TaskTag.task_id)
+            conditions.append(~Task.id.in_(has_any_tag))
+        if conditions:
+            q = q.where(or_(*conditions))
 
     # Sorting
     sort_col = getattr(Task, sort_by, Task.created_at)
