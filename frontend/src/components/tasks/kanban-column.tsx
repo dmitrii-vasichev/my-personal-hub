@@ -13,6 +13,8 @@ interface KanbanColumnProps {
   tasks: Task[];
   activeTaskId: number | null;
   onAddTask?: () => void;
+  selectedTaskIds?: Set<number>;
+  onToggleSelect?: (taskId: number) => void;
 }
 
 const STATUS_ACCENT: Record<TaskStatus, string> = {
@@ -26,7 +28,7 @@ const STATUS_ACCENT: Record<TaskStatus, string> = {
 
 const DONE_COLLAPSE_LIMIT = 10;
 
-export function KanbanColumn({ status, tasks, activeTaskId, onAddTask }: KanbanColumnProps) {
+export function KanbanColumn({ status, tasks, activeTaskId, onAddTask, selectedTaskIds, onToggleSelect }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const [expanded, setExpanded] = useState(false);
 
@@ -72,6 +74,8 @@ export function KanbanColumn({ status, tasks, activeTaskId, onAddTask }: KanbanC
               key={task.id}
               task={task}
               isDragging={task.id === activeTaskId}
+              selected={selectedTaskIds?.has(task.id) ?? false}
+              onToggleSelect={onToggleSelect}
             />
           ))}
         </SortableContext>
