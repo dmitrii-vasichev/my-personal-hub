@@ -12,6 +12,7 @@ import { IntegrationsTab } from "@/components/settings/integrations-tab";
 import { UserManagementTable } from "@/components/settings/user-management-table";
 import { AiInstructionsTab } from "@/components/settings/ai-instructions-tab";
 import { AiKnowledgeBaseTab } from "@/components/settings/ai-knowledge-base-tab";
+import { TagsManagementTab } from "@/components/settings/tags-management-tab";
 import type { UpdateSettingsInput } from "@/types/settings";
 
 // Type guard for admin settings response
@@ -33,6 +34,7 @@ function hasApiKeys(s: unknown): s is {
 
 const ADMIN_TABS = [
   { id: "general", label: "General" },
+  { id: "tags", label: "Tags" },
   { id: "ai-keys", label: "AI & API Keys" },
   { id: "ai-instructions", label: "AI Instructions" },
   { id: "ai-kb", label: "AI Knowledge Base" },
@@ -256,7 +258,7 @@ export default function SettingsPage() {
   }
 
   const adminSettings = hasApiKeys(settings) ? settings : null;
-  const visibleTabs = isAdmin ? ADMIN_TABS : ADMIN_TABS.filter((t) => t.id === "general");
+  const visibleTabs = isAdmin ? ADMIN_TABS : ADMIN_TABS.filter((t) => t.id === "general" || t.id === "tags");
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-6">
@@ -306,6 +308,8 @@ export default function SettingsPage() {
           setStaleDays={setStaleDays}
         />
       )}
+
+      {activeTab === "tags" && <TagsManagementTab />}
 
       {activeTab === "ai-keys" && isAdmin && (
         <AiApiKeysTab

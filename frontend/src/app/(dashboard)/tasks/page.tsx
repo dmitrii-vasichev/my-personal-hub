@@ -6,6 +6,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Plus, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KanbanBoard } from "@/components/tasks/kanban-board";
+import { BulkActionToolbar } from "@/components/tasks/bulk-action-toolbar";
 import { TaskFiltersBar } from "@/components/tasks/task-filters";
 import { ColumnVisibilityButton } from "@/components/tasks/column-visibility-button";
 import { TaskDialog } from "@/components/tasks/task-dialog";
@@ -32,6 +33,23 @@ export default function TasksPage() {
     tag_id: initialTagId,
   });
   const [createDialogStatus, setCreateDialogStatus] = useState<TaskStatus | null>(null);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<number>>(new Set());
+
+  const handleToggleSelect = useCallback((taskId: number) => {
+    setSelectedTaskIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedTaskIds(new Set());
+  }, []);
 
   // Sync tag filter to URL
   useEffect(() => {
@@ -223,6 +241,18 @@ export default function TasksPage() {
           isPending={updateTask.isPending}
           hiddenColumns={hiddenColumns}
           onAddTask={setCreateDialogStatus}
+          selectedTaskIds={selectedTaskIds}
+          onToggleSelect={handleToggleSelect}
+          onClearSelection={handleClearSelection}
+        />
+      )}
+
+      {/* Bulk action toolbar */}
+      {selectedTaskIds.size > 0 && (
+        <BulkActionToolbar
+          selectedTaskIds={selectedTaskIds}
+          board={displayBoard}
+          onClearSelection={handleClearSelection}
         />
       )}
 
