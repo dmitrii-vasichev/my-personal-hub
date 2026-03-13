@@ -98,7 +98,8 @@ export interface TaskFilters {
   priority?: string;
   assignee_id?: number;
   search?: string;
-  tag_id?: number;
+  tag_ids?: number[];
+  include_untagged?: boolean;
 }
 
 export const TASK_STATUS_LABELS: Record<TaskStatus, string> = {

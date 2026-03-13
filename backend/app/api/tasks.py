@@ -56,7 +56,7 @@ async def get_kanban(
     assignee_id: Optional[int] = Query(None),
     deadline_before: Optional[datetime] = Query(None),
     deadline_after: Optional[datetime] = Query(None),
-    tag_id: Optional[int] = Query(None),
+    tag_ids: Optional[str] = Query(None),
 ):
     board = await task_service.get_kanban_board(
         db,
@@ -66,7 +66,7 @@ async def get_kanban(
         assignee_id=assignee_id,
         deadline_before=deadline_before,
         deadline_after=deadline_after,
-        tag_id=tag_id,
+        tag_ids=tag_ids,
     )
     return {col: [_task_response(t) for t in tasks] for col, tasks in board.items()}
 
@@ -110,7 +110,7 @@ async def list_tasks(
     deadline_after: Optional[datetime] = Query(None),
     sort_by: str = Query("created_at"),
     sort_order: str = Query("desc"),
-    tag_id: Optional[int] = Query(None),
+    tag_ids: Optional[str] = Query(None),
 ):
     tasks = await task_service.list_tasks(
         db,
@@ -123,7 +123,7 @@ async def list_tasks(
         deadline_after=deadline_after,
         sort_by=sort_by,
         sort_order=sort_order,
-        tag_id=tag_id,
+        tag_ids=tag_ids,
     )
     return [_task_response(t) for t in tasks]
 

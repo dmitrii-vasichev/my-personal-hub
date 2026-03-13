@@ -18,7 +18,12 @@ function buildTaskQuery(filters: TaskFilters = {}): string {
   if (filters.priority) params.set("priority", filters.priority);
   if (filters.assignee_id) params.set("assignee_id", String(filters.assignee_id));
   if (filters.search) params.set("search", filters.search);
-  if (filters.tag_id) params.set("tag_id", String(filters.tag_id));
+  if (filters.tag_ids?.length || filters.include_untagged) {
+    const parts: string[] = [];
+    if (filters.tag_ids?.length) parts.push(...filters.tag_ids.map(String));
+    if (filters.include_untagged) parts.push("untagged");
+    params.set("tag_ids", parts.join(","));
+  }
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }

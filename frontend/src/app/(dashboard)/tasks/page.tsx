@@ -15,6 +15,27 @@ import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
 import type { KanbanBoard as KanbanBoardType, TaskFilters, TaskStatus } from "@/types/task";
 import { DEFAULT_HIDDEN_COLUMNS } from "@/types/task";
 
+function parseTagsParam(param: string): TaskFilters {
+  const parts = param.split(",").filter(Boolean);
+  const includeUntagged = parts.includes("untagged");
+  const tagIds = parts.filter((p) => p !== "untagged").map(Number).filter((n) => !isNaN(n));
+  return {
+    tag_ids: tagIds.length > 0 ? tagIds : [],
+    include_untagged: includeUntagged,
+  };
+}
+
+function buildTagsParam(filters: TaskFilters): string | null {
+  // "All selected" = no filtering = no param
+  if (filters.tag_ids === undefined && filters.include_untagged === undefined) {
+    return null;
+  }
+  const parts: string[] = [];
+  if (filters.tag_ids?.length) parts.push(...filters.tag_ids.map(String));
+  if (filters.include_untagged) parts.push("untagged");
+  return parts.length > 0 ? parts.join(",") : null;
+}
+
 const EMPTY_BOARD: KanbanBoardType = {
   backlog: [],
   new: [],
@@ -28,9 +49,21 @@ export default function TasksPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  const initialTagId = searchParams.get("tag") ? Number(searchParams.get("tag")) : undefined;
-  const [filters, setFilters] = useState<TaskFilters>({
-    tag_id: initialTagId,
+  const [filters, setFilters] = useState<TaskFilters>(() => {
+    // 1. Try URL params first
+    const tagsParam = searchParams.get("tags");
+    if (tagsParam) {
+      return parseTagsParam(tagsParam);
+    }
+    // 2. Try sessionStorage fallback
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("tasks-filter-tags");
+      if (saved) {
+        return parseTagsParam(saved);
+      }
+    }
+    // 3. Default: all tags (no filtering)
+    return {};
   });
   const [createDialogStatus, setCreateDialogStatus] = useState<TaskStatus | null>(null);
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<number>>(new Set());
@@ -51,18 +84,22 @@ export default function TasksPage() {
     setSelectedTaskIds(new Set());
   }, []);
 
-  // Sync tag filter to URL
+  // Sync tag filter to URL + sessionStorage
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
-    if (filters.tag_id) {
-      params.set("tag", String(filters.tag_id));
+    params.delete("tag"); // Remove old single-tag param
+    const tagValue = buildTagsParam(filters);
+    if (tagValue) {
+      params.set("tags", tagValue);
+      sessionStorage.setItem("tasks-filter-tags", tagValue);
     } else {
-      params.delete("tag");
+      params.delete("tags");
+      sessionStorage.removeItem("tasks-filter-tags");
     }
     const newUrl = params.toString() ? `?${params.toString()}` : "/tasks";
     router.replace(newUrl, { scroll: false });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.tag_id]);
+  }, [filters.tag_ids, filters.include_untagged]);
 
   const { data: board, isLoading, error } = useKanbanTasks(filters);
   const updateTask = useUpdateTask();
