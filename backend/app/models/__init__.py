@@ -12,6 +12,13 @@ from app.models.note_task_link import NoteTaskLink
 from app.models.note_job_link import NoteJobLink
 from app.models.note_event_link import NoteEventLink
 from app.models.tag import Tag, TaskTag
+from app.models.telegram import (
+    TelegramSession,
+    PulseSource,
+    PulseMessage,
+    PulseDigest,
+    PulseSettings,
+)
 
 __all__ = [
     "User",
@@ -39,4 +46,9 @@ __all__ = [
     "Note",
     "Tag",
     "TaskTag",
+    "TelegramSession",
+    "PulseSource",
+    "PulseMessage",
+    "PulseDigest",
+    "PulseSettings",
 ]

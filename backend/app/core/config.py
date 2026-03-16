@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/calendar/oauth/callback"
 
+    # Telegram (Telethon MTProto client)
+    TELEGRAM_API_ID: int = 0
+    TELEGRAM_API_HASH: str = ""
+
     # Frontend URL for OAuth redirects
     FRONTEND_URL: str = "http://localhost:3000"
 
