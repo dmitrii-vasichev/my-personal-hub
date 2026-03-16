@@ -10,12 +10,15 @@ const mockSettings = {
   message_ttl_days: 30,
   digest_schedule: "daily",
   digest_time: "09:00:00",
+  bot_token_set: true,
+  bot_chat_id: 123456,
   notify_digest_ready: true,
   notify_urgent_jobs: true,
 };
 
 const mockMutateAsync = vi.fn().mockResolvedValue({});
 const mockPollMutate = vi.fn();
+const mockTestBotMutate = vi.fn();
 
 vi.mock("@/hooks/use-pulse-settings", () => ({
   usePulseSettings: () => ({ data: mockSettings, isLoading: false }),
@@ -25,6 +28,10 @@ vi.mock("@/hooks/use-pulse-settings", () => ({
   }),
   useTriggerPoll: () => ({
     mutate: mockPollMutate,
+    isPending: false,
+  }),
+  useTestBotConnection: () => ({
+    mutate: mockTestBotMutate,
     isPending: false,
   }),
 }));
@@ -85,5 +92,72 @@ describe("PulseSettingsTab", () => {
 
     fireEvent.click(pollBtn);
     expect(mockPollMutate).toHaveBeenCalled();
+  });
+
+  it("renders bot token input", () => {
+    render(
+      <Wrapper>
+        <PulseSettingsTab />
+      </Wrapper>
+    );
+
+    expect(screen.getByText("Bot Token")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Paste token from @BotFather")).toBeInTheDocument();
+  });
+
+  it("renders chat ID input", () => {
+    render(
+      <Wrapper>
+        <PulseSettingsTab />
+      </Wrapper>
+    );
+
+    expect(screen.getByText("Chat ID")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Your Telegram chat ID")).toBeInTheDocument();
+  });
+
+  it("shows token configured indicator when bot_token_set", () => {
+    render(
+      <Wrapper>
+        <PulseSettingsTab />
+      </Wrapper>
+    );
+
+    expect(screen.getByText("Token configured")).toBeInTheDocument();
+  });
+
+  it("shows test connection button when bot is configured", () => {
+    render(
+      <Wrapper>
+        <PulseSettingsTab />
+      </Wrapper>
+    );
+
+    const testBtn = screen.getByText("Test Connection");
+    expect(testBtn).toBeInTheDocument();
+
+    fireEvent.click(testBtn);
+    expect(mockTestBotMutate).toHaveBeenCalled();
+  });
+
+  it("includes bot fields in save", async () => {
+    render(
+      <Wrapper>
+        <PulseSettingsTab />
+      </Wrapper>
+    );
+
+    const tokenInput = screen.getByPlaceholderText("Paste token from @BotFather");
+    fireEvent.change(tokenInput, { target: { value: "new-token" } });
+
+    const saveBtn = screen.getByText("Save");
+    fireEvent.click(saveBtn);
+
+    expect(mockMutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bot_token: "new-token",
+        bot_chat_id: 123456,
+      })
+    );
   });
 });
