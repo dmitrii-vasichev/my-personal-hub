@@ -1,8 +1,8 @@
 """
 Google Drive API service for Notes module.
 
-Provides folder tree listing, file content reading, and folder validation
-using Google Drive API v3 with read-only scope.
+Provides folder tree listing, file content reading, file creation,
+and folder validation using Google Drive API v3.
 """
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from typing import Any, Optional
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
+from googleapiclient.http import MediaInMemoryUpload
 
 from app.schemas.note import NoteTreeNode
 
@@ -143,3 +144,52 @@ async def validate_folder_access(
 def invalidate_cache(folder_id: str) -> None:
     """Remove cached tree for a specific folder."""
     _tree_cache.pop(folder_id, None)
+
+
+async def create_file(
+    credentials: Credentials,
+    folder_id: str,
+    title: str,
+    content: str,
+) -> str:
+    """Create a markdown file in Google Drive and return its file ID.
+
+    Args:
+        credentials: Valid Google OAuth credentials with drive.file scope.
+        folder_id: Parent folder ID where the file will be created.
+        title: File name (will append .md if not present).
+        content: Markdown content for the file.
+
+    Returns:
+        The Google Drive file ID of the created file.
+    """
+    service = _get_drive_service(credentials)
+
+    if not title.lower().endswith(".md"):
+        title = f"{title}.md"
+
+    file_metadata = {
+        "name": title,
+        "parents": [folder_id],
+        "mimeType": "text/markdown",
+    }
+
+    media = MediaInMemoryUpload(
+        content.encode("utf-8"),
+        mimetype="text/markdown",
+        resumable=False,
+    )
+
+    created = (
+        service.files()
+        .create(body=file_metadata, media_body=media, fields="id")
+        .execute()
+    )
+
+    file_id = created["id"]
+    logger.info("Created Drive file %s in folder %s", file_id, folder_id)
+
+    # Invalidate tree cache so new file appears
+    invalidate_cache(folder_id)
+
+    return file_id
