@@ -6,6 +6,7 @@ Endpoints:
 - GET  /api/notes/{file_id}/content — raw markdown content
 - GET  /api/notes/               — list synced note metadata
 - GET  /api/notes/{id}           — single note metadata
+- POST /api/notes/               — create note (title + markdown → Google Drive)
 - POST /api/notes/sync           — force re-sync metadata
 """
 from __future__ import annotations
@@ -16,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.user import User
-from app.schemas.note import LinkedJobBrief, NoteResponse, NoteTreeResponse
+from app.schemas.note import LinkedJobBrief, NoteCreate, NoteResponse, NoteTreeResponse
 from app.schemas.task import LinkedEventBrief
 from app.schemas.calendar import LinkedTaskBrief
 from app.services import google_drive, google_oauth, note as note_service
@@ -81,6 +82,28 @@ async def list_notes(
     """List all synced note metadata for current user."""
     notes = await note_service.get_notes(db, current_user)
     return notes
+
+
+@router.post("/", response_model=NoteResponse, status_code=status.HTTP_201_CREATED)
+async def create_note(
+    body: NoteCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Create a new note: upload markdown content to Google Drive and save metadata."""
+    credentials, folder_id = await _get_drive_prerequisites(db, current_user)
+
+    try:
+        note = await note_service.create_note(
+            db, current_user, body.title, body.content, credentials, folder_id
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Failed to create note in Google Drive: {e}",
+        )
+
+    return note
 
 
 @router.post("/sync", response_model=list[NoteResponse])

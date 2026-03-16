@@ -38,6 +38,11 @@ class LinkedJobBrief(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class NoteCreate(BaseModel):
+    title: str
+    content: str
+
+
 class NoteTreeNode(BaseModel):
     id: Optional[str] = None
     name: str

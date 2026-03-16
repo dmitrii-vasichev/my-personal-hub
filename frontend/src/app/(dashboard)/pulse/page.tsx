@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, History, Radio as RadioIcon } from "lucide-react";
+import { Sparkles, History, Radio as RadioIcon, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryTabs } from "@/components/pulse/category-tabs";
 import {
@@ -10,9 +10,11 @@ import {
   DigestEmptyState,
 } from "@/components/pulse/digest-view";
 import { DigestHistory } from "@/components/pulse/digest-history";
+import { InboxView } from "@/components/pulse/inbox-view";
 import { useLatestDigest, useGenerateDigest } from "@/hooks/use-pulse-digests";
+import { usePulseInbox } from "@/hooks/use-pulse-inbox";
 
-type ViewMode = "latest" | "history";
+type ViewMode = "latest" | "history" | "inbox";
 
 export default function PulseDigestsPage() {
   const [category, setCategory] = useState<string | null>(null);
@@ -22,6 +24,20 @@ export default function PulseDigestsPage() {
     category ?? undefined
   );
   const generateDigest = useGenerateDigest();
+  const { data: inboxData } = usePulseInbox();
+  const inboxCount = inboxData?.total ?? 0;
+
+  const handleCategoryChange = (cat: string | null) => {
+    setCategory(cat);
+    // Auto-switch to inbox when Learning tab is selected
+    if (cat === "learning" && viewMode !== "inbox") {
+      setViewMode("inbox");
+    }
+    // Switch back from inbox if another tab is selected
+    if (cat !== "learning" && viewMode === "inbox") {
+      setViewMode("latest");
+    }
+  };
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-6 animate-[fadeIn_0.4s_ease_both]">
@@ -33,19 +49,21 @@ export default function PulseDigestsPage() {
             AI-generated summaries from your Telegram channels
           </p>
         </div>
-        <Button
-          size="sm"
-          onClick={() => generateDigest.mutate(category ?? undefined)}
-          disabled={generateDigest.isPending}
-        >
-          <Sparkles className={`mr-1.5 h-4 w-4 ${generateDigest.isPending ? "animate-spin" : ""}`} />
-          Generate Now
-        </Button>
+        {viewMode !== "inbox" && (
+          <Button
+            size="sm"
+            onClick={() => generateDigest.mutate(category ?? undefined)}
+            disabled={generateDigest.isPending}
+          >
+            <Sparkles className={`mr-1.5 h-4 w-4 ${generateDigest.isPending ? "animate-spin" : ""}`} />
+            Generate Now
+          </Button>
+        )}
       </div>
 
       {/* Tabs & view toggle */}
       <div className="flex items-center justify-between mb-4">
-        <CategoryTabs active={category} onChange={setCategory} />
+        <CategoryTabs active={category} onChange={handleCategoryChange} />
 
         <div className="flex gap-1">
           <button
@@ -70,12 +88,33 @@ export default function PulseDigestsPage() {
             <History className="mr-1 inline h-3.5 w-3.5" />
             History
           </button>
+          <button
+            onClick={() => {
+              setViewMode("inbox");
+              setCategory("learning");
+            }}
+            className={`relative rounded-lg px-3 py-1.5 text-sm font-medium transition-colors cursor-pointer ${
+              viewMode === "inbox"
+                ? "bg-surface-hover text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Inbox className="mr-1 inline h-3.5 w-3.5" />
+            Inbox
+            {inboxCount > 0 && (
+              <span className="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                {inboxCount > 99 ? "99+" : inboxCount}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
       {/* Content */}
       <div className="rounded-xl border border-border bg-surface p-6">
-        {viewMode === "latest" ? (
+        {viewMode === "inbox" ? (
+          <InboxView />
+        ) : viewMode === "latest" ? (
           isLoading ? (
             <DigestViewSkeleton />
           ) : latestDigest ? (

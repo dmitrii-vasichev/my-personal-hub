@@ -3,15 +3,20 @@ Note service — metadata sync from Google Drive and CRUD operations.
 """
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 
+from google.oauth2.credentials import Credentials
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.note import Note
 from app.models.user import User
 from app.schemas.note import NoteTreeNode
+from app.services import google_drive
+
+logger = logging.getLogger(__name__)
 
 
 async def sync_metadata(
@@ -127,3 +132,45 @@ async def get_note_by_google_file_id(
         )
     )
     return result.scalar_one_or_none()
+
+
+async def create_note(
+    db: AsyncSession,
+    user: User,
+    title: str,
+    content: str,
+    credentials: Credentials,
+    folder_id: str,
+) -> Note:
+    """Create a new note: upload markdown to Google Drive and save metadata.
+
+    Args:
+        db: Database session.
+        user: Current user.
+        title: Note title.
+        content: Markdown content.
+        credentials: Google OAuth credentials.
+        folder_id: Google Drive folder ID for notes.
+
+    Returns:
+        Created Note model instance.
+    """
+    google_file_id = await google_drive.create_file(
+        credentials, folder_id, title, content
+    )
+
+    now = datetime.now(timezone.utc)
+    note = Note(
+        user_id=user.id,
+        google_file_id=google_file_id,
+        title=title if title.lower().endswith(".md") else f"{title}.md",
+        folder_path="",
+        mime_type="text/markdown",
+        last_synced_at=now,
+    )
+    db.add(note)
+    await db.commit()
+    await db.refresh(note)
+
+    logger.info("Created note %s (drive_id=%s) for user %s", note.id, google_file_id, user.id)
+    return note
