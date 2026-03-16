@@ -22,6 +22,8 @@ export function PulseSettingsTab() {
   const [ttlDays, setTtlDays] = useState("30");
   const [digestSchedule, setDigestSchedule] = useState("daily");
   const [digestTime, setDigestTime] = useState("09:00");
+  const [digestDay, setDigestDay] = useState("1");
+  const [digestIntervalDays, setDigestIntervalDays] = useState("2");
   const [notifyDigest, setNotifyDigest] = useState(true);
   const [notifyJobs, setNotifyJobs] = useState(true);
 
@@ -31,6 +33,8 @@ export function PulseSettingsTab() {
       setTtlDays(String(settings.message_ttl_days));
       setDigestSchedule(settings.digest_schedule);
       setDigestTime(settings.digest_time?.slice(0, 5) || "09:00");
+      setDigestDay(String(settings.digest_day ?? 1));
+      setDigestIntervalDays(String(settings.digest_interval_days ?? 2));
       setNotifyDigest(settings.notify_digest_ready);
       setNotifyJobs(settings.notify_urgent_jobs);
     }
@@ -43,6 +47,9 @@ export function PulseSettingsTab() {
         message_ttl_days: parseInt(ttlDays) || 30,
         digest_schedule: digestSchedule,
         digest_time: digestTime + ":00",
+        digest_day: digestSchedule === "weekly" ? parseInt(digestDay) : undefined,
+        digest_interval_days:
+          digestSchedule === "every_n_days" ? parseInt(digestIntervalDays) : undefined,
         notify_digest_ready: notifyDigest,
         notify_urgent_jobs: notifyJobs,
       });
@@ -128,7 +135,7 @@ export function PulseSettingsTab() {
             className="text-sm"
           >
             <option value="daily">Daily</option>
-            <option value="every_2_days">Every 2 days</option>
+            <option value="every_n_days">Every N days</option>
             <option value="weekly">Weekly</option>
           </Select>
         </div>
@@ -145,6 +152,45 @@ export function PulseSettingsTab() {
             className="text-sm"
           />
         </div>
+
+        {/* Weekly Day Selector */}
+        {digestSchedule === "weekly" && (
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">
+              Day of Week
+            </Label>
+            <Select
+              value={digestDay}
+              onChange={(e) => setDigestDay((e.target as HTMLSelectElement).value)}
+              className="text-sm"
+            >
+              <option value="0">Monday</option>
+              <option value="1">Tuesday</option>
+              <option value="2">Wednesday</option>
+              <option value="3">Thursday</option>
+              <option value="4">Friday</option>
+              <option value="5">Saturday</option>
+              <option value="6">Sunday</option>
+            </Select>
+          </div>
+        )}
+
+        {/* Interval Days */}
+        {digestSchedule === "every_n_days" && (
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">
+              Every N Days
+            </Label>
+            <Input
+              type="number"
+              min="2"
+              max="30"
+              value={digestIntervalDays}
+              onChange={(e) => setDigestIntervalDays(e.target.value)}
+              className="text-sm"
+            />
+          </div>
+        )}
       </div>
 
       {/* Notifications */}
