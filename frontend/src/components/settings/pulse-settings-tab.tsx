@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { RefreshCw, Save } from "lucide-react";
-import { toast } from "sonner";
+import { RefreshCw, Save, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,12 +10,14 @@ import {
   usePulseSettings,
   useUpdatePulseSettings,
   useTriggerPoll,
+  useTestBotConnection,
 } from "@/hooks/use-pulse-settings";
 
 export function PulseSettingsTab() {
   const { data: settings, isLoading } = usePulseSettings();
   const updateSettings = useUpdatePulseSettings();
   const triggerPoll = useTriggerPoll();
+  const testBot = useTestBotConnection();
 
   const [pollingInterval, setPollingInterval] = useState("60");
   const [ttlDays, setTtlDays] = useState("30");
@@ -26,6 +27,9 @@ export function PulseSettingsTab() {
   const [digestIntervalDays, setDigestIntervalDays] = useState("2");
   const [notifyDigest, setNotifyDigest] = useState(true);
   const [notifyJobs, setNotifyJobs] = useState(true);
+  const [botToken, setBotToken] = useState("");
+  const [botChatId, setBotChatId] = useState("");
+  const [botTokenSet, setBotTokenSet] = useState(false);
 
   useEffect(() => {
     if (settings) {
@@ -37,12 +41,14 @@ export function PulseSettingsTab() {
       setDigestIntervalDays(String(settings.digest_interval_days ?? 2));
       setNotifyDigest(settings.notify_digest_ready);
       setNotifyJobs(settings.notify_urgent_jobs);
+      setBotTokenSet(settings.bot_token_set);
+      setBotChatId(settings.bot_chat_id ? String(settings.bot_chat_id) : "");
     }
   }, [settings]);
 
   const handleSave = async () => {
     try {
-      await updateSettings.mutateAsync({
+      const data: Record<string, unknown> = {
         polling_interval_minutes: parseInt(pollingInterval) || 60,
         message_ttl_days: parseInt(ttlDays) || 30,
         digest_schedule: digestSchedule,
@@ -52,7 +58,18 @@ export function PulseSettingsTab() {
           digestSchedule === "every_n_days" ? parseInt(digestIntervalDays) : undefined,
         notify_digest_ready: notifyDigest,
         notify_urgent_jobs: notifyJobs,
-      });
+      };
+      if (botToken) {
+        data.bot_token = botToken;
+      }
+      if (botChatId) {
+        data.bot_chat_id = parseInt(botChatId);
+      }
+      await updateSettings.mutateAsync(data);
+      if (botToken) {
+        setBotToken("");
+        setBotTokenSet(true);
+      }
     } catch {
       // Error handled by hook
     }
@@ -65,6 +82,8 @@ export function PulseSettingsTab() {
       </div>
     );
   }
+
+  const canTestBot = (botTokenSet || botToken) && botChatId;
 
   return (
     <section className="space-y-6 rounded-lg border border-border p-5">
@@ -190,6 +209,56 @@ export function PulseSettingsTab() {
               className="text-sm"
             />
           </div>
+        )}
+      </div>
+
+      {/* Telegram Bot Notifications */}
+      <div className="space-y-3">
+        <Label className="text-xs uppercase text-muted-foreground">
+          Telegram Bot Notifications
+        </Label>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Bot Token</Label>
+            <Input
+              type="password"
+              placeholder="Paste token from @BotFather"
+              value={botToken}
+              onChange={(e) => setBotToken(e.target.value)}
+              className="text-sm"
+            />
+            {botTokenSet && !botToken && (
+              <p className="text-[11px] text-green-600">Token configured</p>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Chat ID</Label>
+            <Input
+              type="number"
+              placeholder="Your Telegram chat ID"
+              value={botChatId}
+              onChange={(e) => setBotChatId(e.target.value)}
+              className="text-sm"
+            />
+          </div>
+        </div>
+
+        <p className="text-[11px] text-muted-foreground">
+          Create a bot via @BotFather, paste the token. Send /start to the bot, then use @userinfobot to get your chat ID.
+        </p>
+
+        {canTestBot && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => testBot.mutate()}
+            disabled={testBot.isPending}
+          >
+            <Send className="mr-1.5 h-3.5 w-3.5" />
+            {testBot.isPending ? "Testing..." : "Test Connection"}
+          </Button>
         )}
       </div>
 

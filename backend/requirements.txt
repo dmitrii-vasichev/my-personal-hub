@@ -44,6 +44,9 @@ pytest-mock==3.14.0
 # Telegram (Telethon for MTProto user client)
 telethon==1.37.0
 
+# Telegram Bot API (for notifications)
+python-telegram-bot==21.10
+
 # Background task scheduling
 apscheduler==3.10.4
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
+import { PulseDigestWidget } from "@/components/dashboard/pulse-digest-widget";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 
@@ -34,6 +35,9 @@ export default function DashboardPage() {
 
       {/* Stat cards */}
       <DashboardClient />
+
+      {/* Pulse digest widget */}
+      <PulseDigestWidget />
 
       {/* Recent activity — full width */}
       <RecentActivity />

@@ -43,3 +43,22 @@ export function useTriggerPoll() {
     },
   });
 }
+
+export function useTestBotConnection() {
+  return useMutation({
+    mutationFn: () =>
+      api.post<{ success: boolean; error: string | null }>(
+        "/api/pulse/settings/test-bot"
+      ),
+    onSuccess: (data) => {
+      if (data.success) {
+        toast.success("Bot connected successfully! Check your Telegram.");
+      } else {
+        toast.error(data.error || "Bot connection failed");
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to test bot connection");
+    },
+  });
+}
