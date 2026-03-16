@@ -265,9 +265,9 @@ export default function SettingsPage() {
   const visibleTabs = isAdmin ? ADMIN_TABS : ADMIN_TABS.filter((t) => t.id === "general" || t.id === "tags");
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="mx-auto max-w-2xl flex items-center justify-between">
         <h1 className="text-lg font-semibold">Settings</h1>
         <Button size="sm" onClick={handleSave} disabled={update.isPending}>
           <Save className="mr-1.5 h-3.5 w-3.5" />
@@ -275,86 +275,90 @@ export default function SettingsPage() {
         </Button>
       </div>
 
-      {/* Tabs — only show if more than one tab */}
+      {/* Tabs — full width, horizontal scroll */}
       {visibleTabs.length > 1 && (
-        <div className="flex gap-1 border-b border-border">
-          {visibleTabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-2 text-sm font-medium transition-colors relative ${
-                activeTab === tab.id
-                  ? "text-accent-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-              {activeTab === tab.id && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-foreground rounded-full" />
-              )}
-            </button>
-          ))}
+        <div className="overflow-x-auto border-b border-border">
+          <div className="flex gap-1">
+            {visibleTabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`whitespace-nowrap px-3 py-2 text-sm font-medium transition-colors relative ${
+                  activeTab === tab.id
+                    ? "text-accent-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+                {activeTab === tab.id && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-accent-foreground rounded-full" />
+                )}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
       {/* Tab content */}
-      {activeTab === "general" && (
-        <GeneralTab
-          targetRoles={targetRoles}
-          setTargetRoles={setTargetRoles}
-          excludedCompanies={excludedCompanies}
-          setExcludedCompanies={setExcludedCompanies}
-          location={location}
-          setLocation={setLocation}
-          minScore={minScore}
-          setMinScore={setMinScore}
-          staleDays={staleDays}
-          setStaleDays={setStaleDays}
-        />
-      )}
+      <div className="mx-auto max-w-2xl">
+        {activeTab === "general" && (
+          <GeneralTab
+            targetRoles={targetRoles}
+            setTargetRoles={setTargetRoles}
+            excludedCompanies={excludedCompanies}
+            setExcludedCompanies={setExcludedCompanies}
+            location={location}
+            setLocation={setLocation}
+            minScore={minScore}
+            setMinScore={setMinScore}
+            staleDays={staleDays}
+            setStaleDays={setStaleDays}
+          />
+        )}
 
-      {activeTab === "tags" && <TagsManagementTab />}
+        {activeTab === "tags" && <TagsManagementTab />}
 
-      {activeTab === "ai-keys" && isAdmin && (
-        <AiApiKeysTab
-          llmProvider={llmProvider}
-          setLlmProvider={setLlmProvider}
-          apiKeys={apiKeys}
-          setApiKeys={setApiKeys}
-          adminSettings={adminSettings}
-        />
-      )}
+        {activeTab === "ai-keys" && isAdmin && (
+          <AiApiKeysTab
+            llmProvider={llmProvider}
+            setLlmProvider={setLlmProvider}
+            apiKeys={apiKeys}
+            setApiKeys={setApiKeys}
+            adminSettings={adminSettings}
+          />
+        )}
 
-      {activeTab === "ai-instructions" && isAdmin && (
-        <AiInstructionsTab
-          instructions={instructions}
-          setInstructions={setInstructions}
-        />
-      )}
+        {activeTab === "ai-instructions" && isAdmin && (
+          <AiInstructionsTab
+            instructions={instructions}
+            setInstructions={setInstructions}
+          />
+        )}
 
-      {activeTab === "ai-kb" && isAdmin && (
-        <AiKnowledgeBaseTab />
-      )}
+        {activeTab === "ai-kb" && isAdmin && (
+          <AiKnowledgeBaseTab />
+        )}
 
-      {activeTab === "telegram" && isAdmin && <TelegramTab />}
+        {activeTab === "telegram" && isAdmin && <TelegramTab />}
 
-      {activeTab === "pulse" && isAdmin && <PulseSettingsTab />}
+        {activeTab === "pulse" && isAdmin && <PulseSettingsTab />}
 
-      {activeTab === "integrations" && isAdmin && (
-        <IntegrationsTab
-          googleKeys={googleKeys}
-          setGoogleKeys={setGoogleKeys}
-          adminSettings={adminSettings}
-          notesFolderId={notesFolderId}
-          setNotesFolderId={setNotesFolderId}
-        />
-      )}
+        {activeTab === "integrations" && isAdmin && (
+          <IntegrationsTab
+            googleKeys={googleKeys}
+            setGoogleKeys={setGoogleKeys}
+            adminSettings={adminSettings}
+            notesFolderId={notesFolderId}
+            setNotesFolderId={setNotesFolderId}
+          />
+        )}
 
-      {activeTab === "users" && isAdmin && (
-        <section className="space-y-4 rounded-lg border border-border p-5">
-          <UserManagementTable />
-        </section>
-      )}
+        {activeTab === "users" && isAdmin && (
+          <section className="space-y-4 rounded-lg border border-border p-5">
+            <UserManagementTable />
+          </section>
+        )}
+      </div>
     </div>
   );
 }
