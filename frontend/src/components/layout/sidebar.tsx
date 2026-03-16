@@ -10,6 +10,7 @@ import {
   Briefcase,
   Calendar,
   FileText,
+  Radio,
   Settings,
   User,
   PanelLeftClose,
@@ -24,6 +25,7 @@ const navItems = [
   { label: "Meetings", href: "/calendar", icon: Calendar },
   { label: "Job Hunt", href: "/jobs", icon: Briefcase },
   { label: "Notes", href: "/notes", icon: FileText },
+  { label: "Pulse", href: "/pulse/sources", icon: Radio },
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "Profile", href: "/profile", icon: User },
 ];
