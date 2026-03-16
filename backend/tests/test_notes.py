@@ -507,9 +507,93 @@ async def test_notes_api_unauthorized():
 # ---------------------------------------------------------------------------
 
 def test_oauth_scopes_include_drive():
-    """SCOPES list includes both calendar and drive.readonly."""
+    """SCOPES list includes both calendar and drive.file."""
     from app.services.google_oauth import SCOPES
 
     assert "https://www.googleapis.com/auth/calendar" in SCOPES
-    assert "https://www.googleapis.com/auth/drive.readonly" in SCOPES
+    assert "https://www.googleapis.com/auth/drive.file" in SCOPES
     assert len(SCOPES) == 2
+
+
+# ---------------------------------------------------------------------------
+# 9. Google Drive — create_file
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_create_file_success():
+    """create_file creates a markdown file in Google Drive."""
+    mock_service = MagicMock()
+    mock_service.files.return_value.create.return_value.execute.return_value = {
+        "id": "new_file_123"
+    }
+
+    with patch("app.services.google_drive._get_drive_service", return_value=mock_service):
+        mock_creds = MagicMock()
+        file_id = await google_drive.create_file(
+            mock_creds, "folder_abc", "My Note", "# Hello\n\nContent here."
+        )
+
+    assert file_id == "new_file_123"
+    # Verify create was called with correct metadata
+    call_kwargs = mock_service.files.return_value.create.call_args
+    assert call_kwargs.kwargs["body"]["name"] == "My Note.md"
+    assert call_kwargs.kwargs["body"]["parents"] == ["folder_abc"]
+
+
+@pytest.mark.asyncio
+async def test_create_file_already_has_md_extension():
+    """create_file does not double-append .md."""
+    mock_service = MagicMock()
+    mock_service.files.return_value.create.return_value.execute.return_value = {
+        "id": "new_file_456"
+    }
+
+    with patch("app.services.google_drive._get_drive_service", return_value=mock_service):
+        mock_creds = MagicMock()
+        await google_drive.create_file(
+            mock_creds, "folder_abc", "already.md", "content"
+        )
+
+    call_kwargs = mock_service.files.return_value.create.call_args
+    assert call_kwargs.kwargs["body"]["name"] == "already.md"
+
+
+# ---------------------------------------------------------------------------
+# 10. Note service — create_note
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_create_note_success():
+    """create_note creates Drive file and saves metadata."""
+    user = make_user()
+    mock_db = AsyncMock()
+    mock_db.commit = AsyncMock()
+    mock_db.refresh = AsyncMock()
+    mock_creds = MagicMock()
+
+    with patch("app.services.note.google_drive.create_file", new_callable=AsyncMock) as mock_create:
+        mock_create.return_value = "drive_file_new"
+
+        note = await note_service.create_note(
+            mock_db, user, "Test Note", "# Content", mock_creds, "folder_id"
+        )
+
+    assert note.google_file_id == "drive_file_new"
+    assert note.title == "Test Note.md"
+    assert note.user_id == user.id
+    assert note.mime_type == "text/markdown"
+    mock_db.add.assert_called_once()
+    mock_db.commit.assert_awaited_once()
+
+
+# ---------------------------------------------------------------------------
+# 11. NoteCreate schema
+# ---------------------------------------------------------------------------
+
+def test_note_create_schema():
+    """NoteCreate schema validates title and content."""
+    from app.schemas.note import NoteCreate
+
+    data = NoteCreate(title="Test", content="# Hello")
+    assert data.title == "Test"
+    assert data.content == "# Hello"
