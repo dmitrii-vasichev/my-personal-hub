@@ -267,7 +267,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="mx-auto max-w-2xl flex items-center justify-between">
+      <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Settings</h1>
         <Button size="sm" onClick={handleSave} disabled={update.isPending}>
           <Save className="mr-1.5 h-3.5 w-3.5" />
