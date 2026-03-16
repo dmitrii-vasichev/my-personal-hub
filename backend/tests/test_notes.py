@@ -507,12 +507,13 @@ async def test_notes_api_unauthorized():
 # ---------------------------------------------------------------------------
 
 def test_oauth_scopes_include_drive():
-    """SCOPES list includes both calendar and drive.file."""
+    """SCOPES list includes calendar, drive.readonly and drive.file."""
     from app.services.google_oauth import SCOPES
 
     assert "https://www.googleapis.com/auth/calendar" in SCOPES
+    assert "https://www.googleapis.com/auth/drive.readonly" in SCOPES
     assert "https://www.googleapis.com/auth/drive.file" in SCOPES
-    assert len(SCOPES) == 2
+    assert len(SCOPES) == 3
 
 
 # ---------------------------------------------------------------------------
@@ -597,3 +598,21 @@ def test_note_create_schema():
     data = NoteCreate(title="Test", content="# Hello")
     assert data.title == "Test"
     assert data.content == "# Hello"
+
+
+# ---------------------------------------------------------------------------
+# 12. Regression: OAuth scopes must include both drive.readonly and drive.file
+# ---------------------------------------------------------------------------
+
+def test_google_oauth_scopes_include_drive_readonly_and_file():
+    """Regression: drive.readonly is required to list existing notes,
+    drive.file is required to create new notes. Both must be present.
+    See issue #543 — Phase 36 accidentally replaced drive.readonly with drive.file."""
+    from app.services.google_oauth import SCOPES
+
+    assert "https://www.googleapis.com/auth/drive.readonly" in SCOPES, (
+        "drive.readonly scope is missing — notes tree listing will fail"
+    )
+    assert "https://www.googleapis.com/auth/drive.file" in SCOPES, (
+        "drive.file scope is missing — note creation will fail"
+    )
