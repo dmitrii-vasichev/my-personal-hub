@@ -4,6 +4,10 @@ export interface TelegramAuthStatus {
   connected_at: string | null;
 }
 
+export interface TelegramConfigStatus {
+  configured: boolean;
+}
+
 export interface TelegramStartAuthRequest {
   phone_number: string;
 }

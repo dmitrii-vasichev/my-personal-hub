@@ -25,8 +25,18 @@ logger = logging.getLogger(__name__)
 _pending_clients: dict[int, TelegramClient] = {}
 
 
+def is_configured() -> bool:
+    """Check if Telegram API credentials are set."""
+    return bool(settings.TELEGRAM_API_ID) and bool(settings.TELEGRAM_API_HASH)
+
+
 def _create_client(session: str = "") -> TelegramClient:
     """Create a Telethon client with app credentials."""
+    if not is_configured():
+        raise ValueError(
+            "Telegram API credentials not configured. "
+            "Set TELEGRAM_API_ID and TELEGRAM_API_HASH in your .env file."
+        )
     return TelegramClient(
         StringSession(session),
         settings.TELEGRAM_API_ID,
