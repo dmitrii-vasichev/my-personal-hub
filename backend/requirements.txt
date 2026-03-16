@@ -44,6 +44,9 @@ pytest-mock==3.14.0
 # Telegram (Telethon for MTProto user client)
 telethon==1.37.0
 
+# Background task scheduling
+apscheduler==3.10.4
+
 # Google Calendar integration
 google-auth==2.38.0
 google-auth-oauthlib==1.2.1
