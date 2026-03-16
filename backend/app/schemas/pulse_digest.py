@@ -1,0 +1,31 @@
+from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel
+
+
+class DigestResponse(BaseModel):
+    id: int
+    user_id: int
+    category: Optional[str] = None
+    content: str
+    message_count: int
+    generated_at: datetime
+    period_start: Optional[datetime] = None
+    period_end: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class DigestListResponse(BaseModel):
+    items: list[DigestResponse]
+    total: int
+
+
+class DigestGenerateRequest(BaseModel):
+    category: Optional[str] = None
+
+
+class DigestGenerateResponse(BaseModel):
+    digest: Optional[DigestResponse] = None
+    message: str
