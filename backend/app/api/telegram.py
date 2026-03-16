@@ -14,6 +14,14 @@ from app.services import telegram_auth
 router = APIRouter(prefix="/api/pulse/telegram", tags=["telegram"])
 
 
+@router.get("/config-status")
+async def config_status(
+    _current_user: User = Depends(get_current_user),
+):
+    """Check if Telegram API credentials are configured (no secrets exposed)."""
+    return {"configured": telegram_auth.is_configured()}
+
+
 @router.post("/start-auth")
 async def start_auth(
     data: TelegramStartAuthRequest,

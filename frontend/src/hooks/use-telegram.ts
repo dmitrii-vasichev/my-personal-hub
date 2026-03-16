@@ -5,12 +5,22 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import type {
   TelegramAuthStatus,
+  TelegramConfigStatus,
   TelegramStartAuthRequest,
   TelegramStartAuthResponse,
   TelegramVerifyCodeRequest,
 } from "@/types/telegram";
 
+export const TELEGRAM_CONFIG_KEY = "telegram-config";
 export const TELEGRAM_STATUS_KEY = "telegram-status";
+
+export function useTelegramConfig() {
+  return useQuery<TelegramConfigStatus>({
+    queryKey: [TELEGRAM_CONFIG_KEY],
+    queryFn: () => api.get<TelegramConfigStatus>("/api/pulse/telegram/config-status"),
+    staleTime: 5 * 60 * 1000, // credentials rarely change
+  });
+}
 
 export function useTelegramStatus() {
   return useQuery<TelegramAuthStatus>({
