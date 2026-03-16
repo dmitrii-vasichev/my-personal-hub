@@ -12,6 +12,7 @@ from app.api.notes import router as notes_router
 from app.api.tags import router as tags_router
 from app.api.task_analytics import router as task_analytics_router
 from app.api.pulse_settings import router as pulse_settings_router
+from app.api.pulse_digests import router as pulse_digests_router
 from app.api.pulse_sources import router as pulse_sources_router
 from app.api.telegram import router as telegram_router
 from app.api.calendar import router as calendar_router
@@ -25,7 +26,7 @@ from app.api.settings import router as settings_router
 from app.api.tasks import router as tasks_router
 from app.api.users import router as users_router
 from app.core.config import settings
-from app.core.scheduler import scheduler, schedule_user_polling
+from app.core.scheduler import scheduler, schedule_user_digest, schedule_user_polling
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +46,18 @@ async def lifespan(application: FastAPI):
             all_settings = result.scalars().all()
             for ps in all_settings:
                 schedule_user_polling(ps.user_id, ps.polling_interval_minutes)
+                hour = ps.digest_time.hour if ps.digest_time else 9
+                minute = ps.digest_time.minute if ps.digest_time else 0
+                schedule_user_digest(
+                    ps.user_id,
+                    schedule=ps.digest_schedule,
+                    hour=hour,
+                    minute=minute,
+                    day_of_week=ps.digest_day,
+                    interval_days=ps.digest_interval_days,
+                )
             if all_settings:
-                logger.info("Restored polling jobs for %d users", len(all_settings))
+                logger.info("Restored polling + digest jobs for %d users", len(all_settings))
 
         # Schedule daily TTL cleanup at 03:00
         scheduler.add_job(
@@ -89,6 +100,7 @@ app.include_router(tags_router)
 app.include_router(telegram_router)
 app.include_router(pulse_sources_router)
 app.include_router(pulse_settings_router)
+app.include_router(pulse_digests_router)
 
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(

@@ -112,6 +112,51 @@ async def _apply_ai_filter(db: AsyncSession, user_id: int) -> int:
     return count
 
 
+async def run_user_digest(user_id: int) -> None:
+    """Scheduled job: generate digest for a user using their LLM settings."""
+    async with async_session_factory() as db:
+        try:
+            # Check user exists
+            result = await db.execute(select(User).where(User.id == user_id))
+            user = result.scalar_one_or_none()
+            if user is None:
+                logger.warning("User %s not found, skipping digest", user_id)
+                return
+
+            # Get LLM client
+            settings_result = await db.execute(
+                select(UserSettings).where(UserSettings.user_id == user_id)
+            )
+            user_settings = settings_result.scalar_one_or_none()
+            if not user_settings or not user_settings.llm_provider:
+                logger.warning("No LLM provider for user %s, skipping digest", user_id)
+                return
+
+            key_field = f"api_key_{user_settings.llm_provider}"
+            encrypted_key = getattr(user_settings, key_field, None)
+            if not encrypted_key:
+                logger.warning("No LLM API key for user %s, skipping digest", user_id)
+                return
+
+            api_key = decrypt_value(encrypted_key)
+            llm_client = get_llm_client(user_settings.llm_provider, api_key)
+
+            from app.services.pulse_digest import generate_digest
+
+            digest = await generate_digest(db, user_id, llm_client)
+            if digest:
+                await db.commit()
+                logger.info(
+                    "Scheduled digest generated for user %s: %d messages",
+                    user_id, digest.message_count,
+                )
+            else:
+                logger.info("No new messages for user %s digest", user_id)
+
+        except Exception as e:
+            logger.error("Digest generation failed for user %s: %s", user_id, e)
+
+
 async def run_ttl_cleanup() -> None:
     """Scheduled job: delete expired messages."""
     async with async_session_factory() as db:
