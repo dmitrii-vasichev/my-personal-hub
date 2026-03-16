@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
+  useTelegramConfig,
   useTelegramStatus,
   useTelegramStartAuth,
   useTelegramVerifyCode,
@@ -16,6 +17,7 @@ import {
 type AuthStep = "disconnected" | "awaiting_code" | "connected";
 
 export function TelegramTab() {
+  const { data: config, isLoading: configLoading } = useTelegramConfig();
   const { data: status, isLoading } = useTelegramStatus();
   const startAuth = useTelegramStartAuth();
   const verifyCode = useTelegramVerifyCode();
@@ -70,7 +72,9 @@ export function TelegramTab() {
     }
   };
 
-  if (isLoading) {
+  const notConfigured = config && !config.configured;
+
+  if (isLoading || configLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -109,8 +113,31 @@ export function TelegramTab() {
           groups.
         </p>
 
+        {/* Not configured warning */}
+        {notConfigured && currentStep === "disconnected" && (
+          <div className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2.5">
+            <p className="text-xs text-warning">
+              Telegram API credentials are not configured. Set{" "}
+              <code className="font-mono text-[11px]">TELEGRAM_API_ID</code> and{" "}
+              <code className="font-mono text-[11px]">TELEGRAM_API_HASH</code> in
+              your <code className="font-mono text-[11px]">.env</code> file.
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Get credentials at{" "}
+              <a
+                href="https://my.telegram.org/apps"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground"
+              >
+                my.telegram.org/apps
+              </a>
+            </p>
+          </div>
+        )}
+
         {/* Disconnected: phone input */}
-        {currentStep === "disconnected" && (
+        {currentStep === "disconnected" && !notConfigured && (
           <div className="space-y-3">
             <div className="space-y-1">
               <Label className="text-xs uppercase text-muted-foreground">
