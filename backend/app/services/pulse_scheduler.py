@@ -15,6 +15,10 @@ from app.models.settings import UserSettings
 from app.services.ai import get_llm_client
 from app.services.pulse_ai_filter import analyze_relevance
 from app.services.pulse_collector import collect_all_sources
+from app.services.telegram_notifications import (
+    send_digest_notification,
+    send_urgent_job_notification,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +39,9 @@ async def run_user_poll(user_id: int) -> None:
 
             # Apply AI relevance to new messages
             ai_count = await _apply_ai_filter(db, user_id)
+
+            # Check and notify urgent jobs
+            await _notify_urgent_jobs(db, user_id)
 
             logger.info(
                 "Poll complete for user %s: %d sources, %d messages, %d AI-analyzed",
@@ -150,11 +157,69 @@ async def run_user_digest(user_id: int) -> None:
                     "Scheduled digest generated for user %s: %d messages",
                     user_id, digest.message_count,
                 )
+
+                # Send bot notification if enabled
+                await _notify_digest_ready(db, user_id, digest)
             else:
                 logger.info("No new messages for user %s digest", user_id)
 
         except Exception as e:
             logger.error("Digest generation failed for user %s: %s", user_id, e)
+
+
+async def _notify_digest_ready(db: AsyncSession, user_id: int, digest) -> None:
+    """Send bot notification when digest is ready (if enabled)."""
+    try:
+        ps_result = await db.execute(
+            select(PulseSettings).where(PulseSettings.user_id == user_id)
+        )
+        ps = ps_result.scalar_one_or_none()
+        if not ps or not ps.notify_digest_ready or not ps.bot_token or not ps.bot_chat_id:
+            return
+
+        token = decrypt_value(ps.bot_token)
+        result = await send_digest_notification(token, ps.bot_chat_id, digest)
+        if result["success"]:
+            logger.info("Digest notification sent for user %s", user_id)
+        else:
+            logger.warning("Digest notification failed for user %s: %s", user_id, result["error"])
+    except Exception as e:
+        logger.warning("Digest notification error for user %s: %s", user_id, e)
+
+
+async def _notify_urgent_jobs(db: AsyncSession, user_id: int) -> None:
+    """Check for urgent jobs and send bot notifications (if enabled)."""
+    try:
+        ps_result = await db.execute(
+            select(PulseSettings).where(PulseSettings.user_id == user_id)
+        )
+        ps = ps_result.scalar_one_or_none()
+        if not ps or not ps.notify_urgent_jobs or not ps.bot_token or not ps.bot_chat_id:
+            return
+
+        from app.services.pulse_urgent_jobs import check_urgent_jobs
+
+        urgent_messages = await check_urgent_jobs(db, user_id)
+        if not urgent_messages:
+            return
+
+        token = decrypt_value(ps.bot_token)
+
+        # Get source titles for messages
+        source_ids = {m.source_id for m in urgent_messages}
+        sources_result = await db.execute(
+            select(PulseSource).where(PulseSource.id.in_(source_ids))
+        )
+        source_map = {s.id: s.title for s in sources_result.scalars().all()}
+
+        for msg in urgent_messages:
+            source_title = source_map.get(msg.source_id, "Unknown")
+            await send_urgent_job_notification(token, ps.bot_chat_id, msg, source_title)
+
+        await db.commit()
+        logger.info("Sent %d urgent job notifications for user %s", len(urgent_messages), user_id)
+    except Exception as e:
+        logger.warning("Urgent job notification error for user %s: %s", user_id, e)
 
 
 async def run_ttl_cleanup() -> None:

@@ -13,6 +13,8 @@ class PulseSettingsResponse(BaseModel):
     digest_day: Optional[int] = None
     digest_interval_days: Optional[int] = None
     message_ttl_days: int
+    bot_token_set: bool = False
+    bot_chat_id: Optional[int] = None
     notify_digest_ready: bool
     notify_urgent_jobs: bool
     updated_at: datetime
@@ -27,5 +29,7 @@ class PulseSettingsUpdate(BaseModel):
     digest_day: Optional[int] = None
     digest_interval_days: Optional[int] = None
     message_ttl_days: Optional[int] = None
+    bot_token: Optional[str] = None
+    bot_chat_id: Optional[int] = None
     notify_digest_ready: Optional[bool] = None
     notify_urgent_jobs: Optional[bool] = None
