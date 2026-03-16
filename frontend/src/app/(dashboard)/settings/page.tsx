@@ -14,6 +14,7 @@ import { AiInstructionsTab } from "@/components/settings/ai-instructions-tab";
 import { AiKnowledgeBaseTab } from "@/components/settings/ai-knowledge-base-tab";
 import { TagsManagementTab } from "@/components/settings/tags-management-tab";
 import { TelegramTab } from "@/components/settings/telegram-tab";
+import { PulseSettingsTab } from "@/components/settings/pulse-settings-tab";
 import type { UpdateSettingsInput } from "@/types/settings";
 
 // Type guard for admin settings response
@@ -41,6 +42,7 @@ const ADMIN_TABS = [
   { id: "ai-kb", label: "AI Knowledge Base" },
   { id: "integrations", label: "Integrations" },
   { id: "telegram", label: "Telegram" },
+  { id: "pulse", label: "Pulse" },
   { id: "users", label: "Users" },
 ] as const;
 
@@ -335,6 +337,8 @@ export default function SettingsPage() {
       )}
 
       {activeTab === "telegram" && isAdmin && <TelegramTab />}
+
+      {activeTab === "pulse" && isAdmin && <PulseSettingsTab />}
 
       {activeTab === "integrations" && isAdmin && (
         <IntegrationsTab
