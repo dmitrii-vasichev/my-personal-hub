@@ -15,28 +15,24 @@ vi.mock("@/hooks/use-tags", () => ({
   useCreateTag: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
-describe("TaskDialog — initialStatus", () => {
-  it("defaults status to 'new' when no initialStatus", async () => {
-    const { TaskDialog } = await import("@/components/tasks/task-dialog");
+import { TaskDialog } from "@/components/tasks/task-dialog";
 
+describe("TaskDialog — initialStatus", () => {
+  it("defaults status to 'new' when no initialStatus", () => {
     render(<TaskDialog onClose={() => {}} />);
 
     const select = screen.getByDisplayValue("New");
     expect(select).toBeInTheDocument();
   });
 
-  it("defaults status to initialStatus when provided", async () => {
-    const { TaskDialog } = await import("@/components/tasks/task-dialog");
-
+  it("defaults status to initialStatus when provided", () => {
     render(<TaskDialog onClose={() => {}} initialStatus="done" />);
 
     const select = screen.getByDisplayValue("Done");
     expect(select).toBeInTheDocument();
   });
 
-  it("shows all statuses in dropdown", async () => {
-    const { TaskDialog } = await import("@/components/tasks/task-dialog");
-
+  it("shows all statuses in dropdown", () => {
     render(<TaskDialog onClose={() => {}} initialStatus="backlog" />);
 
     const options = screen.getAllByRole("option");

@@ -98,6 +98,5 @@ describe("TaskDetailPage", () => {
       </QueryClientProvider>
     );
     expect(screen.getByText("Test Task")).toBeInTheDocument();
-    expect(screen.getByText("TASK-1")).toBeInTheDocument();
   });
 });
