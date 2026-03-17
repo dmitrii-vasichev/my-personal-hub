@@ -2,14 +2,16 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { PulseDigest } from "@/types/pulse-digest";
+import type { PulseSummaryResponse } from "@/types/pulse-digest";
 
 export function useDashboardPulse() {
-  return useQuery<PulseDigest | null>({
-    queryKey: ["dashboard-pulse-latest"],
+  return useQuery<PulseSummaryResponse | null>({
+    queryKey: ["dashboard-pulse-summary"],
     queryFn: async () => {
       try {
-        return await api.get<PulseDigest>("/api/pulse/digests/latest");
+        return await api.get<PulseSummaryResponse>(
+          "/api/dashboard/pulse-summary"
+        );
       } catch {
         return null;
       }

@@ -36,11 +36,11 @@ export default function DashboardPage() {
       {/* Stat cards */}
       <DashboardClient />
 
-      {/* Pulse digest widget */}
-      <PulseDigestWidget />
-
-      {/* Recent activity — full width */}
-      <RecentActivity />
+      {/* Pulse + Recent Activity — two columns on desktop */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <PulseDigestWidget />
+        <RecentActivity />
+      </div>
 
       {/* Task creation modal */}
       {showCreateDialog && (

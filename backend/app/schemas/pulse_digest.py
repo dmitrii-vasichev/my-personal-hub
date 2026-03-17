@@ -29,3 +29,23 @@ class DigestGenerateRequest(BaseModel):
 class DigestGenerateResponse(BaseModel):
     digest: Optional[DigestResponse] = None
     message: str
+
+
+class DigestSummaryItem(BaseModel):
+    """Compact digest info for dashboard widget."""
+
+    id: int
+    category: Optional[str] = None
+    content_preview: str
+    message_count: int
+    generated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class PulseSummaryResponse(BaseModel):
+    """Aggregated pulse data for dashboard widget."""
+
+    digests: list[DigestSummaryItem]
+    period_start: Optional[datetime] = None
+    period_end: Optional[datetime] = None

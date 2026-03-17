@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.calendar import CalendarEvent
 from app.models.job import ApplicationStatus, Job
 from app.models.task import Task, TaskStatus
+from app.models.telegram import PulseDigest
 from app.models.user import User
 
 # Terminal statuses that are not "active"
@@ -110,4 +111,75 @@ async def get_summary(db: AsyncSession, user: User) -> dict:
             "upcoming_count": len(upcoming_events),
             "upcoming_events": upcoming_events,
         },
+    }
+
+
+_CONTENT_PREVIEW_LENGTH = 200
+_PULSE_CATEGORIES = ["news", "jobs", "learning"]
+
+
+def _extract_preview(content: str) -> str:
+    """Extract first meaningful lines from markdown digest content."""
+    lines = []
+    for line in content.splitlines():
+        stripped = line.strip()
+        # Skip markdown headings and empty lines
+        if not stripped or stripped.startswith("#"):
+            continue
+        lines.append(stripped)
+        if len(" ".join(lines)) >= _CONTENT_PREVIEW_LENGTH:
+            break
+    preview = " ".join(lines)
+    if len(preview) > _CONTENT_PREVIEW_LENGTH:
+        preview = preview[:_CONTENT_PREVIEW_LENGTH].rsplit(" ", 1)[0] + "…"
+    return preview
+
+
+async def get_pulse_summary(db: AsyncSession, user: User) -> dict:
+    """Latest digest per category for the dashboard widget."""
+    from sqlalchemy import desc, distinct
+
+    # Get latest digest per category using a subquery
+    digests: list[dict] = []
+
+    for cat in _PULSE_CATEGORIES:
+        result = await db.execute(
+            select(PulseDigest)
+            .where(
+                PulseDigest.user_id == user.id,
+                PulseDigest.category == cat,
+            )
+            .order_by(desc(PulseDigest.generated_at))
+            .limit(1)
+        )
+        digest = result.scalar_one_or_none()
+        if digest is not None:
+            digests.append({
+                "id": digest.id,
+                "category": digest.category,
+                "content_preview": _extract_preview(digest.content),
+                "message_count": digest.message_count,
+                "generated_at": digest.generated_at,
+            })
+
+    # Compute overall period from all returned digests
+    period_start = None
+    period_end = None
+    if digests:
+        # Get the actual digest objects' period fields
+        all_ids = [d["id"] for d in digests]
+        period_result = await db.execute(
+            select(
+                func.min(PulseDigest.period_start),
+                func.max(PulseDigest.period_end),
+            ).where(PulseDigest.id.in_(all_ids))
+        )
+        row = period_result.one()
+        period_start = row[0]
+        period_end = row[1]
+
+    return {
+        "digests": digests,
+        "period_start": period_start,
+        "period_end": period_end,
     }

@@ -165,3 +165,90 @@ async def test_get_summary_calendar_events():
     assert result["calendar"]["upcoming_events"][0]["id"] == 42
     assert result["calendar"]["upcoming_events"][0]["title"] == "Team standup"
     assert "start_time" in result["calendar"]["upcoming_events"][0]
+
+
+# ── Pulse summary ────────────────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_get_pulse_summary_empty():
+    """Returns empty digests list when user has no digests."""
+    db = AsyncMock()
+
+    # 3 category queries → each returns None
+    no_digest = MagicMock()
+    no_digest.scalar_one_or_none.return_value = None
+
+    db.execute = AsyncMock(return_value=no_digest)
+
+    user = make_user()
+    result = await dashboard_service.get_pulse_summary(db, user)
+
+    assert result["digests"] == []
+    assert result["period_start"] is None
+    assert result["period_end"] is None
+
+
+@pytest.mark.asyncio
+async def test_get_pulse_summary_with_digests():
+    """Returns latest digest per category with content preview."""
+    db = AsyncMock()
+
+    now = datetime.now(tz=timezone.utc)
+
+    news_digest = MagicMock()
+    news_digest.id = 10
+    news_digest.category = "news"
+    news_digest.content = "# News\n\nApple launched a new product today. EU updated AI policy."
+    news_digest.message_count = 42
+    news_digest.generated_at = now
+
+    jobs_digest = MagicMock()
+    jobs_digest.id = 11
+    jobs_digest.category = "jobs"
+    jobs_digest.content = "# Jobs\n\n⭐ Senior Python Developer at Revolut."
+    jobs_digest.message_count = 25
+    jobs_digest.generated_at = now
+
+    no_digest = MagicMock()
+    no_digest.scalar_one_or_none.return_value = None
+
+    news_result = MagicMock()
+    news_result.scalar_one_or_none.return_value = news_digest
+
+    jobs_result = MagicMock()
+    jobs_result.scalar_one_or_none.return_value = jobs_digest
+
+    learning_result = MagicMock()
+    learning_result.scalar_one_or_none.return_value = None
+
+    # Period aggregation query
+    period_result = MagicMock()
+    period_result.one.return_value = (
+        now - timedelta(days=1),
+        now,
+    )
+
+    db.execute = AsyncMock(
+        side_effect=[news_result, jobs_result, learning_result, period_result]
+    )
+
+    user = make_user()
+    result = await dashboard_service.get_pulse_summary(db, user)
+
+    assert len(result["digests"]) == 2
+    assert result["digests"][0]["category"] == "news"
+    assert result["digests"][0]["message_count"] == 42
+    assert "Apple launched" in result["digests"][0]["content_preview"]
+    assert result["digests"][1]["category"] == "jobs"
+    assert result["period_start"] is not None
+    assert result["period_end"] is not None
+
+
+@pytest.mark.asyncio
+async def test_extract_preview_skips_headings():
+    """Content preview skips markdown headings and empty lines."""
+    content = "# Heading\n\n## Sub\n\nActual content here.\nMore content."
+    preview = dashboard_service._extract_preview(content)
+    assert preview.startswith("Actual content here.")
+    assert "#" not in preview
