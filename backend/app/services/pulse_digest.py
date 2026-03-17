@@ -103,6 +103,7 @@ async def generate_digest(
     user_id: int,
     llm_client: "LLMAdapter",
     category: str | None = None,
+    pulse_settings=None,
 ) -> PulseDigest | None:
     """Generate a digest from new messages.
 
@@ -111,6 +112,7 @@ async def generate_digest(
         user_id: Owner user ID.
         llm_client: Configured LLM adapter.
         category: Optional category filter (news/jobs/learning). None = all.
+        pulse_settings: Optional PulseSettings with custom prompts.
 
     Returns:
         Created PulseDigest or None if no new messages.
@@ -153,6 +155,14 @@ async def generate_digest(
         effective_category = "news"  # default for mixed
 
     system_prompt = CATEGORY_PROMPTS.get(effective_category, NEWS_SYSTEM_PROMPT)
+
+    # Check for custom prompt from PulseSettings
+    if pulse_settings:
+        custom_field = f"prompt_{effective_category}"
+        custom_prompt = getattr(pulse_settings, custom_field, None)
+        if custom_prompt:
+            system_prompt = custom_prompt
+
     user_prompt = _build_user_prompt(messages, sources_map)
 
     # Calculate period

@@ -45,6 +45,13 @@ export function useTriggerPoll(onPollStarted?: () => void) {
   });
 }
 
+export function usePulsePromptDefaults() {
+  return useQuery<{ news: string; jobs: string; learning: string }>({
+    queryKey: ["pulse-prompt-defaults"],
+    queryFn: () => api.get("/api/pulse/settings/prompts/defaults"),
+  });
+}
+
 export function useTestBotConnection() {
   return useMutation({
     mutationFn: () =>
