@@ -6,6 +6,12 @@ export interface TelegramAuthStatus {
 
 export interface TelegramConfigStatus {
   configured: boolean;
+  api_id?: number | null;
+}
+
+export interface TelegramCredentialsSaveRequest {
+  api_id: number;
+  api_hash: string;
 }
 
 export interface TelegramStartAuthRequest {

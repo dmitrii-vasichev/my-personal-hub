@@ -150,6 +150,8 @@ class PulseSettings(Base):
     message_ttl_days: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="30"
     )
+    telegram_api_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    telegram_api_hash_encrypted: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     bot_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     bot_chat_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     notify_digest_ready: Mapped[bool] = mapped_column(

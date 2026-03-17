@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   useTelegramConfig,
+  useTelegramSaveCredentials,
   useTelegramStatus,
   useTelegramStartAuth,
   useTelegramVerifyCode,
@@ -19,10 +20,13 @@ type AuthStep = "disconnected" | "awaiting_code" | "connected";
 export function TelegramTab() {
   const { data: config, isLoading: configLoading } = useTelegramConfig();
   const { data: status, isLoading } = useTelegramStatus();
+  const saveCredentials = useTelegramSaveCredentials();
   const startAuth = useTelegramStartAuth();
   const verifyCode = useTelegramVerifyCode();
   const disconnect = useTelegramDisconnect();
 
+  const [apiId, setApiId] = useState("");
+  const [apiHash, setApiHash] = useState("");
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
@@ -74,6 +78,18 @@ export function TelegramTab() {
 
   const notConfigured = config && !config.configured;
 
+  const handleSaveCredentials = async () => {
+    const id = parseInt(apiId, 10);
+    if (!id || id <= 0 || !apiHash.trim()) return;
+    try {
+      await saveCredentials.mutateAsync({ api_id: id, api_hash: apiHash.trim() });
+      setApiId("");
+      setApiHash("");
+    } catch {
+      // error handled by hook
+    }
+  };
+
   if (isLoading || configLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -113,31 +129,82 @@ export function TelegramTab() {
           groups.
         </p>
 
-        {/* Not configured warning */}
-        {notConfigured && currentStep === "disconnected" && (
-          <div className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2.5">
-            <p className="text-xs text-warning">
-              Telegram API credentials are not configured. Set{" "}
-              <code className="font-mono text-[11px]">TELEGRAM_API_ID</code> and{" "}
-              <code className="font-mono text-[11px]">TELEGRAM_API_HASH</code> in
-              your <code className="font-mono text-[11px]">.env</code> file.
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Get credentials at{" "}
-              <a
-                href="https://my.telegram.org/apps"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline hover:text-foreground"
-              >
-                my.telegram.org/apps
-              </a>
-            </p>
+        {/* API Credentials section */}
+        {currentStep === "disconnected" && (
+          <div className="space-y-3">
+            {config?.configured && config.api_id ? (
+              <div className="rounded-md border border-border bg-surface-2/50 px-3 py-2.5">
+                <div className="flex items-center gap-4 text-xs">
+                  <div>
+                    <span className="text-muted-foreground">API ID: </span>
+                    <span className="font-mono">{config.api_id}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">API Hash: </span>
+                    <span className="font-mono">{"••••••••"}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 rounded-md border border-warning/30 bg-warning/5 px-3 py-3">
+                <p className="text-xs text-warning">
+                  Telegram API credentials required.{" "}
+                  <a
+                    href="https://my.telegram.org/apps"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-foreground"
+                  >
+                    Get them at my.telegram.org/apps
+                  </a>
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs uppercase text-muted-foreground">
+                      API ID
+                    </Label>
+                    <Input
+                      type="number"
+                      value={apiId}
+                      onChange={(e) => setApiId(e.target.value)}
+                      placeholder="12345678"
+                      className="text-sm font-mono"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs uppercase text-muted-foreground">
+                      API Hash
+                    </Label>
+                    <Input
+                      type="password"
+                      value={apiHash}
+                      onChange={(e) => setApiHash(e.target.value)}
+                      placeholder="32-character hex string"
+                      className="text-sm font-mono"
+                    />
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={handleSaveCredentials}
+                  disabled={
+                    !apiId.trim() ||
+                    !apiHash.trim() ||
+                    saveCredentials.isPending
+                  }
+                >
+                  {saveCredentials.isPending ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : null}
+                  Save Credentials
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Disconnected: phone input */}
-        {currentStep === "disconnected" && !notConfigured && (
+        {/* Disconnected: phone input (only when credentials are configured) */}
+        {currentStep === "disconnected" && config?.configured && (
           <div className="space-y-3">
             <div className="space-y-1">
               <Label className="text-xs uppercase text-muted-foreground">

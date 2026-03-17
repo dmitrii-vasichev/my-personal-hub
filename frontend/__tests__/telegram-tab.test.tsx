@@ -6,10 +6,17 @@ import { TelegramTab } from "@/components/settings/telegram-tab";
 const mockStartAuth = vi.fn().mockResolvedValue({ ok: true });
 const mockVerifyCode = vi.fn().mockResolvedValue({ connected: true });
 const mockDisconnect = vi.fn().mockResolvedValue(undefined);
+const mockSaveCredentials = vi.fn().mockResolvedValue({ ok: true });
 
+const mockUseTelegramConfig = vi.fn();
 const mockUseTelegramStatus = vi.fn();
 
 vi.mock("@/hooks/use-telegram", () => ({
+  useTelegramConfig: (...args: unknown[]) => mockUseTelegramConfig(...args),
+  useTelegramSaveCredentials: () => ({
+    mutateAsync: mockSaveCredentials,
+    isPending: false,
+  }),
   useTelegramStatus: (...args: unknown[]) => mockUseTelegramStatus(...args),
   useTelegramStartAuth: () => ({
     mutateAsync: mockStartAuth,
@@ -40,9 +47,14 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 describe("TelegramTab", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: credentials configured
+    mockUseTelegramConfig.mockReturnValue({
+      data: { configured: true, api_id: 123456 },
+      isLoading: false,
+    });
   });
 
-  it("renders disconnected state with phone input", () => {
+  it("renders disconnected state with phone input when configured", () => {
     mockUseTelegramStatus.mockReturnValue({
       data: { connected: false, phone_number: null, connected_at: null },
       isLoading: false,
@@ -213,5 +225,107 @@ describe("TelegramTab", () => {
         )
       ).toBeInTheDocument();
     });
+  });
+
+  // ── Credentials UI tests (Phase 38) ──────────────────────────────────────
+
+  it("shows credentials form when not configured", () => {
+    mockUseTelegramConfig.mockReturnValue({
+      data: { configured: false, api_id: null },
+      isLoading: false,
+    });
+    mockUseTelegramStatus.mockReturnValue({
+      data: { connected: false, phone_number: null, connected_at: null },
+      isLoading: false,
+    });
+
+    render(
+      <Wrapper>
+        <TelegramTab />
+      </Wrapper>
+    );
+
+    expect(screen.getByText("Telegram API credentials required.", { exact: false })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("12345678")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("32-character hex string")).toBeInTheDocument();
+    expect(screen.getByText("Save Credentials")).toBeInTheDocument();
+    // Phone input should NOT be visible
+    expect(screen.queryByPlaceholderText("+7 900 123 4567")).not.toBeInTheDocument();
+  });
+
+  it("saves credentials and hides form", async () => {
+    mockUseTelegramConfig.mockReturnValue({
+      data: { configured: false, api_id: null },
+      isLoading: false,
+    });
+    mockUseTelegramStatus.mockReturnValue({
+      data: { connected: false, phone_number: null, connected_at: null },
+      isLoading: false,
+    });
+
+    render(
+      <Wrapper>
+        <TelegramTab />
+      </Wrapper>
+    );
+
+    const apiIdInput = screen.getByPlaceholderText("12345678");
+    const apiHashInput = screen.getByPlaceholderText("32-character hex string");
+
+    fireEvent.change(apiIdInput, { target: { value: "123456" } });
+    fireEvent.change(apiHashInput, {
+      target: { value: "abcdef1234567890abcdef1234567890" },
+    });
+    fireEvent.click(screen.getByText("Save Credentials"));
+
+    await waitFor(() => {
+      expect(mockSaveCredentials).toHaveBeenCalledWith({
+        api_id: 123456,
+        api_hash: "abcdef1234567890abcdef1234567890",
+      });
+    });
+  });
+
+  it("shows api_id and masked hash when configured", () => {
+    mockUseTelegramConfig.mockReturnValue({
+      data: { configured: true, api_id: 999888 },
+      isLoading: false,
+    });
+    mockUseTelegramStatus.mockReturnValue({
+      data: { connected: false, phone_number: null, connected_at: null },
+      isLoading: false,
+    });
+
+    render(
+      <Wrapper>
+        <TelegramTab />
+      </Wrapper>
+    );
+
+    expect(screen.getByText("999888")).toBeInTheDocument();
+    expect(screen.getByText("••••••••")).toBeInTheDocument();
+    // Phone input should be visible (credentials configured)
+    expect(screen.getByPlaceholderText("+7 900 123 4567")).toBeInTheDocument();
+  });
+
+  it("shows my.telegram.org link when not configured", () => {
+    mockUseTelegramConfig.mockReturnValue({
+      data: { configured: false, api_id: null },
+      isLoading: false,
+    });
+    mockUseTelegramStatus.mockReturnValue({
+      data: { connected: false, phone_number: null, connected_at: null },
+      isLoading: false,
+    });
+
+    render(
+      <Wrapper>
+        <TelegramTab />
+      </Wrapper>
+    );
+
+    const link = screen.getByText("Get them at my.telegram.org/apps");
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute("href", "https://my.telegram.org/apps");
   });
 });
