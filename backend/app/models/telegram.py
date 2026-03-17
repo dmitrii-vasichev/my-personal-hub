@@ -61,6 +61,13 @@ class PulseSource(Base):
     last_polled_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    poll_status: Mapped[str] = mapped_column(
+        String(10), nullable=False, server_default="idle"
+    )
+    last_poll_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    last_poll_message_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

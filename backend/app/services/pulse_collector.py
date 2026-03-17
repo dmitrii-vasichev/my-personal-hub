@@ -24,9 +24,18 @@ async def collect_source(
     message_limit: int = 100,
 ) -> int:
     """Collect new messages from a single source. Returns count of new messages stored."""
+    # Mark source as polling
+    source.poll_status = "polling"
+    source.last_poll_error = None
+    await db.flush()
+
     client = await get_client_for_user(db, user)
     if client is None:
         logger.warning("No Telegram client for user %s, skipping source %s", user.id, source.id)
+        source.poll_status = "error"
+        source.last_poll_error = "No Telegram client available"
+        source.last_poll_message_count = 0
+        await db.flush()
         return 0
 
     try:
@@ -71,8 +80,11 @@ async def collect_source(
             db.add(pulse_msg)
             stored += 1
 
-        # Update last polled timestamp
+        # Update last polled timestamp and status
         source.last_polled_at = datetime.now(timezone.utc)
+        source.poll_status = "idle"
+        source.last_poll_error = None
+        source.last_poll_message_count = stored
         await db.flush()
 
         logger.info(
@@ -83,6 +95,10 @@ async def collect_source(
 
     except Exception as e:
         logger.error("Failed to collect source '%s' (id=%s): %s", source.title, source.id, e)
+        source.poll_status = "error"
+        source.last_poll_error = str(e)[:500]
+        source.last_poll_message_count = 0
+        await db.flush()
         return 0
     finally:
         await client.disconnect()
