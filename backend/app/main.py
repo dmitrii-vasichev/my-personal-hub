@@ -56,6 +56,7 @@ async def lifespan(application: FastAPI):
                     minute=minute,
                     day_of_week=ps.digest_day,
                     interval_days=ps.digest_interval_days,
+                    timezone=ps.timezone or "America/Denver",
                 )
             if all_settings:
                 logger.info("Restored polling + digest jobs for %d users", len(all_settings))

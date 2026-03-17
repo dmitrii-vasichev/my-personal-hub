@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -47,10 +48,12 @@ def schedule_user_digest(
     minute: int = 0,
     day_of_week: int | None = None,
     interval_days: int | None = None,
+    timezone: str = "America/Denver",
 ) -> None:
     """Schedule (or reschedule) digest generation for a user.
 
     Supports: daily, weekly, every_n_days.
+    The timezone parameter ensures cron jobs fire at the user's local time.
     """
     job_id = f"pulse_digest_user_{user_id}"
 
@@ -58,12 +61,19 @@ def schedule_user_digest(
     if existing:
         scheduler.remove_job(job_id)
 
+    try:
+        tz = ZoneInfo(timezone)
+    except (KeyError, ValueError):
+        logger.warning("Invalid timezone '%s' for user %s, falling back to America/Denver", timezone, user_id)
+        tz = ZoneInfo("America/Denver")
+
     if schedule == "daily":
         scheduler.add_job(
             "app.services.pulse_scheduler:run_user_digest",
             "cron",
             hour=hour,
             minute=minute,
+            timezone=tz,
             id=job_id,
             args=[user_id],
             replace_existing=True,
@@ -76,6 +86,7 @@ def schedule_user_digest(
             day_of_week=day_of_week,
             hour=hour,
             minute=minute,
+            timezone=tz,
             id=job_id,
             args=[user_id],
             replace_existing=True,
@@ -98,6 +109,7 @@ def schedule_user_digest(
             "cron",
             hour=hour,
             minute=minute,
+            timezone=tz,
             id=job_id,
             args=[user_id],
             replace_existing=True,
@@ -105,8 +117,8 @@ def schedule_user_digest(
         )
 
     logger.info(
-        "Scheduled digest for user %s: schedule=%s hour=%s minute=%s",
-        user_id, schedule, hour, minute,
+        "Scheduled digest for user %s: schedule=%s hour=%s minute=%s tz=%s",
+        user_id, schedule, hour, minute, timezone,
     )
 
 

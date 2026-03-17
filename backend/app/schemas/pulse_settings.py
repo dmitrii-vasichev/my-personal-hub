@@ -10,6 +10,7 @@ class PulseSettingsResponse(BaseModel):
     polling_interval_minutes: int
     digest_schedule: str
     digest_time: time
+    timezone: str
     digest_day: Optional[int] = None
     digest_interval_days: Optional[int] = None
     message_ttl_days: int
@@ -30,6 +31,7 @@ class PulseSettingsUpdate(BaseModel):
     polling_interval_minutes: Optional[int] = None
     digest_schedule: Optional[str] = None
     digest_time: Optional[time] = None
+    timezone: Optional[str] = None
     digest_day: Optional[int] = None
     digest_interval_days: Optional[int] = None
     message_ttl_days: Optional[int] = None

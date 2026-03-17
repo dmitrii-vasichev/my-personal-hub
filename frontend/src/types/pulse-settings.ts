@@ -4,6 +4,7 @@ export interface PulseSettings {
   polling_interval_minutes: number;
   digest_schedule: string;
   digest_time: string;
+  timezone: string;
   digest_day: number | null;
   digest_interval_days: number | null;
   message_ttl_days: number;
@@ -22,6 +23,7 @@ export interface PulseSettingsUpdate {
   polling_interval_minutes?: number;
   digest_schedule?: string;
   digest_time?: string;
+  timezone?: string;
   digest_day?: number;
   digest_interval_days?: number;
   message_ttl_days?: number;
