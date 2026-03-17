@@ -5,6 +5,8 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.user import User
 from app.schemas.telegram import (
+    TelegramConfigStatusResponse,
+    TelegramCredentialsSaveRequest,
     TelegramStartAuthRequest,
     TelegramStatusResponse,
     TelegramVerifyCodeRequest,
@@ -14,12 +16,26 @@ from app.services import telegram_auth
 router = APIRouter(prefix="/api/pulse/telegram", tags=["telegram"])
 
 
-@router.get("/config-status")
+@router.get("/config-status", response_model=TelegramConfigStatusResponse)
 async def config_status(
-    _current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Check if Telegram API credentials are configured (no secrets exposed)."""
-    return {"configured": telegram_auth.is_configured()}
+    return await telegram_auth.get_credentials_status(db, current_user)
+
+
+@router.put("/credentials")
+async def save_credentials(
+    data: TelegramCredentialsSaveRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Save Telegram API credentials (admin only). API hash is encrypted at rest."""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin access required")
+    await telegram_auth.save_credentials(db, current_user, data.api_id, data.api_hash)
+    return {"ok": True, "detail": "Credentials saved"}
 
 
 @router.post("/start-auth")
