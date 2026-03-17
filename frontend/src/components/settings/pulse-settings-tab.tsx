@@ -20,6 +20,7 @@ export function PulseSettingsTab() {
   const testBot = useTestBotConnection();
 
   const [pollingInterval, setPollingInterval] = useState("60");
+  const [pollMessageLimit, setPollMessageLimit] = useState("100");
   const [ttlDays, setTtlDays] = useState("30");
   const [digestSchedule, setDigestSchedule] = useState("daily");
   const [digestTime, setDigestTime] = useState("09:00");
@@ -34,6 +35,7 @@ export function PulseSettingsTab() {
   useEffect(() => {
     if (settings) {
       setPollingInterval(String(settings.polling_interval_minutes));
+      setPollMessageLimit(String(settings.poll_message_limit));
       setTtlDays(String(settings.message_ttl_days));
       setDigestSchedule(settings.digest_schedule);
       setDigestTime(settings.digest_time?.slice(0, 5) || "09:00");
@@ -50,6 +52,7 @@ export function PulseSettingsTab() {
     try {
       const data: Record<string, unknown> = {
         polling_interval_minutes: parseInt(pollingInterval) || 60,
+        poll_message_limit: parseInt(pollMessageLimit) || 100,
         message_ttl_days: parseInt(ttlDays) || 30,
         digest_schedule: digestSchedule,
         digest_time: digestTime + ":00",
@@ -125,6 +128,22 @@ export function PulseSettingsTab() {
             className="text-sm"
           />
           <p className="text-[11px] text-muted-foreground">Min: 15, Max: 1440 (24h)</p>
+        </div>
+
+        {/* Poll Message Limit */}
+        <div className="space-y-1">
+          <Label className="text-xs uppercase text-muted-foreground">
+            Messages per Poll
+          </Label>
+          <Input
+            type="number"
+            min="10"
+            max="500"
+            value={pollMessageLimit}
+            onChange={(e) => setPollMessageLimit(e.target.value)}
+            className="text-sm"
+          />
+          <p className="text-[11px] text-muted-foreground">Max messages fetched per source (10–500)</p>
         </div>
 
         {/* Message TTL */}

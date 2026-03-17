@@ -21,6 +21,7 @@ async def collect_source(
     user: User,
     source: PulseSource,
     ttl_days: int = 30,
+    message_limit: int = 100,
 ) -> int:
     """Collect new messages from a single source. Returns count of new messages stored."""
     client = await get_client_for_user(db, user)
@@ -35,7 +36,7 @@ async def collect_source(
         offset_date = source.last_polled_at or (datetime.now(timezone.utc) - timedelta(hours=24))
 
         stored = 0
-        async for message in client.iter_messages(entity, offset_date=offset_date, limit=100):
+        async for message in client.iter_messages(entity, offset_date=offset_date, limit=message_limit):
             if not message.text:
                 continue
 
@@ -106,10 +107,11 @@ async def collect_all_sources(db: AsyncSession, user: User) -> dict:
     )
     pulse_settings = settings_result.scalar_one_or_none()
     ttl_days = pulse_settings.message_ttl_days if pulse_settings else 30
+    message_limit = pulse_settings.poll_message_limit if pulse_settings else 100
 
     total_messages = 0
     for source in sources:
-        count = await collect_source(db, user, source, ttl_days)
+        count = await collect_source(db, user, source, ttl_days, message_limit)
         total_messages += count
         # Delay between sources to avoid rate limits
         if source != sources[-1]:

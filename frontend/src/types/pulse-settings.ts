@@ -7,6 +7,7 @@ export interface PulseSettings {
   digest_day: number | null;
   digest_interval_days: number | null;
   message_ttl_days: number;
+  poll_message_limit: number;
   bot_token_set: boolean;
   bot_chat_id: number | null;
   notify_digest_ready: boolean;
@@ -21,6 +22,7 @@ export interface PulseSettingsUpdate {
   digest_day?: number;
   digest_interval_days?: number;
   message_ttl_days?: number;
+  poll_message_limit?: number;
   bot_token?: string;
   bot_chat_id?: number;
   notify_digest_ready?: boolean;

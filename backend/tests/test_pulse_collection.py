@@ -150,6 +150,42 @@ class TestCollector:
 
     @pytest.mark.asyncio
     @patch("app.services.pulse_collector.get_client_for_user")
+    async def test_collect_source_uses_message_limit(self, mock_get_client):
+        from app.services.pulse_collector import collect_source
+
+        mock_message = MagicMock()
+        mock_message.id = 99999
+        mock_message.text = "Test message"
+        mock_message.date = datetime.now(timezone.utc)
+        mock_message.sender = None
+
+        mock_client = AsyncMock()
+        mock_client.get_entity = AsyncMock(return_value=MagicMock())
+        mock_client.disconnect = AsyncMock()
+
+        captured_kwargs = {}
+
+        async def mock_iter(*args, **kwargs):
+            captured_kwargs.update(kwargs)
+            yield mock_message
+
+        mock_client.iter_messages = mock_iter
+        mock_get_client.return_value = mock_client
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(return_value=mock_result)
+
+        user = make_user()
+        source = make_source()
+
+        await collect_source(db, user, source, ttl_days=30, message_limit=250)
+
+        assert captured_kwargs["limit"] == 250
+
+    @pytest.mark.asyncio
+    @patch("app.services.pulse_collector.get_client_for_user")
     async def test_collect_source_no_client(self, mock_get_client):
         from app.services.pulse_collector import collect_source
 

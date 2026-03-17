@@ -23,6 +23,7 @@ def _to_response(settings) -> dict:
         "digest_day": settings.digest_day,
         "digest_interval_days": settings.digest_interval_days,
         "message_ttl_days": settings.message_ttl_days,
+        "poll_message_limit": settings.poll_message_limit,
         "bot_token_set": bool(settings.bot_token),
         "bot_chat_id": settings.bot_chat_id,
         "notify_digest_ready": settings.notify_digest_ready,

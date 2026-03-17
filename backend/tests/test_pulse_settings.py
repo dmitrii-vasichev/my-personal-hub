@@ -40,6 +40,7 @@ def make_pulse_settings(user_id: int = 1) -> PulseSettings:
     s.message_ttl_days = 30
     s.notify_digest_ready = True
     s.notify_urgent_jobs = True
+    s.poll_message_limit = 100
     s.updated_at = datetime(2026, 3, 16, 12, 0, 0, tzinfo=timezone.utc)
     return s
 
@@ -55,10 +56,20 @@ class TestPulseSettingsSchemas:
         assert resp.digest_schedule == "daily"
         assert resp.message_ttl_days == 30
 
+    def test_settings_schema_poll_message_limit(self):
+        ps = make_pulse_settings()
+        resp = PulseSettingsResponse.model_validate(ps)
+        assert resp.poll_message_limit == 100
+
     def test_update_schema_partial(self):
         data = PulseSettingsUpdate(polling_interval_minutes=30)
         dumped = data.model_dump(exclude_unset=True)
         assert dumped == {"polling_interval_minutes": 30}
+
+    def test_update_schema_poll_message_limit(self):
+        data = PulseSettingsUpdate(poll_message_limit=200)
+        dumped = data.model_dump(exclude_unset=True)
+        assert dumped == {"poll_message_limit": 200}
 
 
 # ── Service tests ────────────────────────────────────────────────────────────
