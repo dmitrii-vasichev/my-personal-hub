@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.telegram import PulseSource
 from app.models.user import User
 from app.schemas.pulse_source import PulseSourceCreate, PulseSourceUpdate
+from telethon import utils as telethon_utils
+
 from app.services.telegram_auth import get_client_for_user
 
 logger = logging.getLogger(__name__)
@@ -97,7 +99,7 @@ async def resolve_source(db: AsyncSession, user: User, identifier: str) -> dict:
     try:
         entity = await client.get_entity(identifier)
         return {
-            "telegram_id": entity.id,
+            "telegram_id": telethon_utils.get_peer_id(entity),
             "username": getattr(entity, "username", None),
             "title": getattr(entity, "title", str(entity.id)),
             "members_count": getattr(entity, "participants_count", None),
