@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, History, Radio as RadioIcon, Inbox } from "lucide-react";
+import Link from "next/link";
+import { Sparkles, History, Radio as RadioIcon, Inbox, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryTabs } from "@/components/pulse/category-tabs";
 import {
@@ -49,16 +50,25 @@ export default function PulseDigestsPage() {
             AI-generated summaries from your Telegram channels
           </p>
         </div>
-        {viewMode !== "inbox" && (
-          <Button
-            size="sm"
-            onClick={() => generateDigest.mutate(category ?? undefined)}
-            disabled={generateDigest.isPending}
+        <div className="flex items-center gap-2">
+          {viewMode !== "inbox" && (
+            <Button
+              size="sm"
+              onClick={() => generateDigest.mutate(category ?? undefined)}
+              disabled={generateDigest.isPending}
+            >
+              <Sparkles className={`mr-1.5 h-4 w-4 ${generateDigest.isPending ? "animate-spin" : ""}`} />
+              Generate Now
+            </Button>
+          )}
+          <Link
+            href="/pulse/sources"
+            className="inline-flex h-7 items-center gap-1 rounded-[min(var(--radius-md),12px)] border border-border bg-background px-2.5 text-[0.8rem] font-medium text-foreground transition-all hover:bg-muted dark:border-input dark:bg-input/30 dark:hover:bg-input/50"
           >
-            <Sparkles className={`mr-1.5 h-4 w-4 ${generateDigest.isPending ? "animate-spin" : ""}`} />
-            Generate Now
-          </Button>
-        )}
+            <Settings2 className="h-3.5 w-3.5" />
+            Sources
+          </Link>
+        </div>
       </div>
 
       {/* Tabs & view toggle */}
