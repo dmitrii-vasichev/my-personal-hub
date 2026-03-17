@@ -57,7 +57,9 @@ function CategoryRow({ digest }: { digest: DigestSummaryItem }) {
             {config.label}
           </span>
           <span className="ml-auto text-[11px] text-tertiary">
-            {digest.message_count} messages
+            {digest.items_count != null
+              ? `${digest.items_count} items`
+              : `${digest.message_count} messages`}
           </span>
         </div>
         <p className="text-sm text-foreground line-clamp-2 leading-relaxed">

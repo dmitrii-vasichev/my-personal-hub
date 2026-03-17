@@ -10,6 +10,7 @@ class DigestResponse(BaseModel):
     category: Optional[str] = None
     content: str
     message_count: int
+    items_count: Optional[int] = None
     generated_at: datetime
     period_start: Optional[datetime] = None
     period_end: Optional[datetime] = None
@@ -38,6 +39,7 @@ class DigestSummaryItem(BaseModel):
     category: Optional[str] = None
     content_preview: str
     message_count: int
+    items_count: Optional[int] = None
     generated_at: datetime
 
     model_config = {"from_attributes": True}

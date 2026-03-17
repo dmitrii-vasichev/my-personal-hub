@@ -4,6 +4,7 @@ export interface PulseDigest {
   category: string | null;
   content: string;
   message_count: number;
+  items_count: number | null;
   generated_at: string;
   period_start: string | null;
   period_end: string | null;
@@ -28,6 +29,7 @@ export interface DigestSummaryItem {
   category: string | null;
   content_preview: string;
   message_count: number;
+  items_count: number | null;
   generated_at: string;
 }
 
