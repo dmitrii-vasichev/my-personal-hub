@@ -120,6 +120,58 @@ class TestPromptBuilder:
         assert "Channel B" in result
 
 
+# ── Items counter tests ────────────────────────────────────────────────────
+
+
+class TestCountDigestItems:
+    def test_count_bullet_dash(self):
+        from app.services.pulse_digest import count_digest_items
+
+        content = "## News\n- Item one\n- Item two\n- Item three"
+        assert count_digest_items(content) == 3
+
+    def test_count_bullet_asterisk(self):
+        from app.services.pulse_digest import count_digest_items
+
+        content = "## News\n* Item one\n* Item two"
+        assert count_digest_items(content) == 2
+
+    def test_count_bullet_unicode(self):
+        from app.services.pulse_digest import count_digest_items
+
+        content = "## News\n• Item one\n• Item two\n• Item three\n• Item four"
+        assert count_digest_items(content) == 4
+
+    def test_count_numbered_items(self):
+        from app.services.pulse_digest import count_digest_items
+
+        content = "## Top picks\n1. First\n2. Second\n3. Third"
+        assert count_digest_items(content) == 3
+
+    def test_count_mixed_items(self):
+        from app.services.pulse_digest import count_digest_items
+
+        content = "## News\n- Item A\n- Item B\n\n## Top picks\n1. First\n2. Second"
+        assert count_digest_items(content) == 4
+
+    def test_count_empty_content(self):
+        from app.services.pulse_digest import count_digest_items
+
+        assert count_digest_items("") == 0
+
+    def test_count_no_bullets(self):
+        from app.services.pulse_digest import count_digest_items
+
+        content = "## Summary\nSome text without bullets\nAnother line"
+        assert count_digest_items(content) == 0
+
+    def test_count_ignores_headings(self):
+        from app.services.pulse_digest import count_digest_items
+
+        content = "## Section\n### Subsection\n- Real item"
+        assert count_digest_items(content) == 1
+
+
 # ── Category prompt selection tests ─────────────────────────────────────────
 
 
@@ -192,13 +244,14 @@ class TestDigestGeneration:
         db.execute = mock_execute
 
         mock_llm = AsyncMock()
-        mock_llm.generate = AsyncMock(return_value="# Digest\n\nSummary of news...")
+        mock_llm.generate = AsyncMock(return_value="# Digest\n\n- News item 1\n- News item 2\n- News item 3")
 
         digest = await generate_digest(db, user_id=1, llm_client=mock_llm)
 
         assert digest is not None
-        assert digest.content == "# Digest\n\nSummary of news..."
+        assert digest.content == "# Digest\n\n- News item 1\n- News item 2\n- News item 3"
         assert digest.message_count == 2
+        assert digest.items_count == 3
         assert digest.user_id == 1
         # When no category is passed, effective_category is derived from messages
         assert digest.category == "news"

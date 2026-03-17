@@ -54,6 +54,18 @@ Rules:
 - Write in the same language as the original messages
 - End with "Top Picks" section (3-5 best items)"""
 
+def count_digest_items(content: str) -> int:
+    """Count bullet-point items in generated markdown digest."""
+    count = 0
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(("- ", "* ", "• ")) or (
+            len(stripped) >= 3 and stripped[0].isdigit() and ". " in stripped[:5]
+        ):
+            count += 1
+    return count
+
+
 CATEGORY_PROMPTS = {
     "news": NEWS_SYSTEM_PROMPT,
     "jobs": JOBS_SYSTEM_PROMPT,
@@ -182,6 +194,7 @@ async def generate_digest(
         category=effective_category,
         content=content,
         message_count=len(messages),
+        items_count=count_digest_items(content),
         generated_at=datetime.now(timezone.utc),
         period_start=period_start,
         period_end=period_end,

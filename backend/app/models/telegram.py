@@ -125,6 +125,7 @@ class PulseDigest(Base):
     category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     message_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    items_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     generated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
