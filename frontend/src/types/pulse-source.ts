@@ -10,7 +10,24 @@ export interface PulseSource {
   criteria: Record<string, unknown> | null;
   is_active: boolean;
   last_polled_at: string | null;
+  poll_status: "idle" | "polling" | "error";
+  last_poll_error: string | null;
+  last_poll_message_count: number;
   created_at: string;
+}
+
+export interface PollStatusSource {
+  id: number;
+  title: string;
+  poll_status: "idle" | "polling" | "error";
+  last_poll_error: string | null;
+  last_poll_message_count: number;
+  last_polled_at: string | null;
+}
+
+export interface PollStatusResponse {
+  sources: PollStatusSource[];
+  any_polling: boolean;
 }
 
 export interface PulseSourceCreate {

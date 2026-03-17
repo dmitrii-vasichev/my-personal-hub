@@ -9,6 +9,8 @@ from app.core.deps import get_current_user
 from app.models.telegram import PulseSource
 from app.models.user import User
 from app.schemas.pulse_source import (
+    PollStatusResponse,
+    PollStatusSourceResponse,
     PulseSourceCreate,
     PulseSourceResolveResponse,
     PulseSourceResponse,
@@ -17,6 +19,26 @@ from app.schemas.pulse_source import (
 from app.services import pulse_source as source_service
 
 router = APIRouter(prefix="/api/pulse/sources", tags=["pulse-sources"])
+
+
+@router.get("/poll-status", response_model=PollStatusResponse)
+async def get_poll_status(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get current polling status for all active sources."""
+    result = await db.execute(
+        select(PulseSource).where(
+            PulseSource.user_id == current_user.id,
+            PulseSource.is_active.is_(True),
+        )
+    )
+    sources = list(result.scalars().all())
+    any_polling = any(s.poll_status == "polling" for s in sources)
+    return PollStatusResponse(
+        sources=[PollStatusSourceResponse.model_validate(s) for s in sources],
+        any_polling=any_polling,
+    )
 
 
 @router.get("/", response_model=list[PulseSourceResponse])
