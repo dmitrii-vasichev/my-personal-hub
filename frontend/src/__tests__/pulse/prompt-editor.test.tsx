@@ -20,9 +20,9 @@ const mockSettings = {
   bot_chat_id: null,
   notify_digest_ready: false,
   notify_urgent_jobs: false,
-  prompt_news: null as string | null,
-  prompt_jobs: null as string | null,
-  prompt_learning: null as string | null,
+  prompt_news: null,
+  prompt_jobs: null,
+  prompt_learning: null,
   updated_at: "2026-01-01T00:00:00Z",
 };
 
