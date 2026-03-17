@@ -6,6 +6,7 @@ import { api } from "@/lib/api";
 import type {
   TelegramAuthStatus,
   TelegramConfigStatus,
+  TelegramCredentialsSaveRequest,
   TelegramStartAuthRequest,
   TelegramStartAuthResponse,
   TelegramVerifyCodeRequest,
@@ -19,6 +20,21 @@ export function useTelegramConfig() {
     queryKey: [TELEGRAM_CONFIG_KEY],
     queryFn: () => api.get<TelegramConfigStatus>("/api/pulse/telegram/config-status"),
     staleTime: 5 * 60 * 1000, // credentials rarely change
+  });
+}
+
+export function useTelegramSaveCredentials() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: TelegramCredentialsSaveRequest) =>
+      api.put("/api/pulse/telegram/credentials", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [TELEGRAM_CONFIG_KEY] });
+      toast.success("Telegram API credentials saved");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to save credentials");
+    },
   });
 }
 

@@ -15,7 +15,7 @@ from telethon.sessions import StringSession
 
 from app.core.config import settings
 from app.core.encryption import decrypt_value, encrypt_value
-from app.models.telegram import TelegramSession
+from app.models.telegram import PulseSettings, TelegramSession
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -25,28 +25,83 @@ logger = logging.getLogger(__name__)
 _pending_clients: dict[int, TelegramClient] = {}
 
 
-def is_configured() -> bool:
-    """Check if Telegram API credentials are set."""
-    return bool(settings.TELEGRAM_API_ID) and bool(settings.TELEGRAM_API_HASH)
+async def get_credentials(db: AsyncSession, user: User) -> tuple[int, str] | None:
+    """Return (api_id, api_hash) from DB if set, else from .env, else None."""
+    result = await db.execute(
+        select(PulseSettings).where(PulseSettings.user_id == user.id)
+    )
+    ps = result.scalar_one_or_none()
+    if ps and ps.telegram_api_id and ps.telegram_api_hash_encrypted:
+        api_hash = decrypt_value(ps.telegram_api_hash_encrypted)
+        return (ps.telegram_api_id, api_hash)
+    # Fallback to .env
+    if settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH:
+        return (settings.TELEGRAM_API_ID, settings.TELEGRAM_API_HASH)
+    return None
 
 
-def _create_client(session: str = "") -> TelegramClient:
+async def save_credentials(
+    db: AsyncSession, user: User, api_id: int, api_hash: str
+) -> None:
+    """Save Telegram API credentials (encrypted) into PulseSettings."""
+    result = await db.execute(
+        select(PulseSettings).where(PulseSettings.user_id == user.id)
+    )
+    ps = result.scalar_one_or_none()
+    encrypted_hash = encrypt_value(api_hash)
+    if ps:
+        ps.telegram_api_id = api_id
+        ps.telegram_api_hash_encrypted = encrypted_hash
+    else:
+        ps = PulseSettings(
+            user_id=user.id,
+            telegram_api_id=api_id,
+            telegram_api_hash_encrypted=encrypted_hash,
+        )
+        db.add(ps)
+    await db.commit()
+
+
+async def get_credentials_status(db: AsyncSession, user: User) -> dict:
+    """Return credential status (configured flag + api_id) without exposing hash."""
+    creds = await get_credentials(db, user)
+    if creds:
+        return {"configured": True, "api_id": creds[0]}
+    return {"configured": False, "api_id": None}
+
+
+async def is_configured(db: AsyncSession, user: User) -> bool:
+    """Check if Telegram API credentials are available (DB or .env)."""
+    return (await get_credentials(db, user)) is not None
+
+
+def _create_client(
+    session: str = "",
+    api_id: int | None = None,
+    api_hash: str | None = None,
+) -> TelegramClient:
     """Create a Telethon client with app credentials."""
-    if not is_configured():
+    if not api_id or not api_hash:
         raise ValueError(
             "Telegram API credentials not configured. "
-            "Set TELEGRAM_API_ID and TELEGRAM_API_HASH in your .env file."
+            "Set them in Settings → Telegram or in your .env file."
         )
     return TelegramClient(
         StringSession(session),
-        settings.TELEGRAM_API_ID,
-        settings.TELEGRAM_API_HASH,
+        api_id,
+        api_hash,
     )
 
 
 async def start_auth(db: AsyncSession, user: User, phone_number: str) -> dict:
     """Start Telegram authorization: send verification code to phone."""
-    client = _create_client()
+    creds = await get_credentials(db, user)
+    if not creds:
+        raise ValueError(
+            "Telegram API credentials not configured. "
+            "Set them in Settings → Telegram or in your .env file."
+        )
+    client = _create_client(api_id=creds[0], api_hash=creds[1])
     await client.connect()
 
     result = await client.send_code_request(phone_number)
@@ -157,7 +212,14 @@ async def disconnect(db: AsyncSession, user: User) -> None:
     if session:
         # Try to log out from Telegram
         try:
-            client = _create_client(decrypt_value(session.session_string))
+            creds = await get_credentials(db, user)
+            if not creds:
+                raise ValueError("No credentials")
+            client = _create_client(
+                decrypt_value(session.session_string),
+                api_id=creds[0],
+                api_hash=creds[1],
+            )
             await client.connect()
             await client.log_out()
         except Exception:
@@ -180,8 +242,12 @@ async def get_client_for_user(db: AsyncSession, user: User) -> TelegramClient | 
     if session is None:
         return None
 
+    creds = await get_credentials(db, user)
+    if not creds:
+        return None
+
     session_string = decrypt_value(session.session_string)
-    client = _create_client(session_string)
+    client = _create_client(session_string, api_id=creds[0], api_hash=creds[1])
     await client.connect()
 
     # Update last_used_at

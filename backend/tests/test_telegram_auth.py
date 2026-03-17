@@ -83,46 +83,60 @@ class TestTelegramSchemas:
 class TestTelegramCredentialsValidation:
     """Regression tests for #545 — missing API credentials should produce a clear error."""
 
-    def test_is_configured_returns_false_when_missing(self):
-        from app.services.telegram_auth import is_configured
-
-        with patch("app.services.telegram_auth.settings") as mock_settings:
-            mock_settings.TELEGRAM_API_ID = 0
-            mock_settings.TELEGRAM_API_HASH = ""
-            assert is_configured() is False
-
-    def test_is_configured_returns_true_when_set(self):
-        from app.services.telegram_auth import is_configured
-
-        with patch("app.services.telegram_auth.settings") as mock_settings:
-            mock_settings.TELEGRAM_API_ID = 123456
-            mock_settings.TELEGRAM_API_HASH = "abcdef1234567890"
-            assert is_configured() is True
-
     def test_create_client_raises_when_not_configured(self):
         from app.services.telegram_auth import _create_client
 
+        with pytest.raises(ValueError, match="Telegram API credentials not configured"):
+            _create_client()
+
+    @pytest.mark.asyncio
+    async def test_is_configured_returns_false_when_no_creds(self):
+        from app.services.telegram_auth import is_configured
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(return_value=mock_result)
+
         with patch("app.services.telegram_auth.settings") as mock_settings:
             mock_settings.TELEGRAM_API_ID = 0
             mock_settings.TELEGRAM_API_HASH = ""
-            with pytest.raises(ValueError, match="Telegram API credentials not configured"):
-                _create_client()
+            assert await is_configured(db, make_user()) is False
+
+    @pytest.mark.asyncio
+    async def test_is_configured_returns_true_with_env(self):
+        from app.services.telegram_auth import is_configured
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(return_value=mock_result)
+
+        with patch("app.services.telegram_auth.settings") as mock_settings:
+            mock_settings.TELEGRAM_API_ID = 123456
+            mock_settings.TELEGRAM_API_HASH = "abcdef1234567890abcdef1234567890"
+            assert await is_configured(db, make_user()) is True
 
     @pytest.mark.asyncio
     async def test_start_auth_raises_when_not_configured(self):
         from app.services.telegram_auth import start_auth
 
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(return_value=mock_result)
+
         with patch("app.services.telegram_auth.settings") as mock_settings:
             mock_settings.TELEGRAM_API_ID = 0
             mock_settings.TELEGRAM_API_HASH = ""
-            db = AsyncMock()
             user = make_user()
             with pytest.raises(ValueError, match="Telegram API credentials not configured"):
                 await start_auth(db, user, "+79001234567")
 
     @pytest.mark.asyncio
-    @patch("app.services.telegram_auth.is_configured", return_value=True)
-    async def test_api_config_status_configured(self, _mock_configured):
+    @patch("app.services.telegram_auth.get_credentials_status")
+    async def test_api_config_status_configured(self, mock_cred_status):
+        mock_cred_status.return_value = {"configured": True, "api_id": 123456}
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -133,11 +147,14 @@ class TestTelegramCredentialsValidation:
             app.dependency_overrides.clear()
 
         assert response.status_code == 200
-        assert response.json()["configured"] is True
+        data = response.json()
+        assert data["configured"] is True
+        assert data["api_id"] == 123456
 
     @pytest.mark.asyncio
-    @patch("app.services.telegram_auth.is_configured", return_value=False)
-    async def test_api_config_status_not_configured(self, _mock_configured):
+    @patch("app.services.telegram_auth.get_credentials_status")
+    async def test_api_config_status_not_configured(self, mock_cred_status):
+        mock_cred_status.return_value = {"configured": False, "api_id": None}
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
@@ -154,7 +171,9 @@ class TestTelegramCredentialsValidation:
 class TestTelegramAuthService:
     @pytest.mark.asyncio
     @patch("app.services.telegram_auth._create_client")
-    async def test_start_auth_sends_code(self, mock_create_client):
+    @patch("app.services.telegram_auth.get_credentials")
+    async def test_start_auth_sends_code(self, mock_get_creds, mock_create_client):
+        mock_get_creds.return_value = (123456, "abcdef1234567890abcdef1234567890")
         mock_client = AsyncMock()
         mock_client.connect = AsyncMock()
         mock_client.send_code_request = AsyncMock(
@@ -271,9 +290,11 @@ class TestTelegramAuthService:
 
     @pytest.mark.asyncio
     @patch("app.services.telegram_auth._create_client")
-    async def test_disconnect_deletes_session(self, mock_create_client):
+    @patch("app.services.telegram_auth.get_credentials")
+    async def test_disconnect_deletes_session(self, mock_get_creds, mock_create_client):
         from app.services.telegram_auth import disconnect
 
+        mock_get_creds.return_value = (123456, "abcdef1234567890abcdef1234567890")
         mock_client = AsyncMock()
         mock_client.connect = AsyncMock()
         mock_client.log_out = AsyncMock()
