@@ -160,6 +160,9 @@ class PulseSettings(Base):
     notify_urgent_jobs: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default="true"
     )
+    poll_message_limit: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="100"
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
