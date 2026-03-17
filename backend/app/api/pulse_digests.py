@@ -77,14 +77,10 @@ async def get_latest_digest(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = (
-        select(PulseDigest)
-        .where(PulseDigest.user_id == current_user.id)
-        .order_by(PulseDigest.generated_at.desc())
-        .limit(1)
-    )
+    query = select(PulseDigest).where(PulseDigest.user_id == current_user.id)
     if category:
         query = query.where(PulseDigest.category == category)
+    query = query.order_by(PulseDigest.generated_at.desc()).limit(1)
 
     result = await db.execute(query)
     digest = result.scalar_one_or_none()
