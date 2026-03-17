@@ -13,6 +13,7 @@ class PulseSettingsResponse(BaseModel):
     digest_day: Optional[int] = None
     digest_interval_days: Optional[int] = None
     message_ttl_days: int
+    poll_message_limit: int
     bot_token_set: bool = False
     bot_chat_id: Optional[int] = None
     notify_digest_ready: bool
@@ -29,6 +30,7 @@ class PulseSettingsUpdate(BaseModel):
     digest_day: Optional[int] = None
     digest_interval_days: Optional[int] = None
     message_ttl_days: Optional[int] = None
+    poll_message_limit: Optional[int] = None
     bot_token: Optional[str] = None
     bot_chat_id: Optional[int] = None
     notify_digest_ready: Optional[bool] = None
