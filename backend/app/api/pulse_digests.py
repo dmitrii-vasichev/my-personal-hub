@@ -6,7 +6,7 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.encryption import decrypt_value
 from app.models.settings import UserSettings
-from app.models.telegram import PulseDigest
+from app.models.telegram import PulseDigest, PulseSettings
 from app.models.user import User
 from app.schemas.pulse_digest import (
     DigestGenerateRequest,
@@ -117,8 +117,16 @@ async def trigger_generate(
 ):
     llm = await _get_llm_client(db, current_user.id)
 
+    # Load PulseSettings for custom prompts
+    ps_result = await db.execute(
+        select(PulseSettings).where(PulseSettings.user_id == current_user.id)
+    )
+    pulse_settings = ps_result.scalar_one_or_none()
+
     try:
-        digest = await generate_digest(db, current_user.id, llm, body.category)
+        digest = await generate_digest(
+            db, current_user.id, llm, body.category, pulse_settings=pulse_settings
+        )
     except RuntimeError as e:
         raise HTTPException(status_code=503, detail=str(e))
 

@@ -170,6 +170,9 @@ class PulseSettings(Base):
     poll_message_limit: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="100"
     )
+    prompt_news: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    prompt_jobs: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    prompt_learning: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

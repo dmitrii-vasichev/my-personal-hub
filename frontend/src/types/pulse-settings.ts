@@ -12,6 +12,9 @@ export interface PulseSettings {
   bot_chat_id: number | null;
   notify_digest_ready: boolean;
   notify_urgent_jobs: boolean;
+  prompt_news: string | null;
+  prompt_jobs: string | null;
+  prompt_learning: string | null;
   updated_at: string;
 }
 
@@ -27,4 +30,7 @@ export interface PulseSettingsUpdate {
   bot_chat_id?: number;
   notify_digest_ready?: boolean;
   notify_urgent_jobs?: boolean;
+  prompt_news?: string | null;
+  prompt_jobs?: string | null;
+  prompt_learning?: string | null;
 }
