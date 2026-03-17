@@ -18,6 +18,9 @@ const mockSources: PulseSource[] = [
     criteria: null,
     is_active: true,
     last_polled_at: null,
+    poll_status: "idle",
+    last_poll_error: null,
+    last_poll_message_count: 0,
     created_at: "2026-03-16T12:00:00Z",
   },
   {
@@ -32,6 +35,9 @@ const mockSources: PulseSource[] = [
     criteria: null,
     is_active: false,
     last_polled_at: "2026-03-15T10:00:00Z",
+    poll_status: "idle",
+    last_poll_error: null,
+    last_poll_message_count: 3,
     created_at: "2026-03-15T08:00:00Z",
   },
 ];

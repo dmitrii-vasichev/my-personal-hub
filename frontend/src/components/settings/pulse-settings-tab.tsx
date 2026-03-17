@@ -12,11 +12,13 @@ import {
   useTriggerPoll,
   useTestBotConnection,
 } from "@/hooks/use-pulse-settings";
+import { usePollStatus } from "@/hooks/use-pulse-sources";
 
 export function PulseSettingsTab() {
   const { data: settings, isLoading } = usePulseSettings();
   const updateSettings = useUpdatePulseSettings();
-  const triggerPoll = useTriggerPoll();
+  const pollStatus = usePollStatus();
+  const triggerPoll = useTriggerPoll(pollStatus.startPolling);
   const testBot = useTestBotConnection();
 
   const [pollingInterval, setPollingInterval] = useState("60");

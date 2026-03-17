@@ -29,14 +29,15 @@ export function useUpdatePulseSettings() {
   });
 }
 
-export function useTriggerPoll() {
+export function useTriggerPoll(onPollStarted?: () => void) {
   return useMutation({
     mutationFn: () =>
       api.post<{ ok: boolean; detail: string; sources_count: number }>(
         "/api/pulse/sources/poll"
       ),
     onSuccess: (data) => {
-      toast.success(`Polling started for ${data.sources_count} sources`);
+      toast.info(`Polling ${data.sources_count} source${data.sources_count !== 1 ? "s" : ""}...`);
+      onPollStarted?.();
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to trigger poll");
