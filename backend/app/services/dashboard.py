@@ -142,16 +142,12 @@ async def get_pulse_summary(db: AsyncSession, user: User) -> dict:
     # Get latest digest per category using a subquery
     digests: list[dict] = []
 
-    for cat in _PULSE_CATEGORIES + [None]:
-        if cat is None:
-            cat_filter = PulseDigest.category.is_(None)
-        else:
-            cat_filter = PulseDigest.category == cat
+    for cat in _PULSE_CATEGORIES:
         result = await db.execute(
             select(PulseDigest)
             .where(
                 PulseDigest.user_id == user.id,
-                cat_filter,
+                PulseDigest.category == cat,
             )
             .order_by(desc(PulseDigest.generated_at))
             .limit(1)

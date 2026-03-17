@@ -175,7 +175,7 @@ async def test_get_pulse_summary_empty():
     """Returns empty digests list when user has no digests."""
     db = AsyncMock()
 
-    # 4 category queries (news, jobs, learning, None) → each returns None
+    # 3 category queries → each returns None
     no_digest = MagicMock()
     no_digest.scalar_one_or_none.return_value = None
 
@@ -222,10 +222,6 @@ async def test_get_pulse_summary_with_digests():
     learning_result = MagicMock()
     learning_result.scalar_one_or_none.return_value = None
 
-    # None-category query
-    none_cat_result = MagicMock()
-    none_cat_result.scalar_one_or_none.return_value = None
-
     # Period aggregation query
     period_result = MagicMock()
     period_result.one.return_value = (
@@ -234,7 +230,7 @@ async def test_get_pulse_summary_with_digests():
     )
 
     db.execute = AsyncMock(
-        side_effect=[news_result, jobs_result, learning_result, none_cat_result, period_result]
+        side_effect=[news_result, jobs_result, learning_result, period_result]
     )
 
     user = make_user()

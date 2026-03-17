@@ -200,6 +200,8 @@ class TestDigestGeneration:
         assert digest.content == "# Digest\n\nSummary of news..."
         assert digest.message_count == 2
         assert digest.user_id == 1
+        # When no category is passed, effective_category is derived from messages
+        assert digest.category == "news"
         mock_llm.generate.assert_called_once()
 
         # Check messages marked as in_digest
