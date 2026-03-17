@@ -150,7 +150,13 @@ async def run_user_digest(user_id: int) -> None:
 
             from app.services.pulse_digest import generate_digest
 
-            digest = await generate_digest(db, user_id, llm_client)
+            # Load PulseSettings for custom prompts
+            ps_result = await db.execute(
+                select(PulseSettings).where(PulseSettings.user_id == user_id)
+            )
+            pulse_settings = ps_result.scalar_one_or_none()
+
+            digest = await generate_digest(db, user_id, llm_client, pulse_settings=pulse_settings)
             if digest:
                 await db.commit()
                 logger.info(

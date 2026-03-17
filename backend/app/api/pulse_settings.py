@@ -28,7 +28,22 @@ def _to_response(settings) -> dict:
         "bot_chat_id": settings.bot_chat_id,
         "notify_digest_ready": settings.notify_digest_ready,
         "notify_urgent_jobs": settings.notify_urgent_jobs,
+        "prompt_news": settings.prompt_news,
+        "prompt_jobs": settings.prompt_jobs,
+        "prompt_learning": settings.prompt_learning,
         "updated_at": settings.updated_at,
+    }
+
+
+@router.get("/prompts/defaults")
+async def get_prompt_defaults(current_user: User = Depends(get_current_user)):
+    """Return default hardcoded prompts for all categories."""
+    from app.services.pulse_digest import CATEGORY_PROMPTS
+
+    return {
+        "news": CATEGORY_PROMPTS.get("news", ""),
+        "jobs": CATEGORY_PROMPTS.get("jobs", ""),
+        "learning": CATEGORY_PROMPTS.get("learning", ""),
     }
 
 

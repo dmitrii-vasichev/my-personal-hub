@@ -1,7 +1,7 @@
 from datetime import datetime, time
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class PulseSettingsResponse(BaseModel):
@@ -18,6 +18,9 @@ class PulseSettingsResponse(BaseModel):
     bot_chat_id: Optional[int] = None
     notify_digest_ready: bool
     notify_urgent_jobs: bool
+    prompt_news: Optional[str] = None
+    prompt_jobs: Optional[str] = None
+    prompt_learning: Optional[str] = None
     updated_at: datetime
 
     model_config = {"from_attributes": True}
@@ -35,3 +38,6 @@ class PulseSettingsUpdate(BaseModel):
     bot_chat_id: Optional[int] = None
     notify_digest_ready: Optional[bool] = None
     notify_urgent_jobs: Optional[bool] = None
+    prompt_news: Optional[str] = Field(None, max_length=5000)
+    prompt_jobs: Optional[str] = Field(None, max_length=5000)
+    prompt_learning: Optional[str] = Field(None, max_length=5000)

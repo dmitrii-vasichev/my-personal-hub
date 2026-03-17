@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Sparkles, History, Radio as RadioIcon, Inbox, Settings2 } from "lucide-react";
+import { Sparkles, History, Radio as RadioIcon, Inbox, Settings2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CategoryTabs } from "@/components/pulse/category-tabs";
 import {
@@ -61,6 +61,13 @@ export default function PulseDigestsPage() {
               Generate Now
             </Button>
           )}
+          <Link
+            href="/pulse/prompts"
+            className="inline-flex h-7 items-center gap-1 rounded-[min(var(--radius-md),12px)] border border-border bg-background px-2.5 text-[0.8rem] font-medium text-foreground transition-all hover:bg-muted dark:border-input dark:bg-input/30 dark:hover:bg-input/50"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Prompts
+          </Link>
           <Link
             href="/pulse/sources"
             className="inline-flex h-7 items-center gap-1 rounded-[min(var(--radius-md),12px)] border border-border bg-background px-2.5 text-[0.8rem] font-medium text-foreground transition-all hover:bg-muted dark:border-input dark:bg-input/30 dark:hover:bg-input/50"
