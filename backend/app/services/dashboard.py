@@ -159,6 +159,7 @@ async def get_pulse_summary(db: AsyncSession, user: User) -> dict:
                 "category": digest.category,
                 "content_preview": _extract_preview(digest.content),
                 "message_count": digest.message_count,
+                "items_count": digest.items_count,
                 "generated_at": digest.generated_at,
             })
 
