@@ -153,6 +153,9 @@ class PulseSettings(Base):
     digest_time: Mapped[time] = mapped_column(
         Time, nullable=False, server_default="09:00:00"
     )
+    timezone: Mapped[str] = mapped_column(
+        String(50), nullable=False, server_default="America/Denver"
+    )
     digest_day: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     digest_interval_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     message_ttl_days: Mapped[int] = mapped_column(

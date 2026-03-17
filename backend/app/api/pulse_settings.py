@@ -20,6 +20,7 @@ def _to_response(settings) -> dict:
         "polling_interval_minutes": settings.polling_interval_minutes,
         "digest_schedule": settings.digest_schedule,
         "digest_time": settings.digest_time,
+        "timezone": settings.timezone,
         "digest_day": settings.digest_day,
         "digest_interval_days": settings.digest_interval_days,
         "message_ttl_days": settings.message_ttl_days,

@@ -35,6 +35,7 @@ def make_pulse_settings(user_id: int = 1) -> PulseSettings:
     s.polling_interval_minutes = 60
     s.digest_schedule = "daily"
     s.digest_time = time(9, 0)
+    s.timezone = "America/Denver"
     s.digest_day = None
     s.digest_interval_days = None
     s.message_ttl_days = 30
@@ -155,6 +156,47 @@ class TestPulseSettingsAPI:
         assert response.json()["polling_interval_minutes"] == 30
 
     @pytest.mark.asyncio
+    @patch("app.services.pulse_settings.schedule_user_digest")
+    @patch("app.services.pulse_settings.schedule_user_polling")
+    async def test_update_digest_time_passes_timezone(self, mock_poll, mock_digest):
+        """Updating digest_time should pass timezone to scheduler."""
+        from app.services.pulse_settings import update_settings
+
+        existing = make_pulse_settings()
+        existing.timezone = "Europe/Moscow"
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = existing
+        db.execute = AsyncMock(return_value=mock_result)
+
+        data = PulseSettingsUpdate(digest_time=time(10, 30))
+        await update_settings(db, 1, data)
+
+        mock_digest.assert_called_once()
+        call_kwargs = mock_digest.call_args
+        assert call_kwargs[1].get("timezone") == "Europe/Moscow" or (
+            len(call_kwargs[0]) >= 8 and call_kwargs[0][7] == "Europe/Moscow"
+        )
+
+    @pytest.mark.asyncio
+    @patch("app.services.pulse_settings.schedule_user_digest")
+    @patch("app.services.pulse_settings.schedule_user_polling")
+    async def test_update_timezone_reschedules_digest(self, mock_poll, mock_digest):
+        """Updating timezone alone should trigger digest reschedule."""
+        from app.services.pulse_settings import update_settings
+
+        existing = make_pulse_settings()
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = existing
+        db.execute = AsyncMock(return_value=mock_result)
+
+        data = PulseSettingsUpdate(timezone="America/New_York")
+        await update_settings(db, 1, data)
+
+        mock_digest.assert_called_once()
+
+    @pytest.mark.asyncio
     async def test_update_schema_no_interval_no_reschedule(self):
         """Updating non-interval fields should not reschedule."""
         from app.services.pulse_settings import update_settings
@@ -169,3 +211,90 @@ class TestPulseSettingsAPI:
             data = PulseSettingsUpdate(message_ttl_days=7)
             await update_settings(db, 1, data)
             mock_schedule.assert_not_called()
+
+
+# ── Scheduler timezone tests ────────────────────────────────────────────────
+
+
+class TestSchedulerTimezone:
+    @patch("app.core.scheduler.scheduler")
+    def test_schedule_digest_uses_timezone(self, mock_scheduler):
+        """schedule_user_digest should pass timezone to cron job."""
+        from app.core.scheduler import schedule_user_digest
+        from zoneinfo import ZoneInfo
+
+        mock_scheduler.get_job.return_value = None
+
+        schedule_user_digest(
+            user_id=1,
+            schedule="daily",
+            hour=9,
+            minute=0,
+            timezone="America/Denver",
+        )
+
+        mock_scheduler.add_job.assert_called_once()
+        call_kwargs = mock_scheduler.add_job.call_args[1]
+        assert call_kwargs["timezone"] == ZoneInfo("America/Denver")
+        assert call_kwargs["hour"] == 9
+        assert call_kwargs["minute"] == 0
+
+    @patch("app.core.scheduler.scheduler")
+    def test_schedule_digest_invalid_timezone_fallback(self, mock_scheduler):
+        """Invalid timezone should fall back to America/Denver."""
+        from app.core.scheduler import schedule_user_digest
+        from zoneinfo import ZoneInfo
+
+        mock_scheduler.get_job.return_value = None
+
+        schedule_user_digest(
+            user_id=1,
+            schedule="daily",
+            hour=9,
+            minute=0,
+            timezone="Invalid/Zone",
+        )
+
+        mock_scheduler.add_job.assert_called_once()
+        call_kwargs = mock_scheduler.add_job.call_args[1]
+        assert call_kwargs["timezone"] == ZoneInfo("America/Denver")
+
+    @patch("app.core.scheduler.scheduler")
+    def test_schedule_weekly_uses_timezone(self, mock_scheduler):
+        """Weekly schedule should also use timezone."""
+        from app.core.scheduler import schedule_user_digest
+        from zoneinfo import ZoneInfo
+
+        mock_scheduler.get_job.return_value = None
+
+        schedule_user_digest(
+            user_id=1,
+            schedule="weekly",
+            hour=10,
+            minute=30,
+            day_of_week=1,
+            timezone="Europe/Moscow",
+        )
+
+        mock_scheduler.add_job.assert_called_once()
+        call_kwargs = mock_scheduler.add_job.call_args[1]
+        assert call_kwargs["timezone"] == ZoneInfo("Europe/Moscow")
+
+    @patch("app.core.scheduler.scheduler")
+    def test_schedule_interval_no_timezone(self, mock_scheduler):
+        """Interval schedule doesn't use timezone (it's just N-day intervals)."""
+        from app.core.scheduler import schedule_user_digest
+
+        mock_scheduler.get_job.return_value = None
+
+        schedule_user_digest(
+            user_id=1,
+            schedule="every_n_days",
+            interval_days=3,
+            timezone="Europe/Moscow",
+        )
+
+        mock_scheduler.add_job.assert_called_once()
+        call_kwargs = mock_scheduler.add_job.call_args[1]
+        # interval-based jobs don't have timezone param
+        assert "timezone" not in call_kwargs

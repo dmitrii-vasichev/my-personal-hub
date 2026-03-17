@@ -33,7 +33,7 @@ async def update_settings(
     update_data = data.model_dump(exclude_unset=True)
 
     reschedule_polling = "polling_interval_minutes" in update_data
-    digest_fields = {"digest_schedule", "digest_time", "digest_day", "digest_interval_days"}
+    digest_fields = {"digest_schedule", "digest_time", "digest_day", "digest_interval_days", "timezone"}
     reschedule_digest = bool(digest_fields & update_data.keys())
 
     for key, value in update_data.items():
@@ -55,6 +55,7 @@ async def update_settings(
             minute=minute,
             day_of_week=settings.digest_day,
             interval_days=settings.digest_interval_days,
+            timezone=settings.timezone or "America/Denver",
         )
 
     return settings
