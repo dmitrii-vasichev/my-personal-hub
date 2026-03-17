@@ -3,10 +3,20 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CategoryTabs } from "@/components/pulse/category-tabs";
 import { DigestView, DigestEmptyState, DigestViewSkeleton } from "@/components/pulse/digest-view";
+import PulseDigestsPage from "@/app/(dashboard)/pulse/page";
 import type { PulseDigest } from "@/types/pulse-digest";
 
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
+}));
+
+vi.mock("@/hooks/use-pulse-digests", () => ({
+  useLatestDigest: () => ({ data: null, isLoading: false }),
+  useGenerateDigest: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
+vi.mock("@/hooks/use-pulse-inbox", () => ({
+  usePulseInbox: () => ({ data: { items: [], total: 0 }, isLoading: false }),
 }));
 
 function Wrapper({ children }: { children: React.ReactNode }) {
@@ -85,5 +95,19 @@ describe("DigestViewSkeleton", () => {
     render(<DigestViewSkeleton />);
 
     expect(screen.getByTestId("digest-loading")).toBeInTheDocument();
+  });
+});
+
+describe("PulseDigestsPage", () => {
+  it("renders Sources link pointing to /pulse/sources", () => {
+    render(
+      <Wrapper>
+        <PulseDigestsPage />
+      </Wrapper>
+    );
+
+    const sourcesLink = screen.getByRole("link", { name: /sources/i });
+    expect(sourcesLink).toBeInTheDocument();
+    expect(sourcesLink).toHaveAttribute("href", "/pulse/sources");
   });
 });
