@@ -222,6 +222,45 @@ class TestPulseSourceService:
         assert result["members_count"] == 5000
         mock_client.disconnect.assert_called_once()
 
+    @pytest.mark.asyncio
+    @patch("app.services.pulse_source.telethon_utils.get_peer_id")
+    @patch("app.services.pulse_source.get_client_for_user")
+    async def test_resolve_source_uses_peer_id_for_channels(
+        self, mock_get_client, mock_get_peer_id
+    ):
+        """Regression: resolve_source must use get_peer_id, not raw entity.id.
+
+        Raw entity.id for channels lacks the -100 prefix, causing
+        get_entity() to fail with PeerUser error during polling.
+        See: https://github.com/dmitrii-vasichev/my-personal-hub/issues/573
+        """
+        from app.services.pulse_source import resolve_source
+
+        # Simulate real Telethon behavior: entity.id is raw (no -100 prefix)
+        mock_entity = MagicMock()
+        mock_entity.id = 1234567890  # raw channel ID without prefix
+        mock_entity.username = "tech_channel"
+        mock_entity.title = "Tech Channel"
+        mock_entity.participants_count = 10000
+
+        mock_client = AsyncMock()
+        mock_client.get_entity = AsyncMock(return_value=mock_entity)
+        mock_client.disconnect = AsyncMock()
+        mock_get_client.return_value = mock_client
+
+        # get_peer_id should return the properly prefixed ID
+        mock_get_peer_id.return_value = -1001234567890
+
+        db = AsyncMock()
+        user = make_user()
+
+        result = await resolve_source(db, user, "@tech_channel")
+
+        # Must use get_peer_id result, NOT raw entity.id
+        mock_get_peer_id.assert_called_once_with(mock_entity)
+        assert result["telegram_id"] == -1001234567890
+        assert result["telegram_id"] != mock_entity.id  # NOT the raw ID
+
 
 # ── API endpoint tests ───────────────────────────────────────────────────────
 
