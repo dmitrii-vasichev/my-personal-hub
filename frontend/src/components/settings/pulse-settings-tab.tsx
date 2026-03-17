@@ -28,6 +28,7 @@ export function PulseSettingsTab() {
   const [digestTime, setDigestTime] = useState("09:00");
   const [digestDay, setDigestDay] = useState("1");
   const [digestIntervalDays, setDigestIntervalDays] = useState("2");
+  const [timezone, setTimezone] = useState("America/Denver");
   const [notifyDigest, setNotifyDigest] = useState(true);
   const [notifyJobs, setNotifyJobs] = useState(true);
   const [botToken, setBotToken] = useState("");
@@ -41,6 +42,7 @@ export function PulseSettingsTab() {
       setTtlDays(String(settings.message_ttl_days));
       setDigestSchedule(settings.digest_schedule);
       setDigestTime(settings.digest_time?.slice(0, 5) || "09:00");
+      setTimezone(settings.timezone || "America/Denver");
       setDigestDay(String(settings.digest_day ?? 1));
       setDigestIntervalDays(String(settings.digest_interval_days ?? 2));
       setNotifyDigest(settings.notify_digest_ready);
@@ -58,6 +60,7 @@ export function PulseSettingsTab() {
         message_ttl_days: parseInt(ttlDays) || 30,
         digest_schedule: digestSchedule,
         digest_time: digestTime + ":00",
+        timezone,
         digest_day: digestSchedule === "weekly" ? parseInt(digestDay) : undefined,
         digest_interval_days:
           digestSchedule === "every_n_days" ? parseInt(digestIntervalDays) : undefined,
@@ -191,6 +194,29 @@ export function PulseSettingsTab() {
             onChange={(e) => setDigestTime(e.target.value)}
             className="text-sm"
           />
+        </div>
+
+        {/* Timezone */}
+        <div className="space-y-1">
+          <Label className="text-xs uppercase text-muted-foreground">
+            Timezone
+          </Label>
+          <Select
+            value={timezone}
+            onChange={(e) => setTimezone((e.target as HTMLSelectElement).value)}
+            className="text-sm"
+          >
+            <option value="America/Denver">America/Denver (MT)</option>
+            <option value="America/New_York">America/New_York (ET)</option>
+            <option value="America/Chicago">America/Chicago (CT)</option>
+            <option value="America/Los_Angeles">America/Los_Angeles (PT)</option>
+            <option value="Europe/Moscow">Europe/Moscow (MSK)</option>
+            <option value="Europe/London">Europe/London (GMT)</option>
+            <option value="Europe/Berlin">Europe/Berlin (CET)</option>
+            <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+            <option value="UTC">UTC</option>
+          </Select>
+          <p className="text-[11px] text-muted-foreground">Digest time is in this timezone</p>
         </div>
 
         {/* Weekly Day Selector */}
