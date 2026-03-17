@@ -179,7 +179,7 @@ async def generate_digest(
     # Store digest
     digest = PulseDigest(
         user_id=user_id,
-        category=category,
+        category=effective_category,
         content=content,
         message_count=len(messages),
         generated_at=datetime.now(timezone.utc),
