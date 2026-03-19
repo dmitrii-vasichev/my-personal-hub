@@ -2,9 +2,9 @@
   "project_name": "my-personal-hub",
   "work_type": "new_feature",
   "created_at": "2026-03-08T13:10:00Z",
-  "current_step": 3,
-  "current_step_name": "phasing",
-  "current_phase": 39,
+  "current_step": 4,
+  "current_step_name": "planning",
+  "current_phase": 40,
   "phase_39_merged": true,
   "phase_38_merged": false,
   "phase_37_merged": true,
@@ -182,7 +182,8 @@
     {"step": 1, "action": "completed", "timestamp": "2026-03-16T23:00:00Z", "details": "PRD for Pulse Polling Feedback approved"},
     {"step": 4, "action": "completed", "timestamp": "2026-03-16T23:05:00Z", "details": "Phase 39 plan approved — 10 tasks (Pulse Polling Feedback)"},
     {"step": 5, "action": "completed", "timestamp": "2026-03-16T23:10:00Z", "details": "10 issues created (#562-#571), added to Project Board #4"},
-    {"step": 1, "action": "completed", "timestamp": "2026-03-19T12:00:00Z", "details": "PRD for Structured Digest Items approved — interactive digest replacing raw Inbox for Learning & Jobs"}
+    {"step": 1, "action": "completed", "timestamp": "2026-03-19T12:00:00Z", "details": "PRD for Structured Digest Items approved — interactive digest replacing raw Inbox for Learning & Jobs"},
+    {"step": 3, "action": "completed", "timestamp": "2026-03-19T12:10:00Z", "details": "Phasing done — 2 phases (40-41) defined, starting Phase 40"}
   ],
   "artifacts": {
     "prd_file": "docs/prd-structured-digest-items.md",

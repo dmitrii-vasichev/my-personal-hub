@@ -128,6 +128,13 @@ Extend the existing digest generation pipeline to output structured JSON items f
 - `POST /api/pulse/inbox/{id}/action`
 - `POST /api/pulse/inbox/bulk-action`
 
+## Implementation Phases
+
+| Phase | Name | Scope |
+|-------|------|-------|
+| 40 | Structured Digest Items — Backend | New `pulse_digest_items` table + migration. Modified digest generation (AI outputs JSON items for Learning/Jobs, markdown for News). Digest items API (list, action, bulk-action). Jobs → Job Hunt integration (create Job from item). Remove per-message AI classification for Learning. Remove old Inbox endpoints. Backwards compat for old markdown digests. |
+| 41 | Structured Digest Items — Frontend | Replace Inbox view with interactive digest items view for Learning. Add interactive items view for Jobs with → Job Hunt button. News tab unchanged. Update dashboard widget. Bulk actions UI. |
+
 ## Out of Scope
 - Changes to News category digest format
 - Changes to message collection/polling logic
