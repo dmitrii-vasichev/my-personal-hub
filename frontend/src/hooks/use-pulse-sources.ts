@@ -146,8 +146,8 @@ export function usePollStatus() {
 
     // Auto-refresh related data
     queryClient.invalidateQueries({ queryKey: [PULSE_SOURCES_KEY] });
-    queryClient.invalidateQueries({ queryKey: ["pulse-inbox"] });
     queryClient.invalidateQueries({ queryKey: ["pulse-digests"] });
+    queryClient.invalidateQueries({ queryKey: ["pulse-digest-items"] });
   }, [query.data, queryClient, stopPolling]);
 
   return { startPolling, stopPolling, data: query.data, isPolling: pollingActive.current };

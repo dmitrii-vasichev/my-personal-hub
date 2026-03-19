@@ -4,6 +4,7 @@ import { RefreshCw, Clock, MessageSquare, CalendarDays } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { PulseDigest } from "@/types/pulse-digest";
+import { DigestItemsView } from "@/components/pulse/digest-items-view";
 
 interface DigestViewProps {
   digest: PulseDigest;
@@ -28,6 +29,8 @@ function formatShortDate(iso: string | null) {
 }
 
 export function DigestView({ digest }: DigestViewProps) {
+  const isStructured = digest.digest_type === "structured";
+
   return (
     <div data-testid="digest-view">
       {/* Metadata bar */}
@@ -50,12 +53,15 @@ export function DigestView({ digest }: DigestViewProps) {
         )}
       </div>
 
-      {/* Markdown content */}
-      <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-[var(--text-primary)] prose-p:text-[var(--text-secondary)] prose-a:text-[var(--accent)] prose-strong:text-[var(--text-primary)] prose-code:text-[var(--accent-teal)] prose-li:text-[var(--text-secondary)] prose-blockquote:border-[var(--accent)] prose-blockquote:text-[var(--text-secondary)]">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {digest.content}
-        </ReactMarkdown>
-      </div>
+      {isStructured && digest.category ? (
+        <DigestItemsView digestId={digest.id} category={digest.category} />
+      ) : (
+        <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-[var(--text-primary)] prose-p:text-[var(--text-secondary)] prose-a:text-[var(--accent)] prose-strong:text-[var(--text-primary)] prose-code:text-[var(--accent-teal)] prose-li:text-[var(--text-secondary)] prose-blockquote:border-[var(--accent)] prose-blockquote:text-[var(--text-secondary)]">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {digest.content}
+          </ReactMarkdown>
+        </div>
+      )}
     </div>
   );
 }
