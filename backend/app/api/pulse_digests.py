@@ -146,6 +146,52 @@ async def trigger_generate(
 # ── Digest items endpoints ──────────────────────────────────────────────────
 
 
+@router.get("/latest/items", response_model=DigestItemListResponse)
+async def get_latest_digest_items(
+    category: str = Query("learning"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get items from the latest digest for a given category."""
+    digest_result = await db.execute(
+        select(PulseDigest)
+        .where(
+            PulseDigest.user_id == current_user.id,
+            PulseDigest.category == category,
+        )
+        .order_by(PulseDigest.generated_at.desc())
+        .limit(1)
+    )
+    digest = digest_result.scalar_one_or_none()
+    if not digest:
+        raise HTTPException(status_code=404, detail="No digest found for this category")
+
+    if (digest.digest_type or "markdown") == "markdown":
+        return DigestItemListResponse(items=[], total=0, is_markdown=True)
+
+    query = select(PulseDigestItem).where(
+        PulseDigestItem.digest_id == digest.id,
+        PulseDigestItem.user_id == current_user.id,
+    )
+    count_q = select(func.count(PulseDigestItem.id)).where(
+        PulseDigestItem.digest_id == digest.id,
+        PulseDigestItem.user_id == current_user.id,
+    )
+
+    total = (await db.execute(count_q)).scalar() or 0
+    result = await db.execute(
+        query.order_by(PulseDigestItem.id).offset(offset).limit(limit)
+    )
+    items = list(result.scalars().all())
+
+    return DigestItemListResponse(
+        items=[DigestItemResponse.from_orm_item(i) for i in items],
+        total=total,
+    )
+
+
 @router.get("/{digest_id}/items", response_model=DigestItemListResponse)
 async def list_digest_items(
     digest_id: int,
@@ -189,52 +235,6 @@ async def list_digest_items(
         count_base = count_base.where(PulseDigestItem.status == item_status)
 
     total = (await db.execute(count_base)).scalar() or 0
-    result = await db.execute(
-        query.order_by(PulseDigestItem.id).offset(offset).limit(limit)
-    )
-    items = list(result.scalars().all())
-
-    return DigestItemListResponse(
-        items=[DigestItemResponse.from_orm_item(i) for i in items],
-        total=total,
-    )
-
-
-@router.get("/latest/items", response_model=DigestItemListResponse)
-async def get_latest_digest_items(
-    category: str = Query("learning"),
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Get items from the latest digest for a given category."""
-    digest_result = await db.execute(
-        select(PulseDigest)
-        .where(
-            PulseDigest.user_id == current_user.id,
-            PulseDigest.category == category,
-        )
-        .order_by(PulseDigest.generated_at.desc())
-        .limit(1)
-    )
-    digest = digest_result.scalar_one_or_none()
-    if not digest:
-        raise HTTPException(status_code=404, detail="No digest found for this category")
-
-    if (digest.digest_type or "markdown") == "markdown":
-        return DigestItemListResponse(items=[], total=0, is_markdown=True)
-
-    query = select(PulseDigestItem).where(
-        PulseDigestItem.digest_id == digest.id,
-        PulseDigestItem.user_id == current_user.id,
-    )
-    count_q = select(func.count(PulseDigestItem.id)).where(
-        PulseDigestItem.digest_id == digest.id,
-        PulseDigestItem.user_id == current_user.id,
-    )
-
-    total = (await db.execute(count_q)).scalar() or 0
     result = await db.execute(
         query.order_by(PulseDigestItem.id).offset(offset).limit(limit)
     )

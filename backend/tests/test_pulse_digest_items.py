@@ -425,6 +425,68 @@ class TestDigestItemActions:
         assert item.action_type == "to_task"
 
     @pytest.mark.asyncio
+    async def test_action_to_note(self):
+        """to_note creates a Note via Google Drive and updates item status."""
+        from app.services.pulse_digest_items import process_item_action
+
+        user = make_user()
+        item = make_digest_item()
+        mock_note = MagicMock()
+        mock_note.id = 77
+
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = item
+        mock_db.execute = AsyncMock(return_value=mock_result)
+        mock_db.commit = AsyncMock()
+
+        mock_credentials = MagicMock()
+        mock_settings = MagicMock()
+        mock_settings.google_drive_notes_folder_id = "folder-abc"
+
+        with patch(
+            "app.services.pulse_digest_items.google_oauth.get_credentials",
+            new_callable=AsyncMock,
+            return_value=mock_credentials,
+        ), patch(
+            "app.services.pulse_digest_items.get_or_create_settings",
+            new_callable=AsyncMock,
+            return_value=mock_settings,
+        ), patch(
+            "app.services.pulse_digest_items.note_service.create_note",
+            new_callable=AsyncMock,
+            return_value=mock_note,
+        ):
+            result = await process_item_action(mock_db, user, 1, "to_note")
+
+        assert result is not None
+        assert result["action"] == "to_note"
+        assert result["created_id"] == 77
+        assert item.status == "actioned"
+        assert item.action_type == "to_note"
+
+    @pytest.mark.asyncio
+    async def test_action_to_note_no_credentials(self):
+        """to_note raises ValueError when Google credentials are missing."""
+        from app.services.pulse_digest_items import process_item_action
+
+        user = make_user()
+        item = make_digest_item()
+
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = item
+        mock_db.execute = AsyncMock(return_value=mock_result)
+
+        with patch(
+            "app.services.pulse_digest_items.google_oauth.get_credentials",
+            new_callable=AsyncMock,
+            return_value=None,
+        ):
+            with pytest.raises(ValueError, match="Google credentials"):
+                await process_item_action(mock_db, user, 1, "to_note")
+
+    @pytest.mark.asyncio
     async def test_action_to_job(self):
         """to_job creates a Job from item metadata."""
         from app.services.pulse_digest_items import process_item_action

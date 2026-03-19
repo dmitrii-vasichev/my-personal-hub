@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
@@ -72,12 +72,12 @@ class DigestItemListResponse(BaseModel):
 
 
 class DigestItemAction(BaseModel):
-    action: str  # to_task, to_note, to_job, skip
+    action: Literal["to_task", "to_note", "to_job", "skip"]
 
 
 class DigestItemBulkAction(BaseModel):
     item_ids: list[int]
-    action: str  # to_task, to_note, to_job, skip
+    action: Literal["to_task", "to_note", "to_job", "skip"]
 
 
 class DigestSummaryItem(BaseModel):
