@@ -78,12 +78,12 @@ def _build_user_prompt(
     sources_map: dict[int, PulseSource],
 ) -> str:
     """Build a structured user prompt from grouped messages."""
-    # Group messages: subcategory -> source_id -> messages
+    # Group messages: source subcategory -> source_id -> messages
     grouped: dict[str, dict[int, list[PulseMessage]]] = {}
     for msg in messages:
-        sub = msg.category or "general"
-        source_id = msg.source_id
-        grouped.setdefault(sub, {}).setdefault(source_id, []).append(msg)
+        source = sources_map.get(msg.source_id)
+        sub = (source.subcategory if source else None) or "General"
+        grouped.setdefault(sub, {}).setdefault(msg.source_id, []).append(msg)
 
     parts: list[str] = []
     for subcategory, by_source in sorted(grouped.items()):
