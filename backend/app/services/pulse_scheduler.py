@@ -79,13 +79,14 @@ async def _apply_ai_filter(db: AsyncSession, user_id: int) -> int:
         logger.warning("Could not create LLM client for user %s: %s", user_id, e)
         return 0
 
-    # Get unanalyzed messages (ai_relevance is None, not news category)
+    # Get unanalyzed messages (ai_relevance is None, jobs only)
+    # Learning messages skip AI analysis — classification happens at digest generation time
     result = await db.execute(
         select(PulseMessage)
         .where(
             PulseMessage.user_id == user_id,
             PulseMessage.ai_relevance.is_(None),
-            PulseMessage.category.in_(["jobs", "learning"]),
+            PulseMessage.category == "jobs",
         )
         .limit(50)
     )

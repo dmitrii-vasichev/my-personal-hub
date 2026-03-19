@@ -8,7 +8,8 @@ class DigestResponse(BaseModel):
     id: int
     user_id: int
     category: Optional[str] = None
-    content: str
+    content: Optional[str] = None
+    digest_type: str = "markdown"
     message_count: int
     items_count: Optional[int] = None
     generated_at: datetime
@@ -30,6 +31,53 @@ class DigestGenerateRequest(BaseModel):
 class DigestGenerateResponse(BaseModel):
     digest: Optional[DigestResponse] = None
     message: str
+
+
+class DigestItemResponse(BaseModel):
+    id: int
+    digest_id: int
+    title: str
+    summary: str
+    classification: str
+    metadata: Optional[dict] = None
+    source_names: Optional[list[str]] = None
+    status: str = "new"
+    action_type: Optional[str] = None
+    action_result_id: Optional[int] = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+    @classmethod
+    def from_orm_item(cls, item) -> "DigestItemResponse":
+        return cls(
+            id=item.id,
+            digest_id=item.digest_id,
+            title=item.title,
+            summary=item.summary,
+            classification=item.classification,
+            metadata=item.metadata_,
+            source_names=item.source_names,
+            status=item.status,
+            action_type=item.action_type,
+            action_result_id=item.action_result_id,
+            created_at=item.created_at,
+        )
+
+
+class DigestItemListResponse(BaseModel):
+    items: list[DigestItemResponse]
+    total: int
+    is_markdown: bool = False
+
+
+class DigestItemAction(BaseModel):
+    action: str  # to_task, to_note, to_job, skip
+
+
+class DigestItemBulkAction(BaseModel):
+    item_ids: list[int]
+    action: str  # to_task, to_note, to_job, skip
 
 
 class DigestSummaryItem(BaseModel):
