@@ -15,10 +15,6 @@ vi.mock("@/hooks/use-pulse-digests", () => ({
   useGenerateDigest: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
-vi.mock("@/hooks/use-pulse-inbox", () => ({
-  usePulseInbox: () => ({ data: { items: [], total: 0 }, isLoading: false }),
-}));
-
 function Wrapper({ children }: { children: React.ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
@@ -29,7 +25,9 @@ const mockDigest: PulseDigest = {
   user_id: 1,
   category: "news",
   content: "# News Digest\n\n## Tech\n\n- AI advances continue\n- New React release",
+  digest_type: "markdown",
   message_count: 15,
+  items_count: null,
   generated_at: "2026-03-16T09:00:00Z",
   period_start: "2026-03-15T00:00:00Z",
   period_end: "2026-03-16T00:00:00Z",

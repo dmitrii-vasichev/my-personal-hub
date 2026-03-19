@@ -63,7 +63,11 @@ function CategoryRow({ digest }: { digest: DigestSummaryItem }) {
           </span>
         </div>
         <p className="text-sm text-foreground line-clamp-2 leading-relaxed">
-          {digest.content_preview}
+          {digest.content_preview
+            ? digest.content_preview
+            : digest.items_count
+              ? `${digest.items_count} new items to review`
+              : "No content available"}
         </p>
       </div>
     </Link>

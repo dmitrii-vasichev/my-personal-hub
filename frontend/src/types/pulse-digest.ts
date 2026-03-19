@@ -3,6 +3,7 @@ export interface PulseDigest {
   user_id: number;
   category: string | null;
   content: string;
+  digest_type: string;
   message_count: number;
   items_count: number | null;
   generated_at: string;
@@ -37,4 +38,33 @@ export interface PulseSummaryResponse {
   digests: DigestSummaryItem[];
   period_start: string | null;
   period_end: string | null;
+}
+
+// --- Digest Items (structured digests) ---
+
+export interface DigestItem {
+  id: number;
+  digest_id: number;
+  title: string;
+  summary: string;
+  classification: string;
+  metadata: Record<string, string | null> | null;
+  source_names: string[] | null;
+  status: "new" | "actioned" | "skipped";
+  action_type: string | null;
+  action_result_id: number | null;
+  created_at: string;
+}
+
+export interface DigestItemListResponse {
+  items: DigestItem[];
+  total: number;
+  is_markdown: boolean;
+}
+
+export type DigestItemAction = "to_task" | "to_note" | "to_job" | "skip";
+
+export interface DigestItemBulkActionRequest {
+  item_ids: number[];
+  action: DigestItemAction;
 }
