@@ -339,19 +339,19 @@ def test_extract_title_none():
 
 
 @pytest.mark.asyncio
-async def test_inbox_api_unauthorized():
-    """Inbox endpoints return 401 without auth token."""
+async def test_inbox_api_removed():
+    """Inbox endpoints return 404 — removed in Phase 40 (replaced by digest items)."""
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as client:
         resp = await client.get("/api/pulse/inbox/")
-        assert resp.status_code in (401, 403)
+        assert resp.status_code in (404, 307)
 
         resp = await client.post("/api/pulse/inbox/1/action", json={"action": "skip"})
-        assert resp.status_code in (401, 403)
+        assert resp.status_code in (404, 307)
 
         resp = await client.post(
             "/api/pulse/inbox/bulk-action",
             json={"message_ids": [1], "action": "skip"},
         )
-        assert resp.status_code in (401, 403)
+        assert resp.status_code in (404, 307)

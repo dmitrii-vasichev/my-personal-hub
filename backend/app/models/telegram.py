@@ -16,7 +16,7 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
@@ -123,7 +123,10 @@ class PulseDigest(Base):
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    content: Mapped[str] = mapped_column(Text, nullable=False)
+    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    digest_type: Mapped[str] = mapped_column(
+        String(20), nullable=False, server_default="markdown"
+    )
     message_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     items_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     generated_at: Mapped[datetime] = mapped_column(
@@ -134,6 +137,10 @@ class PulseDigest(Base):
     )
     period_end: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+
+    items: Mapped[list["PulseDigestItem"]] = relationship(
+        "PulseDigestItem", back_populates="digest", cascade="all, delete-orphan"
     )
 
 
@@ -182,4 +189,41 @@ class PulseSettings(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+
+
+class PulseDigestItem(Base):
+    __tablename__ = "pulse_digest_items"
+    __table_args__ = (
+        Index("ix_pulse_digest_items_digest", "digest_id"),
+        Index("ix_pulse_digest_items_user_status", "user_id", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    digest_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("pulse_digests.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    classification: Mapped[str] = mapped_column(String(50), nullable=False)
+    metadata_: Mapped[Optional[dict]] = mapped_column(
+        "metadata", JSON, nullable=True
+    )
+    source_names: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    source_message_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="new")
+    actioned_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    action_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    action_result_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    digest: Mapped["PulseDigest"] = relationship(
+        "PulseDigest", back_populates="items"
     )
