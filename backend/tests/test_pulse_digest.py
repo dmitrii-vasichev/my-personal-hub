@@ -78,7 +78,7 @@ class TestPromptBuilder:
 
         assert "Test Channel" in result
         assert "Big news today" in result
-        assert "Subcategory: news" in result
+        assert "Subcategory: General" in result
 
     def test_build_user_prompt_with_relevance(self):
         from app.services.pulse_digest import _build_user_prompt
@@ -105,6 +105,36 @@ class TestPromptBuilder:
         result = _build_user_prompt([msg], {1: source})
 
         assert "[type: article]" in result
+
+    def test_build_user_prompt_groups_by_source_subcategory(self):
+        """Regression: subcategory grouping must use source.subcategory, not msg.category."""
+        from app.services.pulse_digest import _build_user_prompt
+
+        msg1 = make_message(msg_id=1, source_id=1, text="Russian event")
+        msg2 = make_message(msg_id=2, source_id=2, text="Tech update")
+        source1 = make_source(source_id=1, title="Varlamov News")
+        source1.subcategory = "Russian News"
+        source2 = make_source(source_id=2, title="TechCrunch")
+        source2.subcategory = "Tech News"
+
+        result = _build_user_prompt([msg1, msg2], {1: source1, 2: source2})
+
+        assert "Subcategory: Russian News" in result
+        assert "Subcategory: Tech News" in result
+        # Must NOT fall back to message category
+        assert "Subcategory: news" not in result
+
+    def test_build_user_prompt_fallback_to_general(self):
+        """Sources without subcategory should group under 'General'."""
+        from app.services.pulse_digest import _build_user_prompt
+
+        msg = make_message(text="Some news")
+        source = make_source()
+        source.subcategory = None
+
+        result = _build_user_prompt([msg], {1: source})
+
+        assert "Subcategory: General" in result
 
     def test_build_user_prompt_groups_by_source(self):
         from app.services.pulse_digest import _build_user_prompt
