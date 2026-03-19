@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,11 +6,15 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.encryption import decrypt_value
 from app.models.settings import UserSettings
-from app.models.telegram import PulseDigest, PulseSettings
+from app.models.telegram import PulseDigest, PulseDigestItem, PulseSettings
 from app.models.user import User
 from app.schemas.pulse_digest import (
     DigestGenerateRequest,
     DigestGenerateResponse,
+    DigestItemAction,
+    DigestItemBulkAction,
+    DigestItemListResponse,
+    DigestItemResponse,
     DigestListResponse,
     DigestResponse,
 )
@@ -137,3 +141,147 @@ async def trigger_generate(
         digest=DigestResponse.model_validate(digest),
         message=f"Digest generated from {digest.message_count} messages",
     )
+
+
+# ── Digest items endpoints ──────────────────────────────────────────────────
+
+
+@router.get("/latest/items", response_model=DigestItemListResponse)
+async def get_latest_digest_items(
+    category: str = Query("learning"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get items from the latest digest for a given category."""
+    digest_result = await db.execute(
+        select(PulseDigest)
+        .where(
+            PulseDigest.user_id == current_user.id,
+            PulseDigest.category == category,
+        )
+        .order_by(PulseDigest.generated_at.desc())
+        .limit(1)
+    )
+    digest = digest_result.scalar_one_or_none()
+    if not digest:
+        raise HTTPException(status_code=404, detail="No digest found for this category")
+
+    if (digest.digest_type or "markdown") == "markdown":
+        return DigestItemListResponse(items=[], total=0, is_markdown=True)
+
+    query = select(PulseDigestItem).where(
+        PulseDigestItem.digest_id == digest.id,
+        PulseDigestItem.user_id == current_user.id,
+    )
+    count_q = select(func.count(PulseDigestItem.id)).where(
+        PulseDigestItem.digest_id == digest.id,
+        PulseDigestItem.user_id == current_user.id,
+    )
+
+    total = (await db.execute(count_q)).scalar() or 0
+    result = await db.execute(
+        query.order_by(PulseDigestItem.id).offset(offset).limit(limit)
+    )
+    items = list(result.scalars().all())
+
+    return DigestItemListResponse(
+        items=[DigestItemResponse.from_orm_item(i) for i in items],
+        total=total,
+    )
+
+
+@router.get("/{digest_id}/items", response_model=DigestItemListResponse)
+async def list_digest_items(
+    digest_id: int,
+    classification: str | None = Query(None),
+    item_status: str | None = Query(None, alias="status"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List items for a specific digest."""
+    # Verify digest exists and belongs to user
+    digest_result = await db.execute(
+        select(PulseDigest).where(
+            PulseDigest.id == digest_id,
+            PulseDigest.user_id == current_user.id,
+        )
+    )
+    digest = digest_result.scalar_one_or_none()
+    if not digest:
+        raise HTTPException(status_code=404, detail="Digest not found")
+
+    # If markdown digest, return empty list with flag
+    if (digest.digest_type or "markdown") == "markdown":
+        return DigestItemListResponse(items=[], total=0, is_markdown=True)
+
+    query = select(PulseDigestItem).where(
+        PulseDigestItem.digest_id == digest_id,
+        PulseDigestItem.user_id == current_user.id,
+    )
+    count_base = select(func.count(PulseDigestItem.id)).where(
+        PulseDigestItem.digest_id == digest_id,
+        PulseDigestItem.user_id == current_user.id,
+    )
+
+    if classification:
+        query = query.where(PulseDigestItem.classification == classification)
+        count_base = count_base.where(PulseDigestItem.classification == classification)
+    if item_status:
+        query = query.where(PulseDigestItem.status == item_status)
+        count_base = count_base.where(PulseDigestItem.status == item_status)
+
+    total = (await db.execute(count_base)).scalar() or 0
+    result = await db.execute(
+        query.order_by(PulseDigestItem.id).offset(offset).limit(limit)
+    )
+    items = list(result.scalars().all())
+
+    return DigestItemListResponse(
+        items=[DigestItemResponse.from_orm_item(i) for i in items],
+        total=total,
+    )
+
+
+# ── Digest item actions ─────────────────────────────────────────────────────
+
+
+@router.post("/items/{item_id}/action", status_code=status.HTTP_200_OK)
+async def action_digest_item(
+    item_id: int,
+    body: DigestItemAction,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Act on a single digest item: to_task, to_note, to_job, or skip."""
+    from app.services.pulse_digest_items import process_item_action
+
+    try:
+        result = await process_item_action(db, current_user, item_id, body.action)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    if result is None:
+        raise HTTPException(status_code=404, detail="Digest item not found")
+
+    return result
+
+
+@router.post("/items/bulk-action", status_code=status.HTTP_200_OK)
+async def bulk_action_digest_items(
+    body: DigestItemBulkAction,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Bulk action on multiple digest items."""
+    from app.services.pulse_digest_items import bulk_item_action
+
+    try:
+        result = await bulk_item_action(db, current_user, body.item_ids, body.action)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    return result
