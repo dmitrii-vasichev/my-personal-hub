@@ -13,6 +13,7 @@ from app.api.tags import router as tags_router
 from app.api.task_analytics import router as task_analytics_router
 from app.api.pulse_settings import router as pulse_settings_router
 from app.api.pulse_digests import router as pulse_digests_router
+from app.api.garmin import dashboard_router as vitals_dashboard_router
 from app.api.garmin import router as garmin_router
 from app.api.pulse_sources import router as pulse_sources_router
 from app.api.telegram import router as telegram_router
@@ -27,7 +28,7 @@ from app.api.settings import router as settings_router
 from app.api.tasks import router as tasks_router
 from app.api.users import router as users_router
 from app.core.config import settings
-from app.core.scheduler import scheduler, schedule_user_digest, schedule_user_polling
+from app.core.scheduler import scheduler, schedule_garmin_sync, schedule_user_digest, schedule_user_polling
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +61,18 @@ async def lifespan(application: FastAPI):
                 )
             if all_settings:
                 logger.info("Restored polling + digest jobs for %d users", len(all_settings))
+
+        # Restore Garmin sync jobs
+        from app.models.garmin import GarminConnection
+
+        garmin_result = await db.execute(
+            select(GarminConnection).where(GarminConnection.is_active.is_(True))
+        )
+        garmin_conns = garmin_result.scalars().all()
+        for gc in garmin_conns:
+            schedule_garmin_sync(gc.user_id, gc.sync_interval_minutes)
+        if garmin_conns:
+            logger.info("Restored Garmin sync jobs for %d users", len(garmin_conns))
 
         # Schedule daily TTL cleanup at 03:00
         scheduler.add_job(
@@ -104,6 +117,7 @@ app.include_router(pulse_sources_router)
 app.include_router(pulse_settings_router)
 app.include_router(pulse_digests_router)
 app.include_router(garmin_router)
+app.include_router(vitals_dashboard_router)
 
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
