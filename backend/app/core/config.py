@@ -43,3 +43,9 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+if settings.APP_ENV == "production":
+    if settings.JWT_SECRET_KEY == "change-me-in-production":
+        raise RuntimeError("JWT_SECRET_KEY must be changed in production")
+    if settings.ADMIN_PASSWORD == "change-me":
+        raise RuntimeError("ADMIN_PASSWORD must be changed in production")
