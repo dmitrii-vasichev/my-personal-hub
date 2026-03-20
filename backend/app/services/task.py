@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
@@ -24,11 +24,14 @@ def _can_access_task(task: Task, user: User) -> bool:
         return True
     if user.role == UserRole.demo:
         return task.user_id == user.id
-    return (
-        task.user_id == user.id
-        or task.assignee_id == user.id
-        or task.visibility == Visibility.family
-    )
+    if task.user_id == user.id or task.assignee_id == user.id:
+        return True
+    # Family visibility — exclude demo user's data
+    if task.visibility == Visibility.family:
+        if task.owner and task.owner.role == UserRole.demo:
+            return False
+        return True
+    return False
 
 
 def _can_edit_task(task: Task, user: User) -> bool:
@@ -36,6 +39,12 @@ def _can_edit_task(task: Task, user: User) -> bool:
     if user.role == UserRole.admin:
         return True
     return task.user_id == user.id or task.assignee_id == user.id
+
+
+def _family_visible(visibility_col, owner_id_col):
+    """Family visibility excluding demo users' data."""
+    demo_ids = select(User.id).where(User.role == UserRole.demo)
+    return and_(visibility_col == Visibility.family, ~owner_id_col.in_(demo_ids))
 
 
 def _task_query_for_user(user: User):
@@ -54,7 +63,7 @@ def _task_query_for_user(user: User):
             or_(
                 Task.user_id == user.id,
                 Task.assignee_id == user.id,
-                Task.visibility == Visibility.family,
+                _family_visible(Task.visibility, Task.user_id),
             )
         )
     return q
@@ -251,7 +260,7 @@ async def list_tasks(
             or_(
                 Task.user_id == current_user.id,
                 Task.assignee_id == current_user.id,
-                Task.visibility == Visibility.family,
+                _family_visible(Task.visibility, Task.user_id),
             )
         )
 
