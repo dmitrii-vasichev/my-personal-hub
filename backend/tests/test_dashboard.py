@@ -252,3 +252,49 @@ async def test_extract_preview_skips_headings():
     preview = dashboard_service._extract_preview(content)
     assert preview.startswith("Actual content here.")
     assert "#" not in preview
+
+
+@pytest.mark.asyncio
+async def test_extract_preview_none_content():
+    """Structured digests have content=None — preview must not crash."""
+    assert dashboard_service._extract_preview(None) == ""
+
+
+@pytest.mark.asyncio
+async def test_get_pulse_summary_structured_digest():
+    """Structured digest with content=None should appear in summary."""
+    db = AsyncMock()
+    now = datetime.now(tz=timezone.utc)
+
+    learning_digest = MagicMock()
+    learning_digest.id = 20
+    learning_digest.category = "learning"
+    learning_digest.content = None  # structured digest
+    learning_digest.digest_type = "structured"
+    learning_digest.message_count = 24
+    learning_digest.items_count = 5
+    learning_digest.generated_at = now
+
+    news_result = MagicMock()
+    news_result.scalar_one_or_none.return_value = None
+
+    jobs_result = MagicMock()
+    jobs_result.scalar_one_or_none.return_value = None
+
+    learning_result = MagicMock()
+    learning_result.scalar_one_or_none.return_value = learning_digest
+
+    period_result = MagicMock()
+    period_result.one.return_value = (now - timedelta(days=1), now)
+
+    db.execute = AsyncMock(
+        side_effect=[news_result, jobs_result, learning_result, period_result]
+    )
+
+    user = make_user()
+    result = await dashboard_service.get_pulse_summary(db, user)
+
+    assert len(result["digests"]) == 1
+    assert result["digests"][0]["category"] == "learning"
+    assert result["digests"][0]["content_preview"] == ""
+    assert result["digests"][0]["items_count"] == 5
