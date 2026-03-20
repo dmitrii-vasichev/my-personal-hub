@@ -22,13 +22,26 @@ from app.services.task import PermissionDeniedError
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 
+def _family_visible_events(visibility_col, owner_id_col):
+    """Family visibility excluding demo users' data."""
+    demo_ids = select(User.id).where(User.role == UserRole.demo)
+    return and_(visibility_col == Visibility.family, ~owner_id_col.in_(demo_ids))
+
+
 def _can_access_event(event: CalendarEvent, user: User) -> bool:
     """Check if user can read this event."""
     if user.role == UserRole.admin:
         return True
     if user.role == UserRole.demo:
         return event.user_id == user.id
-    return event.user_id == user.id or event.visibility == Visibility.family
+    if event.user_id == user.id:
+        return True
+    # Family visibility — exclude demo user's data
+    if event.visibility == Visibility.family:
+        if event.owner and event.owner.role == UserRole.demo:
+            return False
+        return True
+    return False
 
 
 def _can_edit_event(event: CalendarEvent, user: User) -> bool:
@@ -49,7 +62,7 @@ def _events_base_query(user: User):
         q = q.where(
             or_(
                 CalendarEvent.user_id == user.id,
-                CalendarEvent.visibility == Visibility.family,
+                _family_visible_events(CalendarEvent.visibility, CalendarEvent.user_id),
             )
         )
     return q
