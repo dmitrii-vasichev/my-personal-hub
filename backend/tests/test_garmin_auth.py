@@ -56,6 +56,7 @@ def make_garmin_connection(user_id: int = 1) -> GarminConnection:
     c.last_sync_at = None
     c.sync_status = "success"
     c.sync_error = None
+    c.rate_limited_until = None
     c.connected_at = datetime(2026, 3, 19, 12, 0, 0, tzinfo=timezone.utc)
     return c
 
@@ -416,7 +417,7 @@ class TestGarminAuthService:
     @pytest.mark.asyncio
     @patch("app.services.garmin_auth.decrypt_value", return_value='{"tokens": "data"}')
     async def test_get_garmin_client_uses_tokens_without_login(self, mock_decrypt):
-        """get_garmin_client should use cached tokens and NOT call login()."""
+        """get_garmin_client should load cached tokens without login() or validation calls."""
         from app.services.garmin_auth import get_garmin_client
 
         conn = make_garmin_connection()
@@ -426,69 +427,32 @@ class TestGarminAuthService:
         db.execute = AsyncMock(return_value=mock_result)
 
         mock_client = MagicMock()
-        mock_client.garth.dumps.return_value = '{"tokens": "refreshed"}'
-
-        with patch("garminconnect.Garmin", return_value=mock_client) as mock_cls:
-            with patch("app.services.garmin_auth.encrypt_value", return_value="enc"):
-                client = await get_garmin_client(db, 1)
-
-            # Should NOT have called login()
-            mock_client.login.assert_not_called()
-            # Should have validated with get_user_profile()
-            mock_client.get_user_profile.assert_called_once()
-
-    @pytest.mark.asyncio
-    @patch("app.services.garmin_auth.decrypt_value", return_value='{"tokens": "data"}')
-    @patch("app.services.garmin_auth.encrypt_value", return_value="encrypted")
-    async def test_get_garmin_client_relogin_on_auth_error(self, mock_encrypt, mock_decrypt):
-        """get_garmin_client should re-login with credentials when tokens are invalid."""
-        from garminconnect import GarminConnectAuthenticationError
-
-        from app.services.garmin_auth import get_garmin_client
-
-        conn = make_garmin_connection()
-        db = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = conn
-        db.execute = AsyncMock(return_value=mock_result)
-
-        # First client: tokens loaded but profile fails
-        mock_client_tokens = MagicMock()
-        mock_client_tokens.get_user_profile.side_effect = GarminConnectAuthenticationError("expired")
-
-        # Second client: fresh login succeeds
-        mock_client_fresh = MagicMock()
-        mock_client_fresh.garth.dumps.return_value = '{"tokens": "new"}'
-
-        with patch("garminconnect.Garmin", side_effect=[mock_client_tokens, mock_client_fresh]):
-            client = await get_garmin_client(db, 1)
-
-        # Second client should have been used for login
-        mock_client_fresh.login.assert_called_once()
-
-    @pytest.mark.asyncio
-    @patch("app.services.garmin_auth.decrypt_value", return_value='{"tokens": "data"}')
-    async def test_get_garmin_client_rate_limited_returns_cached(self, mock_decrypt):
-        """On 429 during token validation, return client with cached tokens anyway."""
-        from garminconnect import GarminConnectTooManyRequestsError
-
-        from app.services.garmin_auth import get_garmin_client
-
-        conn = make_garmin_connection()
-        db = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = conn
-        db.execute = AsyncMock(return_value=mock_result)
-
-        mock_client = MagicMock()
-        mock_client.get_user_profile.side_effect = GarminConnectTooManyRequestsError("429")
 
         with patch("garminconnect.Garmin", return_value=mock_client):
             client = await get_garmin_client(db, 1)
 
-        # Should return client without calling login
+        # Should NOT call login() or get_user_profile() — trust Garth tokens
         mock_client.login.assert_not_called()
+        mock_client.get_user_profile.assert_not_called()
         assert client is mock_client
+
+    @pytest.mark.asyncio
+    async def test_set_rate_limited_sets_cooldown(self):
+        """set_rate_limited should set rate_limited_until ~1h in the future."""
+        from app.services.garmin_auth import set_rate_limited, RATE_LIMIT_MSG
+
+        conn = make_garmin_connection()
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        await set_rate_limited(db, 1)
+
+        assert conn.rate_limited_until is not None
+        assert conn.rate_limited_until > datetime.now(timezone.utc)
+        assert conn.sync_status == "error"
+        assert conn.sync_error == RATE_LIMIT_MSG
 
 
 # ── API endpoint tests ──────────────────────────────────────────────────────
