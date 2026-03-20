@@ -620,7 +620,21 @@ async def create_pulse_data(session, user_id: int) -> None:
         sources.append(source)
     await session.flush()
 
-    # 2 digests with structured items
+    # 3 digests with structured items
+    digest_news = PulseDigest(
+        user_id=user_id,
+        category="news",
+        content=None,
+        digest_type="structured",
+        message_count=32,
+        items_count=4,
+        generated_at=now - timedelta(hours=3),
+        period_start=now - timedelta(days=1),
+        period_end=now,
+    )
+    session.add(digest_news)
+    await session.flush()
+
     digest_learning = PulseDigest(
         user_id=user_id,
         category="learning",
@@ -648,6 +662,48 @@ async def create_pulse_data(session, user_id: int) -> None:
     )
     session.add(digest_jobs)
     await session.flush()
+
+    # Digest items for news digest
+    news_items = [
+        {
+            "title": "EU AI Act Enforcement Begins — What It Means for Developers",
+            "summary": "The European Union's AI Act enters active enforcement. High-risk AI systems now require conformity assessments, transparency disclosures, and human oversight documentation. Fines up to €35M or 7% of global revenue.",
+            "classification": "regulation",
+            "source_names": ["Tech Policy Watch"],
+        },
+        {
+            "title": "OpenAI Launches GPT-5 with Native Tool Use",
+            "summary": "GPT-5 features built-in code execution, web browsing, and file analysis without plugins. Context window expanded to 1M tokens. Available via API at $15/1M input tokens.",
+            "classification": "ai_release",
+            "source_names": ["AI Research Daily"],
+        },
+        {
+            "title": "GitHub Copilot Workspace Goes GA",
+            "summary": "GitHub Copilot Workspace is now generally available. Developers can describe tasks in natural language and get full implementation plans with code changes across multiple files.",
+            "classification": "developer_tools",
+            "source_names": ["Tech Policy Watch"],
+        },
+        {
+            "title": "Rust Foundation Announces Rust 2027 Edition Roadmap",
+            "summary": "Major changes planned: async traits stabilization, improved compile times via cranelift backend, and new borrow checker with polonius. Migration tools included.",
+            "classification": "technology",
+            "source_names": ["Python News & Updates"],
+        },
+    ]
+
+    for i, item in enumerate(news_items):
+        di = PulseDigestItem(
+            digest_id=digest_news.id,
+            user_id=user_id,
+            title=item["title"],
+            summary=item["summary"],
+            classification=item["classification"],
+            source_names=item["source_names"],
+            status="new" if i >= 1 else "actioned",
+            actioned_at=(now - timedelta(hours=1)) if i < 1 else None,
+            action_type="skip" if i == 0 else None,
+        )
+        session.add(di)
 
     # Digest items for learning digest
     learning_items = [
@@ -731,7 +787,7 @@ async def create_pulse_data(session, user_id: int) -> None:
         )
         session.add(di)
 
-    print("  Created 3 pulse sources, 2 digests with 8 items")
+    print("  Created 3 pulse sources, 3 digests with 12 items")
 
 
 async def seed() -> None:
