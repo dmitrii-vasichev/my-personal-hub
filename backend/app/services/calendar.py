@@ -26,6 +26,8 @@ def _can_access_event(event: CalendarEvent, user: User) -> bool:
     """Check if user can read this event."""
     if user.role == UserRole.admin:
         return True
+    if user.role == UserRole.demo:
+        return event.user_id == user.id
     return event.user_id == user.id or event.visibility == Visibility.family
 
 
@@ -41,7 +43,9 @@ def _events_base_query(user: User):
         selectinload(CalendarEvent.notes),
         joinedload(CalendarEvent.owner),
     )
-    if user.role != UserRole.admin:
+    if user.role == UserRole.demo:
+        q = q.where(CalendarEvent.user_id == user.id)
+    elif user.role != UserRole.admin:
         q = q.where(
             or_(
                 CalendarEvent.user_id == user.id,
