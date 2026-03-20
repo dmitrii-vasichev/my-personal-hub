@@ -9,17 +9,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/api";
-import type { VitalsDashboardSummary } from "@/types/vitals";
-
-function useVitalsDashboardSummary() {
-  return useQuery<VitalsDashboardSummary>({
-    queryKey: ["vitals", "dashboard"],
-    queryFn: () =>
-      api.get<VitalsDashboardSummary>("/api/dashboard/vitals-summary"),
-  });
-}
+import { useVitalsDashboardSummary } from "@/hooks/use-vitals";
 
 function formatSleepHours(seconds: number | null): string {
   if (!seconds) return "\u2014";

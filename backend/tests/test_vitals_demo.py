@@ -142,6 +142,7 @@ class TestVitalsDashboardSummaryWithData:
         sleep = make_sleep(user_id=user.id)
         conn = make_garmin_connection(user_id=user.id)
 
+        briefing = make_briefing(user_id=user.id)
         call_count = 0
 
         async def mock_execute(query):
@@ -152,8 +153,10 @@ class TestVitalsDashboardSummaryWithData:
                 result.scalar_one_or_none.return_value = metric
             elif call_count == 2:
                 result.scalar_one_or_none.return_value = sleep
-            else:
+            elif call_count == 3:
                 result.scalar_one_or_none.return_value = conn
+            else:
+                result.scalar_one_or_none.return_value = briefing
             return result
 
         from app.core.database import get_db as real_get_db
@@ -178,6 +181,7 @@ class TestVitalsDashboardSummaryWithData:
             assert data["sleep"] is not None
             assert data["sleep"]["sleep_score"] == 82
             assert data["last_sync_at"] is not None
+            assert data["briefing_insight"] == "Great recovery overnight. Your resting HR is stable at 58 bpm."
         finally:
             app.dependency_overrides.pop(get_current_user, None)
             app.dependency_overrides.pop(real_get_db, None)
@@ -195,9 +199,14 @@ class TestVitalsDashboardSummaryWithData:
             call_count += 1
             result = MagicMock()
             if call_count <= 2:
+                # metrics and sleep: no data today
                 result.scalar_one_or_none.return_value = None
-            else:
+            elif call_count == 3:
+                # connection
                 result.scalar_one_or_none.return_value = conn
+            else:
+                # briefing: none
+                result.scalar_one_or_none.return_value = None
             return result
 
         from app.core.database import get_db as real_get_db

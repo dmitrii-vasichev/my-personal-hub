@@ -42,7 +42,7 @@ const mockFullData = {
 let mockData: typeof mockFullData | null = mockFullData;
 let mockLoading = false;
 
-vi.mock("@/hooks/use-dashboard-vitals", () => ({
+vi.mock("@/hooks/use-vitals", () => ({
   useVitalsDashboardSummary: () => ({
     data: mockData,
     isLoading: mockLoading,
