@@ -15,7 +15,7 @@ import { AiKnowledgeBaseTab } from "@/components/settings/ai-knowledge-base-tab"
 import { TagsManagementTab } from "@/components/settings/tags-management-tab";
 import { TelegramTab } from "@/components/settings/telegram-tab";
 import { PulseSettingsTab } from "@/components/settings/pulse-settings-tab";
-import { GarminTab } from "@/components/settings/garmin-tab";
+import { GarminSettingsTab } from "@/components/settings/garmin-tab";
 import type { UpdateSettingsInput } from "@/types/settings";
 
 // Type guard for admin settings response
@@ -345,7 +345,7 @@ export default function SettingsPage() {
 
         {activeTab === "pulse" && isAdmin && <PulseSettingsTab />}
 
-        {activeTab === "garmin" && isAdmin && <GarminTab />}
+        {activeTab === "garmin" && isAdmin && <GarminSettingsTab />}
 
         {activeTab === "integrations" && isAdmin && (
           <IntegrationsTab
