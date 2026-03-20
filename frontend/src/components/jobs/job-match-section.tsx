@@ -2,6 +2,8 @@
 
 import { Loader2, Sparkles, RefreshCw, CheckCircle2, XCircle, Lightbulb, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DemoModeBadge } from "@/components/ui/demo-mode-badge";
+import { useAuth } from "@/lib/auth";
 import { useRunJobMatch } from "@/hooks/use-job-match";
 import type { Job } from "@/types/job";
 
@@ -18,6 +20,7 @@ function getScoreColor(score: number) {
 
 export function JobMatchSection({ job }: JobMatchSectionProps) {
   const runMatch = useRunJobMatch(job.id);
+  const { isDemo } = useAuth();
   const result = job.match_result;
 
   const handleMatch = () => {
@@ -27,6 +30,17 @@ export function JobMatchSection({ job }: JobMatchSectionProps) {
       },
     });
   };
+
+  if (isDemo) {
+    return (
+      <div>
+        <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+          AI Match Analysis
+        </h3>
+        <DemoModeBadge feature="AI Job Matching" description="Analyze how well your profile matches this job" />
+      </div>
+    );
+  }
 
   // No result yet — show "Run Match" button
   if (!result && !runMatch.isPending && !runMatch.isError) {

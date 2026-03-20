@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DemoModeBadge } from "@/components/ui/demo-mode-badge";
+import { useAuth } from "@/lib/auth";
 import {
   useResumes,
   useGenerateResume,
@@ -240,6 +242,7 @@ function ResumeCard({
 export function ResumeSection({ jobId }: { jobId: number }) {
   const { data: resumes = [], isLoading } = useResumes(jobId);
   const generate = useGenerateResume();
+  const { isDemo } = useAuth();
   const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
   const handleGenerate = async () => {
@@ -250,6 +253,15 @@ export function ResumeSection({ jobId }: { jobId: number }) {
       toast.error(err instanceof Error ? err.message : "Generation failed");
     }
   };
+
+  if (isDemo) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium">AI Resume</h3>
+        <DemoModeBadge feature="AI Resume Generation" description="Generate tailored resumes, run ATS audits, and gap analysis" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

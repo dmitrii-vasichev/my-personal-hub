@@ -57,3 +57,13 @@ export function useResetPassword() {
       api.post<ResetPasswordResponse>(`/api/users/${id}/reset-password`),
   });
 }
+
+export function useResetDemoData() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.post("/api/users/demo/reset"),
+    onSuccess: () => {
+      queryClient.invalidateQueries();
+    },
+  });
+}

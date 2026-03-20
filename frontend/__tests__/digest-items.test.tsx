@@ -8,6 +8,17 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+vi.mock("@/lib/auth", () => ({
+  useAuth: () => ({
+    user: { id: 1, email: "test@test.com", display_name: "Test", role: "member", must_change_password: false, is_blocked: false, theme: "dark", last_login_at: null },
+    isLoading: false,
+    isDemo: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    refreshUser: vi.fn(),
+  }),
+}));
+
 const mockLearningItem: DigestItem = {
   id: 1,
   digest_id: 10,

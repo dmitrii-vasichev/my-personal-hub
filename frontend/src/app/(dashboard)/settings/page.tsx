@@ -148,7 +148,7 @@ export function ApiKeyInput({
 export default function SettingsPage() {
   const { data: settings, isLoading } = useSettings();
   const update = useUpdateSettings();
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
 
   const isAdmin = user?.role === "admin";
   const [activeTab, setActiveTab] = useState<TabId>("general");
@@ -262,7 +262,7 @@ export default function SettingsPage() {
   }
 
   const adminSettings = hasApiKeys(settings) ? settings : null;
-  const visibleTabs = isAdmin ? ADMIN_TABS : ADMIN_TABS.filter((t) => t.id === "general" || t.id === "tags");
+  const visibleTabs = isAdmin && !isDemo ? ADMIN_TABS : ADMIN_TABS.filter((t) => t.id === "general" || t.id === "tags");
 
   return (
     <div className="space-y-6 p-6">

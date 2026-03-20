@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Wand2, Copy, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DemoModeBadge } from "@/components/ui/demo-mode-badge";
+import { useAuth } from "@/lib/auth";
 import { useCoverLetters, useGenerateCoverLetter } from "@/hooks/use-resumes";
 import type { CoverLetter } from "@/types/resume";
 
@@ -52,6 +54,7 @@ function CoverLetterCard({ cl }: { cl: CoverLetter }) {
 export function CoverLetterSection({ jobId }: { jobId: number }) {
   const { data: letters = [], isLoading } = useCoverLetters(jobId);
   const generate = useGenerateCoverLetter();
+  const { isDemo } = useAuth();
 
   const handleGenerate = async () => {
     try {
@@ -61,6 +64,15 @@ export function CoverLetterSection({ jobId }: { jobId: number }) {
       toast.error(err instanceof Error ? err.message : "Generation failed");
     }
   };
+
+  if (isDemo) {
+    return (
+      <div className="space-y-3">
+        <h3 className="text-sm font-medium">Cover Letter</h3>
+        <DemoModeBadge feature="AI Cover Letter" description="Generate personalized cover letters for job applications" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
