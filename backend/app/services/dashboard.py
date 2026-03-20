@@ -118,8 +118,10 @@ _CONTENT_PREVIEW_LENGTH = 200
 _PULSE_CATEGORIES = ["news", "jobs", "learning"]
 
 
-def _extract_preview(content: str) -> str:
+def _extract_preview(content: str | None) -> str:
     """Extract first meaningful lines from markdown digest content."""
+    if not content:
+        return ""
     lines = []
     for line in content.splitlines():
         stripped = line.strip()
