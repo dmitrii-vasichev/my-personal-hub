@@ -110,3 +110,49 @@ export function useSyncVitals() {
     },
   });
 }
+
+export function useConnectGarmin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { email: string; password: string }) =>
+      api.post<VitalsConnectionStatus>("/api/vitals/connect", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [VITALS_KEY] });
+      toast.success("Garmin connected");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to connect Garmin");
+    },
+  });
+}
+
+export function useDisconnectGarmin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.delete("/api/vitals/disconnect"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [VITALS_KEY] });
+      toast.success("Garmin disconnected");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to disconnect Garmin");
+    },
+  });
+}
+
+export function useUpdateSyncInterval() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (intervalMinutes: number) =>
+      api.patch<VitalsConnectionStatus>("/api/vitals/sync-interval", {
+        interval_minutes: intervalMinutes,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [VITALS_KEY, "connection"] });
+      toast.success("Sync interval updated");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update sync interval");
+    },
+  });
+}
