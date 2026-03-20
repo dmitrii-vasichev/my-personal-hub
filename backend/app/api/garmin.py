@@ -281,9 +281,26 @@ async def get_vitals_summary(
     )
     conn = conn_result.scalar_one_or_none()
 
+    # Extract first meaningful sentence from today's AI briefing
+    briefing_insight = None
+    briefing_result = await db.execute(
+        select(VitalsBriefing).where(
+            VitalsBriefing.user_id == current_user.id,
+            VitalsBriefing.date == today,
+        )
+    )
+    briefing = briefing_result.scalar_one_or_none()
+    if briefing and briefing.content:
+        for line in briefing.content.split("\n"):
+            stripped = line.strip()
+            if stripped and not stripped.startswith("#"):
+                briefing_insight = stripped[:120]
+                break
+
     return VitalsDashboardSummaryResponse(
         metrics=metrics,
         sleep=sleep,
         connected=conn is not None and conn.is_active,
         last_sync_at=conn.last_sync_at if conn else None,
+        briefing_insight=briefing_insight,
     )

@@ -15,6 +15,7 @@ import { AiKnowledgeBaseTab } from "@/components/settings/ai-knowledge-base-tab"
 import { TagsManagementTab } from "@/components/settings/tags-management-tab";
 import { TelegramTab } from "@/components/settings/telegram-tab";
 import { PulseSettingsTab } from "@/components/settings/pulse-settings-tab";
+import { GarminTab } from "@/components/settings/garmin-tab";
 import type { UpdateSettingsInput } from "@/types/settings";
 
 // Type guard for admin settings response
@@ -43,6 +44,7 @@ const ADMIN_TABS = [
   { id: "integrations", label: "Integrations" },
   { id: "telegram", label: "Telegram" },
   { id: "pulse", label: "Pulse" },
+  { id: "garmin", label: "Garmin" },
   { id: "users", label: "Users" },
 ] as const;
 
@@ -342,6 +344,8 @@ export default function SettingsPage() {
         {activeTab === "telegram" && isAdmin && <TelegramTab />}
 
         {activeTab === "pulse" && isAdmin && <PulseSettingsTab />}
+
+        {activeTab === "garmin" && isAdmin && <GarminTab />}
 
         {activeTab === "integrations" && isAdmin && (
           <IntegrationsTab

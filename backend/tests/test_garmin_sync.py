@@ -755,8 +755,11 @@ class TestVitalsDashboardAPI:
                 result.scalar_one_or_none.return_value = metric
             elif call_count == 2:
                 result.scalar_one_or_none.return_value = sleep
-            else:
+            elif call_count == 3:
                 result.scalar_one_or_none.return_value = conn
+            else:
+                # briefing query
+                result.scalar_one_or_none.return_value = None
             return result
 
         from app.core.database import get_db as real_get_db
@@ -777,6 +780,7 @@ class TestVitalsDashboardAPI:
         assert data["connected"] is True
         assert data["metrics"]["steps"] == 8500
         assert data["sleep"]["sleep_score"] == 82
+        assert data["briefing_insight"] is None
 
     @pytest.mark.asyncio
     async def test_vitals_summary_not_connected(self):
