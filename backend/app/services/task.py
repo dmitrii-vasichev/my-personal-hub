@@ -18,20 +18,23 @@ class PermissionDeniedError(Exception):
     """Raised when user lacks permission to edit/delete a resource."""
 
 
+def _is_demo_owned(task: Task) -> bool:
+    """Check if task belongs to a demo user."""
+    return task.owner is not None and task.owner.role == UserRole.demo
+
+
 def _can_access_task(task: Task, user: User) -> bool:
     """Check if user can read this task."""
-    if user.role == UserRole.admin:
-        return True
     if user.role == UserRole.demo:
         return task.user_id == user.id
+    # Non-demo users never see demo user's data
+    if _is_demo_owned(task):
+        return False
+    if user.role == UserRole.admin:
+        return True
     if task.user_id == user.id or task.assignee_id == user.id:
         return True
-    # Family visibility — exclude demo user's data
-    if task.visibility == Visibility.family:
-        if task.owner and task.owner.role == UserRole.demo:
-            return False
-        return True
-    return False
+    return task.visibility == Visibility.family
 
 
 def _can_edit_task(task: Task, user: User) -> bool:
@@ -41,10 +44,10 @@ def _can_edit_task(task: Task, user: User) -> bool:
     return task.user_id == user.id or task.assignee_id == user.id
 
 
-def _family_visible(visibility_col, owner_id_col):
-    """Family visibility excluding demo users' data."""
+def _exclude_demo_owners(owner_id_col):
+    """Exclude records owned by demo users."""
     demo_ids = select(User.id).where(User.role == UserRole.demo)
-    return and_(visibility_col == Visibility.family, ~owner_id_col.in_(demo_ids))
+    return ~owner_id_col.in_(demo_ids)
 
 
 def _task_query_for_user(user: User):
@@ -58,12 +61,17 @@ def _task_query_for_user(user: User):
     )
     if user.role == UserRole.demo:
         q = q.where(Task.user_id == user.id)
-    elif user.role != UserRole.admin:
+    elif user.role == UserRole.admin:
+        q = q.where(_exclude_demo_owners(Task.user_id))
+    else:
         q = q.where(
             or_(
                 Task.user_id == user.id,
                 Task.assignee_id == user.id,
-                _family_visible(Task.visibility, Task.user_id),
+                and_(
+                    Task.visibility == Visibility.family,
+                    _exclude_demo_owners(Task.user_id),
+                ),
             )
         )
     return q
@@ -252,15 +260,20 @@ async def list_tasks(
 ) -> list[Task]:
     q = select(Task).options(joinedload(Task.owner), selectinload(Task.tags))
 
-    # Access control: demo sees only own; member sees own + assigned + family
+    # Access control: demo sees only own; admin/member never see demo data
     if current_user.role == UserRole.demo:
         q = q.where(Task.user_id == current_user.id)
-    elif current_user.role != UserRole.admin:
+    elif current_user.role == UserRole.admin:
+        q = q.where(_exclude_demo_owners(Task.user_id))
+    else:
         q = q.where(
             or_(
                 Task.user_id == current_user.id,
                 Task.assignee_id == current_user.id,
-                _family_visible(Task.visibility, Task.user_id),
+                and_(
+                    Task.visibility == Visibility.family,
+                    _exclude_demo_owners(Task.user_id),
+                ),
             )
         )
 
