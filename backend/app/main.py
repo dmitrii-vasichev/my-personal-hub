@@ -83,6 +83,16 @@ async def lifespan(application: FastAPI):
             id="pulse_ttl_cleanup",
             replace_existing=True,
         )
+
+        # Schedule daily briefing cleanup at 03:15
+        scheduler.add_job(
+            "app.services.vitals_briefing:run_briefing_cleanup",
+            "cron",
+            hour=3,
+            minute=15,
+            id="vitals_briefing_cleanup",
+            replace_existing=True,
+        )
     except Exception as e:
         logger.warning("Could not restore polling jobs: %s", e)
 

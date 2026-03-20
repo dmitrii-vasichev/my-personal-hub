@@ -485,20 +485,23 @@ class TestGarminScheduler:
 
 class TestBackgroundSyncJob:
     @pytest.mark.asyncio
+    @patch("app.services.vitals_briefing.maybe_auto_generate_briefing")
     @patch("app.services.garmin_sync.sync_user_data")
     @patch("app.services.garmin_sync.async_session_factory")
-    async def test_run_garmin_sync_success(self, mock_factory, mock_sync):
+    async def test_run_garmin_sync_success(self, mock_factory, mock_sync, mock_briefing):
         from app.services.garmin_sync import run_garmin_sync
 
         mock_db = AsyncMock()
         mock_factory.return_value.__aenter__ = AsyncMock(return_value=mock_db)
         mock_factory.return_value.__aexit__ = AsyncMock(return_value=False)
         mock_sync.return_value = None
+        mock_briefing.return_value = None
 
         await run_garmin_sync(1)
 
         mock_sync.assert_called_once_with(mock_db, 1)
-        mock_db.commit.assert_called_once()
+        # Two commits: one for sync, one for briefing
+        assert mock_db.commit.call_count == 2
 
     @pytest.mark.asyncio
     @patch("app.services.garmin_sync.sync_user_data")

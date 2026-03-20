@@ -300,5 +300,15 @@ async def run_garmin_sync(user_id: int) -> None:
         try:
             await sync_user_data(db, user_id)
             await db.commit()
+
+            # Auto-generate briefing after successful sync
+            try:
+                from app.services.vitals_briefing import maybe_auto_generate_briefing
+
+                await maybe_auto_generate_briefing(db, user_id)
+                await db.commit()
+            except Exception as e:
+                logger.warning("Post-sync briefing generation failed for user %s: %s", user_id, e)
+
         except Exception as e:
             logger.error("Background Garmin sync failed for user %s: %s", user_id, e)
