@@ -62,8 +62,8 @@ export default function VitalsPage() {
     );
   }
 
-  // Empty state — not connected
-  if (!isConnected) {
+  // Empty state — not connected (demo users always have seeded data)
+  if (!isConnected && !isDemo) {
     return (
       <div className="mx-auto max-w-5xl px-6 py-6">
         <div className="mb-6">
