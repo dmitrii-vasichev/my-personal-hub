@@ -50,6 +50,17 @@ vi.mock("@/hooks/use-calendar", () => ({
   }),
 }));
 
+vi.mock("@/lib/auth", () => ({
+  useAuth: () => ({
+    user: { id: 1, email: "test@test.com", display_name: "Test", role: "member", must_change_password: false, is_blocked: false, theme: "dark", last_login_at: null },
+    isLoading: false,
+    isDemo: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    refreshUser: vi.fn(),
+  }),
+}));
+
 // Must import after mocks
 import NotesPage from "@/app/(dashboard)/notes/page";
 

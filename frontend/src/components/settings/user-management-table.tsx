@@ -1,26 +1,33 @@
 "use client";
 
-import { UserPlus } from "lucide-react";
+import { UserPlus, RotateCcw } from "lucide-react";
 import { useState } from "react";
-import { useUsers } from "@/hooks/use-users";
+import { toast } from "sonner";
+import { useUsers, useResetDemoData } from "@/hooks/use-users";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { UserActionsMenu } from "./user-actions-menu";
 import { CreateUserDialog } from "./create-user-dialog";
 import type { UserListItem } from "@/types/user";
 
 function RoleBadge({ role }: { role: string }) {
-  const isAdmin = role === "admin";
+  const config = role === "admin"
+    ? { label: "Admin", bg: "var(--accent-muted)", color: "var(--primary)", border: "rgba(79,143,234,0.20)" }
+    : role === "demo"
+    ? { label: "Demo", bg: "rgba(245,158,11,0.10)", color: "#f59e0b", border: "rgba(245,158,11,0.20)" }
+    : { label: "Member", bg: "var(--accent-teal-muted)", color: "var(--accent-teal)", border: "rgba(61,214,140,0.20)" };
+
   return (
     <span
       className="inline-flex items-center rounded px-2 py-0.5 font-mono text-[11px]"
       style={{
-        background: isAdmin ? "var(--accent-muted)" : "var(--accent-teal-muted)",
-        color: isAdmin ? "var(--primary)" : "var(--accent-teal)",
-        border: `1px solid ${isAdmin ? "rgba(79,143,234,0.20)" : "rgba(61,214,140,0.20)"}`,
+        background: config.bg,
+        color: config.color,
+        border: `1px solid ${config.border}`,
       }}
     >
-      {isAdmin ? "Admin" : "Member"}
+      {config.label}
     </span>
   );
 }
@@ -99,15 +106,42 @@ function UserRow({ user }: { user: UserListItem }) {
 export function UserManagementTable() {
   const { data: users, isLoading } = useUsers();
   const [createOpen, setCreateOpen] = useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const resetDemo = useResetDemoData();
+
+  const hasDemoUser = users?.some((u) => u.role === "demo");
+
+  const handleResetDemo = async () => {
+    try {
+      await resetDemo.mutateAsync();
+      toast.success("Demo data has been reset");
+      setResetConfirmOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to reset demo data");
+    }
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium">User Management</h2>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <UserPlus className="mr-1.5 h-3.5 w-3.5" />
-          Add User
-        </Button>
+        <div className="flex items-center gap-2">
+          {hasDemoUser && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setResetConfirmOpen(true)}
+              disabled={resetDemo.isPending}
+            >
+              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+              Reset Demo Data
+            </Button>
+          )}
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+            Add User
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -151,6 +185,17 @@ export function UserManagementTable() {
       )}
 
       <CreateUserDialog open={createOpen} onClose={() => setCreateOpen(false)} />
+
+      <ConfirmDialog
+        open={resetConfirmOpen}
+        onCancel={() => setResetConfirmOpen(false)}
+        onConfirm={handleResetDemo}
+        title="Reset Demo Data"
+        description="This will delete all data for the demo user and re-seed it with fresh sample data. This action cannot be undone."
+        confirmLabel="Reset"
+        variant="danger"
+        loading={resetDemo.isPending}
+      />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { WeekView } from "@/components/calendar/week-view";
 import { EventDialog } from "@/components/calendar/event-dialog";
 import { GoogleConnect } from "@/components/calendar/google-connect";
 import { useCalendarEvents } from "@/hooks/use-calendar";
+import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 
 type ViewMode = "month" | "week";
@@ -37,6 +38,7 @@ function formatWeekTitle(weekStart: Date) {
 export default function CalendarPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { isDemo } = useAuth();
 
   // Handle OAuth callback result (redirect from backend)
   useEffect(() => {
@@ -138,7 +140,7 @@ export default function CalendarPage() {
           Meetings
         </h1>
         <div className="flex items-center gap-2">
-          <GoogleConnect />
+          {!isDemo && <GoogleConnect />}
           <Button
             size="sm"
             onClick={() => {

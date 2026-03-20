@@ -11,6 +11,7 @@ import { useNotesTree, useNoteContent, useRefreshNotesTree } from "@/hooks/use-n
 import type { NoteTreeNode } from "@/types/note";
 import { useSettings } from "@/hooks/use-settings";
 import { useGoogleOAuthStatus } from "@/hooks/use-calendar";
+import { useAuth } from "@/lib/auth";
 import Link from "next/link";
 
 function findFileInTree(
@@ -31,6 +32,7 @@ function findFileInTree(
 
 export default function NotesPage() {
   const searchParams = useSearchParams();
+  const { isDemo } = useAuth();
   const fileParam = searchParams.get("file");
 
   const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
@@ -77,10 +79,10 @@ export default function NotesPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isExpanded]);
 
-  const isGoogleConnected = oauthStatus?.connected === true;
-  const hasFolderConfigured = !!settings?.google_drive_notes_folder_id;
+  const isGoogleConnected = isDemo || oauthStatus?.connected === true;
+  const hasFolderConfigured = isDemo || !!settings?.google_drive_notes_folder_id;
 
-  if (settingsLoading || oauthLoading) {
+  if (!isDemo && (settingsLoading || oauthLoading)) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -144,17 +146,19 @@ export default function NotesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-[var(--text-primary)]">Notes</h1>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => refreshTree.mutate()}
-          disabled={refreshTree.isPending}
-        >
-          <RefreshCw
-            className={`size-4 ${refreshTree.isPending ? "animate-spin" : ""}`}
-          />
-          <span className="ml-1.5">Refresh</span>
-        </Button>
+        {!isDemo && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => refreshTree.mutate()}
+            disabled={refreshTree.isPending}
+          >
+            <RefreshCw
+              className={`size-4 ${refreshTree.isPending ? "animate-spin" : ""}`}
+            />
+            <span className="ml-1.5">Refresh</span>
+          </Button>
+        )}
       </div>
 
       {/* Two-panel layout */}
