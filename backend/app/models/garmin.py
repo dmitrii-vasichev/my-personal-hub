@@ -42,6 +42,9 @@ class GarminConnection(Base):
         String(20), nullable=False, server_default="pending"
     )
     sync_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    rate_limited_until: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     connected_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

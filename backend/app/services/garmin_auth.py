@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from garminconnect import GarminConnectTooManyRequestsError
@@ -12,6 +12,7 @@ from app.models.garmin import GarminConnection
 logger = logging.getLogger(__name__)
 
 ALLOWED_SYNC_INTERVALS = {60, 120, 240, 360, 720, 1440}
+RATE_LIMIT_COOLDOWN_HOURS = 1
 RATE_LIMIT_MSG = (
     "Garmin rate limit exceeded (HTTP 429). "
     "Please wait approximately 1 hour before trying again."
@@ -131,10 +132,10 @@ async def get_garmin_client(db: AsyncSession, user_id: int):
     """Get an authenticated Garmin client from stored tokens.
 
     Strategy: load cached Garth tokens and return the client directly.
-    Garth handles automatic token refresh on API calls.
-    Only fall back to credential-based login if tokens are invalid.
+    Garth handles automatic token refresh transparently on API calls.
+    No validation call is made — this avoids wasting API quota.
     """
-    from garminconnect import Garmin, GarminConnectAuthenticationError
+    from garminconnect import Garmin
 
     result = await db.execute(
         select(GarminConnection).where(GarminConnection.user_id == user_id)
@@ -150,49 +151,23 @@ async def get_garmin_client(db: AsyncSession, user_id: int):
     client = Garmin()
     client.garth.loads(tokens_data)
 
-    # Validate tokens with a lightweight API call instead of login()
-    try:
-        client.get_user_profile()
-    except GarminConnectTooManyRequestsError:
-        logger.warning("Garmin rate limited for user %s, using cached tokens as-is", user_id)
-        # Return client anyway — tokens may still work for subsequent calls
-        return client
-    except (GarminConnectAuthenticationError, Exception) as e:
-        # Tokens expired/invalid — try re-login with stored credentials
-        logger.info("Garmin tokens invalid for user %s, attempting re-login: %s", user_id, e)
-        if not conn.email_encrypted or not conn.password_encrypted:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Garmin tokens expired and no credentials stored for re-login",
-            )
-        try:
-            email = decrypt_value(conn.email_encrypted)
-            password = decrypt_value(conn.password_encrypted)
-            client = Garmin(email, password)
-            client.login()
-        except GarminConnectTooManyRequestsError:
-            conn.sync_status = "error"
-            conn.sync_error = RATE_LIMIT_MSG
-            await db.flush()
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=RATE_LIMIT_MSG,
-            )
-        except Exception as login_err:
-            conn.sync_status = "error"
-            conn.sync_error = str(login_err)
-            await db.flush()
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=f"Garmin re-login failed: {login_err}",
-            )
-
-    # Re-serialize tokens (may have been refreshed)
-    updated_tokens = client.garth.dumps()
-    conn.garth_tokens_encrypted = encrypt_value(updated_tokens)
-    await db.flush()
-
     return client
+
+
+async def set_rate_limited(db: AsyncSession, user_id: int) -> None:
+    """Set rate_limited_until cooldown on a GarminConnection after a 429 response."""
+    result = await db.execute(
+        select(GarminConnection).where(GarminConnection.user_id == user_id)
+    )
+    conn = result.scalar_one_or_none()
+    if conn is None:
+        return
+    conn.rate_limited_until = datetime.now(timezone.utc) + timedelta(
+        hours=RATE_LIMIT_COOLDOWN_HOURS
+    )
+    conn.sync_status = "error"
+    conn.sync_error = RATE_LIMIT_MSG
+    await db.flush()
 
 
 async def update_sync_interval(

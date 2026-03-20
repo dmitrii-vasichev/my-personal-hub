@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from datetime import date, datetime, timedelta, timezone
 
+from garminconnect import GarminConnectTooManyRequestsError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +20,10 @@ from app.services import garmin_auth
 logger = logging.getLogger(__name__)
 
 
+class GarminRateLimitError(Exception):
+    """Raised when a Garmin API call returns 429 during sync."""
+
+
 async def sync_user_data(db: AsyncSession, user_id: int) -> None:
     """Main sync function: fetch data from Garmin and upsert into DB."""
     # Load connection and set syncing status
@@ -28,6 +33,15 @@ async def sync_user_data(db: AsyncSession, user_id: int) -> None:
     conn = result.scalar_one_or_none()
     if conn is None or not conn.is_active:
         logger.warning("No active Garmin connection for user %s", user_id)
+        return
+
+    # Check rate-limit cooldown — skip sync entirely if still on cooldown
+    if conn.rate_limited_until and conn.rate_limited_until > datetime.now(timezone.utc):
+        logger.info(
+            "Garmin sync skipped for user %s — rate limited until %s",
+            user_id,
+            conn.rate_limited_until.isoformat(),
+        )
         return
 
     conn.sync_status = "syncing"
@@ -59,8 +73,15 @@ async def sync_user_data(db: AsyncSession, user_id: int) -> None:
         conn.last_sync_at = datetime.now(timezone.utc)
         conn.sync_status = "success"
         conn.sync_error = None
+        conn.rate_limited_until = None
         await db.flush()
         logger.info("Garmin sync complete for user %s", user_id)
+
+    except GarminRateLimitError:
+        # Set cooldown and persist error state
+        await garmin_auth.set_rate_limited(db, user_id)
+        logger.warning("Garmin rate limited for user %s — cooldown set", user_id)
+        raise
 
     except Exception as e:
         conn.sync_status = "error"
@@ -78,18 +99,24 @@ async def _sync_daily_metrics(
 
     try:
         summary = client.get_user_summary(date_str)
+    except GarminConnectTooManyRequestsError:
+        raise GarminRateLimitError("429 on get_user_summary")
     except Exception as e:
         logger.warning("Failed to get user summary for %s: %s", date_str, e)
         summary = {}
 
     try:
         body_battery = client.get_body_battery(date_str, date_str)
+    except GarminConnectTooManyRequestsError:
+        raise GarminRateLimitError("429 on get_body_battery")
     except Exception as e:
         logger.warning("Failed to get body battery for %s: %s", date_str, e)
         body_battery = []
 
     try:
         max_metrics = client.get_max_metrics(date_str)
+    except GarminConnectTooManyRequestsError:
+        raise GarminRateLimitError("429 on get_max_metrics")
     except Exception as e:
         logger.warning("Failed to get max metrics for %s: %s", date_str, e)
         max_metrics = {}
@@ -164,6 +191,8 @@ async def _sync_sleep(
 
     try:
         sleep_data = client.get_sleep_data(date_str)
+    except GarminConnectTooManyRequestsError:
+        raise GarminRateLimitError("429 on get_sleep_data")
     except Exception as e:
         logger.warning("Failed to get sleep data for %s: %s", date_str, e)
         return
@@ -229,6 +258,8 @@ async def _sync_activities(
 
     try:
         activities = client.get_activities_by_date(start_str, end_str)
+    except GarminConnectTooManyRequestsError:
+        raise GarminRateLimitError("429 on get_activities_by_date")
     except Exception as e:
         logger.warning("Failed to get activities for %s to %s: %s", start_str, end_str, e)
         return
@@ -311,4 +342,6 @@ async def run_garmin_sync(user_id: int) -> None:
                 logger.warning("Post-sync briefing generation failed for user %s: %s", user_id, e)
 
         except Exception as e:
+            # Commit error state so it persists (cooldown, sync_error, etc.)
+            await db.commit()
             logger.error("Background Garmin sync failed for user %s: %s", user_id, e)

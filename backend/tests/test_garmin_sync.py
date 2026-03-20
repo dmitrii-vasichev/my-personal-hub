@@ -46,6 +46,7 @@ def make_garmin_connection(user_id: int = 1) -> GarminConnection:
     c.last_sync_at = None
     c.sync_status = "success"
     c.sync_error = None
+    c.rate_limited_until = None
     c.connected_at = datetime(2026, 3, 19, 12, 0, 0, tzinfo=timezone.utc)
     return c
 
@@ -410,6 +411,111 @@ class TestGarminSyncService:
 
         mock_auth.get_garmin_client.assert_not_called()
 
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
+    async def test_sync_skipped_during_cooldown(self, mock_auth):
+        """Regression #728: sync must be skipped when rate_limited_until is in the future."""
+        from app.services.garmin_sync import sync_user_data
+
+        conn = make_garmin_connection()
+        conn.rate_limited_until = datetime.now(timezone.utc) + timedelta(hours=1)
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        await sync_user_data(db, 1)
+
+        # Should skip entirely — no API calls
+        mock_auth.get_garmin_client.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
+    async def test_sync_resumes_after_cooldown_expires(self, mock_auth):
+        """Regression #728: sync must resume when rate_limited_until is in the past."""
+        from app.services.garmin_sync import sync_user_data
+
+        conn = make_garmin_connection()
+        conn.rate_limited_until = datetime.now(timezone.utc) - timedelta(minutes=1)
+
+        call_count = 0
+
+        async def mock_execute(query):
+            nonlocal call_count
+            call_count += 1
+            result = MagicMock()
+            if call_count == 1:
+                result.scalar_one_or_none.return_value = conn
+            else:
+                result.scalar_one_or_none.return_value = None
+            return result
+
+        db = AsyncMock()
+        db.execute = mock_execute
+
+        mock_client = MagicMock()
+        mock_client.get_user_summary.return_value = make_garmin_api_summary()
+        mock_client.get_body_battery.return_value = make_garmin_api_body_battery()
+        mock_client.get_max_metrics.return_value = {}
+        mock_client.get_sleep_data.return_value = {}
+        mock_client.get_activities_by_date.return_value = []
+        mock_auth.get_garmin_client = AsyncMock(return_value=mock_client)
+
+        await sync_user_data(db, 1)
+
+        assert conn.sync_status == "success"
+        assert conn.rate_limited_until is None
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
+    async def test_sync_aborts_on_429_and_sets_cooldown(self, mock_auth):
+        """Regression #728: first 429 in any _sync_* must abort sync and trigger cooldown."""
+        from garminconnect import GarminConnectTooManyRequestsError
+
+        from app.services.garmin_sync import GarminRateLimitError, sync_user_data
+
+        conn = make_garmin_connection()
+
+        # Track set_rate_limited calls
+        rate_limit_called = False
+
+        async def mock_set_rate_limited(db, user_id):
+            nonlocal rate_limit_called
+            rate_limit_called = True
+            conn.rate_limited_until = datetime.now(timezone.utc) + timedelta(hours=1)
+            conn.sync_status = "error"
+            conn.sync_error = "rate limited"
+
+        call_count = 0
+
+        async def mock_execute(query):
+            nonlocal call_count
+            call_count += 1
+            result = MagicMock()
+            if call_count == 1:
+                result.scalar_one_or_none.return_value = conn
+            else:
+                result.scalar_one_or_none.return_value = None
+            return result
+
+        db = AsyncMock()
+        db.execute = mock_execute
+
+        # First API call returns 429
+        mock_client = MagicMock()
+        mock_client.get_user_summary.side_effect = GarminConnectTooManyRequestsError("429")
+        mock_auth.get_garmin_client = AsyncMock(return_value=mock_client)
+        mock_auth.set_rate_limited = mock_set_rate_limited
+
+        with pytest.raises(GarminRateLimitError):
+            await sync_user_data(db, 1)
+
+        assert rate_limit_called is True
+        # Should NOT have called sleep or activities — aborted after first 429
+        mock_client.get_sleep_data.assert_not_called()
+        mock_client.get_activities_by_date.assert_not_called()
+
 
 class TestFormatPace:
     def test_normal_pace(self):
@@ -506,7 +612,8 @@ class TestBackgroundSyncJob:
     @pytest.mark.asyncio
     @patch("app.services.garmin_sync.sync_user_data")
     @patch("app.services.garmin_sync.async_session_factory")
-    async def test_run_garmin_sync_error_caught(self, mock_factory, mock_sync):
+    async def test_run_garmin_sync_error_commits_state(self, mock_factory, mock_sync):
+        """Regression #728: error state must be committed so cooldown persists."""
         from app.services.garmin_sync import run_garmin_sync
 
         mock_db = AsyncMock()
@@ -516,6 +623,9 @@ class TestBackgroundSyncJob:
 
         # Should not raise
         await run_garmin_sync(1)
+
+        # Error state must be committed (not rolled back)
+        mock_db.commit.assert_called_once()
 
 
 # ── API endpoint tests ───────────────────────────────────────────────────────
