@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, restrict_demo
 from app.models.user import User
 from app.schemas.resume import ResumeGenerateRequest, ResumeResponse
 from app.services import resume as resume_service
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/api/resumes", tags=["resumes"])
 async def generate_resume(
     data: ResumeGenerateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(restrict_demo),
 ):
     try:
         resume = await resume_service.generate_resume(db, current_user, data.job_id)
@@ -70,7 +70,7 @@ async def download_pdf(
 async def ats_audit(
     resume_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(restrict_demo),
 ):
     try:
         resume = await resume_service.run_ats_audit(db, current_user, resume_id)
@@ -88,7 +88,7 @@ async def ats_audit(
 async def gap_analysis(
     resume_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(restrict_demo),
 ):
     try:
         resume = await resume_service.run_gap_analysis(db, current_user, resume_id)

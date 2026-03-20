@@ -3,7 +3,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, restrict_demo
 from app.core.encryption import decrypt_value
 from app.models.settings import UserSettings
 from app.models.telegram import PulseDigest, PulseDigestItem, PulseSettings
@@ -113,7 +113,7 @@ async def get_digest(
 async def trigger_generate(
     body: DigestGenerateRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(restrict_demo),
 ):
     llm = await _get_llm_client(db, current_user.id)
 

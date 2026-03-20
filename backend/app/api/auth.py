@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user, require_admin
+from app.core.deps import get_current_user, require_admin, restrict_demo
 from app.models.user import User
 from app.schemas.auth import (
     ChangePasswordRequest,
@@ -70,7 +70,7 @@ async def get_me(user: User = Depends(get_current_user)):
 @router.post("/change-password")
 async def change_password(
     data: ChangePasswordRequest,
-    user: User = Depends(get_current_user),
+    user: User = Depends(restrict_demo),
     db: AsyncSession = Depends(get_db),
 ):
     success = await change_user_password(db, user, data.current_password, data.new_password)
