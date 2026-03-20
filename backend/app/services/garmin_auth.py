@@ -1,0 +1,155 @@
+import logging
+from datetime import datetime, timezone
+
+from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.encryption import decrypt_value, encrypt_value
+from app.models.garmin import GarminConnection
+
+logger = logging.getLogger(__name__)
+
+ALLOWED_SYNC_INTERVALS = {60, 120, 240, 360, 720, 1440}
+
+
+async def connect(
+    db: AsyncSession, user_id: int, email: str, password: str
+) -> GarminConnection:
+    """Connect Garmin account: encrypt credentials, attempt login, store tokens."""
+    from garminconnect import Garmin
+
+    email_enc = encrypt_value(email)
+    password_enc = encrypt_value(password)
+
+    # Upsert: update if exists, create if not
+    result = await db.execute(
+        select(GarminConnection).where(GarminConnection.user_id == user_id)
+    )
+    conn = result.scalar_one_or_none()
+
+    if conn is None:
+        conn = GarminConnection(
+            user_id=user_id,
+            email_encrypted=email_enc,
+            password_encrypted=password_enc,
+        )
+        db.add(conn)
+    else:
+        conn.email_encrypted = email_enc
+        conn.password_encrypted = password_enc
+        conn.sync_error = None
+
+    # Attempt Garmin login
+    try:
+        client = Garmin(email, password)
+        client.login()
+        # Serialize Garth tokens
+        tokens_data = client.garth.dumps()
+        conn.garth_tokens_encrypted = encrypt_value(tokens_data)
+        conn.sync_status = "success"
+        conn.connected_at = datetime.now(timezone.utc)
+        conn.is_active = True
+    except Exception as e:
+        conn.sync_status = "error"
+        conn.sync_error = str(e)
+        await db.flush()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Garmin login failed: {e}",
+        )
+
+    await db.flush()
+    return conn
+
+
+async def disconnect(db: AsyncSession, user_id: int) -> None:
+    """Disconnect Garmin: delete connection record but keep historical data."""
+    result = await db.execute(
+        select(GarminConnection).where(GarminConnection.user_id == user_id)
+    )
+    conn = result.scalar_one_or_none()
+    if conn is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No Garmin connection found",
+        )
+    await db.delete(conn)
+    await db.flush()
+
+
+async def get_status(db: AsyncSession, user_id: int) -> dict:
+    """Get Garmin connection status for user."""
+    result = await db.execute(
+        select(GarminConnection).where(GarminConnection.user_id == user_id)
+    )
+    conn = result.scalar_one_or_none()
+    if conn is None:
+        return {
+            "connected": False,
+            "last_sync_at": None,
+            "sync_status": None,
+            "sync_error": None,
+            "sync_interval_minutes": None,
+            "connected_at": None,
+        }
+    return {
+        "connected": True,
+        "last_sync_at": conn.last_sync_at,
+        "sync_status": conn.sync_status,
+        "sync_error": conn.sync_error,
+        "sync_interval_minutes": conn.sync_interval_minutes,
+        "connected_at": conn.connected_at,
+    }
+
+
+async def get_garmin_client(db: AsyncSession, user_id: int):
+    """Get an authenticated Garmin client from stored tokens."""
+    from garminconnect import Garmin
+
+    result = await db.execute(
+        select(GarminConnection).where(GarminConnection.user_id == user_id)
+    )
+    conn = result.scalar_one_or_none()
+    if conn is None or not conn.garth_tokens_encrypted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No Garmin connection found or no tokens stored",
+        )
+
+    tokens_data = decrypt_value(conn.garth_tokens_encrypted)
+    client = Garmin()
+    client.garth.loads(tokens_data)
+    client.login()
+
+    # Re-serialize tokens (may have been refreshed)
+    updated_tokens = client.garth.dumps()
+    conn.garth_tokens_encrypted = encrypt_value(updated_tokens)
+    await db.flush()
+
+    return client
+
+
+async def update_sync_interval(
+    db: AsyncSession, user_id: int, interval_minutes: int
+) -> GarminConnection:
+    """Update sync interval for Garmin connection."""
+    if interval_minutes not in ALLOWED_SYNC_INTERVALS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid interval. Allowed: {sorted(ALLOWED_SYNC_INTERVALS)}",
+        )
+
+    result = await db.execute(
+        select(GarminConnection).where(GarminConnection.user_id == user_id)
+    )
+    conn = result.scalar_one_or_none()
+    if conn is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No Garmin connection found",
+        )
+
+    conn.sync_interval_minutes = interval_minutes
+    await db.flush()
+    return conn

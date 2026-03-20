@@ -19,6 +19,13 @@ from app.models.telegram import (
     PulseDigest,
     PulseSettings,
 )
+from app.models.garmin import (
+    GarminConnection,
+    VitalsDailyMetric,
+    VitalsSleep,
+    VitalsActivity,
+    VitalsBriefing,
+)
 
 __all__ = [
     "User",
@@ -51,4 +58,9 @@ __all__ = [
     "PulseMessage",
     "PulseDigest",
     "PulseSettings",
+    "GarminConnection",
+    "VitalsDailyMetric",
+    "VitalsSleep",
+    "VitalsActivity",
+    "VitalsBriefing",
 ]

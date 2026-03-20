@@ -13,6 +13,7 @@ from app.api.tags import router as tags_router
 from app.api.task_analytics import router as task_analytics_router
 from app.api.pulse_settings import router as pulse_settings_router
 from app.api.pulse_digests import router as pulse_digests_router
+from app.api.garmin import router as garmin_router
 from app.api.pulse_sources import router as pulse_sources_router
 from app.api.telegram import router as telegram_router
 from app.api.calendar import router as calendar_router
@@ -102,6 +103,7 @@ app.include_router(telegram_router)
 app.include_router(pulse_sources_router)
 app.include_router(pulse_settings_router)
 app.include_router(pulse_digests_router)
+app.include_router(garmin_router)
 
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
