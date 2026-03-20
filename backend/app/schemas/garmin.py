@@ -99,3 +99,10 @@ class VitalsTodayResponse(BaseModel):
     metrics: Optional[VitalsDailyMetricResponse] = None
     sleep: Optional[VitalsSleepResponse] = None
     recent_activities: list[VitalsActivityResponse] = []
+
+
+class VitalsDashboardSummaryResponse(BaseModel):
+    metrics: Optional[VitalsDailyMetricResponse] = None
+    sleep: Optional[VitalsSleepResponse] = None
+    connected: bool = False
+    last_sync_at: Optional[datetime] = None

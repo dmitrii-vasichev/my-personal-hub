@@ -33,6 +33,7 @@ async def connect(
             user_id=user_id,
             email_encrypted=email_enc,
             password_encrypted=password_enc,
+            sync_interval_minutes=240,
         )
         db.add(conn)
     else:
@@ -60,11 +61,19 @@ async def connect(
         )
 
     await db.flush()
+
+    # Schedule periodic sync
+    from app.core.scheduler import schedule_garmin_sync
+
+    schedule_garmin_sync(user_id, conn.sync_interval_minutes)
+
     return conn
 
 
 async def disconnect(db: AsyncSession, user_id: int) -> None:
     """Disconnect Garmin: delete connection record but keep historical data."""
+    from app.core.scheduler import remove_garmin_sync
+
     result = await db.execute(
         select(GarminConnection).where(GarminConnection.user_id == user_id)
     )
@@ -74,6 +83,8 @@ async def disconnect(db: AsyncSession, user_id: int) -> None:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No Garmin connection found",
         )
+
+    remove_garmin_sync(user_id)
     await db.delete(conn)
     await db.flush()
 
@@ -152,4 +163,10 @@ async def update_sync_interval(
 
     conn.sync_interval_minutes = interval_minutes
     await db.flush()
+
+    # Reschedule sync job with new interval
+    from app.core.scheduler import schedule_garmin_sync
+
+    schedule_garmin_sync(user_id, interval_minutes)
+
     return conn

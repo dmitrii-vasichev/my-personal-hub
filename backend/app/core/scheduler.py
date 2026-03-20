@@ -129,3 +129,32 @@ def remove_user_digest(user_id: int) -> None:
     if existing:
         scheduler.remove_job(job_id)
         logger.info("Removed digest job for user %s", user_id)
+
+
+def schedule_garmin_sync(user_id: int, interval_minutes: int) -> None:
+    """Schedule (or reschedule) periodic Garmin sync for a user."""
+    job_id = f"garmin_sync_{user_id}"
+
+    existing = scheduler.get_job(job_id)
+    if existing:
+        scheduler.remove_job(job_id)
+
+    scheduler.add_job(
+        "app.services.garmin_sync:run_garmin_sync",
+        "interval",
+        minutes=interval_minutes,
+        id=job_id,
+        args=[user_id],
+        replace_existing=True,
+        misfire_grace_time=300,
+    )
+    logger.info("Scheduled Garmin sync for user %s every %s min", user_id, interval_minutes)
+
+
+def remove_garmin_sync(user_id: int) -> None:
+    """Remove Garmin sync job for a user."""
+    job_id = f"garmin_sync_{user_id}"
+    existing = scheduler.get_job(job_id)
+    if existing:
+        scheduler.remove_job(job_id)
+        logger.info("Removed Garmin sync job for user %s", user_id)
