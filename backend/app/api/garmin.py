@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +10,7 @@ from app.core.deps import get_current_user, restrict_demo
 from app.models.garmin import (
     GarminConnection,
     VitalsActivity,
+    VitalsBriefing,
     VitalsDailyMetric,
     VitalsSleep,
 )
@@ -19,6 +20,7 @@ from app.schemas.garmin import (
     GarminStatusResponse,
     GarminSyncIntervalRequest,
     VitalsActivityResponse,
+    VitalsBriefingResponse,
     VitalsDailyMetricResponse,
     VitalsDashboardSummaryResponse,
     VitalsSleepResponse,
@@ -208,6 +210,44 @@ async def get_today(
         sleep=sleep,
         recent_activities=activities,
     )
+
+
+@router.get("/briefing", response_model=VitalsBriefingResponse)
+async def get_briefing(
+    briefing_date: Optional[date] = Query(default=None, alias="date"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Get cached AI briefing for a date (default: today)."""
+    target = briefing_date or date.today()
+    result = await db.execute(
+        select(VitalsBriefing).where(
+            VitalsBriefing.user_id == current_user.id,
+            VitalsBriefing.date == target,
+        )
+    )
+    briefing = result.scalar_one_or_none()
+    if briefing is None:
+        raise HTTPException(status_code=404, detail="No briefing found for this date")
+    return briefing
+
+
+@router.post("/briefing/generate", response_model=VitalsBriefingResponse)
+async def generate_briefing(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    """Generate or regenerate today's AI briefing."""
+    from app.services.vitals_briefing import generate_vitals_briefing
+
+    briefing = await generate_vitals_briefing(db, current_user.id)
+    if briefing is None:
+        raise HTTPException(
+            status_code=400,
+            detail="LLM provider not configured. Set up an AI provider in Settings.",
+        )
+    await db.commit()
+    return briefing
 
 
 @dashboard_router.get("/vitals-summary", response_model=VitalsDashboardSummaryResponse)
