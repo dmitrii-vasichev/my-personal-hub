@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import random
 from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
@@ -14,6 +15,13 @@ from app.core.config import settings
 from app.core.database import async_session_factory
 from app.core.security import hash_password
 from app.models.calendar import CalendarEvent, EventNote
+from app.models.garmin import (
+    GarminConnection,
+    VitalsActivity,
+    VitalsBriefing,
+    VitalsDailyMetric,
+    VitalsSleep,
+)
 from app.models.job import ApplicationStatus, Job, StatusHistory
 from app.models.knowledge_base import AiKnowledgeBase
 from app.models.note import Note
@@ -790,6 +798,183 @@ async def create_pulse_data(session, user_id: int) -> None:
     print("  Created 3 pulse sources, 3 digests with 12 items")
 
 
+async def create_vitals_data(session, user_id: int) -> None:
+    """Create vitals data: Garmin connection, 30 days metrics/sleep, 15 activities, 1 briefing."""
+    now = datetime.now(timezone.utc)
+    today = date.today()
+    random.seed(42)  # Deterministic seed for reproducible data
+
+    # GarminConnection (simulated)
+    conn = GarminConnection(
+        user_id=user_id,
+        email_encrypted="demo_encrypted",
+        password_encrypted="demo_encrypted",
+        garth_tokens_encrypted="demo_token",
+        last_sync_at=now,
+        sync_status="ok",
+        sync_interval_minutes=240,
+        connected_at=now - timedelta(days=30),
+    )
+    session.add(conn)
+
+    # 30 days of VitalsDailyMetric
+    for day_offset in range(30):
+        d = today - timedelta(days=day_offset)
+        steps = random.randint(6000, 12000)
+        resting_hr = random.randint(58, 72)
+        avg_hr = resting_hr + random.randint(5, 15)
+        max_hr = avg_hr + random.randint(20, 60)
+        avg_stress = random.randint(20, 45)
+        max_stress = avg_stress + random.randint(15, 35)
+        body_battery_high = random.randint(70, 95)
+        body_battery_low = random.randint(15, 45)
+        calories_active = random.randint(200, 600)
+        calories_total = calories_active + random.randint(1400, 1800)
+        distance_m = steps * random.uniform(0.7, 0.85)
+        floors = random.randint(3, 20)
+        intensity = random.randint(10, 45)
+        vo2_max = round(random.uniform(42.0, 48.0), 1)
+
+        metric = VitalsDailyMetric(
+            user_id=user_id,
+            date=d,
+            steps=steps,
+            distance_m=round(distance_m),
+            calories_active=calories_active,
+            calories_total=calories_total,
+            floors_climbed=floors,
+            intensity_minutes=intensity,
+            resting_hr=resting_hr,
+            avg_hr=avg_hr,
+            max_hr=max_hr,
+            min_hr=resting_hr - random.randint(2, 8),
+            avg_stress=avg_stress,
+            max_stress=max_stress,
+            body_battery_high=body_battery_high,
+            body_battery_low=body_battery_low,
+            vo2_max=vo2_max,
+        )
+        session.add(metric)
+
+    # 30 days of VitalsSleep
+    for day_offset in range(30):
+        d = today - timedelta(days=day_offset)
+        total_hours = random.uniform(6.0, 8.5)
+        total_seconds = int(total_hours * 3600)
+        deep_pct = random.uniform(0.12, 0.22)
+        rem_pct = random.uniform(0.18, 0.28)
+        awake_pct = random.uniform(0.03, 0.08)
+        light_pct = 1.0 - deep_pct - rem_pct - awake_pct
+
+        sleep = VitalsSleep(
+            user_id=user_id,
+            date=d,
+            duration_seconds=total_seconds,
+            deep_seconds=int(total_seconds * deep_pct),
+            light_seconds=int(total_seconds * light_pct),
+            rem_seconds=int(total_seconds * rem_pct),
+            awake_seconds=int(total_seconds * awake_pct),
+            sleep_score=random.randint(60, 90),
+            start_time=datetime(
+                d.year, d.month, d.day,
+                random.randint(22, 23), random.randint(0, 59),
+                tzinfo=timezone.utc,
+            ) - timedelta(days=1),
+            end_time=datetime(
+                d.year, d.month, d.day,
+                random.randint(6, 8), random.randint(0, 59),
+                tzinfo=timezone.utc,
+            ),
+        )
+        session.add(sleep)
+
+    # 15 VitalsActivity records spread over 30 days
+    activity_templates = [
+        {
+            "type": "running", "name": "Morning Run",
+            "distance_range": (3000, 10000), "duration_range": (1200, 3600),
+            "hr_range": (140, 170),
+        },
+        {
+            "type": "cycling", "name": "Evening Ride",
+            "distance_range": (10000, 30000), "duration_range": (2400, 5400),
+            "hr_range": (130, 160),
+        },
+        {
+            "type": "walking", "name": "Lunch Walk",
+            "distance_range": (2000, 5000), "duration_range": (1200, 2400),
+            "hr_range": (90, 120),
+        },
+        {
+            "type": "strength_training", "name": "Gym Session",
+            "distance_range": (0, 0), "duration_range": (2400, 4200),
+            "hr_range": (110, 145),
+        },
+    ]
+
+    for i in range(15):
+        template = activity_templates[i % len(activity_templates)]
+        day_offset = i * 2  # Every 2 days
+        d = today - timedelta(days=day_offset)
+
+        activity = VitalsActivity(
+            user_id=user_id,
+            garmin_activity_id=100000 + i,
+            activity_type=template["type"],
+            name=template["name"],
+            start_time=datetime(
+                d.year, d.month, d.day,
+                random.randint(7, 18), random.randint(0, 59),
+                tzinfo=timezone.utc,
+            ),
+            duration_seconds=random.randint(*template["duration_range"]),
+            distance_m=(
+                random.randint(*template["distance_range"])
+                if template["distance_range"][1] > 0
+                else None
+            ),
+            avg_hr=random.randint(*template["hr_range"]),
+            max_hr=random.randint(template["hr_range"][1], template["hr_range"][1] + 15),
+            calories=random.randint(150, 600),
+        )
+        session.add(activity)
+
+    # 1 VitalsBriefing for today
+    briefing = VitalsBriefing(
+        user_id=user_id,
+        date=today,
+        content=(
+            "## Health Status\n"
+            "Good overall condition. Sleep score of 78/100 with 7.2 hours of rest"
+            " — solid recovery. Body Battery recharged to 82, indicating good"
+            " energy reserves. Resting heart rate at 64 bpm is within your normal"
+            " range. Stress levels moderate at 28 avg.\n\n"
+            "## Day Forecast\n"
+            "Moderate workload ahead: 3 active tasks due today, 1 team meeting"
+            " at 2 PM. No interviews scheduled this week. Your energy levels"
+            " support focused deep work in the morning.\n\n"
+            "## Recommendations\n"
+            "- **Best focus window: 9 AM – 12 PM** — Body Battery is highest,"
+            " tackle your most demanding task first\n"
+            "- Take a 15-min walk after lunch to manage afternoon stress\n"
+            "- Light evening activity recommended — your 7-day activity trend"
+            " is slightly below average\n\n"
+            "## Notable Patterns\n"
+            "- Sleep quality improved 12% this week compared to last week\n"
+            "- Resting HR trending down (64 → 62 bpm over 14 days)"
+            " — good fitness adaptation\n"
+            "- Task completion rate correlates with sleep scores above 75"
+        ),
+        generated_at=now,
+    )
+    session.add(briefing)
+
+    print(
+        "  Created vitals data: 30 days metrics, 30 days sleep,"
+        " 15 activities, 1 briefing"
+    )
+
+
 async def seed() -> None:
     """Main seed function — creates demo user and all associated data."""
     async with async_session_factory() as session:
@@ -804,6 +989,7 @@ async def seed() -> None:
         await create_kb_docs(session, user.id)
         await create_notes(session, user.id)
         await create_pulse_data(session, user.id)
+        await create_vitals_data(session, user.id)
 
         await session.commit()
         print(f"\nDemo seed complete! User: {DEMO_EMAIL}")

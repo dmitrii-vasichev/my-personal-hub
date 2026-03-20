@@ -6,6 +6,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
 import { PulseDigestWidget } from "@/components/dashboard/pulse-digest-widget";
+import { VitalsWidget } from "@/components/dashboard/vitals-widget";
 import { RecentActivity } from "@/components/dashboard/recent-activity";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 
@@ -36,11 +37,13 @@ export default function DashboardPage() {
       {/* Stat cards */}
       <DashboardClient />
 
-      {/* Pulse + Recent Activity — two columns on desktop */}
+      {/* Pulse + Vitals — two columns on desktop */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <PulseDigestWidget />
-        <RecentActivity />
+        <VitalsWidget />
       </div>
+
+      <RecentActivity />
 
       {/* Task creation modal */}
       {showCreateDialog && (

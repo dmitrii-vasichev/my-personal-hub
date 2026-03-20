@@ -10,6 +10,7 @@ import type {
   VitalsActivity,
   VitalsBriefing,
   VitalsConnectionStatus,
+  VitalsDashboardSummary,
 } from "@/types/vitals";
 
 export const VITALS_KEY = "vitals";
@@ -108,5 +109,12 @@ export function useSyncVitals() {
     onError: (error: Error) => {
       toast.error(error.message || "Failed to sync");
     },
+  });
+}
+
+export function useVitalsDashboardSummary() {
+  return useQuery<VitalsDashboardSummary>({
+    queryKey: [VITALS_KEY, "dashboard"],
+    queryFn: () => api.get<VitalsDashboardSummary>("/api/dashboard/vitals-summary"),
   });
 }
