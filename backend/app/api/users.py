@@ -129,3 +129,39 @@ async def delete_user(
 
     await db.delete(user)
     await db.commit()
+
+
+@router.post("/demo/reset")
+async def reset_demo_data(
+    db: AsyncSession = Depends(get_db),
+    _admin: User = Depends(require_admin),
+):
+    """Delete all demo user data and re-seed with defaults. Admin-only."""
+    from app.scripts.seed_demo import (
+        cleanup_demo_user,
+        create_demo_user,
+        create_events,
+        create_jobs,
+        create_kb_docs,
+        create_notes,
+        create_profile,
+        create_pulse_data,
+        create_tags,
+        create_tasks,
+    )
+
+    await cleanup_demo_user(db)
+
+    user = await create_demo_user(db)
+    await create_profile(db, user.id)
+    tags = await create_tags(db, user.id)
+    await create_tasks(db, user.id, tags)
+    await create_jobs(db, user.id)
+    await create_events(db, user.id)
+    await create_kb_docs(db, user.id)
+    await create_notes(db, user.id)
+    await create_pulse_data(db, user.id)
+
+    await db.commit()
+
+    return {"status": "ok", "message": "Demo data reset successfully"}

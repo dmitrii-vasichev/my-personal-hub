@@ -15,11 +15,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
-from app.models.user import User
+from app.core.deps import get_current_user, restrict_demo
+from app.models.note import Note
+from app.models.user import User, UserRole
 from app.schemas.note import LinkedJobBrief, NoteCreate, NoteResponse, NoteTreeResponse
 from app.schemas.task import LinkedEventBrief
 from app.schemas.calendar import LinkedTaskBrief
+from sqlalchemy import select
+
 from app.services import google_drive, google_oauth, note as note_service
 from app.services import note_task_link as ntl_service
 from app.services import note_job_link as njl_service
@@ -58,6 +61,24 @@ async def get_notes_tree(
     current_user: User = Depends(get_current_user),
 ):
     """Fetch folder tree from Google Drive and sync metadata."""
+    # Demo user: return flat list from local notes (no Google Drive)
+    if current_user.role == UserRole.demo:
+        result = await db.execute(
+            select(Note).where(Note.user_id == current_user.id)
+        )
+        notes = list(result.scalars().all())
+        tree = [
+            {
+                "id": str(n.id),
+                "name": n.title,
+                "type": "file",
+                "google_file_id": str(n.id),
+                "children": [],
+            }
+            for n in notes
+        ]
+        return NoteTreeResponse(folder_id="demo", tree=tree)
+
     credentials, folder_id = await _get_drive_prerequisites(db, current_user)
 
     try:
@@ -88,7 +109,7 @@ async def list_notes(
 async def create_note(
     body: NoteCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(restrict_demo),
 ):
     """Create a new note: upload markdown content to Google Drive and save metadata."""
     credentials, folder_id = await _get_drive_prerequisites(db, current_user)
@@ -109,7 +130,7 @@ async def create_note(
 @router.post("/sync", response_model=list[NoteResponse])
 async def sync_notes(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(restrict_demo),
 ):
     """Force re-sync note metadata from Google Drive."""
     credentials, folder_id = await _get_drive_prerequisites(db, current_user)
@@ -137,7 +158,20 @@ async def get_note_content(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Fetch raw markdown content for a file from Google Drive."""
+    """Fetch raw markdown content for a file from Google Drive or local storage."""
+    # Check for local note (demo user or notes with no google_file_id)
+    result = await db.execute(
+        select(Note).where(
+            Note.user_id == current_user.id,
+            Note.google_file_id.is_(None),
+            Note.id == int(file_id) if file_id.isdigit() else Note.google_file_id == file_id,
+        )
+    )
+    local_note = result.scalar_one_or_none()
+    if local_note:
+        return {"file_id": file_id, "content": local_note.content or ""}
+
+    # Google Drive note
     credentials, _ = await _get_drive_prerequisites(db, current_user)
 
     try:

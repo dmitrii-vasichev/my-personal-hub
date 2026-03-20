@@ -11,6 +11,7 @@ from app.core.database import Base
 class UserRole(str, enum.Enum):
     admin = "admin"
     member = "member"
+    demo = "demo"
 
 
 class User(Base):

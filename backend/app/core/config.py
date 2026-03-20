@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = "admin@example.com"
     ADMIN_PASSWORD: str = "change-me"
 
+    # Demo seed
+    DEMO_PASSWORD: str = "demo2026"
+
     # Encryption (Fernet key for API keys at rest)
     # Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     ENCRYPTION_KEY: str = ""

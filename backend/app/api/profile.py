@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, restrict_demo
 from app.models.user import User
 from app.schemas.profile import ProfileImportRequest, ProfileResponse, ProfileUpdate
 from app.services import profile as profile_service
@@ -34,7 +34,7 @@ async def upsert_profile(
 async def import_profile(
     data: ProfileImportRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(restrict_demo),
 ):
     try:
         return await profile_service.import_profile_from_text(db, current_user, data.text)

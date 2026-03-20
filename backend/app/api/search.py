@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, restrict_demo
 from app.models.user import User
 from app.schemas.job import JobResponse
 from app.schemas.search import (
@@ -22,7 +22,7 @@ router = APIRouter(prefix="/api/search", tags=["search"])
 async def search_jobs(
     data: SearchRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(restrict_demo),
 ):
     """Search external job boards with the selected provider."""
     try:
@@ -91,7 +91,7 @@ async def save_result(
 async def auto_search(
     data: AutoSearchRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(restrict_demo),
 ):
     """Run auto-search using saved target roles and default location."""
     try:
