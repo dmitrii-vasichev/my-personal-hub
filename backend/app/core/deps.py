@@ -49,3 +49,12 @@ async def require_admin(user: User = Depends(get_current_user)) -> User:
             detail="Admin access required",
         )
     return user
+
+
+async def restrict_demo(user: User = Depends(get_current_user)) -> User:
+    if user.role == UserRole.demo:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This feature is not available in demo mode",
+        )
+    return user

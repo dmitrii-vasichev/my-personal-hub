@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, restrict_demo
 from app.models.telegram import PulseSource
 from app.models.user import User
 from app.schemas.pulse_source import (
@@ -86,7 +86,7 @@ async def delete_source(
 async def resolve_source(
     identifier: str = Query(..., description="Channel username or invite link"),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(restrict_demo),
 ):
     return await source_service.resolve_source(db, current_user, identifier)
 
@@ -95,7 +95,7 @@ async def resolve_source(
 async def trigger_poll(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(restrict_demo),
 ):
     """Trigger immediate polling for current user's sources."""
     # Rate limit: check if any source was polled in the last 5 minutes

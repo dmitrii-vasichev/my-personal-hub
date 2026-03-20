@@ -27,6 +27,16 @@ async def update_settings(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role == UserRole.demo:
+        # Demo user can only update job search fields
+        data = SettingsUpdate(
+            default_location=data.default_location,
+            target_roles=data.target_roles,
+            min_match_score=data.min_match_score,
+            excluded_companies=data.excluded_companies,
+            stale_threshold_days=data.stale_threshold_days,
+            kanban_hidden_columns=data.kanban_hidden_columns,
+        )
     settings = await settings_service.update_settings(db, current_user, data)
     if current_user.role == UserRole.admin:
         return settings_service.to_response(settings)

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, restrict_demo
 from app.models.user import User
 from app.schemas.job import (
     JobCreate,
@@ -191,7 +191,7 @@ async def fetch_description(
 async def run_job_match(
     job_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(restrict_demo),
 ):
     """Run AI matching for a job against the current user's profile."""
     try:
