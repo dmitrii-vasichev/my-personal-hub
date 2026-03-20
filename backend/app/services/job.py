@@ -12,6 +12,12 @@ from app.models.user import User, UserRole
 from app.schemas.job import JobCreate, JobStatusChange, JobTrackingUpdate, JobUpdate
 
 
+def _exclude_demo_owners(owner_id_col):
+    """Exclude records owned by demo users."""
+    demo_ids = select(User.id).where(User.role == UserRole.demo)
+    return ~owner_id_col.in_(demo_ids)
+
+
 def _can_access(job: Job, user: User) -> bool:
     if user.role == UserRole.admin:
         return True
@@ -136,7 +142,11 @@ async def list_jobs(
 ) -> list[Job]:
     q = select(Job).options(selectinload(Job.status_history))
 
-    if current_user.role != UserRole.admin:
+    if current_user.role == UserRole.demo:
+        q = q.where(Job.user_id == current_user.id)
+    elif current_user.role == UserRole.admin:
+        q = q.where(_exclude_demo_owners(Job.user_id))
+    else:
         q = q.where(Job.user_id == current_user.id)
 
     if search:
@@ -242,7 +252,11 @@ async def get_kanban(
     current_user: User,
 ) -> dict[str, list[Job]]:
     query = select(Job).where(Job.status.isnot(None))
-    if current_user.role != UserRole.admin:
+    if current_user.role == UserRole.demo:
+        query = query.where(Job.user_id == current_user.id)
+    elif current_user.role == UserRole.admin:
+        query = query.where(_exclude_demo_owners(Job.user_id))
+    else:
         query = query.where(Job.user_id == current_user.id)
 
     result = await db.execute(query)

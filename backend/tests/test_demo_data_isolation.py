@@ -94,10 +94,22 @@ class TestDemoTaskIsolation:
         task = _make_task(1, owner=member_a, visibility=Visibility.family)
         assert _can_access_task(task, member_b) is True
 
-    def test_admin_can_see_demo_family_task(self):
+    def test_admin_cannot_see_demo_private_task(self):
+        demo = _make_user(99, UserRole.demo)
+        admin = _make_user(1, UserRole.admin)
+        task = _make_task(1, owner=demo, visibility=Visibility.private)
+        assert _can_access_task(task, admin) is False
+
+    def test_admin_cannot_see_demo_family_task(self):
         demo = _make_user(99, UserRole.demo)
         admin = _make_user(1, UserRole.admin)
         task = _make_task(1, owner=demo, visibility=Visibility.family)
+        assert _can_access_task(task, admin) is False
+
+    def test_admin_can_see_member_task(self):
+        member = _make_user(2, UserRole.member)
+        admin = _make_user(1, UserRole.admin)
+        task = _make_task(1, owner=member, visibility=Visibility.private)
         assert _can_access_task(task, admin) is True
 
     def test_demo_can_see_own_task(self):
@@ -148,8 +160,20 @@ class TestDemoEventIsolation:
         event = _make_event(1, owner=member_a, visibility=Visibility.family)
         assert _can_access_event(event, member_b) is True
 
-    def test_admin_can_see_demo_family_event(self):
+    def test_admin_cannot_see_demo_private_event(self):
+        demo = _make_user(99, UserRole.demo)
+        admin = _make_user(1, UserRole.admin)
+        event = _make_event(1, owner=demo, visibility=Visibility.private)
+        assert _can_access_event(event, admin) is False
+
+    def test_admin_cannot_see_demo_family_event(self):
         demo = _make_user(99, UserRole.demo)
         admin = _make_user(1, UserRole.admin)
         event = _make_event(1, owner=demo, visibility=Visibility.family)
+        assert _can_access_event(event, admin) is False
+
+    def test_admin_can_see_member_event(self):
+        member = _make_user(2, UserRole.member)
+        admin = _make_user(1, UserRole.admin)
+        event = _make_event(1, owner=member, visibility=Visibility.private)
         assert _can_access_event(event, admin) is True
