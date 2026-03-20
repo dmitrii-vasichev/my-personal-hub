@@ -22,6 +22,8 @@ def _can_access_task(task: Task, user: User) -> bool:
     """Check if user can read this task."""
     if user.role == UserRole.admin:
         return True
+    if user.role == UserRole.demo:
+        return task.user_id == user.id
     return (
         task.user_id == user.id
         or task.assignee_id == user.id
@@ -45,7 +47,9 @@ def _task_query_for_user(user: User):
             joinedload(Task.owner),
         )
     )
-    if user.role != UserRole.admin:
+    if user.role == UserRole.demo:
+        q = q.where(Task.user_id == user.id)
+    elif user.role != UserRole.admin:
         q = q.where(
             or_(
                 Task.user_id == user.id,
@@ -239,8 +243,10 @@ async def list_tasks(
 ) -> list[Task]:
     q = select(Task).options(joinedload(Task.owner), selectinload(Task.tags))
 
-    # Access control: own + assigned + family-visible
-    if current_user.role != UserRole.admin:
+    # Access control: demo sees only own; member sees own + assigned + family
+    if current_user.role == UserRole.demo:
+        q = q.where(Task.user_id == current_user.id)
+    elif current_user.role != UserRole.admin:
         q = q.where(
             or_(
                 Task.user_id == current_user.id,
