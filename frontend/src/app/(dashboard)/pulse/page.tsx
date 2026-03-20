@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Sparkles, History, Radio as RadioIcon, Settings2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DemoModeBadge } from "@/components/ui/demo-mode-badge";
 import { CategoryTabs } from "@/components/pulse/category-tabs";
 import {
   DigestView,
@@ -12,12 +13,14 @@ import {
 } from "@/components/pulse/digest-view";
 import { DigestHistory } from "@/components/pulse/digest-history";
 import { useLatestDigest, useGenerateDigest } from "@/hooks/use-pulse-digests";
+import { useAuth } from "@/lib/auth";
 
 type ViewMode = "latest" | "history";
 
 export default function PulseDigestsPage() {
   const [category, setCategory] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("latest");
+  const { isDemo } = useAuth();
 
   const { data: latestDigest, isLoading } = useLatestDigest(
     category ?? undefined
@@ -35,14 +38,18 @@ export default function PulseDigestsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            onClick={() => generateDigest.mutate(category ?? undefined)}
-            disabled={generateDigest.isPending}
-          >
-            <Sparkles className={`mr-1.5 h-4 w-4 ${generateDigest.isPending ? "animate-spin" : ""}`} />
-            Generate Now
-          </Button>
+          {isDemo ? (
+            <DemoModeBadge compact feature="AI Digest" description="Generate AI digests from Telegram channels" />
+          ) : (
+            <Button
+              size="sm"
+              onClick={() => generateDigest.mutate(category ?? undefined)}
+              disabled={generateDigest.isPending}
+            >
+              <Sparkles className={`mr-1.5 h-4 w-4 ${generateDigest.isPending ? "animate-spin" : ""}`} />
+              Generate Now
+            </Button>
+          )}
           <Link
             href="/pulse/prompts"
             className="inline-flex h-7 items-center gap-1 rounded-[min(var(--radius-md),12px)] border border-border bg-background px-2.5 text-[0.8rem] font-medium text-foreground transition-all hover:bg-muted dark:border-input dark:bg-input/30 dark:hover:bg-input/50"

@@ -16,6 +16,7 @@ export interface User {
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  isDemo: boolean;
   login: (email: string, password: string) => Promise<{ must_change_password: boolean }>;
   logout: () => void;
   refreshUser: () => Promise<void>;

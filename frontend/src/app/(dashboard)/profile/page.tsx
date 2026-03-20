@@ -22,23 +22,28 @@ import { ProfileImportDialog } from "@/components/profile/profile-import-dialog"
 import type { ContactInfo, SkillEntry, ExperienceEntry, EducationEntry } from "@/types/profile";
 
 function RoleBadge({ role }: { role: string }) {
-  const isAdmin = role === "admin";
+  const config = role === "admin"
+    ? { label: "Admin", color: "#4f8ef7" }
+    : role === "demo"
+    ? { label: "Demo", color: "#f59e0b" }
+    : { label: "Member", color: "#2dd4bf" };
+
   return (
     <span
       className="inline-flex items-center rounded px-2 py-0.5 font-mono text-[11px]"
       style={{
-        background: isAdmin ? "rgba(79,142,247,0.10)" : "rgba(45,212,191,0.10)",
-        color: isAdmin ? "#4f8ef7" : "#2dd4bf",
-        border: `1px solid ${isAdmin ? "rgba(79,142,247,0.20)" : "rgba(45,212,191,0.20)"}`,
+        background: `${config.color}1a`,
+        color: config.color,
+        border: `1px solid ${config.color}33`,
       }}
     >
-      {isAdmin ? "Admin" : "Member"}
+      {config.label}
     </span>
   );
 }
 
 export default function ProfilePage() {
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, isDemo } = useAuth();
   const { data: profile } = useProfile();
   const updateProfile = useUpdateProfile();
 
@@ -138,9 +143,11 @@ export default function ProfilePage() {
     <div className="mx-auto max-w-xl space-y-8 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Profile</h1>
-        <ProfileImportDialog
-          onSuccess={() => setProfInitialized(false)}
-        />
+        {!isDemo && (
+          <ProfileImportDialog
+            onSuccess={() => setProfInitialized(false)}
+          />
+        )}
       </div>
 
       {/* Avatar + identity */}

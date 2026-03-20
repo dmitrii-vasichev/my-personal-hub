@@ -4,6 +4,17 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { JobMatchSection } from "@/components/jobs/job-match-section";
 import type { Job, MatchResult } from "@/types/job";
 
+vi.mock("@/lib/auth", () => ({
+  useAuth: () => ({
+    user: { id: 1, email: "test@test.com", display_name: "Test", role: "member", must_change_password: false, is_blocked: false, theme: "dark", last_login_at: null },
+    isLoading: false,
+    isDemo: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    refreshUser: vi.fn(),
+  }),
+}));
+
 // Mock the hook
 vi.mock("@/hooks/use-job-match", () => ({
   useRunJobMatch: vi.fn(() => ({

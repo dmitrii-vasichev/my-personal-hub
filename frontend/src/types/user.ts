@@ -2,7 +2,7 @@ export interface UserListItem {
   id: number;
   email: string;
   display_name: string;
-  role: "admin" | "member";
+  role: "admin" | "member" | "demo";
   must_change_password: boolean;
   is_blocked: boolean;
   theme: string;
@@ -42,7 +42,7 @@ export interface ProfileResponse {
   id: number;
   email: string;
   display_name: string;
-  role: "admin" | "member";
+  role: "admin" | "member" | "demo";
   theme: string;
   is_blocked: boolean;
   must_change_password: boolean;

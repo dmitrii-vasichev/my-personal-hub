@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { Search, Sparkles, Bookmark, ExternalLink, ChevronDown, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DemoModeBadge } from "@/components/ui/demo-mode-badge";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useAuth } from "@/lib/auth";
 import { useJobSearch, useSaveSearchResult } from "@/hooks/use-search";
 import { SearchResultDetail } from "@/components/jobs/search-result-detail";
 import type { SearchProvider, SearchResult } from "@/types/search";
@@ -108,6 +110,7 @@ export function JobSearch() {
   const [detailOpen, setDetailOpen] = useState(false);
 
   const router = useRouter();
+  const { isDemo } = useAuth();
   const { results, isSearching, error, hasMore, search, loadMore, autoSearch } = useJobSearch();
   const saveResult = useSaveSearchResult();
 
@@ -140,6 +143,14 @@ export function JobSearch() {
     setDetailResult(result);
     setDetailOpen(true);
   };
+
+  if (isDemo) {
+    return (
+      <div className="space-y-4">
+        <DemoModeBadge feature="External Job Search" description="Search jobs across Adzuna, Google Jobs, and JSearch APIs" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

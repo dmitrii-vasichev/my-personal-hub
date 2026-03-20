@@ -20,6 +20,17 @@ const mockAutoSearch = vi.fn();
 const mockLoadMore = vi.fn();
 const mockSaveMutateAsync = vi.fn();
 
+vi.mock("@/lib/auth", () => ({
+  useAuth: () => ({
+    user: { id: 1, email: "test@test.com", display_name: "Test", role: "member", must_change_password: false, is_blocked: false, theme: "dark", last_login_at: null },
+    isLoading: false,
+    isDemo: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    refreshUser: vi.fn(),
+  }),
+}));
+
 vi.mock("@/hooks/use-search", () => ({
   useJobSearch: () => ({
     results: [],
