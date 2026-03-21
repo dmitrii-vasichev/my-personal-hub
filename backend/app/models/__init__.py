@@ -25,6 +25,7 @@ from app.models.garmin import (
     VitalsSleep,
     VitalsActivity,
     VitalsBriefing,
+    VitalsSyncLog,
 )
 
 __all__ = [
@@ -63,4 +64,5 @@ __all__ = [
     "VitalsSleep",
     "VitalsActivity",
     "VitalsBriefing",
+    "VitalsSyncLog",
 ]
