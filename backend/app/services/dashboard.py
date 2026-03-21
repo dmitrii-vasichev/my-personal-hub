@@ -1,6 +1,7 @@
 """
 Dashboard summary service — aggregates metrics across all modules.
 """
+import re
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, select, and_
@@ -9,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.calendar import CalendarEvent
 from app.models.job import ApplicationStatus, Job
 from app.models.task import Task, TaskStatus
-from app.models.telegram import PulseDigest
+from app.models.telegram import PulseDigest, PulseDigestItem
 from app.models.user import User
 
 # Terminal statuses that are not "active"
@@ -115,7 +116,57 @@ async def get_summary(db: AsyncSession, user: User) -> dict:
 
 
 _CONTENT_PREVIEW_LENGTH = 200
+_MAX_PREVIEW_ITEMS = 5
 _PULSE_CATEGORIES = ["news", "jobs", "learning"]
+
+_BOLD_TITLE_RE = re.compile(r"^[-*]\s+\*\*(.+?)\*\*")
+
+
+def _extract_preview_items(content: str | None) -> list[dict]:
+    """Extract up to 5 headline items from markdown digest content."""
+    if not content:
+        return []
+
+    # Try bold-title pattern: - **Title**: description
+    items: list[dict] = []
+    for line in content.splitlines():
+        m = _BOLD_TITLE_RE.match(line.strip())
+        if m:
+            items.append({"title": m.group(1).strip(), "classification": None})
+            if len(items) >= _MAX_PREVIEW_ITEMS:
+                break
+
+    if items:
+        return items
+
+    # Fallback: first N non-heading, non-empty lines trimmed to first sentence
+    for line in content.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        # Take first sentence
+        sentence = stripped.split(". ")[0].rstrip(".")
+        items.append({"title": sentence, "classification": None})
+        if len(items) >= _MAX_PREVIEW_ITEMS:
+            break
+
+    return items
+
+
+async def _get_structured_preview_items(
+    db: AsyncSession, digest_id: int
+) -> list[dict]:
+    """Query PulseDigestItem table for first 5 items of a structured digest."""
+    result = await db.execute(
+        select(PulseDigestItem.title, PulseDigestItem.classification)
+        .where(PulseDigestItem.digest_id == digest_id)
+        .order_by(PulseDigestItem.id)
+        .limit(_MAX_PREVIEW_ITEMS)
+    )
+    return [
+        {"title": row.title, "classification": row.classification}
+        for row in result.all()
+    ]
 
 
 def _extract_preview(content: str | None) -> str:
@@ -139,7 +190,7 @@ def _extract_preview(content: str | None) -> str:
 
 async def get_pulse_summary(db: AsyncSession, user: User) -> dict:
     """Latest digest per category for the dashboard widget."""
-    from sqlalchemy import desc, distinct
+    from sqlalchemy import desc
 
     # Get latest digest per category using a subquery
     digests: list[dict] = []
@@ -156,6 +207,11 @@ async def get_pulse_summary(db: AsyncSession, user: User) -> dict:
         )
         digest = result.scalar_one_or_none()
         if digest is not None:
+            if digest.digest_type == "structured":
+                preview_items = await _get_structured_preview_items(db, digest.id)
+            else:
+                preview_items = _extract_preview_items(digest.content)
+
             digests.append({
                 "id": digest.id,
                 "category": digest.category,
@@ -163,6 +219,7 @@ async def get_pulse_summary(db: AsyncSession, user: User) -> dict:
                 "message_count": digest.message_count,
                 "items_count": digest.items_count,
                 "generated_at": digest.generated_at,
+                "preview_items": preview_items,
             })
 
     # Compute overall period from all returned digests

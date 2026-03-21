@@ -80,6 +80,13 @@ class DigestItemBulkAction(BaseModel):
     action: Literal["to_task", "to_note", "to_job", "skip"]
 
 
+class PreviewItem(BaseModel):
+    """Single headline item for dashboard widget preview."""
+
+    title: str
+    classification: Optional[str] = None
+
+
 class DigestSummaryItem(BaseModel):
     """Compact digest info for dashboard widget."""
 
@@ -89,6 +96,7 @@ class DigestSummaryItem(BaseModel):
     message_count: int
     items_count: Optional[int] = None
     generated_at: datetime
+    preview_items: list[PreviewItem] = []
 
     model_config = {"from_attributes": True}
 

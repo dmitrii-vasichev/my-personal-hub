@@ -200,6 +200,7 @@ async def test_get_pulse_summary_with_digests():
     news_digest.id = 10
     news_digest.category = "news"
     news_digest.content = "# News\n\nApple launched a new product today. EU updated AI policy."
+    news_digest.digest_type = "markdown"
     news_digest.message_count = 42
     news_digest.generated_at = now
 
@@ -207,6 +208,7 @@ async def test_get_pulse_summary_with_digests():
     jobs_digest.id = 11
     jobs_digest.category = "jobs"
     jobs_digest.content = "# Jobs\n\n⭐ Senior Python Developer at Revolut."
+    jobs_digest.digest_type = "markdown"
     jobs_digest.message_count = 25
     jobs_digest.generated_at = now
 
@@ -284,11 +286,18 @@ async def test_get_pulse_summary_structured_digest():
     learning_result = MagicMock()
     learning_result.scalar_one_or_none.return_value = learning_digest
 
+    # PulseDigestItem query for structured digest
+    items_result = MagicMock()
+    items_result.all.return_value = [
+        make_row(title="Learn Python async", classification="tutorial"),
+        make_row(title="New FastAPI features", classification="article"),
+    ]
+
     period_result = MagicMock()
     period_result.one.return_value = (now - timedelta(days=1), now)
 
     db.execute = AsyncMock(
-        side_effect=[news_result, jobs_result, learning_result, period_result]
+        side_effect=[news_result, jobs_result, learning_result, items_result, period_result]
     )
 
     user = make_user()
@@ -298,3 +307,6 @@ async def test_get_pulse_summary_structured_digest():
     assert result["digests"][0]["category"] == "learning"
     assert result["digests"][0]["content_preview"] == ""
     assert result["digests"][0]["items_count"] == 5
+    assert len(result["digests"][0]["preview_items"]) == 2
+    assert result["digests"][0]["preview_items"][0]["title"] == "Learn Python async"
+    assert result["digests"][0]["preview_items"][0]["classification"] == "tutorial"
