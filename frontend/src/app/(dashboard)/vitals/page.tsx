@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { RefreshCw, Heart, AlertCircle } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { RefreshCw, Heart, AlertCircle, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,25 @@ export default function VitalsPage() {
 
   const generateBriefing = useGenerateBriefing();
   const syncVitals = useSyncVitals();
+
+  // Rate-limit countdown
+  const rateLimitedUntil = connection?.rate_limited_until
+    ? new Date(connection.rate_limited_until)
+    : null;
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    if (!rateLimitedUntil || rateLimitedUntil <= new Date()) return;
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, [rateLimitedUntil]);
+
+  const isRateLimited = rateLimitedUntil !== null && rateLimitedUntil > now;
+  const cooldownRemaining = isRateLimited
+    ? Math.max(0, Math.ceil((rateLimitedUntil.getTime() - now.getTime()) / 1000))
+    : 0;
+  const cooldownMinutes = Math.floor(cooldownRemaining / 60);
+  const cooldownSeconds = cooldownRemaining % 60;
 
   const handleLoadMore = useCallback(() => {
     setActivityLimit((prev) => prev + PAGE_SIZE);
@@ -117,6 +136,11 @@ export default function VitalsPage() {
           )}
           {isDemo ? (
             <DemoModeBadge feature="Sync" description="Not available in demo mode" compact />
+          ) : isRateLimited ? (
+            <span className="flex items-center gap-1.5 text-xs text-[var(--warning)]">
+              <Clock className="h-3.5 w-3.5" />
+              Rate limited — {cooldownMinutes}:{String(cooldownSeconds).padStart(2, "0")}
+            </span>
           ) : (
             <Button
               variant="outline"
