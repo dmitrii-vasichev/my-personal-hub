@@ -340,5 +340,6 @@ async def get_vitals_summary(
         sleep=sleep,
         connected=conn is not None and conn.is_active,
         last_sync_at=conn.last_sync_at if conn else None,
+        sync_interval_minutes=conn.sync_interval_minutes if conn else None,
         briefing_insight=briefing_insight,
     )

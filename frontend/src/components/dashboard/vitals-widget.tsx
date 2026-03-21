@@ -7,9 +7,11 @@ import {
   Activity,
   Zap,
   AlertCircle,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { useVitalsDashboardSummary } from "@/hooks/use-vitals";
+import { useAuth } from "@/lib/auth";
 
 function formatSleepHours(seconds: number | null): string {
   if (!seconds) return "\u2014";
@@ -87,6 +89,7 @@ function WidgetSkeleton() {
 }
 
 export function VitalsWidget() {
+  const { isDemo } = useAuth();
   const { data, isLoading } = useVitalsDashboardSummary();
 
   if (isLoading) {
@@ -130,6 +133,13 @@ export function VitalsWidget() {
 
   const { metrics, sleep } = data;
 
+  // Stale data detection: last sync > 2x sync interval
+  const isDataStale = !isDemo
+    && data.last_sync_at != null
+    && data.sync_interval_minutes != null
+    && new Date().getTime() - new Date(data.last_sync_at).getTime()
+      > 2 * data.sync_interval_minutes * 60 * 1000;
+
   return (
     <div className="rounded-xl border border-border-subtle bg-card">
       {/* Header */}
@@ -145,6 +155,15 @@ export function VitalsWidget() {
             <Heart size={14} />
           </span>
           <span className="text-sm font-medium text-foreground">Vitals</span>
+          {isDataStale && (
+            <span
+              className="flex items-center gap-1 text-[11px] text-[var(--accent-amber)]"
+              data-testid="vitals-widget-stale"
+              title="Data may be outdated"
+            >
+              <AlertTriangle size={12} />
+            </span>
+          )}
         </div>
         <Link
           href="/vitals"
