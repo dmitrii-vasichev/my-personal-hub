@@ -46,7 +46,7 @@ class GarminConnection(Base):
         DateTime(timezone=True), nullable=True
     )
     consecutive_failures: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default="0"
+        Integer, nullable=False, server_default="0", default=0
     )
     connected_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
