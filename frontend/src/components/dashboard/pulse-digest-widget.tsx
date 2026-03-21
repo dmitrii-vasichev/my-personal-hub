@@ -40,12 +40,15 @@ function formatPeriod(start: string | null, end: string | null): string {
   return `${startStr} – ${endStr}`;
 }
 
+const MAX_VISIBLE_ITEMS = 3;
+
 function CategoryRow({ digest }: { digest: DigestSummaryItem }) {
   const config = CATEGORY_CONFIG[digest.category ?? ""] ?? CATEGORY_CONFIG.news;
   const totalCount = digest.items_count ?? digest.message_count;
-  const displayedCount = digest.preview_items?.length ?? 0;
-  const moreCount = totalCount - displayedCount;
-  const hasPreviewItems = displayedCount > 0;
+  const allItems = digest.preview_items ?? [];
+  const visibleItems = allItems.slice(0, MAX_VISIBLE_ITEMS);
+  const hasPreviewItems = visibleItems.length > 0;
+  const moreCount = totalCount - visibleItems.length;
 
   return (
     <Link href={`/pulse?digest=${digest.id}`} className="block">
@@ -67,27 +70,28 @@ function CategoryRow({ digest }: { digest: DigestSummaryItem }) {
           </span>
         </div>
         {hasPreviewItems ? (
-          <div>
-            <ul className="space-y-0.5">
-              {digest.preview_items.map((item, i) => (
-                <li key={i} className="flex items-center gap-1.5 text-sm text-foreground">
-                  <span className="text-tertiary text-[10px]">•</span>
-                  <span className="line-clamp-1 flex-1">{item.title}</span>
-                  {item.classification && (
-                    <span
-                      className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
-                      style={{ color: config.color, background: config.bg }}
-                    >
-                      {item.classification}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
+          <div className="flex flex-wrap items-center gap-2">
+            {visibleItems.map((item, i) => (
+              <span
+                key={i}
+                className="inline-flex max-w-[280px] items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-foreground"
+                style={{ background: config.bg }}
+              >
+                <span className="truncate">{item.title}</span>
+                {item.classification && (
+                  <span
+                    className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
+                    style={{ color: config.color }}
+                  >
+                    {item.classification}
+                  </span>
+                )}
+              </span>
+            ))}
             {moreCount > 0 && (
-              <p className="mt-1 text-[11px] text-tertiary">
+              <span className="text-[11px] text-tertiary">
                 + {moreCount} more
-              </p>
+              </span>
             )}
           </div>
         ) : (
