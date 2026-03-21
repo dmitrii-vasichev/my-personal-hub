@@ -95,19 +95,22 @@ describe("PulseDigestWidget", () => {
     expect(screen.getByText("article")).toBeDefined();
   });
 
-  it("shows '+N more' indicator when total exceeds displayed", () => {
+  it("shows only first 3 items when more are provided", () => {
     mockPulseData.data = {
       digests: [
         {
           id: 3,
-          category: "jobs",
+          category: "news",
           content_preview: "",
-          message_count: 30,
-          items_count: 12,
+          message_count: 20,
+          items_count: 5,
           generated_at: "2026-03-21T10:00:00Z",
           preview_items: [
-            { title: "Senior Dev at Revolut", classification: "job" },
-            { title: "Staff Eng at Stripe", classification: "job" },
+            { title: "Item One", classification: null },
+            { title: "Item Two", classification: null },
+            { title: "Item Three", classification: null },
+            { title: "Item Four", classification: null },
+            { title: "Item Five", classification: null },
           ],
         },
       ],
@@ -117,8 +120,40 @@ describe("PulseDigestWidget", () => {
 
     render(<PulseDigestWidget />, { wrapper });
 
-    // items_count=12, displayed=2 → + 10 more
-    expect(screen.getByText("+ 10 more")).toBeDefined();
+    expect(screen.getByText("Item One")).toBeDefined();
+    expect(screen.getByText("Item Two")).toBeDefined();
+    expect(screen.getByText("Item Three")).toBeDefined();
+    expect(screen.queryByText("Item Four")).toBeNull();
+    expect(screen.queryByText("Item Five")).toBeNull();
+    // items_count=5, displayed=3 → + 2 more
+    expect(screen.getByText("+ 2 more")).toBeDefined();
+  });
+
+  it("shows '+N more' indicator when total exceeds displayed", () => {
+    mockPulseData.data = {
+      digests: [
+        {
+          id: 4,
+          category: "jobs",
+          content_preview: "",
+          message_count: 30,
+          items_count: 12,
+          generated_at: "2026-03-21T10:00:00Z",
+          preview_items: [
+            { title: "Senior Dev at Revolut", classification: "job" },
+            { title: "Staff Eng at Stripe", classification: "job" },
+            { title: "Backend Eng at Google", classification: "job" },
+          ],
+        },
+      ],
+      period_start: null,
+      period_end: null,
+    };
+
+    render(<PulseDigestWidget />, { wrapper });
+
+    // items_count=12, displayed=3 → + 9 more
+    expect(screen.getByText("+ 9 more")).toBeDefined();
   });
 
   it("falls back to content_preview when preview_items is empty", () => {
