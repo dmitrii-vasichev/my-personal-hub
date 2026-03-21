@@ -119,4 +119,5 @@ class VitalsDashboardSummaryResponse(BaseModel):
     sleep: Optional[VitalsSleepResponse] = None
     connected: bool = False
     last_sync_at: Optional[datetime] = None
+    sync_interval_minutes: Optional[int] = None
     briefing_insight: Optional[str] = None

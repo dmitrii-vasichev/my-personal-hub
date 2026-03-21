@@ -37,6 +37,8 @@ const mockFullData = {
   },
   connected: true,
   last_sync_at: "2026-03-20T08:00:00Z",
+  sync_interval_minutes: 240,
+  briefing_insight: null,
 };
 
 let mockData: typeof mockFullData | null = mockFullData;
@@ -47,6 +49,10 @@ vi.mock("@/hooks/use-vitals", () => ({
     data: mockData,
     isLoading: mockLoading,
   }),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  useAuth: () => ({ isDemo: false }),
 }));
 
 function Wrapper({ children }: { children: React.ReactNode }) {
@@ -99,7 +105,7 @@ describe("VitalsWidget", () => {
   });
 
   it("renders not-connected state", () => {
-    mockData = { metrics: null, sleep: null, connected: false, last_sync_at: null };
+    mockData = { metrics: null, sleep: null, connected: false, last_sync_at: null, sync_interval_minutes: null, briefing_insight: null };
     mockLoading = false;
 
     render(
