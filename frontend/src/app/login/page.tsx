@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ const SOCIAL_LINKS = [
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -79,6 +81,7 @@ export default function LoginPage() {
       }
       const data: { access_token: string } = await resp.json();
       localStorage.setItem("access_token", data.access_token);
+      queryClient.clear();
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Demo login failed");

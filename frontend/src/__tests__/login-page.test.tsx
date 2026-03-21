@@ -5,6 +5,7 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 
 const mockLogin = vi.fn();
 const mockPush = vi.fn();
+const mockClear = vi.fn();
 
 vi.mock("@/lib/auth", () => ({
   useAuth: () => ({
@@ -18,6 +19,10 @@ vi.mock("@/lib/auth", () => ({
   AuthContext: {
     Provider: ({ children }: { children: React.ReactNode }) => children,
   },
+}));
+
+vi.mock("@tanstack/react-query", () => ({
+  useQueryClient: () => ({ clear: mockClear }),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -152,6 +157,21 @@ describe("LoginPage", () => {
 
     await waitFor(() => {
       expect(screen.getByText("Demo login failed")).toBeInTheDocument();
+    });
+  });
+
+  it("clears react-query cache on demo login to prevent stale data", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ access_token: "demo-token-abc" }),
+    });
+
+    render(<LoginPage />);
+    fireEvent.click(screen.getByTestId("demo-login-btn"));
+
+    await waitFor(() => {
+      expect(mockClear).toHaveBeenCalled();
+      expect(mockPush).toHaveBeenCalledWith("/");
     });
   });
 
