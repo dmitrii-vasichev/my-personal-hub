@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { RefreshCw, Heart, AlertCircle, Clock } from "lucide-react";
+import { RefreshCw, Heart, AlertCircle, Clock, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -64,6 +64,17 @@ export default function VitalsPage() {
 
   const isConnected = connection?.connected ?? false;
 
+  const lastSyncAgo = connection?.last_sync_at
+    ? formatDistanceToNow(new Date(connection.last_sync_at), { addSuffix: true })
+    : null;
+
+  // Stale data detection: last sync > 2x sync interval
+  const isDataStale = (() => {
+    if (isDemo || !connection?.last_sync_at || !connection?.sync_interval_minutes) return false;
+    const elapsed = now.getTime() - new Date(connection.last_sync_at).getTime();
+    return elapsed > 2 * connection.sync_interval_minutes * 60 * 1000;
+  })();
+
   // Loading state for connection check
   if (connectionLoading) {
     return (
@@ -111,10 +122,6 @@ export default function VitalsPage() {
     );
   }
 
-  const lastSyncAgo = connection?.last_sync_at
-    ? formatDistanceToNow(new Date(connection.last_sync_at), { addSuffix: true })
-    : null;
-
   return (
     <div className="mx-auto max-w-5xl px-6 py-6 space-y-6">
       {/* Header */}
@@ -159,6 +166,20 @@ export default function VitalsPage() {
           )}
         </div>
       </div>
+
+      {/* Stale data warning */}
+      {isDataStale && (
+        <div
+          className="flex items-center gap-2 rounded-lg border border-[var(--accent-amber)]/30 bg-[var(--accent-amber)]/10 px-4 py-3 text-sm text-[var(--accent-amber)]"
+          data-testid="stale-data-banner"
+        >
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span>
+            Data may be outdated — last synced{" "}
+            {lastSyncAgo ?? "unknown"}. Sync is temporarily unavailable.
+          </span>
+        </div>
+      )}
 
       {/* Today's Summary */}
       <TodaySummary

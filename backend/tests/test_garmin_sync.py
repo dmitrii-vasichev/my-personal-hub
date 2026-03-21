@@ -16,6 +16,7 @@ from app.models.garmin import (
     VitalsActivity,
     VitalsDailyMetric,
     VitalsSleep,
+    VitalsSyncLog,
 )
 from app.models.user import User, UserRole
 from app.schemas.garmin import VitalsDashboardSummaryResponse
@@ -47,6 +48,7 @@ def make_garmin_connection(user_id: int = 1) -> GarminConnection:
     c.sync_status = "success"
     c.sync_error = None
     c.rate_limited_until = None
+    c.consecutive_failures = 0
     c.connected_at = datetime(2026, 3, 19, 12, 0, 0, tzinfo=timezone.utc)
     return c
 
@@ -1083,3 +1085,213 @@ class TestGetStatusRateLimitAutoClear:
         result = await get_status(db, 1)
         assert result["rate_limited_until"] is None
         assert result["connected"] is False
+
+
+# ── Sync Log tests (Phase 52) ─────────────────────────────────────────────
+
+
+class TestSyncLogCreation:
+    """Tests that sync_user_data creates VitalsSyncLog entries."""
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
+    async def test_successful_sync_creates_log_entry(self, mock_auth):
+        """Successful sync should create a VitalsSyncLog with status='success'."""
+        from app.services.garmin_sync import sync_user_data
+
+        conn = make_garmin_connection()
+        mock_client = MagicMock()
+        mock_client.get_user_summary.return_value = {"totalSteps": 5000}
+        mock_client.get_body_battery.return_value = []
+        mock_client.get_max_metrics.return_value = {}
+        mock_client.get_sleep_data.return_value = {}
+        mock_client.get_activities_by_date.return_value = []
+        mock_auth.get_garmin_client = AsyncMock(return_value=mock_client)
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        added_objects = []
+        db.add = lambda obj: added_objects.append(obj)
+
+        await sync_user_data(db, 1)
+
+        # Find sync log entries
+        sync_logs = [o for o in added_objects if isinstance(o, VitalsSyncLog)]
+        assert len(sync_logs) == 1
+        log = sync_logs[0]
+        assert log.status == "success"
+        assert log.user_id == 1
+        assert log.duration_ms is not None
+        assert log.duration_ms >= 0
+        assert log.records_synced is not None
+        assert "metrics" in log.records_synced
+        assert "sleep" in log.records_synced
+        assert "activities" in log.records_synced
+        assert conn.consecutive_failures == 0
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
+    async def test_rate_limited_skip_creates_log_entry(self, mock_auth):
+        """Rate-limited sync skip should create a VitalsSyncLog with status='rate_limited'."""
+        from app.services.garmin_sync import sync_user_data
+
+        conn = make_garmin_connection()
+        conn.rate_limited_until = datetime.now(timezone.utc) + timedelta(hours=1)
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        added_objects = []
+        db.add = lambda obj: added_objects.append(obj)
+
+        await sync_user_data(db, 1)
+
+        sync_logs = [o for o in added_objects if isinstance(o, VitalsSyncLog)]
+        assert len(sync_logs) == 1
+        log = sync_logs[0]
+        assert log.status == "rate_limited"
+        assert log.duration_ms == 0
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
+    async def test_error_sync_creates_log_entry(self, mock_auth):
+        """Failed sync should create a VitalsSyncLog with status='error'."""
+        from app.services.garmin_sync import sync_user_data
+
+        conn = make_garmin_connection()
+        mock_auth.get_garmin_client = AsyncMock(side_effect=Exception("Connection refused"))
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        added_objects = []
+        db.add = lambda obj: added_objects.append(obj)
+
+        with pytest.raises(Exception, match="Connection refused"):
+            await sync_user_data(db, 1)
+
+        sync_logs = [o for o in added_objects if isinstance(o, VitalsSyncLog)]
+        assert len(sync_logs) == 1
+        log = sync_logs[0]
+        assert log.status == "error"
+        assert log.error_message == "Connection refused"
+        assert log.duration_ms is not None
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
+    async def test_rate_limit_error_creates_log_with_error_status(self, mock_auth):
+        """429 during sync should create a log entry with status='error'."""
+        from app.services.garmin_sync import sync_user_data
+        from app.services.garmin_auth import GarminRateLimitError
+
+        conn = make_garmin_connection()
+        mock_client = MagicMock()
+        from garminconnect import GarminConnectTooManyRequestsError
+        mock_client.get_user_summary.side_effect = GarminConnectTooManyRequestsError("429")
+        mock_auth.get_garmin_client = AsyncMock(return_value=mock_client)
+        mock_auth.set_rate_limited = AsyncMock()
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        added_objects = []
+        db.add = lambda obj: added_objects.append(obj)
+
+        with pytest.raises(GarminRateLimitError):
+            await sync_user_data(db, 1)
+
+        sync_logs = [o for o in added_objects if isinstance(o, VitalsSyncLog)]
+        assert len(sync_logs) == 1
+        log = sync_logs[0]
+        assert log.status == "error"
+        assert "429" in (log.error_message or "").lower() or "rate" in (log.error_message or "").lower()
+
+
+class TestSyncLogEndpoint:
+    """Tests for GET /api/vitals/sync-log."""
+
+    def setup_method(self):
+        from app.core.deps import get_current_user
+        from app.core.database import get_db
+
+        self._user = make_user()
+        app.dependency_overrides[get_current_user] = lambda: self._user
+
+        # Create a mock db session that returns sync log entries
+        log1 = VitalsSyncLog()
+        log1.id = 1
+        log1.user_id = 1
+        log1.started_at = datetime(2026, 3, 21, 10, 0, 0, tzinfo=timezone.utc)
+        log1.finished_at = datetime(2026, 3, 21, 10, 0, 5, tzinfo=timezone.utc)
+        log1.status = "success"
+        log1.error_message = None
+        log1.records_synced = {"metrics": 2, "sleep": 2, "activities": 3}
+        log1.duration_ms = 5000
+        self._log1 = log1
+
+        mock_db = AsyncMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = [log1]
+        mock_result = MagicMock()
+        mock_result.scalars.return_value = mock_scalars
+        mock_db.execute = AsyncMock(return_value=mock_result)
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+    def teardown_method(self):
+        app.dependency_overrides.clear()
+
+    @pytest.mark.asyncio
+    async def test_sync_log_endpoint_returns_entries(self):
+        """GET /api/vitals/sync-log should return sync log entries."""
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/vitals/sync-log")
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 1
+        assert data[0]["status"] == "success"
+        assert data[0]["duration_ms"] == 5000
+        assert data[0]["records_synced"]["metrics"] == 2
+
+
+class TestConsecutiveFailuresReset:
+    """Tests that consecutive_failures resets to 0 on successful sync."""
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
+    async def test_success_resets_consecutive_failures(self, mock_auth):
+        """After successful sync, consecutive_failures should be 0."""
+        from app.services.garmin_sync import sync_user_data
+
+        conn = make_garmin_connection()
+        conn.consecutive_failures = 3  # had 3 prior failures
+        mock_client = MagicMock()
+        mock_client.get_user_summary.return_value = {}
+        mock_client.get_body_battery.return_value = []
+        mock_client.get_max_metrics.return_value = {}
+        mock_client.get_sleep_data.return_value = {}
+        mock_client.get_activities_by_date.return_value = []
+        mock_auth.get_garmin_client = AsyncMock(return_value=mock_client)
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+        db.add = lambda obj: None
+
+        await sync_user_data(db, 1)
+
+        assert conn.consecutive_failures == 0
+        assert conn.rate_limited_until is None
+        assert conn.sync_status == "success"

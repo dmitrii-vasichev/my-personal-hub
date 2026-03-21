@@ -74,5 +74,6 @@ export interface VitalsDashboardSummary {
   sleep: VitalsSleep | null;
   connected: boolean;
   last_sync_at: string | null;
+  sync_interval_minutes: number | null;
   briefing_insight: string | null;
 }

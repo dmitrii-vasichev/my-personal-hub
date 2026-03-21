@@ -37,6 +37,8 @@ const mockFullData = {
   },
   connected: true,
   last_sync_at: "2026-03-20T08:00:00Z",
+  sync_interval_minutes: 240,
+  briefing_insight: null,
 };
 
 let mockData: typeof mockFullData | null = mockFullData;
@@ -47,6 +49,10 @@ vi.mock("@/hooks/use-vitals", () => ({
     data: mockData,
     isLoading: mockLoading,
   }),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  useAuth: () => ({ isDemo: false }),
 }));
 
 function Wrapper({ children }: { children: React.ReactNode }) {
@@ -99,7 +105,7 @@ describe("VitalsWidget", () => {
   });
 
   it("renders not-connected state", () => {
-    mockData = { metrics: null, sleep: null, connected: false, last_sync_at: null };
+    mockData = { metrics: null, sleep: null, connected: false, last_sync_at: null, sync_interval_minutes: null, briefing_insight: null };
     mockLoading = false;
 
     render(
@@ -174,5 +180,43 @@ describe("VitalsWidget", () => {
     // Should show em-dash placeholders instead of crashing
     const dashes = screen.getAllByText("\u2014");
     expect(dashes.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it("shows stale indicator when last sync exceeds 2x interval", () => {
+    // sync_interval_minutes = 240 (4h), last_sync 10h ago → stale
+    const tenHoursAgo = new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString();
+    mockData = {
+      ...mockFullData,
+      last_sync_at: tenHoursAgo,
+      sync_interval_minutes: 240,
+    };
+    mockLoading = false;
+
+    render(
+      <Wrapper>
+        <VitalsWidget />
+      </Wrapper>
+    );
+
+    expect(screen.getByTestId("vitals-widget-stale")).toBeInTheDocument();
+  });
+
+  it("hides stale indicator when sync is fresh", () => {
+    // last sync 1h ago, interval 4h → 1h < 8h → not stale
+    const oneHourAgo = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString();
+    mockData = {
+      ...mockFullData,
+      last_sync_at: oneHourAgo,
+      sync_interval_minutes: 240,
+    };
+    mockLoading = false;
+
+    render(
+      <Wrapper>
+        <VitalsWidget />
+      </Wrapper>
+    );
+
+    expect(screen.queryByTestId("vitals-widget-stale")).not.toBeInTheDocument();
   });
 });
