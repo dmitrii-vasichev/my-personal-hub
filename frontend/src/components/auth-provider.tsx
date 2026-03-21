@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { AuthContext, type User } from "@/lib/auth";
 
@@ -12,6 +13,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
+  const queryClient = useQueryClient();
 
   const refreshUser = useCallback(async () => {
     try {
@@ -54,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const data: { access_token: string; must_change_password: boolean } = await response.json();
     localStorage.setItem("access_token", data.access_token);
+    queryClient.clear();
 
     if (data.must_change_password) {
       router.push("/change-password");
@@ -67,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     localStorage.removeItem("access_token");
+    queryClient.clear();
     setUser(null);
     router.push("/login");
   };
