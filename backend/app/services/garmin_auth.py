@@ -72,6 +72,9 @@ async def connect(
         )
         conn.sync_status = "error"
         conn.sync_error = RATE_LIMIT_MSG
+        # Don't mark as active if login never succeeded (no tokens)
+        if not conn.garth_tokens_encrypted:
+            conn.is_active = False
         await db.flush()
         raise GarminRateLimitError(RATE_LIMIT_MSG)
     except Exception as e:
@@ -139,7 +142,7 @@ async def get_status(db: AsyncSession, user_id: int) -> dict:
             sync_error = None
 
     return {
-        "connected": True,
+        "connected": conn.is_active,
         "last_sync_at": conn.last_sync_at,
         "sync_status": conn.sync_status,
         "sync_error": sync_error,

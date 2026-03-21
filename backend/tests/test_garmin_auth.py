@@ -342,6 +342,27 @@ class TestGarminAuthService:
         assert result["sync_interval_minutes"] == 240
 
     @pytest.mark.asyncio
+    async def test_get_status_inactive_with_rate_limit(self):
+        """Record exists but is_active=False (failed connect) should return connected=False with rate_limited_until."""
+        from app.services.garmin_auth import get_status, RATE_LIMIT_MSG
+        from datetime import timedelta
+
+        conn = make_garmin_connection()
+        conn.is_active = False
+        conn.sync_status = "error"
+        conn.sync_error = RATE_LIMIT_MSG
+        conn.rate_limited_until = datetime.now(timezone.utc) + timedelta(minutes=50)
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        result = await get_status(db, 1)
+        assert result["connected"] is False
+        assert result["rate_limited_until"] is not None
+
+    @pytest.mark.asyncio
     async def test_get_status_not_connected(self):
         from app.services.garmin_auth import get_status
 
@@ -411,12 +432,13 @@ class TestGarminAuthService:
             with pytest.raises(GarminRateLimitError):
                 await connect(db, 1, "test@garmin.com", "password123")
 
-        # Verify the conn object added to db has rate_limited_until set
+        # Verify the conn object added to db has rate_limited_until set and is_active=False
         added_conn = db.add.call_args[0][0]
         assert added_conn.rate_limited_until is not None
         assert added_conn.rate_limited_until > datetime.now(timezone.utc)
         assert added_conn.sync_status == "error"
         assert added_conn.sync_error == RATE_LIMIT_MSG
+        assert added_conn.is_active is False
 
     @pytest.mark.asyncio
     @patch("app.services.garmin_auth.encrypt_value", return_value="encrypted")
