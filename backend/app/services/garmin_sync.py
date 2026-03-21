@@ -16,12 +16,9 @@ from app.models.garmin import (
     VitalsSleep,
 )
 from app.services import garmin_auth
+from app.services.garmin_auth import GarminRateLimitError
 
 logger = logging.getLogger(__name__)
-
-
-class GarminRateLimitError(Exception):
-    """Raised when a Garmin API call returns 429 during sync."""
 
 
 async def sync_user_data(db: AsyncSession, user_id: int) -> None:
