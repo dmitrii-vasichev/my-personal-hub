@@ -137,6 +137,30 @@ class VitalsActivity(Base):
     raw_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
 
+class VitalsSyncLog(Base):
+    __tablename__ = "vitals_sync_log"
+    __table_args__ = (
+        Index("ix_vitals_sync_log_user_started", "user_id", "started_at"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    finished_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    records_synced: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    duration_ms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+
 class VitalsBriefing(Base):
     __tablename__ = "vitals_briefings"
     __table_args__ = (
