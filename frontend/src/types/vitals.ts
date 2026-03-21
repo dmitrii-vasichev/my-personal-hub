@@ -66,6 +66,7 @@ export interface VitalsConnectionStatus {
   sync_error: string | null;
   sync_interval_minutes: number | null;
   connected_at: string | null;
+  rate_limited_until: string | null;
 }
 
 export interface VitalsDashboardSummary {

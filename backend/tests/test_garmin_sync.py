@@ -663,6 +663,45 @@ class TestVitalsDataAPI:
         assert resp.json()["sync_status"] == "success"
 
     @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.sync_user_data")
+    async def test_manual_sync_429_returns_429_and_commits(self, mock_sync):
+        """Bug #749: manual sync must commit cooldown state and return 429."""
+        from app.services.garmin_sync import GarminRateLimitError
+
+        mock_sync.side_effect = GarminRateLimitError("429 on get_user_summary")
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.post("/api/vitals/sync")
+
+        assert resp.status_code == 429
+        assert "rate limit" in resp.json()["detail"].lower()
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_auth.get_status")
+    @patch("app.services.garmin_sync.sync_user_data")
+    async def test_manual_sync_status_includes_rate_limited_until(self, mock_sync, mock_status):
+        """Bug #749: API response must include rate_limited_until field."""
+        mock_sync.return_value = None
+        rate_limit_time = "2026-03-20T15:00:00Z"
+        mock_status.return_value = {
+            "connected": True,
+            "last_sync_at": "2026-03-20T12:00:00Z",
+            "sync_status": "success",
+            "sync_error": None,
+            "sync_interval_minutes": 240,
+            "connected_at": "2026-03-19T10:00:00Z",
+            "rate_limited_until": rate_limit_time,
+        }
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.post("/api/vitals/sync")
+        assert resp.status_code == 200
+        assert resp.json()["rate_limited_until"] == rate_limit_time
+
+    @pytest.mark.asyncio
     async def test_demo_user_blocked_sync(self):
         from app.core.deps import restrict_demo
         from fastapi import HTTPException
@@ -986,3 +1025,61 @@ class TestAuthSchedulerIntegration:
         await update_sync_interval(db, 1, 120)
 
         mock_schedule.assert_called_once_with(1, 120)
+
+
+# ── get_status auto-clear tests ──────────────────────────────────────────────
+
+
+class TestGetStatusRateLimitAutoClear:
+    @pytest.mark.asyncio
+    async def test_get_status_clears_expired_rate_limit(self):
+        """Bug #749: expired rate_limited_until should be auto-cleared in response."""
+        from app.services.garmin_auth import get_status, RATE_LIMIT_MSG
+
+        conn = make_garmin_connection()
+        conn.rate_limited_until = datetime.now(timezone.utc) - timedelta(minutes=10)
+        conn.sync_status = "error"
+        conn.sync_error = RATE_LIMIT_MSG
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        result = await get_status(db, 1)
+        assert result["rate_limited_until"] is None
+        assert result["sync_error"] is None
+
+    @pytest.mark.asyncio
+    async def test_get_status_keeps_active_rate_limit(self):
+        """Active rate_limited_until should be returned as-is."""
+        from app.services.garmin_auth import get_status, RATE_LIMIT_MSG
+
+        future_time = datetime.now(timezone.utc) + timedelta(minutes=30)
+        conn = make_garmin_connection()
+        conn.rate_limited_until = future_time
+        conn.sync_status = "error"
+        conn.sync_error = RATE_LIMIT_MSG
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        result = await get_status(db, 1)
+        assert result["rate_limited_until"] == future_time
+        assert result["sync_error"] == RATE_LIMIT_MSG
+
+    @pytest.mark.asyncio
+    async def test_get_status_no_connection(self):
+        """No connection should return rate_limited_until=None."""
+        from app.services.garmin_auth import get_status
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(return_value=mock_result)
+
+        result = await get_status(db, 1)
+        assert result["rate_limited_until"] is None
+        assert result["connected"] is False
