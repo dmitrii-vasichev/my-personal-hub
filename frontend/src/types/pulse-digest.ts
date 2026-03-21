@@ -25,6 +25,11 @@ export interface DigestGenerateResponse {
   message: string;
 }
 
+export interface PreviewItem {
+  title: string;
+  classification: string | null;
+}
+
 export interface DigestSummaryItem {
   id: number;
   category: string | null;
@@ -32,6 +37,7 @@ export interface DigestSummaryItem {
   message_count: number;
   items_count: number | null;
   generated_at: string;
+  preview_items: PreviewItem[];
 }
 
 export interface PulseSummaryResponse {

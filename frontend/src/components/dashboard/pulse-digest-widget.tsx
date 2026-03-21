@@ -42,6 +42,10 @@ function formatPeriod(start: string | null, end: string | null): string {
 
 function CategoryRow({ digest }: { digest: DigestSummaryItem }) {
   const config = CATEGORY_CONFIG[digest.category ?? ""] ?? CATEGORY_CONFIG.news;
+  const totalCount = digest.items_count ?? digest.message_count;
+  const displayedCount = digest.preview_items?.length ?? 0;
+  const moreCount = totalCount - displayedCount;
+  const hasPreviewItems = displayedCount > 0;
 
   return (
     <Link href={`/pulse?digest=${digest.id}`} className="block">
@@ -62,13 +66,39 @@ function CategoryRow({ digest }: { digest: DigestSummaryItem }) {
               : `${digest.message_count} messages`}
           </span>
         </div>
-        <p className="text-sm text-foreground line-clamp-2 leading-relaxed">
-          {digest.content_preview
-            ? digest.content_preview
-            : digest.items_count
-              ? `${digest.items_count} new items to review`
-              : "No content available"}
-        </p>
+        {hasPreviewItems ? (
+          <div>
+            <ul className="space-y-0.5">
+              {digest.preview_items.map((item, i) => (
+                <li key={i} className="flex items-center gap-1.5 text-sm text-foreground">
+                  <span className="text-tertiary text-[10px]">•</span>
+                  <span className="line-clamp-1 flex-1">{item.title}</span>
+                  {item.classification && (
+                    <span
+                      className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
+                      style={{ color: config.color, background: config.bg }}
+                    >
+                      {item.classification}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {moreCount > 0 && (
+              <p className="mt-1 text-[11px] text-tertiary">
+                + {moreCount} more
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-foreground line-clamp-2 leading-relaxed">
+            {digest.content_preview
+              ? digest.content_preview
+              : digest.items_count
+                ? `${digest.items_count} new items to review`
+                : "No content available"}
+          </p>
+        )}
       </div>
     </Link>
   );
