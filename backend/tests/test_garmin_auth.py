@@ -5,7 +5,7 @@ Covers Phase 44 — Vitals Connection & Data Models.
 from __future__ import annotations
 
 import pytest
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from httpx import ASGITransport, AsyncClient
@@ -510,10 +510,11 @@ class TestGarminAuthService:
 
     @pytest.mark.asyncio
     async def test_set_rate_limited_sets_cooldown(self):
-        """set_rate_limited should set rate_limited_until ~1h in the future."""
+        """set_rate_limited should set rate_limited_until ~15min in the future on first failure."""
         from app.services.garmin_auth import set_rate_limited, RATE_LIMIT_MSG
 
         conn = make_garmin_connection()
+        conn.consecutive_failures = 0
         db = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = conn
@@ -525,6 +526,55 @@ class TestGarminAuthService:
         assert conn.rate_limited_until > datetime.now(timezone.utc)
         assert conn.sync_status == "error"
         assert conn.sync_error == RATE_LIMIT_MSG
+        assert conn.consecutive_failures == 1
+
+    @pytest.mark.asyncio
+    async def test_backoff_escalates_on_consecutive_failures(self):
+        """set_rate_limited should escalate cooldown: 15m, 30m, 60m, 120m (cap)."""
+        from app.services.garmin_auth import set_rate_limited, calculate_backoff_minutes
+
+        # Verify the formula directly
+        assert calculate_backoff_minutes(0) == 15
+        assert calculate_backoff_minutes(1) == 30
+        assert calculate_backoff_minutes(2) == 60
+        assert calculate_backoff_minutes(3) == 120
+        assert calculate_backoff_minutes(4) == 120  # cap
+        assert calculate_backoff_minutes(10) == 120  # still capped
+
+        # Verify set_rate_limited increments consecutive_failures
+        conn = make_garmin_connection()
+        conn.consecutive_failures = 2  # already failed twice
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        before = datetime.now(timezone.utc)
+        await set_rate_limited(db, 1)
+
+        assert conn.consecutive_failures == 3
+        # 3rd failure (index 2) → 60min cooldown
+        expected_cooldown_min = 55  # at least 55 minutes into the future
+        assert conn.rate_limited_until >= before + timedelta(minutes=expected_cooldown_min)
+
+    @pytest.mark.asyncio
+    async def test_backoff_cap_at_120_minutes(self):
+        """Cooldown should never exceed 120 minutes."""
+        from app.services.garmin_auth import set_rate_limited
+
+        conn = make_garmin_connection()
+        conn.consecutive_failures = 10
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        before = datetime.now(timezone.utc)
+        await set_rate_limited(db, 1)
+
+        assert conn.consecutive_failures == 11
+        # Should not be more than ~121 minutes from now
+        assert conn.rate_limited_until <= before + timedelta(minutes=121)
 
 
 # ── API endpoint tests ──────────────────────────────────────────────────────

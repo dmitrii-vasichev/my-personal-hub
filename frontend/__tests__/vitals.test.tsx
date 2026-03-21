@@ -1,5 +1,6 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TodaySummary } from "@/components/vitals/today-summary";
 import { BriefingCard } from "@/components/vitals/briefing-card";
 import { ActivitiesList } from "@/components/vitals/activities-list";
@@ -10,11 +11,13 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
+let mockIsDemo = false;
+
 vi.mock("@/lib/auth", () => ({
   useAuth: () => ({
     user: { id: 1, email: "test@test.com", display_name: "Test", role: "member", must_change_password: false, is_blocked: false, theme: "dark", last_login_at: null },
     isLoading: false,
-    isDemo: false,
+    isDemo: mockIsDemo,
     login: vi.fn(),
     logout: vi.fn(),
     refreshUser: vi.fn(),
@@ -246,5 +249,105 @@ describe("PeriodSelector", () => {
     render(<PeriodSelector value="7d" onChange={onChange} />);
     fireEvent.click(screen.getByText("30D"));
     expect(onChange).toHaveBeenCalledWith("30d");
+  });
+});
+
+
+// ── Stale data banner tests ──────────────────────────────────────────────
+
+let mockConnection: Record<string, unknown> | undefined = undefined;
+let mockConnectionLoading = false;
+
+vi.mock("@/hooks/use-vitals", () => ({
+  useVitalsConnection: () => ({ data: mockConnection, isLoading: mockConnectionLoading }),
+  useVitalsToday: () => ({ data: null, isLoading: false }),
+  useVitalsBriefing: () => ({ data: null, isLoading: false }),
+  useVitalsActivities: () => ({ data: [], isLoading: false }),
+  useVitalsMetrics: () => ({ data: [], isLoading: false }),
+  useVitalsSleep: () => ({ data: [], isLoading: false }),
+  useGenerateBriefing: () => ({ mutate: vi.fn(), isPending: false }),
+  useSyncVitals: () => ({ mutate: vi.fn(), isPending: false }),
+  useVitalsDashboardSummary: () => ({ data: null, isLoading: false }),
+  VITALS_KEY: "vitals",
+}));
+
+// Must import after mocks
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { default: VitalsPage } = await import("@/app/(dashboard)/vitals/page");
+
+function VitalsWrapper({ children }: { children: React.ReactNode }) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+}
+
+describe("VitalsPage — Stale Data Banner", () => {
+  beforeEach(() => {
+    mockIsDemo = false;
+    mockConnectionLoading = false;
+  });
+
+  it("shows stale data banner when last sync exceeds 2x interval", () => {
+    const tenHoursAgo = new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString();
+    mockConnection = {
+      connected: true,
+      last_sync_at: tenHoursAgo,
+      sync_interval_minutes: 240,
+      sync_status: "success",
+      sync_error: null,
+      connected_at: "2026-03-19T12:00:00Z",
+      rate_limited_until: null,
+    };
+
+    render(
+      <VitalsWrapper>
+        <VitalsPage />
+      </VitalsWrapper>
+    );
+
+    expect(screen.getByTestId("stale-data-banner")).toBeInTheDocument();
+    expect(screen.getByText(/Data may be outdated/)).toBeInTheDocument();
+  });
+
+  it("hides stale data banner when sync is fresh", () => {
+    const oneHourAgo = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString();
+    mockConnection = {
+      connected: true,
+      last_sync_at: oneHourAgo,
+      sync_interval_minutes: 240,
+      sync_status: "success",
+      sync_error: null,
+      connected_at: "2026-03-19T12:00:00Z",
+      rate_limited_until: null,
+    };
+
+    render(
+      <VitalsWrapper>
+        <VitalsPage />
+      </VitalsWrapper>
+    );
+
+    expect(screen.queryByTestId("stale-data-banner")).not.toBeInTheDocument();
+  });
+
+  it("hides stale data banner in demo mode", () => {
+    mockIsDemo = true;
+    const tenHoursAgo = new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString();
+    mockConnection = {
+      connected: true,
+      last_sync_at: tenHoursAgo,
+      sync_interval_minutes: 240,
+      sync_status: "success",
+      sync_error: null,
+      connected_at: "2026-03-19T12:00:00Z",
+      rate_limited_until: null,
+    };
+
+    render(
+      <VitalsWrapper>
+        <VitalsPage />
+      </VitalsWrapper>
+    );
+
+    expect(screen.queryByTestId("stale-data-banner")).not.toBeInTheDocument();
   });
 });

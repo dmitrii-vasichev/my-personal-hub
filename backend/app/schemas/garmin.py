@@ -102,9 +102,22 @@ class VitalsTodayResponse(BaseModel):
     recent_activities: list[VitalsActivityResponse] = []
 
 
+class VitalsSyncLogResponse(BaseModel):
+    id: int
+    started_at: datetime
+    finished_at: Optional[datetime] = None
+    status: str
+    error_message: Optional[str] = None
+    records_synced: Optional[dict] = None
+    duration_ms: Optional[int] = None
+
+    model_config = {"from_attributes": True}
+
+
 class VitalsDashboardSummaryResponse(BaseModel):
     metrics: Optional[VitalsDailyMetricResponse] = None
     sleep: Optional[VitalsSleepResponse] = None
     connected: bool = False
     last_sync_at: Optional[datetime] = None
+    sync_interval_minutes: Optional[int] = None
     briefing_insight: Optional[str] = None

@@ -14,6 +14,7 @@ from app.models.garmin import (
     VitalsActivity,
     VitalsDailyMetric,
     VitalsSleep,
+    VitalsSyncLog,
 )
 from app.services import garmin_auth
 from app.services.garmin_auth import GarminRateLimitError
@@ -39,9 +40,29 @@ async def sync_user_data(db: AsyncSession, user_id: int) -> None:
             user_id,
             conn.rate_limited_until.isoformat(),
         )
+        # Log the rate-limited skip
+        sync_log = VitalsSyncLog(
+            user_id=user_id,
+            started_at=datetime.now(timezone.utc),
+            finished_at=datetime.now(timezone.utc),
+            status="rate_limited",
+            duration_ms=0,
+        )
+        db.add(sync_log)
+        await db.flush()
         return
 
     conn.sync_status = "syncing"
+    await db.flush()
+
+    # Start sync log entry
+    started_at = datetime.now(timezone.utc)
+    sync_log = VitalsSyncLog(
+        user_id=user_id,
+        started_at=started_at,
+        status="syncing",
+    )
+    db.add(sync_log)
     await db.flush()
 
     try:
@@ -57,30 +78,55 @@ async def sync_user_data(db: AsyncSession, user_id: int) -> None:
             activity_start = today - timedelta(days=2)
 
         # Sync daily metrics for today and yesterday
+        metrics_count = 0
         for d in [yesterday, today]:
-            await _sync_daily_metrics(db, user_id, client, d)
+            metrics_count += await _sync_daily_metrics(db, user_id, client, d)
 
         # Sync sleep for today and yesterday
+        sleep_count = 0
         for d in [yesterday, today]:
-            await _sync_sleep(db, user_id, client, d)
+            sleep_count += await _sync_sleep(db, user_id, client, d)
 
         # Sync activities
-        await _sync_activities(db, user_id, client, activity_start, today)
+        activities_count = await _sync_activities(db, user_id, client, activity_start, today)
 
-        conn.last_sync_at = datetime.now(timezone.utc)
+        finished_at = datetime.now(timezone.utc)
+        duration_ms = int((finished_at - started_at).total_seconds() * 1000)
+
+        conn.last_sync_at = finished_at
         conn.sync_status = "success"
         conn.sync_error = None
         conn.rate_limited_until = None
+        conn.consecutive_failures = 0
+
+        sync_log.finished_at = finished_at
+        sync_log.status = "success"
+        sync_log.duration_ms = duration_ms
+        sync_log.records_synced = {
+            "metrics": metrics_count,
+            "sleep": sleep_count,
+            "activities": activities_count,
+        }
         await db.flush()
         logger.info("Garmin sync complete for user %s", user_id)
 
     except GarminRateLimitError:
+        finished_at = datetime.now(timezone.utc)
+        sync_log.finished_at = finished_at
+        sync_log.status = "error"
+        sync_log.error_message = "Rate limited (429)"
+        sync_log.duration_ms = int((finished_at - started_at).total_seconds() * 1000)
         # Set cooldown and persist error state
         await garmin_auth.set_rate_limited(db, user_id)
         logger.warning("Garmin rate limited for user %s — cooldown set", user_id)
         raise
 
     except Exception as e:
+        finished_at = datetime.now(timezone.utc)
+        sync_log.finished_at = finished_at
+        sync_log.status = "error"
+        sync_log.error_message = str(e)[:500]
+        sync_log.duration_ms = int((finished_at - started_at).total_seconds() * 1000)
         conn.sync_status = "error"
         conn.sync_error = str(e)
         await db.flush()
@@ -90,8 +136,8 @@ async def sync_user_data(db: AsyncSession, user_id: int) -> None:
 
 async def _sync_daily_metrics(
     db: AsyncSession, user_id: int, client, target_date: date
-) -> None:
-    """Fetch daily metrics from Garmin and upsert VitalsDailyMetric."""
+) -> int:
+    """Fetch daily metrics from Garmin and upsert VitalsDailyMetric. Returns 1 if upserted."""
     date_str = target_date.isoformat()
 
     try:
@@ -178,12 +224,13 @@ async def _sync_daily_metrics(
                 setattr(metric, key, value)
 
     await db.flush()
+    return 1
 
 
 async def _sync_sleep(
     db: AsyncSession, user_id: int, client, target_date: date
-) -> None:
-    """Fetch sleep data from Garmin and upsert VitalsSleep."""
+) -> int:
+    """Fetch sleep data from Garmin and upsert VitalsSleep. Returns 1 if upserted, 0 otherwise."""
     date_str = target_date.isoformat()
 
     try:
@@ -192,18 +239,18 @@ async def _sync_sleep(
         raise GarminRateLimitError("429 on get_sleep_data")
     except Exception as e:
         logger.warning("Failed to get sleep data for %s: %s", date_str, e)
-        return
+        return 0
 
     if not sleep_data or not isinstance(sleep_data, dict):
-        return
+        return 0
 
     daily_sleep = sleep_data.get("dailySleepDTO", {})
     if not daily_sleep:
-        return
+        return 0
 
     duration = daily_sleep.get("sleepTimeSeconds")
     if duration is None or duration == 0:
-        return
+        return 0
 
     # Parse sleep start/end times
     start_ts = daily_sleep.get("sleepStartTimestampGMT")
@@ -244,12 +291,13 @@ async def _sync_sleep(
                 setattr(sleep, key, value)
 
     await db.flush()
+    return 1
 
 
 async def _sync_activities(
     db: AsyncSession, user_id: int, client, start_date: date, end_date: date
-) -> None:
-    """Fetch activities from Garmin and upsert VitalsActivity by garmin_activity_id."""
+) -> int:
+    """Fetch activities from Garmin and upsert VitalsActivity by garmin_activity_id. Returns count."""
     start_str = start_date.isoformat()
     end_str = end_date.isoformat()
 
@@ -259,11 +307,12 @@ async def _sync_activities(
         raise GarminRateLimitError("429 on get_activities_by_date")
     except Exception as e:
         logger.warning("Failed to get activities for %s to %s: %s", start_str, end_str, e)
-        return
+        return 0
 
     if not activities or not isinstance(activities, list):
-        return
+        return 0
 
+    count = 0
     for act in activities:
         garmin_id = act.get("activityId")
         if not garmin_id:
@@ -308,8 +357,10 @@ async def _sync_activities(
             for key, value in values.items():
                 if value is not None:
                     setattr(existing, key, value)
+        count += 1
 
     await db.flush()
+    return count
 
 
 def _format_pace(avg_speed: float | None, distance: float | None) -> str | None:
