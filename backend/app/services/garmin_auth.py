@@ -12,11 +12,17 @@ from app.models.garmin import GarminConnection
 logger = logging.getLogger(__name__)
 
 ALLOWED_SYNC_INTERVALS = {60, 120, 240, 360, 720, 1440}
-RATE_LIMIT_COOLDOWN_HOURS = 1
+BACKOFF_BASE_MINUTES = 15
+BACKOFF_CAP_MINUTES = 120
 RATE_LIMIT_MSG = (
     "Garmin rate limit exceeded (HTTP 429). "
-    "Please wait approximately 1 hour before trying again."
+    "Sync will retry automatically with increasing delay."
 )
+
+
+def calculate_backoff_minutes(consecutive_failures: int) -> int:
+    """Calculate exponential backoff: 15 → 30 → 60 → 120 (cap) minutes."""
+    return min(BACKOFF_BASE_MINUTES * (2 ** consecutive_failures), BACKOFF_CAP_MINUTES)
 
 
 class GarminRateLimitError(Exception):
@@ -66,10 +72,12 @@ async def connect(
         conn.connected_at = datetime.now(timezone.utc)
         conn.is_active = True
         conn.rate_limited_until = None
+        conn.consecutive_failures = 0
     except GarminConnectTooManyRequestsError:
-        conn.rate_limited_until = datetime.now(timezone.utc) + timedelta(
-            hours=RATE_LIMIT_COOLDOWN_HOURS
-        )
+        failures = (conn.consecutive_failures or 0) + 1
+        conn.consecutive_failures = failures
+        cooldown = calculate_backoff_minutes(failures - 1)
+        conn.rate_limited_until = datetime.now(timezone.utc) + timedelta(minutes=cooldown)
         conn.sync_status = "error"
         conn.sync_error = RATE_LIMIT_MSG
         # Don't mark as active if login never succeeded (no tokens)
@@ -179,16 +187,17 @@ async def get_garmin_client(db: AsyncSession, user_id: int):
 
 
 async def set_rate_limited(db: AsyncSession, user_id: int) -> None:
-    """Set rate_limited_until cooldown on a GarminConnection after a 429 response."""
+    """Set rate_limited_until cooldown with exponential backoff after a 429 response."""
     result = await db.execute(
         select(GarminConnection).where(GarminConnection.user_id == user_id)
     )
     conn = result.scalar_one_or_none()
     if conn is None:
         return
-    conn.rate_limited_until = datetime.now(timezone.utc) + timedelta(
-        hours=RATE_LIMIT_COOLDOWN_HOURS
-    )
+    failures = (conn.consecutive_failures or 0) + 1
+    conn.consecutive_failures = failures
+    cooldown = calculate_backoff_minutes(failures - 1)
+    conn.rate_limited_until = datetime.now(timezone.utc) + timedelta(minutes=cooldown)
     conn.sync_status = "error"
     conn.sync_error = RATE_LIMIT_MSG
     await db.flush()

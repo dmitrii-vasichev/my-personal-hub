@@ -71,6 +71,7 @@ async def sync_user_data(db: AsyncSession, user_id: int) -> None:
         conn.sync_status = "success"
         conn.sync_error = None
         conn.rate_limited_until = None
+        conn.consecutive_failures = 0
         await db.flush()
         logger.info("Garmin sync complete for user %s", user_id)
 
