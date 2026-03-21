@@ -393,12 +393,11 @@ class TestGarminAuthService:
 
     @pytest.mark.asyncio
     @patch("app.services.garmin_auth.encrypt_value", return_value="encrypted")
-    async def test_connect_rate_limited_returns_429(self, mock_encrypt):
-        """When Garmin returns 429, connect should raise HTTP 429 with clear message."""
+    async def test_connect_rate_limited_raises_and_sets_cooldown(self, mock_encrypt):
+        """When Garmin returns 429, connect should raise GarminRateLimitError and set rate_limited_until."""
         from garminconnect import GarminConnectTooManyRequestsError
 
-        from app.services.garmin_auth import connect
-        from fastapi import HTTPException
+        from app.services.garmin_auth import connect, GarminRateLimitError, RATE_LIMIT_MSG
 
         db = AsyncMock()
         mock_result = MagicMock()
@@ -409,10 +408,61 @@ class TestGarminAuthService:
         mock_client.login.side_effect = GarminConnectTooManyRequestsError("429")
 
         with patch("garminconnect.Garmin", return_value=mock_client):
-            with pytest.raises(HTTPException) as exc_info:
+            with pytest.raises(GarminRateLimitError):
                 await connect(db, 1, "test@garmin.com", "password123")
-            assert exc_info.value.status_code == 429
-            assert "rate limit" in exc_info.value.detail.lower()
+
+        # Verify the conn object added to db has rate_limited_until set
+        added_conn = db.add.call_args[0][0]
+        assert added_conn.rate_limited_until is not None
+        assert added_conn.rate_limited_until > datetime.now(timezone.utc)
+        assert added_conn.sync_status == "error"
+        assert added_conn.sync_error == RATE_LIMIT_MSG
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_auth.encrypt_value", return_value="encrypted")
+    async def test_connect_blocked_by_active_cooldown(self, mock_encrypt):
+        """connect() should raise GarminRateLimitError immediately if cooldown is active."""
+        from app.services.garmin_auth import connect, GarminRateLimitError
+        from datetime import timedelta
+
+        conn = make_garmin_connection()
+        conn.rate_limited_until = datetime.now(timezone.utc) + timedelta(hours=1)
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        with patch("garminconnect.Garmin") as mock_garmin:
+            with pytest.raises(GarminRateLimitError):
+                await connect(db, 1, "test@garmin.com", "password123")
+            # Garmin() should NOT have been called — blocked before login
+            mock_garmin.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_auth.encrypt_value", return_value="encrypted")
+    async def test_connect_allowed_after_cooldown_expires(self, mock_encrypt):
+        """connect() should proceed normally after cooldown has expired."""
+        from app.services.garmin_auth import connect
+        from datetime import timedelta
+
+        conn = make_garmin_connection()
+        conn.rate_limited_until = datetime.now(timezone.utc) - timedelta(minutes=5)
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        mock_client = MagicMock()
+        mock_client.garth.dumps.return_value = '{"tokens": "data"}'
+
+        with patch("garminconnect.Garmin", return_value=mock_client):
+            result = await connect(db, 1, "test@garmin.com", "password123")
+
+        assert result.sync_status == "success"
+        assert result.rate_limited_until is None
+        mock_client.login.assert_called_once()
 
     @pytest.mark.asyncio
     @patch("app.services.garmin_auth.decrypt_value", return_value='{"tokens": "data"}')
@@ -562,6 +612,24 @@ class TestVitalsAPI:
                 json={"email": "test@garmin.com", "password": "secret"},
             )
         assert resp.status_code == 403
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_auth.get_status")
+    @patch("app.services.garmin_auth.connect")
+    async def test_connect_endpoint_429_commits_cooldown(self, mock_connect, mock_status):
+        """POST /connect should return 429 and commit rate_limited_until to DB."""
+        from app.services.garmin_auth import GarminRateLimitError
+
+        mock_connect.side_effect = GarminRateLimitError("rate limited")
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.post(
+                "/api/vitals/connect",
+                json={"email": "test@garmin.com", "password": "secret"},
+            )
+        assert resp.status_code == 429
+        assert "rate limit" in resp.json()["detail"].lower()
 
     @pytest.mark.asyncio
     async def test_demo_user_blocked_disconnect(self):

@@ -19,6 +19,10 @@ RATE_LIMIT_MSG = (
 )
 
 
+class GarminRateLimitError(Exception):
+    """Raised when a Garmin API call returns 429 (rate limited)."""
+
+
 async def connect(
     db: AsyncSession, user_id: int, email: str, password: str
 ) -> GarminConnection:
@@ -47,6 +51,10 @@ async def connect(
         conn.password_encrypted = password_enc
         conn.sync_error = None
 
+    # Check rate-limit cooldown before hitting Garmin API
+    if conn.rate_limited_until and conn.rate_limited_until > datetime.now(timezone.utc):
+        raise GarminRateLimitError(RATE_LIMIT_MSG)
+
     # Attempt Garmin login
     try:
         client = Garmin(email, password)
@@ -57,14 +65,15 @@ async def connect(
         conn.sync_status = "success"
         conn.connected_at = datetime.now(timezone.utc)
         conn.is_active = True
+        conn.rate_limited_until = None
     except GarminConnectTooManyRequestsError:
+        conn.rate_limited_until = datetime.now(timezone.utc) + timedelta(
+            hours=RATE_LIMIT_COOLDOWN_HOURS
+        )
         conn.sync_status = "error"
         conn.sync_error = RATE_LIMIT_MSG
         await db.flush()
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=RATE_LIMIT_MSG,
-        )
+        raise GarminRateLimitError(RATE_LIMIT_MSG)
     except Exception as e:
         conn.sync_status = "error"
         conn.sync_error = str(e)

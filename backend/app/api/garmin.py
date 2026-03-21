@@ -41,8 +41,18 @@ async def connect_garmin(
     current_user: User = Depends(restrict_demo),
 ):
     """Connect Garmin account with email/password."""
-    await garmin_auth.connect(db, current_user.id, data.email, data.password)
-    await db.commit()
+    from app.services.garmin_auth import GarminRateLimitError
+
+    try:
+        await garmin_auth.connect(db, current_user.id, data.email, data.password)
+        await db.commit()
+    except GarminRateLimitError:
+        # Commit cooldown state so rate_limited_until persists in DB
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail=garmin_auth.RATE_LIMIT_MSG,
+        )
     result = await garmin_auth.get_status(db, current_user.id)
     return result
 
@@ -84,7 +94,8 @@ async def trigger_sync(
     current_user: User = Depends(restrict_demo),
 ):
     """Trigger manual Garmin data sync."""
-    from app.services.garmin_sync import GarminRateLimitError, sync_user_data
+    from app.services.garmin_auth import GarminRateLimitError
+    from app.services.garmin_sync import sync_user_data
 
     try:
         await sync_user_data(db, current_user.id)
