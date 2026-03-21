@@ -16,6 +16,7 @@ class GarminStatusResponse(BaseModel):
     sync_error: Optional[str] = None
     sync_interval_minutes: Optional[int] = None
     connected_at: Optional[datetime] = None
+    rate_limited_until: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 

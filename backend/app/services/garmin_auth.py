@@ -117,14 +117,26 @@ async def get_status(db: AsyncSession, user_id: int) -> dict:
             "sync_error": None,
             "sync_interval_minutes": None,
             "connected_at": None,
+            "rate_limited_until": None,
         }
+
+    # Auto-clear stale rate-limit state when cooldown has expired
+    rate_limited_until = conn.rate_limited_until
+    sync_error = conn.sync_error
+    if rate_limited_until and rate_limited_until <= datetime.now(timezone.utc):
+        rate_limited_until = None
+        # Clear the stale 429 error so the UI doesn't show it after cooldown
+        if sync_error == RATE_LIMIT_MSG:
+            sync_error = None
+
     return {
         "connected": True,
         "last_sync_at": conn.last_sync_at,
         "sync_status": conn.sync_status,
-        "sync_error": conn.sync_error,
+        "sync_error": sync_error,
         "sync_interval_minutes": conn.sync_interval_minutes,
         "connected_at": conn.connected_at,
+        "rate_limited_until": rate_limited_until,
     }
 
 
