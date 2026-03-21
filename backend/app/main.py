@@ -74,6 +74,27 @@ async def lifespan(application: FastAPI):
         if garmin_conns:
             logger.info("Restored Garmin sync jobs for %d users", len(garmin_conns))
 
+        # Auto-seed vitals for demo user if missing
+        from app.models.user import User, UserRole
+
+        async with async_session_factory() as seed_db:
+            demo_result = await seed_db.execute(
+                select(User).where(User.role == UserRole.demo)
+            )
+            demo_user = demo_result.scalar_one_or_none()
+            if demo_user:
+                vitals_result = await seed_db.execute(
+                    select(GarminConnection).where(
+                        GarminConnection.user_id == demo_user.id
+                    )
+                )
+                if vitals_result.scalar_one_or_none() is None:
+                    from app.scripts.seed_demo import create_vitals_data
+
+                    await create_vitals_data(seed_db, demo_user.id)
+                    await seed_db.commit()
+                    logger.info("Auto-seeded vitals data for demo user")
+
         # Schedule daily TTL cleanup at 03:00
         scheduler.add_job(
             "app.services.pulse_scheduler:run_ttl_cleanup",
