@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -23,6 +24,26 @@ from app.services.auth import (
 )
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+@router.post("/demo-login", response_model=LoginResponse)
+async def demo_login(db: AsyncSession = Depends(get_db)):
+    """Authenticate as the demo user without credentials."""
+    result = await db.execute(
+        select(User).where(User.email == "demo@personalhub.app")
+    )
+    demo_user = result.scalar_one_or_none()
+    if demo_user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Demo user not found",
+        )
+    await update_last_login(db, demo_user)
+    token = generate_token(demo_user)
+    return LoginResponse(
+        access_token=token,
+        must_change_password=False,
+    )
 
 
 @router.post("/login", response_model=LoginResponse)
