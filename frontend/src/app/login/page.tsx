@@ -201,14 +201,16 @@ export default function LoginPage() {
               href="https://dmitrii-vasichev.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-colors duration-150"
+              className="underline decoration-transparent underline-offset-2 transition-all duration-150"
               style={{ color: "var(--text-primary)" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.color = "var(--accent)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "var(--text-primary)")
-              }
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "var(--accent-hover)";
+                e.currentTarget.style.textDecorationColor = "var(--accent-hover)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "var(--text-primary)";
+                e.currentTarget.style.textDecorationColor = "transparent";
+              }}
             >
               Dmitrii Vasichev
             </a>
