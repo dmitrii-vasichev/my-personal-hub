@@ -74,7 +74,7 @@ function CategoryRow({ digest }: { digest: DigestSummaryItem }) {
             {visibleItems.map((item, i) => (
               <span
                 key={i}
-                className="inline-flex max-w-[280px] items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-foreground"
+                className="inline-flex max-w-[280px] items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm text-foreground"
                 style={{ background: config.bg }}
               >
                 <span className="truncate">{item.title}</span>
