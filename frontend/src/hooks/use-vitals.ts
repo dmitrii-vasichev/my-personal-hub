@@ -104,9 +104,11 @@ export function useSyncVitals() {
       api.post<VitalsConnectionStatus>("/api/vitals/sync"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [VITALS_KEY] });
-      toast.success("Sync started");
+      toast.success("Sync completed");
     },
     onError: (error: Error) => {
+      // Refetch connection status to get updated rate_limited_until
+      queryClient.invalidateQueries({ queryKey: [VITALS_KEY, "connection"] });
       toast.error(error.message || "Failed to sync");
     },
   });
