@@ -63,10 +63,13 @@ describe("LoginPage", () => {
     expect(screen.getByTestId("demo-login-btn")).toBeInTheDocument();
     expect(screen.getByText("Explore Demo")).toBeInTheDocument();
 
-    // Footer
-    expect(
-      screen.getByText("Built by Dmitrii Vasichev")
-    ).toBeInTheDocument();
+    // Footer — author link
+    const authorLink = screen.getByText("Dmitrii Vasichev");
+    expect(authorLink).toBeInTheDocument();
+    expect(authorLink.closest("a")).toHaveAttribute(
+      "href",
+      "https://dmitrii-vasichev.com/"
+    );
     expect(
       screen.getByText("Next.js · FastAPI · PostgreSQL")
     ).toBeInTheDocument();
