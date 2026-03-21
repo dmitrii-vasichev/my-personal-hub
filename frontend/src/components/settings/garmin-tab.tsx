@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Watch, RefreshCw, Unplug, Loader2, Eye, EyeOff } from "lucide-react";
+import { Watch, RefreshCw, Unplug, Loader2, Eye, EyeOff, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,25 @@ export function GarminSettingsTab() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showDisconnect, setShowDisconnect] = useState(false);
+
+  // Rate-limit countdown
+  const rateLimitedUntil = connection?.rate_limited_until
+    ? new Date(connection.rate_limited_until)
+    : null;
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    if (!rateLimitedUntil || rateLimitedUntil <= new Date()) return;
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, [rateLimitedUntil]);
+
+  const isRateLimited = rateLimitedUntil !== null && rateLimitedUntil > now;
+  const cooldownRemaining = isRateLimited
+    ? Math.max(0, Math.ceil((rateLimitedUntil.getTime() - now.getTime()) / 1000))
+    : 0;
+  const cooldownMinutes = Math.floor(cooldownRemaining / 60);
+  const cooldownSeconds = cooldownRemaining % 60;
 
   const connectMutation = useMutation({
     mutationFn: (data: { email: string; password: string }) =>
@@ -220,13 +239,23 @@ export function GarminSettingsTab() {
               </div>
             </div>
 
+            {/* Rate-limit warning */}
+            {isRateLimited && (
+              <div className="flex items-center gap-2 rounded-md border border-[var(--warning)]/30 bg-[var(--warning)]/5 px-3 py-2 text-xs text-[var(--warning)]">
+                <Clock className="h-3.5 w-3.5 shrink-0" />
+                <span>
+                  Rate limited — retry in {cooldownMinutes}:{String(cooldownSeconds).padStart(2, "0")}
+                </span>
+              </div>
+            )}
+
             {/* Sync now */}
             <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => syncVitals.mutate()}
-                disabled={syncVitals.isPending}
+                disabled={syncVitals.isPending || isRateLimited}
               >
                 <RefreshCw
                   className={`mr-1.5 h-3.5 w-3.5 ${
