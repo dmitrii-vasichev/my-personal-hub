@@ -30,11 +30,19 @@ export function GarminSettingsTab() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showDisconnect, setShowDisconnect] = useState(false);
+  // Client-side rate-limit tracking (used when no DB connection exists yet)
+  const [connectRateLimitedUntil, setConnectRateLimitedUntil] = useState<Date | null>(() => {
+    if (typeof window === "undefined") return null;
+    const stored = localStorage.getItem("garmin_rate_limited_until");
+    if (!stored) return null;
+    const d = new Date(stored);
+    return d > new Date() ? d : null;
+  });
 
-  // Rate-limit countdown
+  // Rate-limit countdown: use server value (connected) or client value (not connected)
   const rateLimitedUntil = connection?.rate_limited_until
     ? new Date(connection.rate_limited_until)
-    : null;
+    : connectRateLimitedUntil;
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -50,16 +58,32 @@ export function GarminSettingsTab() {
   const cooldownMinutes = Math.floor(cooldownRemaining / 60);
   const cooldownSeconds = cooldownRemaining % 60;
 
+  // Clear localStorage when cooldown expires
+  useEffect(() => {
+    if (connectRateLimitedUntil && connectRateLimitedUntil <= now) {
+      setConnectRateLimitedUntil(null);
+      localStorage.removeItem("garmin_rate_limited_until");
+    }
+  }, [now, connectRateLimitedUntil]);
+
   const connectMutation = useMutation({
     mutationFn: (data: { email: string; password: string }) =>
       api.post<VitalsConnectionStatus>("/api/vitals/connect", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [VITALS_KEY, "connection"] });
+      localStorage.removeItem("garmin_rate_limited_until");
+      setConnectRateLimitedUntil(null);
       toast.success("Garmin connected successfully");
       setEmail("");
       setPassword("");
     },
     onError: (error: Error) => {
+      // Track rate-limit client-side (no DB record exists before first connect)
+      if (error.message?.includes("429") || error.message?.includes("rate limit")) {
+        const until = new Date(Date.now() + 60 * 60 * 1000);
+        setConnectRateLimitedUntil(until);
+        localStorage.setItem("garmin_rate_limited_until", until.toISOString());
+      }
       toast.error(error.message || "Failed to connect Garmin");
     },
   });
@@ -151,6 +175,15 @@ export function GarminSettingsTab() {
         {/* Disconnected: email/password form */}
         {!isConnected && (
           <div className="space-y-3">
+            {/* Rate-limit warning for connect attempts */}
+            {isRateLimited && (
+              <div className="flex items-center gap-2 rounded-md border border-[var(--warning)]/30 bg-[var(--warning)]/5 px-3 py-2 text-xs text-[var(--warning)]">
+                <Clock className="h-3.5 w-3.5 shrink-0" />
+                <span>
+                  Garmin rate limited — retry in {cooldownMinutes}:{String(cooldownSeconds).padStart(2, "0")}
+                </span>
+              </div>
+            )}
             <div className="space-y-1">
               <Label className="text-xs uppercase text-muted-foreground font-medium">
                 Email
@@ -161,6 +194,7 @@ export function GarminSettingsTab() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 className="text-sm"
+                disabled={isRateLimited}
               />
             </div>
             <div className="space-y-1">
@@ -174,6 +208,7 @@ export function GarminSettingsTab() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Garmin Connect password"
                   className="pr-9 text-sm"
+                  disabled={isRateLimited}
                 />
                 <button
                   type="button"
@@ -193,7 +228,7 @@ export function GarminSettingsTab() {
               size="sm"
               onClick={handleConnect}
               disabled={
-                !email.trim() || !password.trim() || connectMutation.isPending
+                !email.trim() || !password.trim() || connectMutation.isPending || isRateLimited
               }
             >
               {connectMutation.isPending ? (
