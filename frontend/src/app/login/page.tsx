@@ -19,12 +19,12 @@ import {
 } from "lucide-react";
 
 const MODULES = [
-  { icon: CheckSquare, label: "Tasks" },
-  { icon: Calendar, label: "Calendar" },
-  { icon: Briefcase, label: "Jobs" },
-  { icon: StickyNote, label: "Notes" },
-  { icon: Radio, label: "Pulse" },
-  { icon: Heart, label: "Vitals" },
+  { icon: CheckSquare, label: "Tasks", color: "#4f8ef7" },
+  { icon: Calendar, label: "Calendar", color: "#2dd4bf" },
+  { icon: Briefcase, label: "Jobs", color: "#a78bfa" },
+  { icon: StickyNote, label: "Notes", color: "#fbbf24" },
+  { icon: Radio, label: "Pulse", color: "#f87171" },
+  { icon: Heart, label: "Vitals", color: "#34d399" },
 ];
 
 const SOCIAL_LINKS = [
@@ -143,22 +143,21 @@ export default function LoginPage() {
               opacity: 0,
             }}
           >
-            {MODULES.map(({ icon: Icon, label }) => (
+            {MODULES.map(({ icon: Icon, label, color }) => (
               <div
                 key={label}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5"
+                className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5"
                 style={{
-                  background: "var(--surface)",
-                  border: "1px solid var(--border)",
+                  background: `${color}08`,
                 }}
               >
                 <Icon
-                  size={18}
-                  style={{ color: "var(--accent)", opacity: 0.9 }}
+                  size={16}
+                  style={{ color }}
                 />
                 <span
-                  className="text-[13.5px] font-medium"
-                  style={{ color: "var(--text-primary)" }}
+                  className="text-[13px]"
+                  style={{ color: "var(--text-secondary)" }}
                 >
                   {label}
                 </span>
@@ -197,7 +196,22 @@ export default function LoginPage() {
             className="text-[13px]"
             style={{ color: "var(--text-secondary)" }}
           >
-            Built by Dmitrii Vasichev
+            Built by{" "}
+            <a
+              href="https://dmitrii-vasichev.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-colors duration-150"
+              style={{ color: "var(--text-primary)" }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.color = "var(--accent)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.color = "var(--text-primary)")
+              }
+            >
+              Dmitrii Vasichev
+            </a>
           </p>
           <p
             className="font-mono text-[11px] tracking-wide"
