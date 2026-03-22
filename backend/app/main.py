@@ -64,6 +64,7 @@ async def lifespan(application: FastAPI):
 
         # Restore Garmin sync jobs
         from app.models.garmin import GarminConnection
+        from app.models.telegram import PulseDigest
 
         garmin_result = await db.execute(
             select(GarminConnection).where(GarminConnection.is_active.is_(True))
@@ -94,6 +95,19 @@ async def lifespan(application: FastAPI):
                     await create_vitals_data(seed_db, demo_user.id)
                     await seed_db.commit()
                     logger.info("Auto-seeded vitals data for demo user")
+
+                # Auto-seed pulse data for demo user if missing
+                pulse_result = await seed_db.execute(
+                    select(PulseDigest).where(
+                        PulseDigest.user_id == demo_user.id
+                    )
+                )
+                if pulse_result.first() is None:
+                    from app.scripts.seed_demo import create_pulse_data
+
+                    await create_pulse_data(seed_db, demo_user.id)
+                    await seed_db.commit()
+                    logger.info("Auto-seeded pulse data for demo user")
 
         # Schedule daily TTL cleanup at 03:00
         scheduler.add_job(
