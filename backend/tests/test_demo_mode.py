@@ -664,8 +664,8 @@ async def test_reset_demo_blocked_for_non_admin():
 
 
 @pytest.mark.asyncio
-async def test_reset_demo_blocked_for_demo_user():
-    """Demo user cannot reset their own data."""
+async def test_reset_demo_allowed_for_demo_user():
+    """Demo user can reset their own data."""
     demo = make_demo_user()
     from app.core.deps import get_current_user
     app.dependency_overrides[get_current_user] = _override_auth(demo)
@@ -674,6 +674,6 @@ async def test_reset_demo_blocked_for_demo_user():
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
             resp = await client.post("/api/users/demo/reset")
-        assert resp.status_code == 403
+        assert resp.status_code == 200
     finally:
         app.dependency_overrides.pop(get_current_user, None)

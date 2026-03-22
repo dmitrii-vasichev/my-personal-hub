@@ -1,8 +1,14 @@
 "use client";
 
+import { useState } from "react";
+import { RotateCcw } from "lucide-react";
+import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { TagInput } from "@/app/(dashboard)/settings/page";
+import { useResetDemoData } from "@/hooks/use-users";
+import { useAuth } from "@/lib/auth";
 
 interface GeneralTabProps {
   targetRoles: string[];
@@ -29,6 +35,25 @@ export function GeneralTab({
   staleDays,
   setStaleDays,
 }: GeneralTabProps) {
+  const { isDemo } = useAuth();
+  const resetDemo = useResetDemoData();
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  const handleResetDemo = async () => {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      return;
+    }
+    try {
+      await resetDemo.mutateAsync();
+      toast.success("Demo data reset successfully");
+      setConfirmReset(false);
+    } catch {
+      toast.error("Failed to reset demo data");
+      setConfirmReset(false);
+    }
+  };
+
   return (
     <section className="space-y-4 rounded-lg border border-border p-5">
       <h2 className="text-sm font-medium">Job Search</h2>
@@ -87,6 +112,37 @@ export function GeneralTab({
           />
         </div>
       </div>
+
+      {isDemo && (
+        <div className="border-t border-border pt-4">
+          <h2 className="text-sm font-medium mb-2">Demo Mode</h2>
+          <p className="text-xs text-muted-foreground mb-3">
+            Reset all demo data to defaults. This will recreate all tasks, jobs, notes, and other data.
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetDemo}
+            disabled={resetDemo.isPending}
+            className={confirmReset ? "border-danger text-danger hover:bg-danger/10" : ""}
+          >
+            <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+            {resetDemo.isPending
+              ? "Resetting…"
+              : confirmReset
+                ? "Click again to confirm"
+                : "Reset Demo Data"}
+          </Button>
+          {confirmReset && !resetDemo.isPending && (
+            <button
+              onClick={() => setConfirmReset(false)}
+              className="ml-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 }
