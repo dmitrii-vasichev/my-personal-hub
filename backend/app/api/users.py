@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import require_admin
+from app.core.deps import get_current_user, require_admin
 from app.core.security import hash_password
 from app.models.user import User, UserRole
 from app.schemas.auth import (
@@ -134,9 +134,14 @@ async def delete_user(
 @router.post("/demo/reset")
 async def reset_demo_data(
     db: AsyncSession = Depends(get_db),
-    _admin: User = Depends(require_admin),
+    current_user: User = Depends(get_current_user),
 ):
-    """Delete all demo user data and re-seed with defaults. Admin-only."""
+    """Delete all demo user data and re-seed with defaults. Admin or demo user."""
+    if current_user.role not in (UserRole.admin, UserRole.demo):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin or demo user can reset demo data",
+        )
     from app.scripts.seed_demo import (
         cleanup_demo_user,
         create_demo_user,
