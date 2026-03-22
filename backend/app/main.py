@@ -64,7 +64,7 @@ async def lifespan(application: FastAPI):
 
         # Restore Garmin sync jobs
         from app.models.garmin import GarminConnection
-        from app.models.telegram import PulseDigest
+        from app.models.telegram import PulseDigest, PulseSource
 
         garmin_result = await db.execute(
             select(GarminConnection).where(GarminConnection.is_active.is_(True))
@@ -113,6 +113,11 @@ async def lifespan(application: FastAPI):
                     await seed_db.execute(
                         delete(PulseDigest).where(
                             PulseDigest.user_id == demo_user.id
+                        )
+                    )
+                    await seed_db.execute(
+                        delete(PulseSource).where(
+                            PulseSource.user_id == demo_user.id
                         )
                     )
                     await create_pulse_data(seed_db, demo_user.id)

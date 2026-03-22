@@ -9,7 +9,7 @@ import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.models.telegram import PulseDigest
+from app.models.telegram import PulseDigest, PulseSource
 
 
 def _make_digest(user_id: int, category: str) -> PulseDigest:
@@ -95,3 +95,65 @@ class TestCreatePulseDataSeedsAllCategories:
         assert "learning" in seeded_categories, "learning category must be seeded"
         assert "jobs" in seeded_categories, "jobs category must be seeded"
         assert len(digests) == 3, f"Expected 3 digests, got {len(digests)}"
+
+    @pytest.mark.asyncio
+    async def test_seed_creates_sources(self):
+        """create_pulse_data must also create PulseSource records."""
+        from app.scripts.seed_demo import create_pulse_data
+
+        added_objects: list = []
+
+        session = AsyncMock()
+        session.add = MagicMock(side_effect=lambda obj: added_objects.append(obj))
+
+        _next_id = 1
+
+        async def fake_flush():
+            nonlocal _next_id
+            for obj in added_objects:
+                if not hasattr(obj, "id") or obj.id is None:
+                    obj.id = _next_id
+                    _next_id += 1
+
+        session.flush = fake_flush
+
+        await create_pulse_data(session, user_id=999)
+
+        sources = [o for o in added_objects if isinstance(o, PulseSource)]
+        assert len(sources) >= 1, "At least one PulseSource must be seeded"
+
+    @pytest.mark.asyncio
+    async def test_reseed_requires_source_cleanup(self):
+        """Regression: re-seeding must delete PulseSource too, not just PulseDigest,
+        otherwise unique constraint on (user_id, telegram_id) causes IntegrityError."""
+        from app.scripts.seed_demo import create_pulse_data
+
+        added_objects: list = []
+        session = AsyncMock()
+        session.add = MagicMock(side_effect=lambda obj: added_objects.append(obj))
+
+        _next_id = 1
+
+        async def fake_flush():
+            nonlocal _next_id
+            for obj in added_objects:
+                if not hasattr(obj, "id") or obj.id is None:
+                    obj.id = _next_id
+                    _next_id += 1
+
+        session.flush = fake_flush
+
+        # Seed twice to simulate re-seed scenario
+        await create_pulse_data(session, user_id=999)
+        sources_first = [o for o in added_objects if isinstance(o, PulseSource)]
+        telegram_ids_first = {s.telegram_id for s in sources_first}
+
+        added_objects.clear()
+        _next_id = 100
+        await create_pulse_data(session, user_id=999)
+        sources_second = [o for o in added_objects if isinstance(o, PulseSource)]
+        telegram_ids_second = {s.telegram_id for s in sources_second}
+
+        # Same telegram_ids would cause unique constraint violation in real DB
+        assert telegram_ids_first == telegram_ids_second, \
+            "Re-seed uses same telegram_ids — must delete PulseSource before re-seeding"
