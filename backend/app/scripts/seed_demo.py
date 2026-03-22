@@ -628,14 +628,36 @@ async def create_pulse_data(session, user_id: int) -> None:
         sources.append(source)
     await session.flush()
 
-    # 3 digests with structured items
+    # News digest — markdown type (per PRD FR-4, FR-20)
+    news_markdown = (
+        "## Tech & AI Highlights\n\n"
+        "### EU AI Act Enforcement Begins — What It Means for Developers\n"
+        "*Tech Policy Watch*\n\n"
+        "The European Union's AI Act enters active enforcement. High-risk AI systems "
+        "now require conformity assessments, transparency disclosures, and human "
+        "oversight documentation. Fines up to €35M or 7% of global revenue.\n\n"
+        "### OpenAI Launches GPT-5 with Native Tool Use\n"
+        "*AI Research Daily*\n\n"
+        "GPT-5 features built-in code execution, web browsing, and file analysis "
+        "without plugins. Context window expanded to 1M tokens. Available via API "
+        "at $15/1M input tokens.\n\n"
+        "### GitHub Copilot Workspace Goes GA\n"
+        "*Tech Policy Watch*\n\n"
+        "GitHub Copilot Workspace is now generally available. Developers can describe "
+        "tasks in natural language and get full implementation plans with code changes "
+        "across multiple files.\n\n"
+        "### Rust Foundation Announces Rust 2027 Edition Roadmap\n"
+        "*Python News & Updates*\n\n"
+        "Major changes planned: async traits stabilization, improved compile times "
+        "via cranelift backend, and new borrow checker with polonius. Migration tools included.\n"
+    )
     digest_news = PulseDigest(
         user_id=user_id,
         category="news",
-        content=None,
-        digest_type="structured",
+        content=news_markdown,
+        digest_type="markdown",
         message_count=32,
-        items_count=4,
+        items_count=0,
         generated_at=now - timedelta(hours=3),
         period_start=now - timedelta(days=1),
         period_end=now,
@@ -643,6 +665,7 @@ async def create_pulse_data(session, user_id: int) -> None:
     session.add(digest_news)
     await session.flush()
 
+    # Structured digests for learning and jobs
     digest_learning = PulseDigest(
         user_id=user_id,
         category="learning",
@@ -670,48 +693,6 @@ async def create_pulse_data(session, user_id: int) -> None:
     )
     session.add(digest_jobs)
     await session.flush()
-
-    # Digest items for news digest
-    news_items = [
-        {
-            "title": "EU AI Act Enforcement Begins — What It Means for Developers",
-            "summary": "The European Union's AI Act enters active enforcement. High-risk AI systems now require conformity assessments, transparency disclosures, and human oversight documentation. Fines up to €35M or 7% of global revenue.",
-            "classification": "regulation",
-            "source_names": ["Tech Policy Watch"],
-        },
-        {
-            "title": "OpenAI Launches GPT-5 with Native Tool Use",
-            "summary": "GPT-5 features built-in code execution, web browsing, and file analysis without plugins. Context window expanded to 1M tokens. Available via API at $15/1M input tokens.",
-            "classification": "ai_release",
-            "source_names": ["AI Research Daily"],
-        },
-        {
-            "title": "GitHub Copilot Workspace Goes GA",
-            "summary": "GitHub Copilot Workspace is now generally available. Developers can describe tasks in natural language and get full implementation plans with code changes across multiple files.",
-            "classification": "developer_tools",
-            "source_names": ["Tech Policy Watch"],
-        },
-        {
-            "title": "Rust Foundation Announces Rust 2027 Edition Roadmap",
-            "summary": "Major changes planned: async traits stabilization, improved compile times via cranelift backend, and new borrow checker with polonius. Migration tools included.",
-            "classification": "technology",
-            "source_names": ["Python News & Updates"],
-        },
-    ]
-
-    for i, item in enumerate(news_items):
-        di = PulseDigestItem(
-            digest_id=digest_news.id,
-            user_id=user_id,
-            title=item["title"],
-            summary=item["summary"],
-            classification=item["classification"],
-            source_names=item["source_names"],
-            status="new" if i >= 1 else "actioned",
-            actioned_at=(now - timedelta(hours=1)) if i < 1 else None,
-            action_type="skip" if i == 0 else None,
-        )
-        session.add(di)
 
     # Digest items for learning digest
     learning_items = [
