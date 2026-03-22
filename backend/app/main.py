@@ -41,7 +41,7 @@ async def lifespan(application: FastAPI):
     try:
         from app.core.database import async_session_factory
         from app.models.telegram import PulseSettings
-        from sqlalchemy import select
+        from sqlalchemy import delete, select
 
         async with async_session_factory() as db:
             result = await db.execute(select(PulseSettings))
@@ -96,18 +96,29 @@ async def lifespan(application: FastAPI):
                     await seed_db.commit()
                     logger.info("Auto-seeded vitals data for demo user")
 
-                # Auto-seed pulse data for demo user if missing
+                # Auto-seed pulse data for demo user if any category is missing
                 pulse_result = await seed_db.execute(
-                    select(PulseDigest).where(
+                    select(PulseDigest.category).where(
                         PulseDigest.user_id == demo_user.id
                     )
                 )
-                if pulse_result.first() is None:
+                existing_categories = {
+                    row[0] for row in pulse_result.all()
+                }
+                expected_categories = {"news", "learning", "jobs"}
+                if not expected_categories.issubset(existing_categories):
                     from app.scripts.seed_demo import create_pulse_data
 
+                    # Clear incomplete data and re-seed
+                    await seed_db.execute(
+                        delete(PulseDigest).where(
+                            PulseDigest.user_id == demo_user.id
+                        )
+                    )
                     await create_pulse_data(seed_db, demo_user.id)
                     await seed_db.commit()
-                    logger.info("Auto-seeded pulse data for demo user")
+                    logger.info("Auto-seeded pulse data for demo user (missing categories: %s)",
+                                expected_categories - existing_categories)
 
         # Schedule daily TTL cleanup at 03:00
         scheduler.add_job(
