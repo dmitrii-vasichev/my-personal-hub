@@ -169,6 +169,13 @@ async def _get_structured_preview_items(
     ]
 
 
+def _strip_markdown_emphasis(text: str) -> str:
+    """Remove markdown emphasis markers (* and **) from text."""
+    import re
+    # Replace **bold** and *italic* markers, keeping inner text
+    return re.sub(r"\*{1,2}(.+?)\*{1,2}", r"\1", text)
+
+
 def _extract_preview(content: str | None) -> str:
     """Extract first meaningful lines from markdown digest content."""
     if not content:
@@ -182,7 +189,7 @@ def _extract_preview(content: str | None) -> str:
         lines.append(stripped)
         if len(" ".join(lines)) >= _CONTENT_PREVIEW_LENGTH:
             break
-    preview = " ".join(lines)
+    preview = _strip_markdown_emphasis(" ".join(lines))
     if len(preview) > _CONTENT_PREVIEW_LENGTH:
         preview = preview[:_CONTENT_PREVIEW_LENGTH].rsplit(" ", 1)[0] + "…"
     return preview

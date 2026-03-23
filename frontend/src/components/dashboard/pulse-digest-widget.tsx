@@ -40,15 +40,8 @@ function formatPeriod(start: string | null, end: string | null): string {
   return `${startStr} – ${endStr}`;
 }
 
-const MAX_VISIBLE_ITEMS = 3;
-
 function CategoryRow({ digest }: { digest: DigestSummaryItem }) {
   const config = CATEGORY_CONFIG[digest.category ?? ""] ?? CATEGORY_CONFIG.news;
-  const totalCount = digest.items_count ?? digest.message_count;
-  const allItems = digest.preview_items ?? [];
-  const visibleItems = allItems.slice(0, MAX_VISIBLE_ITEMS);
-  const hasPreviewItems = visibleItems.length > 0;
-  const moreCount = totalCount - visibleItems.length;
 
   return (
     <Link href={`/pulse?digest=${digest.id}`} className="block">
@@ -69,40 +62,13 @@ function CategoryRow({ digest }: { digest: DigestSummaryItem }) {
               : `${digest.message_count} messages`}
           </span>
         </div>
-        {hasPreviewItems ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {visibleItems.map((item, i) => (
-              <span
-                key={i}
-                className="inline-flex max-w-[280px] items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm text-foreground"
-                style={{ background: config.bg }}
-              >
-                <span className="truncate">{item.title}</span>
-                {item.classification && (
-                  <span
-                    className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
-                    style={{ color: config.color }}
-                  >
-                    {item.classification}
-                  </span>
-                )}
-              </span>
-            ))}
-            {moreCount > 0 && (
-              <span className="text-[11px] text-tertiary">
-                + {moreCount} more
-              </span>
-            )}
-          </div>
-        ) : (
-          <p className="text-sm text-foreground line-clamp-2 leading-relaxed">
-            {digest.content_preview
-              ? digest.content_preview
-              : digest.items_count
-                ? `${digest.items_count} new items to review`
-                : "No content available"}
-          </p>
-        )}
+        <p className="text-sm text-foreground line-clamp-2 leading-relaxed">
+          {digest.content_preview
+            ? digest.content_preview
+            : digest.items_count
+              ? `${digest.items_count} new items to review`
+              : "No content available"}
+        </p>
       </div>
     </Link>
   );

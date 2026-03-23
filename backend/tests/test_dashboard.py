@@ -257,6 +257,15 @@ async def test_extract_preview_skips_headings():
 
 
 @pytest.mark.asyncio
+async def test_extract_preview_strips_markdown_emphasis():
+    """Content preview strips markdown *italic* and **bold** markers."""
+    content = "*Tech Policy Watch*\n\nThe EU AI Act enters enforcement."
+    preview = dashboard_service._extract_preview(content)
+    assert "*" not in preview
+    assert "Tech Policy Watch" in preview
+
+
+@pytest.mark.asyncio
 async def test_extract_preview_none_content():
     """Structured digests have content=None — preview must not crash."""
     assert dashboard_service._extract_preview(None) == ""
