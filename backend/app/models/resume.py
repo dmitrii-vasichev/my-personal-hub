@@ -27,7 +27,7 @@ class Resume(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    job: Mapped["Job"] = relationship("Job", back_populates="resumes")  # type: ignore[name-defined]
+    job: Mapped["Job"] = relationship("Job", back_populates="resumes")  # type: ignore[name-defined]  # noqa: F821
 
 
 class CoverLetter(Base):
@@ -44,4 +44,4 @@ class CoverLetter(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    job: Mapped["Job"] = relationship("Job", back_populates="cover_letters")  # type: ignore[name-defined]
+    job: Mapped["Job"] = relationship("Job", back_populates="cover_letters")  # type: ignore[name-defined]  # noqa: F821

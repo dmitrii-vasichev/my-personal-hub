@@ -86,10 +86,10 @@ class Job(Base):
     status_history: Mapped[list["StatusHistory"]] = relationship(
         "StatusHistory", back_populates="job", cascade="all, delete-orphan"
     )
-    resumes: Mapped[list["Resume"]] = relationship(  # type: ignore[name-defined]
+    resumes: Mapped[list["Resume"]] = relationship(  # type: ignore[name-defined]  # noqa: F821
         "Resume", back_populates="job", cascade="all, delete-orphan"
     )
-    cover_letters: Mapped[list["CoverLetter"]] = relationship(  # type: ignore[name-defined]
+    cover_letters: Mapped[list["CoverLetter"]] = relationship(  # type: ignore[name-defined]  # noqa: F821
         "CoverLetter", back_populates="job", cascade="all, delete-orphan"
     )
 

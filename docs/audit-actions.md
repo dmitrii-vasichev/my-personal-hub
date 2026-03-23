@@ -15,17 +15,6 @@ Replace `useEffect + setState` pattern with derived state or `useMemo`. Each fil
 | `frontend/src/components/settings/pulse-settings-tab.tsx` | 40 | `setPollingInterval` + 4 more setState calls from `settings` in effect |
 | `frontend/src/__tests__/demo-mode.test.tsx` | 223 | `@typescript-eslint/no-explicit-any` — replace `any` with proper type |
 
-## 2. Suppress ruff F821 for SQLAlchemy forward refs
-
-**Route:** `/dev chore suppress-ruff-f821`
-
-Add per-file `noqa` or configure `ruff.toml` to ignore F821 in model files.
-
-| File | Line | Forward ref |
-|------|------|-------------|
-| `backend/app/models/job.py` | 89, 92 | `"Resume"`, `"CoverLetter"` |
-| `backend/app/models/resume.py` | 30, 47 | `"Job"` |
-
 ## 3. README: screenshots
 
 **Route:** manual
