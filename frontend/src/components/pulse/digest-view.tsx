@@ -41,7 +41,7 @@ export function DigestView({ digest }: DigestViewProps) {
         </span>
         <span className="flex items-center gap-1">
           <MessageSquare className="h-3.5 w-3.5" />
-          {digest.items_count != null
+          {digest.items_count
             ? `${digest.items_count} items from ${digest.message_count} messages`
             : `${digest.message_count} messages`}
         </span>

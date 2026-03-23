@@ -12,6 +12,7 @@ import {
   DigestEmptyState,
 } from "@/components/pulse/digest-view";
 import { DigestHistory } from "@/components/pulse/digest-history";
+import { AllCategoriesLatest } from "@/components/pulse/all-categories-latest";
 import { useLatestDigest, useGenerateDigest } from "@/hooks/use-pulse-digests";
 import { useAuth } from "@/lib/auth";
 
@@ -100,7 +101,9 @@ export default function PulseDigestsPage() {
       {/* Content */}
       <div className="rounded-xl border border-border bg-surface p-6">
         {viewMode === "latest" ? (
-          isLoading ? (
+          category === null ? (
+            <AllCategoriesLatest />
+          ) : isLoading ? (
             <DigestViewSkeleton />
           ) : latestDigest ? (
             <DigestView digest={latestDigest} />

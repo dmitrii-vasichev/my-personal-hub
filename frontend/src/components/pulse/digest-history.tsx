@@ -105,7 +105,7 @@ function DigestHistoryItem({
           </span>
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
             <MessageSquare className="h-3 w-3" />
-            {digest.items_count != null
+            {digest.items_count
               ? `${digest.items_count} items`
               : digest.message_count}
           </span>

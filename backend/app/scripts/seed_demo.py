@@ -657,7 +657,7 @@ async def create_pulse_data(session, user_id: int) -> None:
         content=news_markdown,
         digest_type="markdown",
         message_count=32,
-        items_count=0,
+        items_count=None,
         generated_at=now - timedelta(hours=3),
         period_start=now - timedelta(days=1),
         period_end=now,
