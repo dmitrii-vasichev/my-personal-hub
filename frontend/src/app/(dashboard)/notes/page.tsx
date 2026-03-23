@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { RefreshCw, FileText, AlertCircle, FolderOpen, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,10 +48,7 @@ export default function NotesPage() {
   const refreshTree = useRefreshNotesTree();
 
   // Auto-select file from URL ?file= parameter (deep links)
-  useEffect(() => {
-    if (!treeNodes.length) return;
-    if (!fileParam || urlParamApplied === fileParam) return;
-
+  if (treeNodes.length > 0 && fileParam && urlParamApplied !== fileParam) {
     let filePath: string | null = null;
     for (const node of treeNodes) {
       filePath = findFileInTree(node, fileParam, "");
@@ -62,12 +59,12 @@ export default function NotesPage() {
       setSelectedFilePath(filePath);
     }
     setUrlParamApplied(fileParam);
-  }, [fileParam, treeNodes, urlParamApplied]);
+  }
 
-  const handleSelectFile = useCallback((fileId: string, filePath: string) => {
+  const handleSelectFile = (fileId: string, filePath: string) => {
     setSelectedFileId(fileId);
     setSelectedFilePath(filePath);
-  }, []);
+  };
 
   // Escape exits expanded mode
   useEffect(() => {

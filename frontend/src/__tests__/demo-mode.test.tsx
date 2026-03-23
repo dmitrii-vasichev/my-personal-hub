@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { DemoModeBadge } from "@/components/ui/demo-mode-badge";
+import type { Job } from "@/types/job";
 
 // --- Mock setup ---
 
@@ -220,7 +221,7 @@ describe("JobMatchSection demo mode", () => {
     const { JobMatchSection } = await import(
       "@/components/jobs/job-match-section"
     );
-    const job = { id: 1, match_result: null } as any;
+    const job = { id: 1, match_result: null } as unknown as Job;
     render(<JobMatchSection job={job} />, { wrapper: createWrapper() });
     expect(screen.getByText("Demo Mode")).toBeInTheDocument();
     expect(screen.getByText(/AI Job Matching/)).toBeInTheDocument();

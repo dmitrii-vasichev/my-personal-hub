@@ -46,10 +46,20 @@ export function GarminSettingsTab() {
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
-    if (!rateLimitedUntil || rateLimitedUntil <= new Date()) return;
-    const timer = setInterval(() => setNow(new Date()), 1000);
+    const rlu = connection?.rate_limited_until
+      ? new Date(connection.rate_limited_until)
+      : connectRateLimitedUntil;
+    if (!rlu || rlu <= new Date()) return;
+    const timer = setInterval(() => {
+      const current = new Date();
+      setNow(current);
+      if (rlu <= current) {
+        setConnectRateLimitedUntil(null);
+        localStorage.removeItem("garmin_rate_limited_until");
+      }
+    }, 1000);
     return () => clearInterval(timer);
-  }, [rateLimitedUntil]);
+  }, [connection?.rate_limited_until, connectRateLimitedUntil]);
 
   const isRateLimited = rateLimitedUntil !== null && rateLimitedUntil > now;
   const cooldownRemaining = isRateLimited
@@ -57,14 +67,6 @@ export function GarminSettingsTab() {
     : 0;
   const cooldownMinutes = Math.floor(cooldownRemaining / 60);
   const cooldownSeconds = cooldownRemaining % 60;
-
-  // Clear localStorage when cooldown expires
-  useEffect(() => {
-    if (connectRateLimitedUntil && connectRateLimitedUntil <= now) {
-      setConnectRateLimitedUntil(null);
-      localStorage.removeItem("garmin_rate_limited_until");
-    }
-  }, [now, connectRateLimitedUntil]);
 
   const connectMutation = useMutation({
     mutationFn: (data: { email: string; password: string }) =>

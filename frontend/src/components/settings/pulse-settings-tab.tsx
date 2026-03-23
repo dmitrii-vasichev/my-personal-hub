@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { RefreshCw, Save, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,22 +35,23 @@ export function PulseSettingsTab() {
   const [botChatId, setBotChatId] = useState("");
   const [botTokenSet, setBotTokenSet] = useState(false);
 
-  useEffect(() => {
-    if (settings) {
-      setPollingInterval(String(settings.polling_interval_minutes));
-      setPollMessageLimit(String(settings.poll_message_limit));
-      setTtlDays(String(settings.message_ttl_days));
-      setDigestSchedule(settings.digest_schedule);
-      setDigestTime(settings.digest_time?.slice(0, 5) || "09:00");
-      setTimezone(settings.timezone || "America/Denver");
-      setDigestDay(String(settings.digest_day ?? 1));
-      setDigestIntervalDays(String(settings.digest_interval_days ?? 2));
-      setNotifyDigest(settings.notify_digest_ready);
-      setNotifyJobs(settings.notify_urgent_jobs);
-      setBotTokenSet(settings.bot_token_set);
-      setBotChatId(settings.bot_chat_id ? String(settings.bot_chat_id) : "");
-    }
-  }, [settings]);
+  // Sync form state when server settings change (render-time adjustment)
+  const [prevSettings, setPrevSettings] = useState<typeof settings>(undefined);
+  if (settings && settings !== prevSettings) {
+    setPrevSettings(settings);
+    setPollingInterval(String(settings.polling_interval_minutes));
+    setPollMessageLimit(String(settings.poll_message_limit));
+    setTtlDays(String(settings.message_ttl_days));
+    setDigestSchedule(settings.digest_schedule);
+    setDigestTime(settings.digest_time?.slice(0, 5) || "09:00");
+    setTimezone(settings.timezone || "America/Denver");
+    setDigestDay(String(settings.digest_day ?? 1));
+    setDigestIntervalDays(String(settings.digest_interval_days ?? 2));
+    setNotifyDigest(settings.notify_digest_ready);
+    setNotifyJobs(settings.notify_urgent_jobs);
+    setBotTokenSet(settings.bot_token_set);
+    setBotChatId(settings.bot_chat_id ? String(settings.bot_chat_id) : "");
+  }
 
   const handleSave = async () => {
     try {
