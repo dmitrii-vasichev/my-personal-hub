@@ -4,8 +4,37 @@ A full-stack personal productivity platform that consolidates task management, j
 
 **[Live Demo](https://hub.dmitrii-vasichev.com)**
 
-<!-- TODO: Add screenshots -->
-<!-- ![Dashboard](docs/screenshots/dashboard.png) -->
+### Dashboard
+![Dashboard](docs/screenshots/Dashboard.png)
+
+### Task Manager
+![Tasks](docs/screenshots/Tasks.png)
+
+### Vitals — Health Metrics & AI Briefing
+![Vitals](docs/screenshots/Vitals_1.png)
+
+### Pulse — AI-Generated Telegram Digests
+![Pulse](docs/screenshots/Pulse.png)
+
+<details>
+<summary>More screenshots</summary>
+
+### Job Hunt — Kanban Board
+![Job Hunt Kanban](docs/screenshots/Job_Hunt_1.png)
+
+### Job Hunt — Detail View with AI Tools
+![Job Hunt Detail](docs/screenshots/Job_Hunt_2.png)
+
+### Notes — Markdown Editor
+![Notes](docs/screenshots/Notes.png)
+
+### Meetings — Calendar View
+![Meetings](docs/screenshots/Meetings.png)
+
+### Vitals — Trend Charts
+![Vitals Trends](docs/screenshots/Vitals_2.png)
+
+</details>
 
 ## Features
 
