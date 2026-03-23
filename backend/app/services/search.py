@@ -7,7 +7,6 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.job import Job
-from app.models.settings import UserSettings
 from app.models.user import User
 from app.services.providers.base import SearchResult
 from app.services.providers import adzuna, serpapi, jsearch

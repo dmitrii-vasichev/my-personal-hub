@@ -124,7 +124,7 @@ async def test_upsert_profile_creates_when_missing():
     mock_db.refresh = AsyncMock()
 
     data = ProfileUpdate(summary="New summary", skills=[{"name": "Go"}])
-    result = await upsert_profile(mock_db, user, data)
+    await upsert_profile(mock_db, user, data)
 
     # Should have called db.add for new profile
     mock_db.add.assert_called_once()

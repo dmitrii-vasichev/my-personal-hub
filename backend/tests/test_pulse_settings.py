@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
-from app.models.telegram import PulseSettings, PulseSource
+from app.models.telegram import PulseSettings
 from app.models.user import User, UserRole
 from app.schemas.pulse_settings import PulseSettingsResponse, PulseSettingsUpdate
 

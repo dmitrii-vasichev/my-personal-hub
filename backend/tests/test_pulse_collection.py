@@ -5,10 +5,10 @@ Covers Phase 34 — Message Collection & Filtering.
 from __future__ import annotations
 
 import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from app.models.telegram import PulseMessage, PulseSource
+from app.models.telegram import PulseSource
 from app.models.user import User, UserRole
 
 

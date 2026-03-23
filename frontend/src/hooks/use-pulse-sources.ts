@@ -150,5 +150,6 @@ export function usePollStatus() {
     queryClient.invalidateQueries({ queryKey: ["pulse-digest-items"] });
   }, [query.data, queryClient, stopPolling]);
 
+  // eslint-disable-next-line react-hooks/refs -- ref read in hook return value is intentional
   return { startPolling, stopPolling, data: query.data, isPolling: pollingActive.current };
 }

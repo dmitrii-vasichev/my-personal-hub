@@ -2,29 +2,34 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PulseDigestWidget } from "@/components/dashboard/pulse-digest-widget";
+import type { PulseSummaryResponse } from "@/types/pulse-digest";
 
-const mockSummary = {
+const mockSummary: PulseSummaryResponse = {
   digests: [
     {
       id: 1,
       category: "news",
       content_preview: "Apple launched a new product today. EU updated AI policy.",
       message_count: 42,
+      items_count: null,
       generated_at: "2026-03-16T12:00:00Z",
+      preview_items: [],
     },
     {
       id: 2,
       category: "jobs",
       content_preview: "Senior Python Developer at Revolut. Backend Engineer at Stripe.",
       message_count: 25,
+      items_count: null,
       generated_at: "2026-03-16T12:00:00Z",
+      preview_items: [],
     },
   ],
   period_start: "2026-03-15T12:00:00Z",
   period_end: "2026-03-16T12:00:00Z",
 };
 
-let mockData: typeof mockSummary | null = mockSummary;
+let mockData: PulseSummaryResponse | null = mockSummary;
 let mockLoading = false;
 
 vi.mock("@/hooks/use-dashboard-pulse", () => ({

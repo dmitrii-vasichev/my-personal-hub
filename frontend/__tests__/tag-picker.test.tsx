@@ -22,7 +22,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe("TagPicker", () => {
-  let onChange: ReturnType<typeof vi.fn>;
+  let onChange: (ids: number[]) => void;
 
   beforeEach(() => {
     onChange = vi.fn();

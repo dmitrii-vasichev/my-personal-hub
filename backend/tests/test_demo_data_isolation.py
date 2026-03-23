@@ -4,7 +4,6 @@ Covers: _can_access_task, _can_access_event with family visibility.
 """
 from __future__ import annotations
 
-import pytest
 from datetime import datetime, timezone
 
 from app.models.task import Task, TaskStatus, TaskPriority, Visibility

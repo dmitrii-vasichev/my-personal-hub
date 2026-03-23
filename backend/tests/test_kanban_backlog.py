@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock
 from app.models.task import Task, TaskStatus, TaskPriority, Visibility
 from app.models.user import User, UserRole
 from app.schemas.task import TaskCreate, TaskUpdate as TaskUpdateSchema, KanbanBoard
-from app.services.task import create_task, update_task, get_kanban_board
+from app.services.task import create_task, update_task
 
 
 def make_user(user_id: int = 1, role: UserRole = UserRole.admin) -> User:

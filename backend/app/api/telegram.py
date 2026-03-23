@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user, restrict_demo
+from app.core.deps import restrict_demo
 from app.models.user import User
 from app.schemas.telegram import (
     TelegramConfigStatusResponse,

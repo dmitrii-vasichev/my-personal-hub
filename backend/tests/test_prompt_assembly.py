@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 from app.models.knowledge_base import AiKnowledgeBase
 from app.models.user import User, UserRole

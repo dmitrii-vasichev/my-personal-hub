@@ -51,6 +51,9 @@ def make_source(
     s.keywords = ["python", "ai"]
     s.criteria = None
     s.is_active = True
+    s.poll_status = "idle"
+    s.last_poll_error = None
+    s.last_poll_message_count = 0
     s.last_polled_at = None
     s.created_at = datetime(2026, 3, 16, 12, 0, 0, tzinfo=timezone.utc)
     return s
@@ -112,7 +115,7 @@ class TestPulseSourceService:
             title="Test Channel",
             category="news",
         )
-        source = await create_source(db, 1, data)
+        await create_source(db, 1, data)
 
         db.add.assert_called_once()
         db.flush.assert_called_once()
@@ -197,8 +200,9 @@ class TestPulseSourceService:
         db.delete.assert_called_once_with(source)
 
     @pytest.mark.asyncio
+    @patch("app.services.pulse_source.telethon_utils.get_peer_id", return_value=-1001234567890)
     @patch("app.services.pulse_source.get_client_for_user")
-    async def test_resolve_source(self, mock_get_client):
+    async def test_resolve_source(self, mock_get_client, _mock_get_peer_id):
         from app.services.pulse_source import resolve_source
 
         mock_entity = MagicMock()

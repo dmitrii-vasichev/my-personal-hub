@@ -1,19 +1,15 @@
+import logging
 from datetime import datetime
 from typing import Optional
-
-import logging
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-logger = logging.getLogger(__name__)
-
 from app.core.config import settings as app_settings
 from app.core.database import get_db
 from app.core.deps import get_current_user, restrict_demo
-from app.services.auth import get_user_by_id
 from app.models.user import User
 from app.schemas.calendar import (
     CalendarEventCreate,
@@ -23,19 +19,20 @@ from app.schemas.calendar import (
     EventNoteCreate,
     EventNoteResponse,
     EventNoteUpdate,
-)
-from app.schemas.calendar import (
     GoogleOAuthConnectResponse,
     GoogleOAuthStatus,
+    LinkedTaskBrief,
 )
-from app.services.task import PermissionDeniedError
+from app.schemas.note import LinkedNoteBrief
 from app.services import calendar as calendar_service
 from app.services import google_calendar as gcal_service
 from app.services import google_oauth as oauth_service
-from app.services import task_event_link as link_service
 from app.services import note_event_link as nel_service
-from app.schemas.calendar import LinkedTaskBrief
-from app.schemas.note import LinkedNoteBrief
+from app.services import task_event_link as link_service
+from app.services.auth import get_user_by_id
+from app.services.task import PermissionDeniedError
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/calendar", tags=["calendar"])
 

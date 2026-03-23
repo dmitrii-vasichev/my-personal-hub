@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch, PropertyMock
+from unittest.mock import AsyncMock, patch
 
 from app.models.user import User, UserRole
 from app.models.settings import UserSettings
@@ -15,7 +15,7 @@ from app.schemas.auth import (
     UpdateUserRequest,
     UpdateProfileRequest,
 )
-from app.services.settings import to_member_response, to_response, update_settings
+from app.services.settings import to_member_response, to_response
 from app.schemas.settings import MemberSettingsResponse, SettingsResponse
 
 
@@ -148,7 +148,7 @@ async def test_member_cannot_update_llm_provider():
     with patch("app.services.settings.get_or_create_settings", side_effect=mock_get_or_create):
         from app.services.settings import update_settings
         data = SettingsUpdate(llm_provider="openai", target_roles=["ML Engineer"])
-        result = await update_settings(db, member, data)
+        await update_settings(db, member, data)
 
     # llm_provider should NOT be changed for member
     assert settings.llm_provider == "anthropic"
@@ -171,7 +171,7 @@ async def test_admin_can_update_llm_provider():
     with patch("app.services.settings.get_or_create_settings", side_effect=mock_get_or_create):
         from app.services.settings import update_settings
         data = SettingsUpdate(llm_provider="openai")
-        result = await update_settings(db, admin, data)
+        await update_settings(db, admin, data)
 
     assert settings.llm_provider == "openai"
 

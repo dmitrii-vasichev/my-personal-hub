@@ -6,13 +6,13 @@ Covers: UserRole rename, new User fields, Visibility enum, blocked user logic,
 from __future__ import annotations
 
 import pytest
-from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime
+from unittest.mock import AsyncMock, patch
 
 from app.models.user import User, UserRole
 from app.models.task import Task, Visibility
 from app.models.calendar import CalendarEvent
-from app.services.auth import update_last_login, create_user, generate_token
+from app.services.auth import update_last_login, create_user
 from app.core.security import create_access_token, decode_access_token
 
 

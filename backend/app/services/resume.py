@@ -235,7 +235,7 @@ def generate_pdf(resume_json: dict) -> bytes:
     from reportlab.lib.units import inch
     from reportlab.lib import colors
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, HRFlowable
-    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+    from reportlab.lib.enums import TA_CENTER
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(

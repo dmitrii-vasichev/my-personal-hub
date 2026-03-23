@@ -39,7 +39,7 @@ def _validate_url(url: str) -> None:
     ip = ipaddress.ip_address(ip_str)
     for network in _BLOCKED_NETWORKS:
         if ip in network:
-            raise ValueError(f"Requests to private/local addresses are not allowed")
+            raise ValueError("Requests to private/local addresses are not allowed")
 
 
 def _extract_text(html: str) -> str:

@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from httpx import ASGITransport, AsyncClient
 
 from app.main import app
-from app.models.telegram import PulseDigest, PulseMessage, PulseSource, PulseSettings
+from app.models.telegram import PulseMessage, PulseSource, PulseSettings
 from app.models.user import User, UserRole
 
 
@@ -383,7 +383,7 @@ class TestSchemas:
         assert req2.category == "jobs"
 
     def test_digest_list_response(self):
-        from app.schemas.pulse_digest import DigestListResponse, DigestResponse
+        from app.schemas.pulse_digest import DigestListResponse
 
         resp = DigestListResponse(items=[], total=0)
         assert resp.total == 0

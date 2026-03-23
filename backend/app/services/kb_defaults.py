@@ -5,8 +5,6 @@ Each document maps to specific AI operations via `used_by`.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

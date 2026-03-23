@@ -7,10 +7,10 @@ to the database by create_task() and update_task().
 from __future__ import annotations
 
 import pytest
-from datetime import datetime, timezone, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import datetime, timezone
+from unittest.mock import AsyncMock, MagicMock
 
-from app.models.task import Task, TaskStatus, TaskPriority, Visibility
+from app.models.task import Task, TaskStatus
 from app.models.user import User, UserRole
 from app.schemas.task import TaskCreate, TaskUpdate as TaskUpdateSchema
 from app.services.task import create_task, update_task
@@ -28,7 +28,6 @@ def make_user(user_id: int = 1, role: UserRole = UserRole.admin) -> User:
 def _capture_task_add(db_mock: AsyncMock) -> list[Task]:
     """Capture Task objects passed to db.add()."""
     captured: list[Task] = []
-    original_add = db_mock.add
 
     def side_effect(obj):
         if isinstance(obj, Task):

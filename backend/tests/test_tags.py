@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 from app.models.tag import Tag, TaskTag
 from app.models.task import Task, TaskStatus, TaskPriority, Visibility

@@ -3,15 +3,17 @@ import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import { PromptEditor } from "@/components/pulse/prompt-editor";
+import type { PulseSettings } from "@/types/pulse-settings";
 
 // Mock the hooks
 const mockMutate = vi.fn();
-const mockSettings = {
+const mockSettings: PulseSettings = {
   id: 1,
   user_id: 1,
   polling_interval_minutes: 60,
   digest_schedule: "daily",
   digest_time: "09:00",
+  timezone: "UTC",
   digest_day: null,
   digest_interval_days: null,
   message_ttl_days: 30,

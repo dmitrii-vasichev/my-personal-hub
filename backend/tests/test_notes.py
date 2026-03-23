@@ -13,7 +13,7 @@ from app.models.note import Note
 from app.models.user import User, UserRole
 from app.models.settings import UserSettings
 from app.schemas.note import NoteResponse, NoteTreeNode, NoteTreeResponse
-from app.schemas.settings import SettingsUpdate, SettingsResponse
+from app.schemas.settings import SettingsUpdate
 from app.services.settings import to_response, update_settings
 from app.services import note as note_service
 from app.services import google_drive
@@ -317,7 +317,6 @@ async def test_validate_folder_access_not_folder():
 async def test_validate_folder_access_http_error():
     """validate_folder_access returns False on HttpError."""
     from googleapiclient.errors import HttpError
-    from unittest.mock import PropertyMock
 
     mock_service = MagicMock()
     mock_resp = MagicMock()

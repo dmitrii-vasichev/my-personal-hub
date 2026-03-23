@@ -13,7 +13,7 @@ Credential resolution:
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
+from datetime import timezone
 from typing import Optional
 
 # Allow Google to return broader scopes than requested (e.g. openid, profile)

@@ -3,14 +3,12 @@ from __future__ import annotations
 
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.models.knowledge_base import AiKnowledgeBase
 from app.models.user import User, UserRole
 from app.schemas.knowledge_base import KBDocumentCreate, KBDocumentUpdate
 from app.services.knowledge_base import (
-    list_documents,
-    get_document,
     create_document,
     update_document,
     delete_document,
@@ -239,7 +237,7 @@ async def test_create_custom_document():
         content="Custom content",
         used_by=["resume_generation"],
     )
-    result = await create_document(mock_db, user, data)
+    await create_document(mock_db, user, data)
 
     mock_db.add.assert_called_once()
     added_doc = mock_db.add.call_args[0][0]

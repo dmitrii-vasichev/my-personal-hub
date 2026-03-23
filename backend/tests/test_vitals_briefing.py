@@ -6,7 +6,7 @@ auto-generation, and cleanup.
 from __future__ import annotations
 
 import pytest
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from httpx import ASGITransport, AsyncClient
@@ -19,8 +19,8 @@ from app.models.garmin import (
     VitalsSleep,
 )
 from app.models.calendar import CalendarEvent
-from app.models.job import ApplicationStatus, Job
-from app.models.task import Task, TaskPriority, TaskStatus
+from app.models.job import Job
+from app.models.task import TaskPriority
 from app.models.user import User, UserRole
 
 

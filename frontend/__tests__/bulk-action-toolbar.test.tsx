@@ -36,40 +36,44 @@ const mockBoard: KanbanBoard = {
   new: [
     {
       id: 10,
+      user_id: 1,
+      created_by_id: 1,
       title: "Task A",
       description: null,
       status: "new",
       priority: "medium",
+      source: "web",
       visibility: "family",
       tags: [{ id: 1, name: "Work", color: "#4f8ef7" }],
       kanban_order: 1,
       deadline: null,
       reminder_at: null,
+      completed_at: null,
       created_at: "2026-01-01",
       updated_at: "2026-01-01",
-      owner_id: 1,
       owner_name: "Test",
       assignee_id: null,
-      assignee: null,
       checklist: [],
     },
     {
       id: 11,
+      user_id: 1,
+      created_by_id: 1,
       title: "Task B",
       description: null,
       status: "new",
       priority: "low",
+      source: "web",
       visibility: "family",
       tags: [{ id: 2, name: "Personal", color: "#34d399" }],
       kanban_order: 2,
       deadline: null,
       reminder_at: null,
+      completed_at: null,
       created_at: "2026-01-01",
       updated_at: "2026-01-01",
-      owner_id: 1,
       owner_name: "Test",
       assignee_id: null,
-      assignee: null,
       checklist: [],
     },
   ],
@@ -80,7 +84,7 @@ const mockBoard: KanbanBoard = {
 };
 
 describe("BulkActionToolbar", () => {
-  let onClearSelection: ReturnType<typeof vi.fn>;
+  let onClearSelection: () => void;
 
   beforeEach(() => {
     vi.clearAllMocks();

@@ -24,7 +24,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe("TaskFiltersBar — multi-tag filter", () => {
-  let onFiltersChange: ReturnType<typeof vi.fn>;
+  let onFiltersChange: (filters: TaskFilters) => void;
 
   beforeEach(() => {
     onFiltersChange = vi.fn();

@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import pytest
 from datetime import datetime, timezone, timedelta
-from typing import Optional
 from unittest.mock import AsyncMock, MagicMock
 
 from app.models.task import Task, TaskStatus, TaskPriority

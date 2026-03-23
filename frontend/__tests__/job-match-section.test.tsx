@@ -119,7 +119,7 @@ describe("JobMatchSection", () => {
       isPending: true,
       isError: false,
       error: null,
-    } as ReturnType<typeof useRunJobMatch>);
+    } as unknown as ReturnType<typeof useRunJobMatch>);
 
     render(<JobMatchSection job={baseJob} />, { wrapper: createWrapper() });
     expect(screen.getByText("Analyzing match...")).toBeInTheDocument();

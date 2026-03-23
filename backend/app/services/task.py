@@ -197,7 +197,7 @@ async def update_task(
                 task_id=task.id,
                 author_id=current_user.id,
                 type=UpdateType.status_change,
-                content=f"Task assigned",
+                content="Task assigned",
             ))
 
     # Handle status change

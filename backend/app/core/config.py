@@ -6,13 +6,13 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/personal_hub"
 
     # JWT
-    JWT_SECRET_KEY: str = "change-me-in-production"
+    JWT_SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_DAYS: int = 7
 
     # Admin seed
     ADMIN_EMAIL: str = "admin@example.com"
-    ADMIN_PASSWORD: str = "change-me"
+    ADMIN_PASSWORD: str = ""
 
     # Demo seed
     DEMO_PASSWORD: str = "demo2026"
@@ -45,7 +45,9 @@ class Settings(BaseSettings):
 settings = Settings()
 
 if settings.APP_ENV == "production":
-    if settings.JWT_SECRET_KEY == "change-me-in-production":
-        raise RuntimeError("JWT_SECRET_KEY must be changed in production")
-    if settings.ADMIN_PASSWORD == "change-me":
-        raise RuntimeError("ADMIN_PASSWORD must be changed in production")
+    if not settings.JWT_SECRET_KEY:
+        raise RuntimeError("JWT_SECRET_KEY must be set in production")
+    if not settings.ADMIN_PASSWORD:
+        raise RuntimeError("ADMIN_PASSWORD must be set in production")
+    if not settings.ENCRYPTION_KEY:
+        raise RuntimeError("ENCRYPTION_KEY must be set in production")

@@ -3,23 +3,26 @@ import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LinkedTasksSection } from "@/components/jobs/linked-tasks-section";
 import { LinkedEventsSection } from "@/components/jobs/linked-events-section";
+import type { LinkedTaskBrief } from "@/types/job";
 
-// Mock hooks
-const mockLinkedTasks = vi.fn(() => ({
-  data: [],
-  isLoading: false,
-}));
-const mockLinkJobToTask = vi.fn(() => ({
-  mutateAsync: vi.fn(),
-}));
-const mockUnlinkJobFromTask = vi.fn(() => ({
-  mutateAsync: vi.fn(),
+// Mock hooks — use vi.hoisted to avoid TDZ issues with vi.mock hoisting
+const { mockLinkedTasks, mockLinkJobToTask, mockUnlinkJobFromTask } = vi.hoisted(() => ({
+  mockLinkedTasks: vi.fn(() => ({
+    data: [] as LinkedTaskBrief[],
+    isLoading: false,
+  })),
+  mockLinkJobToTask: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+  })),
+  mockUnlinkJobFromTask: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+  })),
 }));
 
 vi.mock("@/hooks/use-job-links", () => ({
-  useJobLinkedTasks: (...args: unknown[]) => mockLinkedTasks(...args),
-  useLinkJobToTask: (...args: unknown[]) => mockLinkJobToTask(...args),
-  useUnlinkJobFromTask: (...args: unknown[]) => mockUnlinkJobFromTask(...args),
+  useJobLinkedTasks: mockLinkedTasks,
+  useLinkJobToTask: mockLinkJobToTask,
+  useUnlinkJobFromTask: mockUnlinkJobFromTask,
   useJobLinkedEvents: vi.fn(() => ({ data: [], isLoading: false })),
   useLinkJobToEvent: vi.fn(() => ({ mutateAsync: vi.fn() })),
   useUnlinkJobFromEvent: vi.fn(() => ({ mutateAsync: vi.fn() })),

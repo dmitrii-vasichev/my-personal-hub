@@ -3,7 +3,7 @@ Unit tests for calendar service — testing business logic with mocked DB.
 """
 import pytest
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 from app.models.calendar import CalendarEvent, EventNote, EventSource
 from app.models.task import Visibility
