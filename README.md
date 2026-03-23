@@ -173,6 +173,28 @@ See [`.env.example`](.env.example) for all required variables and descriptions.
 └── docs/                 # PRDs and implementation plans
 ```
 
+## What I Learned
+
+### Multi-Provider LLM Abstraction
+
+Supporting three AI providers (OpenAI, Anthropic, Gemini) required a clean adapter pattern. Each provider has a different SDK and calling convention — Gemini's library is synchronous, Anthropic requires explicit `max_tokens`, OpenAI uses a different message format. The solution: a `LLMAdapter` protocol with a single `generate(system_prompt, user_prompt)` method and a factory function that returns the right adapter. API keys are Fernet-encrypted at rest and decrypted only at call time. This lets users switch providers in settings without any business logic changes.
+
+### Telegram: MTProto + Bot API Dual Approach
+
+Reading messages from Telegram channels requires the MTProto protocol (via Telethon) — the Bot API only allows bots to read channels where they are admins. But sending notifications to users is cleaner through a bot. So the system uses both: Telethon connects as the user's account to collect channel history, while python-telegram-bot sends digest notifications. Telethon sessions are encrypted and stored in the database, restored on each polling cycle, and the polling schedule is managed by APScheduler.
+
+### Garmin Connect Reverse-Engineering
+
+Garmin has no public API. The project uses the `garminconnect` library, which reverse-engineers Garmin's web endpoints. The main challenge is undocumented rate limits — Garmin returns HTTP 429 with no `Retry-After` header. The solution is an exponential backoff circuit breaker: on a 429, the system sets a cooldown (15 → 30 → 60 → 120 min cap), aborts all remaining API calls immediately, and skips sync entirely until the cooldown expires. Successful syncs reset the counter. Every sync attempt is logged to a `sync_log` table for observability.
+
+### Demo Mode with Role-Based Data Isolation
+
+Demo mode operates at three layers. In the database, every query checks `user.role` — demo users see only their own data, admins see everything except demo data. At the API level, a `restrict_demo` dependency blocks demo users from triggering external services (AI generation, Google Calendar sync). In the frontend, an `isDemo` flag from auth context swaps action buttons for informational badges. The demo account is seeded by an idempotent script that creates realistic data across all modules (tasks, jobs, calendar, notes, Telegram sources, health metrics) and can be fully reset via a single endpoint.
+
+### React Query Polling Strategies
+
+Different features need different update strategies. Task reminders and the dashboard use automatic 60-second polling via `refetchInterval`. Telegram message collection uses a manual polling pattern: the user clicks "Poll Now", which triggers a server-side job, then a 2-second client-side status poll tracks progress with a 5-minute timeout and automatic cleanup. Garmin sync uses event-driven invalidation — no polling, just cache invalidation after a manual or scheduled sync completes. React Query's default `refetchOnWindowFocus` handles tab-switching for all queries.
+
 ## License
 
 [MIT](LICENSE)
