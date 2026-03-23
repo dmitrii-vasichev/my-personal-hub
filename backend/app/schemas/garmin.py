@@ -121,3 +121,5 @@ class VitalsDashboardSummaryResponse(BaseModel):
     last_sync_at: Optional[datetime] = None
     sync_interval_minutes: Optional[int] = None
     briefing_insight: Optional[str] = None
+    metrics_7d: list[VitalsDailyMetricResponse] = []
+    sleep_7d: list[VitalsSleepResponse] = []

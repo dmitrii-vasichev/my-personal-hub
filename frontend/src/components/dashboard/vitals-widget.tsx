@@ -10,8 +10,19 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
+import { format } from "date-fns";
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+} from "recharts";
 import { useVitalsDashboardSummary } from "@/hooks/use-vitals";
 import { useAuth } from "@/lib/auth";
+import type { VitalsDailyMetric, VitalsSleep } from "@/types/vitals";
 
 function formatSleepHours(seconds: number | null): string {
   if (!seconds) return "\u2014";
@@ -54,6 +65,92 @@ function KpiItem({ icon, label, value, suffix }: KpiItemProps) {
   );
 }
 
+function StepsSparkline({ data }: { data: VitalsDailyMetric[] }) {
+  const chartData = data.map((m) => ({
+    date: format(new Date(m.date), "MMM d"),
+    steps: m.steps ?? 0,
+  }));
+
+  if (chartData.length === 0) return null;
+
+  return (
+    <div className="px-4 pt-1 pb-3">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Footprints size={12} className="text-muted-foreground" />
+        <span className="text-[10px] font-medium uppercase tracking-wide text-tertiary">
+          Steps — 7 days
+        </span>
+      </div>
+      <ResponsiveContainer width="100%" height={64}>
+        <AreaChart data={chartData} margin={{ top: 2, right: 4, left: 4, bottom: 0 }}>
+          <defs>
+            <linearGradient id="stepsGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--accent-teal)" stopOpacity={0.3} />
+              <stop offset="100%" stopColor="var(--accent-teal)" stopOpacity={0.05} />
+            </linearGradient>
+          </defs>
+          <XAxis dataKey="date" hide />
+          <Tooltip
+            formatter={(v) => [`${Number(v).toLocaleString()}`, "Steps"]}
+            contentStyle={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              fontSize: 11,
+              padding: "4px 8px",
+            }}
+            labelStyle={{ fontSize: 10, color: "var(--text-tertiary)" }}
+          />
+          <Area
+            type="monotone"
+            dataKey="steps"
+            stroke="var(--accent-teal)"
+            strokeWidth={1.5}
+            fill="url(#stepsGradient)"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function SleepSparkline({ data }: { data: VitalsSleep[] }) {
+  const chartData = data.map((s) => ({
+    date: format(new Date(s.date), "MMM d"),
+    hours: s.duration_seconds ? Math.round((s.duration_seconds / 3600) * 10) / 10 : 0,
+  }));
+
+  if (chartData.length === 0) return null;
+
+  return (
+    <div className="px-4 pt-1 pb-3">
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Moon size={12} className="text-muted-foreground" />
+        <span className="text-[10px] font-medium uppercase tracking-wide text-tertiary">
+          Sleep — 7 days
+        </span>
+      </div>
+      <ResponsiveContainer width="100%" height={64}>
+        <BarChart data={chartData} margin={{ top: 2, right: 4, left: 4, bottom: 0 }}>
+          <XAxis dataKey="date" hide />
+          <Tooltip
+            formatter={(v) => [`${Number(v).toFixed(1)}h`, "Sleep"]}
+            contentStyle={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              fontSize: 11,
+              padding: "4px 8px",
+            }}
+            labelStyle={{ fontSize: 10, color: "var(--text-tertiary)" }}
+          />
+          <Bar dataKey="hours" fill="#6366f1" radius={[2, 2, 0, 0]} opacity={0.8} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 function WidgetSkeleton() {
   return (
     <div className="rounded-xl border border-border-subtle bg-card">
@@ -83,6 +180,17 @@ function WidgetSkeleton() {
           <div className="h-2.5 w-16 rounded bg-muted animate-pulse" />
         </div>
         <div className="h-5 w-12 rounded bg-muted animate-pulse" />
+      </div>
+      {/* Sparkline skeletons */}
+      <div className="border-t border-border-subtle grid grid-cols-2 gap-0">
+        <div className="px-4 pt-1 pb-3 border-r border-r-border-subtle">
+          <div className="h-2.5 w-20 rounded bg-muted animate-pulse mb-1.5" />
+          <div className="h-[64px] rounded bg-muted animate-pulse" />
+        </div>
+        <div className="px-4 pt-1 pb-3">
+          <div className="h-2.5 w-20 rounded bg-muted animate-pulse mb-1.5" />
+          <div className="h-[64px] rounded bg-muted animate-pulse" />
+        </div>
       </div>
     </div>
   );
@@ -131,7 +239,7 @@ export function VitalsWidget() {
     );
   }
 
-  const { metrics, sleep } = data;
+  const { metrics, sleep, metrics_7d, sleep_7d } = data;
 
   // Stale data detection: last sync > 2x sync interval
   const isDataStale = !isDemo
@@ -139,6 +247,8 @@ export function VitalsWidget() {
     && data.sync_interval_minutes != null
     && new Date().getTime() - new Date(data.last_sync_at).getTime()
       > 2 * data.sync_interval_minutes * 60 * 1000;
+
+  const hasSparklines = metrics_7d.length > 1 || sleep_7d.length > 1;
 
   return (
     <div className="rounded-xl border border-border-subtle bg-card">
@@ -217,6 +327,18 @@ export function VitalsWidget() {
           suffix="avg"
         />
       </div>
+
+      {/* Mini sparkline charts */}
+      {hasSparklines && (
+        <div className="border-t border-border-subtle grid grid-cols-2 gap-0">
+          <div className="border-r border-r-border-subtle">
+            <StepsSparkline data={metrics_7d} />
+          </div>
+          <div>
+            <SleepSparkline data={sleep_7d} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

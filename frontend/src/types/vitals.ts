@@ -76,4 +76,6 @@ export interface VitalsDashboardSummary {
   last_sync_at: string | null;
   sync_interval_minutes: number | null;
   briefing_insight: string | null;
+  metrics_7d: VitalsDailyMetric[];
+  sleep_7d: VitalsSleep[];
 }

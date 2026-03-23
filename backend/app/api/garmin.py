@@ -335,6 +335,31 @@ async def get_vitals_summary(
                 briefing_insight = stripped[:120]
                 break
 
+    # Fetch 7-day history for mini-charts
+    seven_days_ago = today - timedelta(days=6)
+
+    metrics_7d_result = await db.execute(
+        select(VitalsDailyMetric)
+        .where(
+            VitalsDailyMetric.user_id == current_user.id,
+            VitalsDailyMetric.date >= seven_days_ago,
+            VitalsDailyMetric.date <= today,
+        )
+        .order_by(VitalsDailyMetric.date)
+    )
+    metrics_7d = list(metrics_7d_result.scalars().all())
+
+    sleep_7d_result = await db.execute(
+        select(VitalsSleep)
+        .where(
+            VitalsSleep.user_id == current_user.id,
+            VitalsSleep.date >= seven_days_ago,
+            VitalsSleep.date <= today,
+        )
+        .order_by(VitalsSleep.date)
+    )
+    sleep_7d = list(sleep_7d_result.scalars().all())
+
     return VitalsDashboardSummaryResponse(
         metrics=metrics,
         sleep=sleep,
@@ -342,4 +367,6 @@ async def get_vitals_summary(
         last_sync_at=conn.last_sync_at if conn else None,
         sync_interval_minutes=conn.sync_interval_minutes if conn else None,
         briefing_insight=briefing_insight,
+        metrics_7d=metrics_7d,
+        sleep_7d=sleep_7d,
     )
