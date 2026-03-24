@@ -8,10 +8,11 @@ export const NOTES_TREE_KEY = "notes-tree";
 export const NOTES_KEY = "notes";
 export const NOTE_CONTENT_KEY = "note-content";
 
-export function useNotesTree() {
+export function useNotesTree(enabled: boolean = true) {
   return useQuery<NoteTreeResponse>({
     queryKey: [NOTES_TREE_KEY],
     queryFn: () => api.get<NoteTreeResponse>("/api/notes/tree"),
+    enabled,
   });
 }
 

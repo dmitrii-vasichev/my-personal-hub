@@ -40,7 +40,7 @@ async def _get_drive_prerequisites(db: AsyncSession, user: User):
     credentials = await google_oauth.get_credentials(db, user)
     if not credentials:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail="Google account not connected. Please connect via Calendar settings.",
         )
 

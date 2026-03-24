@@ -42,7 +42,12 @@ export default function NotesPage() {
 
   const { data: settings, isLoading: settingsLoading } = useSettings();
   const { data: oauthStatus, isLoading: oauthLoading } = useGoogleOAuthStatus();
-  const { data: treeResponse, isLoading: treeLoading, error: treeError } = useNotesTree();
+
+  const isGoogleConnected = isDemo || oauthStatus?.connected === true;
+  const hasFolderConfigured = isDemo || !!settings?.google_drive_notes_folder_id;
+  const readyToFetch = isDemo || (!settingsLoading && !oauthLoading && isGoogleConnected && hasFolderConfigured);
+
+  const { data: treeResponse, isLoading: treeLoading, error: treeError, refetch: refetchTree } = useNotesTree(readyToFetch);
   const treeNodes = treeResponse?.tree ?? [];
   const { data: content, isLoading: contentLoading, error: contentError } = useNoteContent(selectedFileId);
   const refreshTree = useRefreshNotesTree();
@@ -75,9 +80,6 @@ export default function NotesPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isExpanded]);
-
-  const isGoogleConnected = isDemo || oauthStatus?.connected === true;
-  const hasFolderConfigured = isDemo || !!settings?.google_drive_notes_folder_id;
 
   if (!isDemo && (settingsLoading || oauthLoading)) {
     return (
@@ -175,7 +177,7 @@ export default function NotesPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={() => refreshTree.mutate()}
+                onClick={() => refetchTree()}
               >
                 Retry
               </Button>

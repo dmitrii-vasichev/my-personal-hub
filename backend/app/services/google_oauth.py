@@ -162,7 +162,7 @@ async def get_credentials(
     try:
         access_token = decrypt_value(token_record.access_token)
         refresh_token = decrypt_value(token_record.refresh_token)
-    except ValueError:
+    except (ValueError, RuntimeError):
         return None
 
     # Resolve client credentials for token refresh
