@@ -172,7 +172,9 @@ export default function NotesPage() {
             <div className="flex flex-col items-center gap-3 p-6 text-center">
               <AlertCircle className="size-5 text-[var(--danger)]" />
               <p className="text-sm text-[var(--text-secondary)]">
-                {treeError instanceof Error ? treeError.message : "Failed to load notes tree"}
+                {treeError instanceof Error && treeError.message.includes("insufficient")
+                  ? "Google Drive access not granted. Please reconnect Google in Settings → Integrations."
+                  : treeError instanceof Error ? treeError.message : "Failed to load notes tree"}
               </p>
               <Button
                 size="sm"
