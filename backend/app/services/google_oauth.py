@@ -183,7 +183,8 @@ async def get_credentials(
         client_id=client_id,
         client_secret=client_secret,
         scopes=SCOPES,
-        expiry=token_record.token_expiry,
+        # google-auth compares expiry with naive utcnow(), so strip tzinfo
+        expiry=token_record.token_expiry.replace(tzinfo=None) if token_record.token_expiry else None,
     )
 
     # Refresh if expired (or if expiry is unknown — token_expiry was NULL)
