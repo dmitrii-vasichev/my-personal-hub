@@ -35,6 +35,34 @@ build/
 .next/
 out/
 
+# Claude Code
+CLAUDE.md
+.claude/
+
+# Linters
+.ruff_cache/
+
+# Internal docs (implementation plans, minor PRDs)
+docs/plans/
+docs/prd-dashboard-redesign.md
+docs/prd-dashboard-task-modal.md
+docs/prd-ux-interactions.md
+docs/prd-settings-tabs-integrations.md
+docs/prd-task-inline-editing.md
+docs/prd-popup-redesign.md
+docs/prd-kanban-ux-improvements.md
+docs/prd-kanban-backlog.md
+docs/prd-kanban-inline-add.md
+docs/prd-task-tags.md
+docs/prd-multi-tag-filter.md
+docs/prd-telegram-credentials-ui.md
+docs/prd-pulse-polling-feedback.md
+docs/prd-custom-digest-prompts.md
+docs/prd-structured-digest-items.md
+docs/prd-login-page-redesign.md
+docs/prd-pulse-widget-structured-preview.md
+docs/prd-pulse-widget-chip-layout.md
+
 # Misc
 *.log
 .workflow-state.json
