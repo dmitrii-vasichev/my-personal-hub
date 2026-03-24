@@ -12,9 +12,12 @@ Credential resolution:
 """
 from __future__ import annotations
 
+import logging
 import os
 from datetime import timezone
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 # Allow Google to return broader scopes than requested (e.g. openid, profile)
 os.environ["OAUTHLIB_RELAX_TOKEN_SCOPE"] = "1"
@@ -180,11 +183,17 @@ async def get_credentials(
         client_id=client_id,
         client_secret=client_secret,
         scopes=SCOPES,
+        expiry=token_record.token_expiry,
     )
 
-    # Refresh if expired
-    if creds.expired and creds.refresh_token:
-        creds.refresh(Request())
+    # Refresh if expired (or if expiry is unknown — token_expiry was NULL)
+    needs_refresh = creds.expired or token_record.token_expiry is None
+    if needs_refresh and creds.refresh_token:
+        try:
+            creds.refresh(Request())
+        except Exception as e:
+            logger.warning("Google token refresh failed for user %s: %s", user.id, e)
+            return None
         # Update stored tokens
         new_expiry = creds.expiry
         if new_expiry and new_expiry.tzinfo is None:

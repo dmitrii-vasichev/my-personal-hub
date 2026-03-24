@@ -11,7 +11,11 @@ Endpoints:
 """
 from __future__ import annotations
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
+
+logger = logging.getLogger(__name__)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -84,6 +88,7 @@ async def get_notes_tree(
     try:
         tree = await google_drive.list_folder_tree(credentials, folder_id)
     except Exception as e:
+        logger.error("Google Drive tree fetch failed for user %s, folder %s: %s", current_user.id, folder_id, e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Failed to fetch folder tree from Google Drive: {e}",
