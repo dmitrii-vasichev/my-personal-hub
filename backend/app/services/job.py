@@ -59,6 +59,7 @@ async def create_job(
         salary_min=data.salary_min,
         salary_max=data.salary_max,
         salary_currency=data.salary_currency,
+        salary_period=data.salary_period,
         match_score=data.match_score,
         tags=data.tags,
         found_at=data.found_at,
