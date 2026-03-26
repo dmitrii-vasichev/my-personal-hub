@@ -14,16 +14,23 @@ interface JobCardProps {
   isTracking?: boolean;
 }
 
-function formatSalary(min?: number, max?: number, currency = "USD"): string | null {
+function formatSalary(min?: number, max?: number, currency = "USD", period = "yearly"): string | null {
   if (!min && !max) return null;
+  const suffix = period === "hourly" ? "/hr" : "/yr";
+  if (period === "hourly") {
+    const fmt = (n: number) => `${currency} ${n}`;
+    if (min && max) return `${fmt(min)} – ${fmt(max)}${suffix}`;
+    if (min) return `from ${fmt(min)}${suffix}`;
+    return `up to ${fmt(max!)}${suffix}`;
+  }
   const fmt = (n: number) => `${currency} ${(n / 1000).toFixed(0)}k`;
-  if (min && max) return `${fmt(min)} – ${fmt(max)}`;
-  if (min) return `from ${fmt(min)}`;
-  return `up to ${fmt(max!)}`;
+  if (min && max) return `${fmt(min)} – ${fmt(max)}${suffix}`;
+  if (min) return `from ${fmt(min)}${suffix}`;
+  return `up to ${fmt(max!)}${suffix}`;
 }
 
 export function JobCard({ job, onEdit, onDelete, onTrack, isTracking = false }: JobCardProps) {
-  const salary = formatSalary(job.salary_min, job.salary_max, job.salary_currency);
+  const salary = formatSalary(job.salary_min, job.salary_max, job.salary_currency, job.salary_period);
   const hasStatus = !!job.status;
 
   return (

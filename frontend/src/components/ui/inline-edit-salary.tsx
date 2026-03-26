@@ -4,27 +4,41 @@ import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from "re
 import { Check, DollarSign, Pencil, X } from "lucide-react";
 import { Tooltip } from "@/components/ui/tooltip";
 
-function formatSalary(min?: number, max?: number, currency = "USD"): string | null {
+const PERIOD_LABEL: Record<string, string> = {
+  yearly: "/yr",
+  hourly: "/hr",
+};
+
+function formatSalary(min?: number, max?: number, currency = "USD", period = "yearly"): string | null {
   if (!min && !max) return null;
+  const suffix = PERIOD_LABEL[period] ?? "/yr";
+  if (period === "hourly") {
+    const fmt = (n: number) => `${currency} ${n}`;
+    if (min && max) return `${fmt(min)} – ${fmt(max)}${suffix}`;
+    if (min) return `from ${fmt(min)}${suffix}`;
+    return `up to ${fmt(max!)}${suffix}`;
+  }
   const fmt = (n: number) =>
     `${currency} ${n >= 1000 ? `${(n / 1000).toFixed(0)}k` : n.toLocaleString()}`;
-  if (min && max) return `${fmt(min)} – ${fmt(max)}`;
-  if (min) return `from ${fmt(min)}`;
-  return `up to ${fmt(max!)}`;
+  if (min && max) return `${fmt(min)} – ${fmt(max)}${suffix}`;
+  if (min) return `from ${fmt(min)}${suffix}`;
+  return `up to ${fmt(max!)}${suffix}`;
 }
 
 interface InlineEditSalaryProps {
   min?: number;
   max?: number;
   currency: string;
-  onSave: (data: { salary_min: number | null; salary_max: number | null; salary_currency: string }) => Promise<void>;
+  period: string;
+  onSave: (data: { salary_min: number | null; salary_max: number | null; salary_currency: string; salary_period: string }) => Promise<void>;
 }
 
-export function InlineEditSalary({ min, max, currency, onSave }: InlineEditSalaryProps) {
+export function InlineEditSalary({ min, max, currency, period, onSave }: InlineEditSalaryProps) {
   const [editing, setEditing] = useState(false);
   const [draftMin, setDraftMin] = useState(min?.toString() ?? "");
   const [draftMax, setDraftMax] = useState(max?.toString() ?? "");
   const [draftCurrency, setDraftCurrency] = useState(currency);
+  const [draftPeriod, setDraftPeriod] = useState(period);
   const [saving, setSaving] = useState(false);
   const minRef = useRef<HTMLInputElement>(null);
 
@@ -32,7 +46,8 @@ export function InlineEditSalary({ min, max, currency, onSave }: InlineEditSalar
     setDraftMin(min?.toString() ?? "");
     setDraftMax(max?.toString() ?? "");
     setDraftCurrency(currency);
-  }, [min, max, currency]);
+    setDraftPeriod(period);
+  }, [min, max, currency, period]);
 
   useEffect(() => { if (editing) minRef.current?.focus(); }, [editing]);
 
@@ -43,24 +58,26 @@ export function InlineEditSalary({ min, max, currency, onSave }: InlineEditSalar
         salary_min: draftMin ? parseInt(draftMin, 10) : null,
         salary_max: draftMax ? parseInt(draftMax, 10) : null,
         salary_currency: draftCurrency || "USD",
+        salary_period: draftPeriod,
       });
       setEditing(false);
     } catch { /* keep editing */ } finally { setSaving(false); }
-  }, [draftMin, draftMax, draftCurrency, onSave]);
+  }, [draftMin, draftMax, draftCurrency, draftPeriod, onSave]);
 
   const cancel = useCallback(() => {
     setDraftMin(min?.toString() ?? "");
     setDraftMax(max?.toString() ?? "");
     setDraftCurrency(currency);
+    setDraftPeriod(period);
     setEditing(false);
-  }, [min, max, currency]);
+  }, [min, max, currency, period]);
 
   const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === "Escape") { e.preventDefault(); cancel(); }
     else if (e.key === "Enter") { e.preventDefault(); save(); }
   };
 
-  const formatted = formatSalary(min, max, currency);
+  const formatted = formatSalary(min, max, currency, period);
 
   if (editing) {
     return (
@@ -95,6 +112,24 @@ export function InlineEditSalary({ min, max, currency, onSave }: InlineEditSalar
             disabled={saving}
             className="w-full rounded border border-[var(--accent)] bg-[var(--background)] px-1.5 py-0.5 text-xs text-[var(--text-primary)] outline-none ring-1 ring-[var(--accent)]/30"
           />
+        </div>
+        {/* Period toggle */}
+        <div className="flex items-center gap-1">
+          {(["yearly", "hourly"] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setDraftPeriod(p)}
+              disabled={saving}
+              className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                draftPeriod === p
+                  ? "bg-[var(--accent)] text-white"
+                  : "bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              }`}
+            >
+              {PERIOD_LABEL[p]}
+            </button>
+          ))}
         </div>
         <div className="flex gap-1">
           <Tooltip content="Save">

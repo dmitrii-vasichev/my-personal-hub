@@ -60,6 +60,7 @@ export interface Job {
   salary_min?: number;
   salary_max?: number;
   salary_currency: string;
+  salary_period: string;
   match_score?: number;
   match_result?: MatchResult;
   tags: string[];
@@ -187,6 +188,7 @@ export interface CreateJobInput {
   salary_min?: number;
   salary_max?: number;
   salary_currency?: string;
+  salary_period?: string;
   match_score?: number;
   tags?: string[];
   found_at?: string;
@@ -202,6 +204,7 @@ export interface UpdateJobInput {
   salary_min?: number | null;
   salary_max?: number | null;
   salary_currency?: string;
+  salary_period?: string;
   match_score?: number | null;
   tags?: string[];
   found_at?: string | null;

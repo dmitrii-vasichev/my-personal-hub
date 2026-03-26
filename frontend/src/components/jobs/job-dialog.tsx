@@ -38,6 +38,7 @@ export function JobDialog({ open, onOpenChange, mode, job, onSuccess }: JobDialo
   const [salaryMin, setSalaryMin] = useState(job?.salary_min?.toString() ?? "");
   const [salaryMax, setSalaryMax] = useState(job?.salary_max?.toString() ?? "");
   const [salaryCurrency, setSalaryCurrency] = useState(job?.salary_currency ?? "USD");
+  const [salaryPeriod, setSalaryPeriod] = useState(job?.salary_period ?? "yearly");
   const [tags, setTags] = useState<string[]>(job?.tags ?? []);
   const [tagInput, setTagInput] = useState("");
   const [matchScore, setMatchScore] = useState(
@@ -117,6 +118,7 @@ export function JobDialog({ open, onOpenChange, mode, job, onSuccess }: JobDialo
           salary_min: salaryMinNum,
           salary_max: salaryMaxNum,
           salary_currency: salaryCurrency.trim() || "USD",
+          salary_period: salaryPeriod,
           match_score: matchScoreNum,
           tags: tags.length > 0 ? tags : undefined,
         });
@@ -132,6 +134,7 @@ export function JobDialog({ open, onOpenChange, mode, job, onSuccess }: JobDialo
             salary_min: salaryMinNum ?? null,
             salary_max: salaryMaxNum ?? null,
             salary_currency: salaryCurrency.trim() || "USD",
+            salary_period: salaryPeriod,
             match_score: matchScoreNum ?? null,
             tags,
           },
@@ -271,55 +274,78 @@ export function JobDialog({ open, onOpenChange, mode, job, onSuccess }: JobDialo
             </div>
 
             {/* Salary */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="job-salary-min"
-                  className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
-                >
-                  Salary Min
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+                  Salary
                 </Label>
-                <Input
-                  id="job-salary-min"
-                  type="number"
-                  min={0}
-                  value={salaryMin}
-                  onChange={(e) => setSalaryMin(e.target.value)}
-                  placeholder="60000"
-                />
+                <div className="flex rounded-md border border-[var(--border)] overflow-hidden">
+                  {(["yearly", "hourly"] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setSalaryPeriod(p)}
+                      className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                        salaryPeriod === p
+                          ? "bg-[var(--accent)] text-white"
+                          : "bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
+                      }`}
+                    >
+                      {p === "yearly" ? "/yr" : "/hr"}
+                    </button>
+                  ))}
+                </div>
               </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label
+                    htmlFor="job-salary-min"
+                    className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
+                  >
+                    Min
+                  </Label>
+                  <Input
+                    id="job-salary-min"
+                    type="number"
+                    min={0}
+                    value={salaryMin}
+                    onChange={(e) => setSalaryMin(e.target.value)}
+                    placeholder={salaryPeriod === "hourly" ? "45" : "60000"}
+                  />
+                </div>
 
-              <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="job-salary-max"
-                  className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
-                >
-                  Salary Max
-                </Label>
-                <Input
-                  id="job-salary-max"
-                  type="number"
-                  min={0}
-                  value={salaryMax}
-                  onChange={(e) => setSalaryMax(e.target.value)}
-                  placeholder="100000"
-                />
-              </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label
+                    htmlFor="job-salary-max"
+                    className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
+                  >
+                    Max
+                  </Label>
+                  <Input
+                    id="job-salary-max"
+                    type="number"
+                    min={0}
+                    value={salaryMax}
+                    onChange={(e) => setSalaryMax(e.target.value)}
+                    placeholder={salaryPeriod === "hourly" ? "65" : "100000"}
+                  />
+                </div>
 
-              <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="job-salary-currency"
-                  className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
-                >
-                  Currency
-                </Label>
-                <Input
-                  id="job-salary-currency"
-                  value={salaryCurrency}
-                  onChange={(e) => setSalaryCurrency(e.target.value)}
-                  placeholder="USD"
-                  maxLength={5}
-                />
+                <div className="flex flex-col gap-1.5">
+                  <Label
+                    htmlFor="job-salary-currency"
+                    className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
+                  >
+                    Currency
+                  </Label>
+                  <Input
+                    id="job-salary-currency"
+                    value={salaryCurrency}
+                    onChange={(e) => setSalaryCurrency(e.target.value)}
+                    placeholder="USD"
+                    maxLength={5}
+                  />
+                </div>
               </div>
             </div>
 

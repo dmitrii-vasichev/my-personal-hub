@@ -429,6 +429,7 @@ export function JobDetail({ job }: JobDetailProps) {
               min={job.salary_min}
               max={job.salary_max}
               currency={job.salary_currency ?? "USD"}
+              period={job.salary_period ?? "yearly"}
               onSave={(data) => patchJob(data)}
             />
           </div>

@@ -59,6 +59,7 @@ class JobCreate(BaseModel):
     salary_min: Optional[int] = None
     salary_max: Optional[int] = None
     salary_currency: str = "USD"
+    salary_period: str = "yearly"
     match_score: Optional[int] = None
     tags: list[str] = []
     found_at: Optional[datetime] = None
@@ -75,6 +76,7 @@ class JobUpdate(BaseModel):
     salary_min: Optional[int] = None
     salary_max: Optional[int] = None
     salary_currency: Optional[str] = None
+    salary_period: Optional[str] = None
     match_score: Optional[int] = None
     tags: Optional[list[str]] = None
     found_at: Optional[datetime] = None
@@ -116,6 +118,7 @@ class JobResponse(BaseModel):
     salary_min: Optional[int]
     salary_max: Optional[int]
     salary_currency: str
+    salary_period: str
     match_score: Optional[int]
     match_result: Optional[dict] = None
     tags: list[str]

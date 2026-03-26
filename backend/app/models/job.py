@@ -54,6 +54,9 @@ class Job(Base):
     salary_currency: Mapped[str] = mapped_column(
         String(10), nullable=False, server_default="USD"
     )
+    salary_period: Mapped[str] = mapped_column(
+        String(10), nullable=False, server_default="yearly"
+    )
 
     match_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     match_result: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
