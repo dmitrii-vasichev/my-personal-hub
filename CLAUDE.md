@@ -10,5 +10,5 @@
 ## Current Status
 
 - **Mode:** idle
-- **Last shipped:** Outreach CRM Phases 1–3 (2026-03-27)
-- **Next:** Phase 4 (Polish) — duplicate detection, analytics, regeneration, UX improvements
+- **Last shipped:** Outreach CRM Phase 4 — Polish (2026-03-27)
+- **Next:** nothing planned
