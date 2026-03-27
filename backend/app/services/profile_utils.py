@@ -36,8 +36,12 @@ def build_profile_text(profile) -> str:
                     f"- {edu.get('degree', '')} from {edu.get('institution', '')}"
                 )
 
+    location = getattr(profile, "location", None)
+    if location and isinstance(location, str):
+        parts.append(f"LOCATION: {location}")
+
     contact_parts = []
-    for field in ("email", "phone", "linkedin", "location"):
+    for field in ("email", "phone", "linkedin"):
         val = getattr(profile, field, None)
         if val and isinstance(val, str):
             contact_parts.append(val)
