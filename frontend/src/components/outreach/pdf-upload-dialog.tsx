@@ -73,7 +73,14 @@ export function PdfUploadDialog({
       onParsed(result, selectedFile.name);
       handleClose(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "PDF parsing failed");
+      const message = err instanceof Error ? err.message : "PDF parsing failed";
+      if (message === "Failed to fetch") {
+        setError(
+          "Connection lost — the PDF may be too large. Try a file with fewer pages.",
+        );
+      } else {
+        setError(message);
+      }
     }
   };
 

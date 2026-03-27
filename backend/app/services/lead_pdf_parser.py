@@ -5,6 +5,7 @@ Flow: PDF bytes → page images (PyMuPDF) → GPT-4o Vision → structured lead 
 """
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import logging
@@ -112,6 +113,9 @@ async def extract_leads_from_image(
     return data
 
 
+_MAX_CONCURRENT_PAGES = 10
+
+
 async def parse_pdf(
     pdf_bytes: bytes,
     openai_api_key: str,
@@ -119,6 +123,9 @@ async def parse_pdf(
 ) -> dict[str, Any]:
     """
     Full pipeline: PDF → images → Vision API → extracted leads.
+
+    Pages are processed concurrently (up to _MAX_CONCURRENT_PAGES at a time)
+    to keep total wall-clock time reasonable for large PDFs.
 
     Returns:
         {
@@ -130,20 +137,36 @@ async def parse_pdf(
     images = pdf_to_images(pdf_bytes)
     client = openai.AsyncOpenAI(api_key=openai_api_key)
 
+    sem = asyncio.Semaphore(_MAX_CONCURRENT_PAGES)
+
+    async def _process_page(
+        i: int, img: bytes
+    ) -> tuple[int, list[dict[str, Any]], str | None]:
+        page_num = i + 1
+        async with sem:
+            try:
+                page_leads = await extract_leads_from_image(client, img)
+                for lead in page_leads:
+                    lead["page"] = page_num
+                    lead["source_detail"] = filename
+                return page_num, page_leads, None
+            except Exception as e:
+                logger.error(
+                    "Error processing page %d of %s: %s", page_num, filename, e
+                )
+                return page_num, [], str(e)
+
+    results = await asyncio.gather(
+        *(_process_page(i, img) for i, img in enumerate(images))
+    )
+
     all_leads: list[dict[str, Any]] = []
     errors: list[dict[str, Any]] = []
 
-    for i, img in enumerate(images):
-        page_num = i + 1
-        try:
-            page_leads = await extract_leads_from_image(client, img)
-            for lead in page_leads:
-                lead["page"] = page_num
-                lead["source_detail"] = filename
-            all_leads.extend(page_leads)
-        except Exception as e:
-            logger.error("Error processing page %d of %s: %s", page_num, filename, e)
-            errors.append({"page": page_num, "error": str(e)})
+    for _page_num, page_leads, error in results:
+        all_leads.extend(page_leads)
+        if error:
+            errors.append({"page": _page_num, "error": error})
 
     return {
         "total_pages": len(images),
