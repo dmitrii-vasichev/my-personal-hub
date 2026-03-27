@@ -26,6 +26,7 @@ from app.api.resumes import router as resumes_router
 from app.api.search import router as search_router
 from app.api.settings import router as settings_router
 from app.api.tasks import router as tasks_router
+from app.api.outreach import industry_router, router as outreach_router
 from app.api.users import router as users_router
 from app.core.config import settings
 from app.core.scheduler import scheduler, schedule_garmin_sync, schedule_user_digest, schedule_user_polling
@@ -179,6 +180,8 @@ app.include_router(pulse_settings_router)
 app.include_router(pulse_digests_router)
 app.include_router(garmin_router)
 app.include_router(vitals_dashboard_router)
+app.include_router(outreach_router)
+app.include_router(industry_router)
 
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(

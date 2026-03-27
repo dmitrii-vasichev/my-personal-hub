@@ -15,6 +15,7 @@ import {
   Settings,
   User,
   PanelLeftClose,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ const navItems = [
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
   { label: "Meetings", href: "/calendar", icon: Calendar },
   { label: "Job Hunt", href: "/jobs", icon: Briefcase },
+  { label: "Outreach", href: "/outreach", icon: Megaphone, hideForDemo: true },
   { label: "Notes", href: "/notes", icon: FileText },
   { label: "Pulse", href: "/pulse", icon: Radio },
   { label: "Vitals", href: "/vitals", icon: Heart },
@@ -39,7 +41,7 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isDemo } = useAuth();
   const { resolvedTheme } = useTheme();
 
   const logoSrc = resolvedTheme === "light" ? "/logo-light.svg" : "/logo-dark.svg";
@@ -84,7 +86,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             Modules
           </span>
         )}
-        {navItems.map((item) => {
+        {navItems.filter((item) => !("hideForDemo" in item && item.hideForDemo && isDemo)).map((item) => {
           const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
             <Link

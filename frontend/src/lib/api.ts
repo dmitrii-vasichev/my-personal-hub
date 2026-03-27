@@ -75,6 +75,41 @@ class ApiClient {
   delete(path: string) {
     return this.request<void>(path, { method: "DELETE" });
   }
+
+  /**
+   * Upload a file via multipart/form-data.
+   * Does NOT set Content-Type — lets the browser add the boundary.
+   */
+  async upload<T>(path: string, formData: FormData): Promise<T> {
+    const token = this.getToken();
+    const headers: Record<string, string> = {};
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const response = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+
+    if (response.status === 401) {
+      localStorage.removeItem("access_token");
+      window.location.href = "/login";
+      throw new Error("Unauthorized");
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: "Upload failed" }));
+      const message =
+        typeof error.detail === "string"
+          ? error.detail
+          : Array.isArray(error.detail)
+            ? error.detail.map((e: { msg?: string }) => e.msg ?? String(e)).join("; ")
+            : "Upload failed";
+      throw new Error(message);
+    }
+
+    return response.json();
+  }
 }
 
 export const api = new ApiClient();
