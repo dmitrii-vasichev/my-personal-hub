@@ -13,9 +13,18 @@ export type ApplicationStatus =
   | "ghosted"
   | "withdrawn";
 
+// Score breakdown from weighted multi-category evaluation
+export interface ScoreBreakdownItem {
+  category: string;
+  label: string;
+  rating: number;   // 1-5
+  weight: number;    // percentage, e.g. 35
+}
+
 // Match result from AI job matching
 export interface MatchResult {
   score: number;
+  score_breakdown?: ScoreBreakdownItem[];
   matched_skills: string[];
   missing_skills: string[];
   strengths: string[];

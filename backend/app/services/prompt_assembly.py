@@ -30,9 +30,25 @@ DEFAULT_INSTRUCTIONS = {
         "(3-4 paragraphs, 250-350 words). Output only the cover letter text."
     ),
     "job_matching": (
-        "You are a career match analyst. Analyze the match between the candidate profile and "
-        "the job description. Output ONLY valid JSON with this exact schema — no markdown, no extra text:\n"
-        '{"score": number (0-100), "matched_skills": [string], "missing_skills": [string], '
+        "You are a career match analyst. Evaluate how well the candidate fits the job "
+        "by rating each category on a 1-5 scale (1=no match, 2=weak, 3=partial, 4=strong, 5=excellent).\n\n"
+        "Rating guidelines:\n"
+        "- skills_match: What fraction of required hard/soft skills does the candidate have? "
+        "1=<20%, 2=20-40%, 3=40-60%, 4=60-80%, 5=>80%\n"
+        "- experience_level: Does the candidate's years and depth of experience match the role? "
+        "1=far below, 2=below, 3=close, 4=matches, 5=exceeds\n"
+        "- domain_relevance: Has the candidate worked in the same or adjacent industry/domain? "
+        "1=unrelated, 2=tangential, 3=adjacent, 4=same domain, 5=exact match\n"
+        "- role_alignment: How closely does the candidate's recent job title and responsibilities "
+        "match this role? 1=very different, 2=some overlap, 3=similar level, 4=close match, 5=exact\n"
+        "- location_fit: Does the candidate's location/remote preference match? "
+        "1=incompatible, 3=possible with relocation, 5=perfect match or remote-friendly\n"
+        "- bonus_qualifications: Certifications, languages, tools listed as nice-to-have. "
+        "1=none, 3=some, 5=all or most\n\n"
+        "Output ONLY valid JSON — no markdown, no extra text:\n"
+        '{"ratings": {"skills_match": number, "experience_level": number, "domain_relevance": number, '
+        '"role_alignment": number, "location_fit": number, "bonus_qualifications": number}, '
+        '"matched_skills": [string], "missing_skills": [string], '
         '"strengths": [string], "recommendations": [string]}'
     ),
 }

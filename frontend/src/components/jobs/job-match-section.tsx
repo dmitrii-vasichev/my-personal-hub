@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Sparkles, RefreshCw, CheckCircle2, XCircle, Lightbulb, Trophy } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw, CheckCircle2, XCircle, Lightbulb, Trophy, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DemoModeBadge } from "@/components/ui/demo-mode-badge";
 import { useAuth } from "@/lib/auth";
@@ -16,6 +16,12 @@ function getScoreColor(score: number) {
   if (score >= 60) return { text: "text-accent-amber", bg: "bg-accent-amber-muted" };
   if (score >= 40) return { text: "text-accent-foreground", bg: "bg-accent-muted" };
   return { text: "text-tertiary", bg: "bg-surface-hover" };
+}
+
+function getRatingColor(rating: number) {
+  if (rating >= 4) return "bg-accent-teal";
+  if (rating >= 3) return "bg-accent-amber";
+  return "bg-[var(--text-tertiary)]";
 }
 
 export function JobMatchSection({ job }: JobMatchSectionProps) {
@@ -148,6 +154,42 @@ export function JobMatchSection({ job }: JobMatchSectionProps) {
             </p>
           </div>
         </div>
+
+        {/* Score breakdown */}
+        {result.score_breakdown && result.score_breakdown.length > 0 && (
+          <div>
+            <div className="flex items-center gap-1.5 mb-2">
+              <BarChart3 className="h-3.5 w-3.5 text-[var(--accent-foreground)]" />
+              <span className="text-xs font-medium text-[var(--text-secondary)]">
+                Score Breakdown
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {result.score_breakdown.map((item) => (
+                <div key={item.category} className="flex items-center gap-2">
+                  <span className="text-[11px] text-[var(--text-secondary)] w-[120px] shrink-0 truncate">
+                    {item.label}
+                  </span>
+                  <div className="flex gap-0.5 flex-1">
+                    {[1, 2, 3, 4, 5].map((dot) => (
+                      <div
+                        key={dot}
+                        className={`h-1.5 flex-1 rounded-full ${
+                          dot <= item.rating
+                            ? getRatingColor(item.rating)
+                            : "bg-[var(--border)]"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[10px] font-mono text-[var(--text-tertiary)] w-8 text-right">
+                    {item.weight}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Matched skills */}
         {result.matched_skills.length > 0 && (

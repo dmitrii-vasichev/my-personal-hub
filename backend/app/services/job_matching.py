@@ -1,4 +1,9 @@
-"""AI Job Matching service — compares user profile against job description."""
+"""AI Job Matching service — compares user profile against job description.
+
+Uses a weighted multi-category rubric to compute match scores.
+LLM rates 6 subcategories on a 1-5 scale; final score is computed in code
+to avoid LLM middle-score clustering bias.
+"""
 import json
 import logging
 from datetime import datetime, timezone
@@ -15,6 +20,42 @@ from app.services.prompt_assembly import assemble_prompt
 from app.services.settings import get_or_create_settings, get_decrypted_key
 
 logger = logging.getLogger(__name__)
+
+CATEGORY_WEIGHTS = {
+    "skills_match": 0.35,
+    "experience_level": 0.25,
+    "domain_relevance": 0.15,
+    "role_alignment": 0.15,
+    "location_fit": 0.05,
+    "bonus_qualifications": 0.05,
+}
+
+CATEGORY_LABELS = {
+    "skills_match": "Skills Match",
+    "experience_level": "Experience Level",
+    "domain_relevance": "Domain Relevance",
+    "role_alignment": "Role Alignment",
+    "location_fit": "Location Fit",
+    "bonus_qualifications": "Bonus Qualifications",
+}
+
+
+def compute_weighted_score(ratings: dict) -> tuple[int, dict]:
+    """Compute overall 0-100 score from subcategory ratings (1-5 each).
+
+    Returns (score, validated_ratings) tuple.
+    """
+    validated = {}
+    for key, weight in CATEGORY_WEIGHTS.items():
+        val = ratings.get(key, 3)
+        if not isinstance(val, (int, float)):
+            val = 3
+        validated[key] = max(1, min(5, int(val)))
+
+    weighted_sum = sum(validated[k] * w for k, w in CATEGORY_WEIGHTS.items())
+    # Map 1-5 weighted average to 0-100 scale
+    score = round((weighted_sum - 1) / 4 * 100)
+    return max(0, min(100, score)), validated
 
 
 async def match_job(db: AsyncSession, job_id: int, user: User) -> dict:
@@ -80,14 +121,25 @@ async def match_job(db: AsyncSession, job_id: int, user: User) -> dict:
         logger.error("Failed to parse LLM response: %s", raw[:500])
         raise RuntimeError("AI returned invalid response. Please try again.")
 
-    # Validate required fields
-    score = match_result.get("score", 0)
-    if not isinstance(score, (int, float)):
-        score = 0
-    score = max(0, min(100, int(score)))
+    # Compute weighted score from subcategory ratings
+    raw_ratings = match_result.get("ratings", {})
+    if not isinstance(raw_ratings, dict):
+        raw_ratings = {}
+    score, ratings = compute_weighted_score(raw_ratings)
+
+    score_breakdown = [
+        {
+            "category": key,
+            "label": CATEGORY_LABELS[key],
+            "rating": ratings[key],
+            "weight": int(weight * 100),
+        }
+        for key, weight in CATEGORY_WEIGHTS.items()
+    ]
 
     normalized = {
         "score": score,
+        "score_breakdown": score_breakdown,
         "matched_skills": match_result.get("matched_skills", []),
         "missing_skills": match_result.get("missing_skills", []),
         "strengths": match_result.get("strengths", []),
