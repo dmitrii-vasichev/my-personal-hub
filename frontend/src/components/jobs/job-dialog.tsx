@@ -55,8 +55,11 @@ export function JobDialog({ open, onOpenChange, mode, job, onSuccess }: JobDialo
     if (!url.trim()) return;
     setIsFetchingDesc(true);
     try {
-      const result = await api.post<{ description: string }>("/api/jobs/fetch-description", { url: url.trim() });
-      setDescription(result.description);
+      const result = await api.post<{ title: string; company: string; location: string; description: string }>("/api/jobs/fetch-description", { url: url.trim() });
+      if (result.title && !title.trim()) setTitle(result.title);
+      if (result.company && !company.trim()) setCompany(result.company);
+      if (result.location && !location.trim()) setLocation(result.location);
+      if (result.description) setDescription(result.description);
     } catch (err) {
       setErrors((prev) => ({ ...prev, title: err instanceof Error ? err.message : "Failed to fetch description" }));
     } finally {
@@ -227,12 +230,25 @@ export function JobDialog({ open, onOpenChange, mode, job, onSuccess }: JobDialo
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="job-url"
-                  className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
-                >
-                  URL
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label
+                    htmlFor="job-url"
+                    className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
+                  >
+                    URL
+                  </Label>
+                  {url.trim() && (
+                    <button
+                      type="button"
+                      onClick={handleFetchDescription}
+                      disabled={isFetchingDesc}
+                      className="flex items-center gap-1 text-xs text-[var(--accent-foreground)] hover:underline disabled:opacity-50"
+                    >
+                      <Download className="h-3 w-3" />
+                      {isFetchingDesc ? "Fetching…" : "Fetch from URL"}
+                    </button>
+                  )}
+                </div>
                 <Input
                   id="job-url"
                   type="url"
@@ -245,25 +261,12 @@ export function JobDialog({ open, onOpenChange, mode, job, onSuccess }: JobDialo
 
             {/* Description */}
             <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <Label
-                  htmlFor="job-description"
-                  className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
-                >
-                  Description
-                </Label>
-                {url.trim() && (
-                  <button
-                    type="button"
-                    onClick={handleFetchDescription}
-                    disabled={isFetchingDesc}
-                    className="flex items-center gap-1 text-xs text-[var(--accent-foreground)] hover:underline disabled:opacity-50"
-                  >
-                    <Download className="h-3 w-3" />
-                    {isFetchingDesc ? "Fetching…" : "Fetch from URL"}
-                  </button>
-                )}
-              </div>
+              <Label
+                htmlFor="job-description"
+                className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
+              >
+                Description
+              </Label>
               <Textarea
                 id="job-description"
                 value={description}

@@ -1,13 +1,24 @@
 """
-Server-side URL fetcher for extracting job descriptions.
+Server-side URL fetcher for extracting job metadata from postings.
 Includes SSRF protection to block requests to private/local IP ranges.
 """
 import ipaddress
+import re
 import socket
+from dataclasses import dataclass
 from urllib.parse import urlparse
 
 import httpx
 from bs4 import BeautifulSoup
+
+
+@dataclass
+class JobMetadata:
+    """Structured metadata extracted from a job posting page."""
+    title: str = ""
+    company: str = ""
+    location: str = ""
+    description: str = ""
 
 # Private/reserved IP ranges to block (SSRF protection)
 _BLOCKED_NETWORKS = [
@@ -48,25 +59,72 @@ def _is_linkedin(url: str) -> bool:
     return hostname.endswith("linkedin.com")
 
 
-def _extract_linkedin_description(soup: BeautifulSoup) -> str | None:
-    """Extract only the job description from LinkedIn HTML.
-
-    LinkedIn wraps the "About the job" content in specific containers.
-    Try narrow selectors first, widen gradually.
-    """
-    for selector in [
-        ".show-more-less-html__markup",       # inner description markup
-        ".description__text",                  # description text wrapper
-        "#job-details",                        # job details section
-        "[class*='jobs-description-content']", # alternate class pattern
-        "[class*='jobs-description']",         # broader description block
-    ]:
-        element = soup.select_one(selector)
-        if element:
-            text = element.get_text(separator="\n", strip=True)
-            if len(text) > 50:
+def _first_text(soup: BeautifulSoup, selectors: list[str], min_len: int = 1) -> str:
+    """Return text from the first matching selector that meets min length."""
+    for selector in selectors:
+        el = soup.select_one(selector)
+        if el:
+            text = el.get_text(separator="\n", strip=True)
+            if len(text) >= min_len:
                 return text
-    return None
+    return ""
+
+
+def _extract_linkedin_metadata(soup: BeautifulSoup) -> JobMetadata:
+    """Extract structured job metadata from LinkedIn HTML."""
+    meta = JobMetadata()
+
+    meta.title = _first_text(soup, [
+        ".top-card-layout__title",
+        ".topcard__title",
+        "h1[class*='title']",
+        "h1",
+    ])
+
+    meta.company = _first_text(soup, [
+        ".topcard__org-name-link",
+        ".top-card-layout__second-subline a[data-tracking-control-name*='company']",
+        ".top-card-layout__card-btn-container a",
+        "a[class*='company-name']",
+        "[class*='topcard'] a[class*='org-name']",
+    ])
+
+    meta.location = _first_text(soup, [
+        ".topcard__flavor--bullet",
+        ".top-card-layout__bullet",
+        "span[class*='location']",
+    ])
+
+    meta.description = _first_text(soup, [
+        ".show-more-less-html__markup",
+        ".description__text",
+        "#job-details",
+        "[class*='jobs-description-content']",
+        "[class*='jobs-description']",
+    ], min_len=50)
+
+    # Fallback: try og:title which often has "Title at Company"
+    if not meta.title or not meta.company:
+        og = soup.find("meta", property="og:title")
+        if og and og.get("content"):
+            _parse_og_title(og["content"], meta)
+
+    return meta
+
+
+def _parse_og_title(og_title: str, meta: JobMetadata) -> None:
+    """Parse 'Job Title at Company | LinkedIn' from og:title meta tag."""
+    # Remove trailing " | LinkedIn" or similar
+    cleaned = re.sub(r"\s*\|.*$", "", og_title).strip()
+    # Split on " at " or " - " to get title and company
+    for sep in [" at ", " — ", " - "]:
+        if sep in cleaned:
+            parts = cleaned.split(sep, 1)
+            if not meta.title:
+                meta.title = parts[0].strip()
+            if not meta.company and len(parts) > 1:
+                meta.company = parts[1].strip()
+            return
 
 
 def _clean_soup(soup: BeautifulSoup) -> None:
@@ -75,18 +133,20 @@ def _clean_soup(soup: BeautifulSoup) -> None:
         tag.decompose()
 
 
-def _extract_text(html: str, url: str = "") -> str:
-    """Extract readable text from HTML, stripping scripts, styles, and boilerplate."""
-    soup = BeautifulSoup(html, "lxml")
-    _clean_soup(soup)
+def _extract_generic_metadata(soup: BeautifulSoup) -> JobMetadata:
+    """Extract job metadata using generic heuristics and meta tags."""
+    meta = JobMetadata()
 
-    # Site-specific extraction
-    if url and _is_linkedin(url):
-        result = _extract_linkedin_description(soup)
-        if result:
-            return result
+    # Title: og:title or first h1
+    og = soup.find("meta", property="og:title")
+    if og and og.get("content"):
+        meta.title = og["content"].strip()
+    if not meta.title:
+        h1 = soup.find("h1")
+        if h1:
+            meta.title = h1.get_text(strip=True)
 
-    # Generic: prefer known content containers
+    # Description: known content containers
     for selector in [
         "article",
         "main",
@@ -99,19 +159,41 @@ def _extract_text(html: str, url: str = "") -> str:
         if element:
             text = element.get_text(separator="\n", strip=True)
             if len(text) > 200:
-                return text
+                meta.description = text
+                break
 
-    # Fall back to full body text
-    body = soup.find("body")
-    if body:
-        return body.get_text(separator="\n", strip=True)
+    # Fallback to body
+    if not meta.description:
+        body = soup.find("body")
+        if body:
+            meta.description = body.get_text(separator="\n", strip=True)
+        else:
+            meta.description = soup.get_text(separator="\n", strip=True)
 
-    return soup.get_text(separator="\n", strip=True)
+    return meta
 
 
-async def fetch_job_description(url: str) -> str:
+def _extract_metadata(html: str, url: str = "") -> JobMetadata:
+    """Extract structured job metadata from HTML."""
+    soup = BeautifulSoup(html, "lxml")
+    _clean_soup(soup)
+
+    if url and _is_linkedin(url):
+        meta = _extract_linkedin_metadata(soup)
+        # If LinkedIn-specific extraction got a description, return it
+        if meta.description:
+            return meta
+        # Otherwise fill description from generic logic
+        generic = _extract_generic_metadata(soup)
+        meta.description = generic.description
+        return meta
+
+    return _extract_generic_metadata(soup)
+
+
+async def fetch_job_metadata(url: str) -> JobMetadata:
     """
-    Fetch a URL and extract the job description text.
+    Fetch a URL and extract structured job metadata.
     Raises ValueError for blocked/invalid URLs.
     Raises httpx.HTTPError for network/HTTP errors.
     """
@@ -134,4 +216,4 @@ async def fetch_job_description(url: str) -> str:
     if "text/html" not in content_type and "text/plain" not in content_type:
         raise ValueError(f"Unsupported content type: {content_type}")
 
-    return _extract_text(response.text, url=url)
+    return _extract_metadata(response.text, url=url)

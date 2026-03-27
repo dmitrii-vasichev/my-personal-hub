@@ -27,7 +27,7 @@ from app.services import job_task_link as jtl_service
 from app.services import job_event_link as jel_service
 from app.services import note_job_link as njl_service
 from app.services import job_matching as match_service
-from app.services.scraper import fetch_job_description
+from app.services.scraper import fetch_job_metadata
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -156,7 +156,10 @@ class FetchDescriptionRequest(BaseModel):
 
 
 class FetchDescriptionResponse(BaseModel):
-    description: str
+    title: str = ""
+    company: str = ""
+    location: str = ""
+    description: str = ""
 
 
 @router.post("/fetch-description", response_model=FetchDescriptionResponse)
@@ -164,9 +167,9 @@ async def fetch_description(
     data: FetchDescriptionRequest,
     current_user: User = Depends(get_current_user),
 ):
-    """Fetch and extract job description from a URL (SSRF-protected)."""
+    """Fetch and extract job metadata from a URL (SSRF-protected)."""
     try:
-        description = await fetch_job_description(data.url)
+        meta = await fetch_job_metadata(data.url)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except httpx.TimeoutException:
@@ -181,7 +184,12 @@ async def fetch_description(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Failed to fetch the URL",
         )
-    return FetchDescriptionResponse(description=description)
+    return FetchDescriptionResponse(
+        title=meta.title,
+        company=meta.company,
+        location=meta.location,
+        description=meta.description,
+    )
 
 
 # ── AI Job Matching ──────────────────────────────────────────────────────────
