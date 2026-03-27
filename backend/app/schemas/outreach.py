@@ -158,6 +158,48 @@ class ProposalGenerateRequest(BaseModel):
     custom_instructions: Optional[str] = None
 
 
+# ── Duplicate detection schemas ─────────────────────────────────────────────
+
+
+class CheckDuplicatesRequest(BaseModel):
+    """Check for duplicate leads by email/phone."""
+    emails: list[str] = []
+    phones: list[str] = []
+    exclude_id: Optional[int] = None
+
+
+class DuplicateMatch(BaseModel):
+    field: str  # "email" or "phone"
+    value: str
+    existing_lead_id: int
+    existing_business_name: str
+
+
+class CheckDuplicatesResponse(BaseModel):
+    duplicates: list[DuplicateMatch] = []
+
+
+# ── Analytics schemas ───────────────────────────────────────────────────────
+
+
+class StatusCount(BaseModel):
+    status: str
+    count: int
+
+
+class IndustryBreakdown(BaseModel):
+    industry_name: str
+    count: int
+
+
+class OutreachAnalytics(BaseModel):
+    total: int
+    by_status: list[StatusCount]
+    by_industry: list[IndustryBreakdown]
+    conversion_sent_to_replied: float | None = None
+    conversion_replied_to_in_progress: float | None = None
+
+
 class IndustryCreate(BaseModel):
     name: str
     slug: str

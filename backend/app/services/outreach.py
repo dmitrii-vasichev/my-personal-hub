@@ -3,18 +3,22 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import asc, desc, or_, select
+from sqlalchemy import and_, asc, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.outreach import Industry, Lead, LeadStatus, LeadStatusHistory
 from app.models.user import User, UserRole
 from app.schemas.outreach import (
+    DuplicateMatch,
+    IndustryBreakdown,
     IndustryCreate,
     IndustryUpdate,
     LeadCreate,
     LeadStatusChange,
     LeadUpdate,
+    OutreachAnalytics,
+    StatusCount,
 )
 
 
@@ -274,6 +278,130 @@ async def get_lead_history(
         .order_by(LeadStatusHistory.changed_at.asc())
     )
     return list(result.scalars().all())
+
+
+# ── Analytics ───────────────────────────────────────────────────────────────
+
+
+async def get_analytics(
+    db: AsyncSession, current_user: User
+) -> OutreachAnalytics:
+    """Compute outreach funnel metrics."""
+    # Count by status
+    q = (
+        select(Lead.status, func.count(Lead.id))
+        .where(Lead.user_id == current_user.id)
+        .group_by(Lead.status)
+    )
+    result = await db.execute(q)
+    status_rows = result.all()
+
+    counts: dict[str, int] = {s.value: 0 for s in LeadStatus}
+    for status_val, cnt in status_rows:
+        counts[status_val] = cnt
+
+    total = sum(counts.values())
+    by_status = [StatusCount(status=s, count=c) for s, c in counts.items()]
+
+    # Count by industry
+    q_ind = (
+        select(Industry.name, func.count(Lead.id))
+        .join(Lead, Lead.industry_id == Industry.id)
+        .where(Lead.user_id == current_user.id)
+        .group_by(Industry.name)
+        .order_by(func.count(Lead.id).desc())
+    )
+    result_ind = await db.execute(q_ind)
+    by_industry = [
+        IndustryBreakdown(industry_name=name, count=cnt)
+        for name, cnt in result_ind.all()
+    ]
+
+    # Add "No industry" bucket
+    no_ind_count = total - sum(b.count for b in by_industry)
+    if no_ind_count > 0:
+        by_industry.append(IndustryBreakdown(industry_name="Unassigned", count=no_ind_count))
+
+    # Conversion rates
+    replied = counts.get("replied", 0)
+    in_progress = counts.get("in_progress", 0)
+
+    # "sent" means all leads that moved past new (sent + replied + in_progress + rejected + on_hold)
+    sent_plus = total - counts.get("new", 0)
+    # "replied" means replied + in_progress (those who progressed past replied)
+    replied_plus = replied + in_progress
+
+    conv_sent_replied = (replied_plus / sent_plus * 100) if sent_plus > 0 else None
+    conv_replied_ip = (in_progress / replied_plus * 100) if replied_plus > 0 else None
+
+    return OutreachAnalytics(
+        total=total,
+        by_status=by_status,
+        by_industry=by_industry,
+        conversion_sent_to_replied=round(conv_sent_replied, 1) if conv_sent_replied is not None else None,
+        conversion_replied_to_in_progress=round(conv_replied_ip, 1) if conv_replied_ip is not None else None,
+    )
+
+
+# ── Duplicate Detection ─────────────────────────────────────────────────────
+
+
+async def check_duplicates(
+    db: AsyncSession,
+    current_user: User,
+    emails: list[str],
+    phones: list[str],
+    exclude_id: Optional[int] = None,
+) -> list[DuplicateMatch]:
+    """Find existing leads that share an email or phone with provided values."""
+    emails_clean = [e.strip().lower() for e in emails if e and e.strip()]
+    phones_clean = [_normalize_phone(p) for p in phones if p and p.strip()]
+
+    if not emails_clean and not phones_clean:
+        return []
+
+    conditions = []
+    if emails_clean:
+        conditions.append(func.lower(Lead.email).in_(emails_clean))
+    if phones_clean:
+        conditions.append(Lead.phone.in_(phones_clean))
+
+    q = select(Lead).where(and_(Lead.user_id == current_user.id, or_(*conditions)))
+    if exclude_id is not None:
+        q = q.where(Lead.id != exclude_id)
+
+    result = await db.execute(q)
+    existing = list(result.scalars().all())
+
+    matches: list[DuplicateMatch] = []
+    for lead in existing:
+        if lead.email and lead.email.strip().lower() in emails_clean:
+            matches.append(
+                DuplicateMatch(
+                    field="email",
+                    value=lead.email,
+                    existing_lead_id=lead.id,
+                    existing_business_name=lead.business_name,
+                )
+            )
+        lead_phone = _normalize_phone(lead.phone) if lead.phone else None
+        if lead_phone and lead_phone in phones_clean:
+            matches.append(
+                DuplicateMatch(
+                    field="phone",
+                    value=lead.phone,
+                    existing_lead_id=lead.id,
+                    existing_business_name=lead.business_name,
+                )
+            )
+    return matches
+
+
+def _normalize_phone(phone: str | None) -> str:
+    """Strip non-digit characters for phone comparison."""
+    if not phone:
+        return ""
+    return "".join(c for c in phone if c.isdigit())
 
 
 # ── Industry CRUD ────────────────────────────────────────────────────────────

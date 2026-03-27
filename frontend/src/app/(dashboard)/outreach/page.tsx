@@ -12,10 +12,11 @@ import { OutreachViewToggle, type OutreachViewMode } from "@/components/outreach
 import { PdfUploadDialog } from "@/components/outreach/pdf-upload-dialog";
 import { PdfPreviewDialog } from "@/components/outreach/pdf-preview-dialog";
 import { IndustryManager } from "@/components/outreach/industry-manager";
+import { OutreachAnalytics } from "@/components/outreach/outreach-analytics";
 import { useLeads, useLead } from "@/hooks/use-leads";
 import type { Lead, LeadFilters, ParsedLead, PdfParseError } from "@/types/lead";
 
-type PageTab = "leads" | "industries";
+type PageTab = "leads" | "industries" | "analytics";
 
 function OutreachPageInner() {
   const [activeTab, setActiveTab] = useState<PageTab>("leads");
@@ -73,6 +74,7 @@ function OutreachPageInner() {
   const tabs: { id: PageTab; label: string }[] = [
     { id: "leads", label: "Leads" },
     { id: "industries", label: "Industries" },
+    { id: "analytics", label: "Analytics" },
   ];
 
   return (
@@ -149,6 +151,8 @@ function OutreachPageInner() {
       )}
 
       {activeTab === "industries" && <IndustryManager />}
+
+      {activeTab === "analytics" && <OutreachAnalytics />}
 
       {/* Lead create/edit dialog */}
       <LeadDialog

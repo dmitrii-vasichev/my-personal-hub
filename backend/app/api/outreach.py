@@ -12,6 +12,8 @@ from app.models.settings import UserSettings
 from app.models.user import User
 from app.schemas.outreach import (
     BatchLeadCreate,
+    CheckDuplicatesRequest,
+    CheckDuplicatesResponse,
     IndustryCreate,
     IndustryResponse,
     IndustryUpdate,
@@ -22,6 +24,7 @@ from app.schemas.outreach import (
     LeadStatusChange,
     LeadStatusHistoryResponse,
     LeadUpdate,
+    OutreachAnalytics,
     PdfParseResponse,
     ProposalGenerateRequest,
 )
@@ -96,6 +99,28 @@ async def parse_pdf_endpoint(
         )
 
     return result_data
+
+
+@router.get("/analytics", response_model=OutreachAnalytics)
+async def get_analytics(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    """Outreach funnel analytics: status counts, industry breakdown, conversion rates."""
+    return await outreach_service.get_analytics(db, current_user)
+
+
+@router.post("/check-duplicates", response_model=CheckDuplicatesResponse)
+async def check_duplicates(
+    data: CheckDuplicatesRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    """Check if leads with given emails/phones already exist."""
+    matches = await outreach_service.check_duplicates(
+        db, current_user, data.emails, data.phones, exclude_id=data.exclude_id
+    )
+    return CheckDuplicatesResponse(duplicates=matches)
 
 
 @router.post("/batch", response_model=list[LeadResponse], status_code=status.HTTP_201_CREATED)

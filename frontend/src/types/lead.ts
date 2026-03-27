@@ -181,6 +181,43 @@ export interface GenerateProposalInput {
   custom_instructions?: string;
 }
 
+// Analytics
+export interface StatusCount {
+  status: string;
+  count: number;
+}
+
+export interface IndustryBreakdown {
+  industry_name: string;
+  count: number;
+}
+
+export interface OutreachAnalytics {
+  total: number;
+  by_status: StatusCount[];
+  by_industry: IndustryBreakdown[];
+  conversion_sent_to_replied: number | null;
+  conversion_replied_to_in_progress: number | null;
+}
+
+// Duplicate detection
+export interface DuplicateMatch {
+  field: "email" | "phone";
+  value: string;
+  existing_lead_id: number;
+  existing_business_name: string;
+}
+
+export interface CheckDuplicatesInput {
+  emails: string[];
+  phones: string[];
+  exclude_id?: number;
+}
+
+export interface CheckDuplicatesResponse {
+  duplicates: DuplicateMatch[];
+}
+
 export interface CreateIndustryInput {
   name: string;
   slug: string;

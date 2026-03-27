@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type {
   ChangeLeadStatusInput,
+  CheckDuplicatesInput,
+  CheckDuplicatesResponse,
   CreateLeadInput,
   CreateIndustryInput,
   GenerateProposalInput,
@@ -13,6 +15,7 @@ import type {
   LeadKanbanCard,
   LeadKanbanData,
   LeadStatusHistoryEntry,
+  OutreachAnalytics,
   PdfParseResponse,
   UpdateIndustryInput,
   UpdateLeadInput,
@@ -171,6 +174,24 @@ export function useGenerateProposal() {
       qc.invalidateQueries({ queryKey: [LEADS_KEY] });
       qc.setQueryData([LEADS_KEY, updatedLead.id], updatedLead);
     },
+  });
+}
+
+// ── Analytics ───────────────────────────────────────────────────────────────
+
+export function useOutreachAnalytics() {
+  return useQuery<OutreachAnalytics>({
+    queryKey: [LEADS_KEY, "analytics"],
+    queryFn: () => api.get<OutreachAnalytics>("/api/leads/analytics"),
+  });
+}
+
+// ── Duplicate detection ─────────────────────────────────────────────────────
+
+export function useCheckDuplicates() {
+  return useMutation({
+    mutationFn: (data: CheckDuplicatesInput) =>
+      api.post<CheckDuplicatesResponse>("/api/leads/check-duplicates", data),
   });
 }
 

@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 import {
   AlertCircle,
+  AlertTriangle,
   Check,
   FileText,
   Loader2,
@@ -19,8 +20,8 @@ import {
   DialogPortal,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useBatchCreateLeads } from "@/hooks/use-leads";
-import type { ParsedLead, PdfParseError, CreateLeadInput } from "@/types/lead";
+import { useBatchCreateLeads, useCheckDuplicates } from "@/hooks/use-leads";
+import type { DuplicateMatch, ParsedLead, PdfParseError, CreateLeadInput } from "@/types/lead";
 
 interface PdfPreviewDialogProps {
   open: boolean;
@@ -42,11 +43,14 @@ export function PdfPreviewDialog({
   onSaved,
 }: PdfPreviewDialogProps) {
   const batchCreate = useBatchCreateLeads();
+  const checkDuplicates = useCheckDuplicates();
 
   const [rows, setRows] = useState<ParsedLead[]>(initialLeads);
   const [selected, setSelected] = useState<Set<number>>(
     () => new Set(initialLeads.map((_, i) => i))
   );
+  const [duplicateMap, setDuplicateMap] = useState<Map<number, DuplicateMatch[]>>(new Map());
+  const [duplicatesChecked, setDuplicatesChecked] = useState(false);
 
   const selectedCount = selected.size;
   const allSelected = selectedCount === rows.length && rows.length > 0;
@@ -90,20 +94,53 @@ export function PdfPreviewDialog({
   };
 
   const handleSave = async () => {
-    const leadsToSave: CreateLeadInput[] = rows
-      .filter((_, i) => selected.has(i))
-      .map((row) => ({
-        business_name: row.business_name,
-        contact_person: row.contact_person || undefined,
-        email: row.email || undefined,
-        phone: row.phone || undefined,
-        website: row.website || undefined,
-        service_description: row.service_description || undefined,
-        source: "pdf",
-        source_detail: filename,
-      }));
+    const selectedRows = rows.filter((_, i) => selected.has(i));
+    if (selectedRows.length === 0) return;
 
-    if (leadsToSave.length === 0) return;
+    // Check for duplicates before saving (skip if already confirmed)
+    if (!duplicatesChecked) {
+      const emails = selectedRows.map((r) => r.email).filter(Boolean) as string[];
+      const phones = selectedRows.map((r) => r.phone).filter(Boolean) as string[];
+
+      if (emails.length > 0 || phones.length > 0) {
+        try {
+          const result = await checkDuplicates.mutateAsync({ emails, phones });
+
+          if (result.duplicates.length > 0) {
+            // Map duplicates to row indices
+            const map = new Map<number, DuplicateMatch[]>();
+            for (const dup of result.duplicates) {
+              rows.forEach((row, i) => {
+                if (!selected.has(i)) return;
+                const isMatch =
+                  (dup.field === "email" && row.email?.toLowerCase() === dup.value.toLowerCase()) ||
+                  (dup.field === "phone" && row.phone?.replace(/\D/g, "") === dup.value.replace(/\D/g, ""));
+                if (isMatch) {
+                  const existing = map.get(i) || [];
+                  existing.push(dup);
+                  map.set(i, existing);
+                }
+              });
+            }
+            setDuplicateMap(map);
+            return; // Stop — show warnings, user can deselect or confirm
+          }
+        } catch {
+          // If check fails, proceed (non-blocking)
+        }
+      }
+    }
+
+    const leadsToSave: CreateLeadInput[] = selectedRows.map((row) => ({
+      business_name: row.business_name,
+      contact_person: row.contact_person || undefined,
+      email: row.email || undefined,
+      phone: row.phone || undefined,
+      website: row.website || undefined,
+      service_description: row.service_description || undefined,
+      source: "pdf",
+      source_detail: filename,
+    }));
 
     try {
       await batchCreate.mutateAsync(leadsToSave);
@@ -188,22 +225,33 @@ export function PdfPreviewDialog({
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row, i) => (
+                  {rows.map((row, i) => {
+                    const rowDuplicates = duplicateMap.get(i);
+                    return (
                     <tr
                       key={i}
                       className={`border-t border-[rgba(255,255,255,0.03)] transition-colors ${
-                        selected.has(i)
-                          ? "bg-[var(--surface)]"
-                          : "bg-[var(--surface)] opacity-50"
+                        rowDuplicates && selected.has(i)
+                          ? "bg-[var(--accent-amber-muted)]"
+                          : selected.has(i)
+                            ? "bg-[var(--surface)]"
+                            : "bg-[var(--surface)] opacity-50"
                       }`}
                     >
                       <td className="px-3 py-1.5">
-                        <input
-                          type="checkbox"
-                          checked={selected.has(i)}
-                          onChange={() => toggleRow(i)}
-                          className="accent-[var(--primary)]"
-                        />
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="checkbox"
+                            checked={selected.has(i)}
+                            onChange={() => toggleRow(i)}
+                            className="accent-[var(--primary)]"
+                          />
+                          {rowDuplicates && (
+                            <span title={rowDuplicates.map((d) => `${d.field}: ${d.existing_business_name}`).join(", ")}>
+                              <AlertTriangle className="h-3.5 w-3.5 text-[var(--accent-amber)]" />
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-1 py-1">
                         <Input
@@ -261,7 +309,8 @@ export function PdfPreviewDialog({
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -274,6 +323,32 @@ export function PdfPreviewDialog({
               <p className="text-sm text-[var(--destructive)]">
                 {batchCreate.error?.message || "Failed to save leads"}
               </p>
+            </div>
+          )}
+
+          {/* Duplicate Warning Banner */}
+          {duplicateMap.size > 0 && !duplicatesChecked && (
+            <div className="flex items-start gap-2 mt-3 p-3 rounded-lg bg-[var(--accent-amber-muted)] border border-[var(--accent-amber)]/30">
+              <AlertTriangle className="h-4 w-4 text-[var(--accent-amber)] mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-[var(--text-primary)]">
+                  {duplicateMap.size} lead{duplicateMap.size !== 1 ? "s" : ""} may already exist
+                </p>
+                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                  Deselect duplicates or save anyway.
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  setDuplicatesChecked(true);
+                  setDuplicateMap(new Map());
+                  handleSave();
+                }}
+              >
+                Save Anyway
+              </Button>
             </div>
           )}
 
@@ -293,12 +368,12 @@ export function PdfPreviewDialog({
               </Button>
               <Button
                 onClick={handleSave}
-                disabled={selectedCount === 0 || batchCreate.isPending}
+                disabled={selectedCount === 0 || batchCreate.isPending || checkDuplicates.isPending}
               >
-                {batchCreate.isPending ? (
+                {batchCreate.isPending || checkDuplicates.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-                    Saving…
+                    {checkDuplicates.isPending ? "Checking…" : "Saving…"}
                   </>
                 ) : (
                   <>

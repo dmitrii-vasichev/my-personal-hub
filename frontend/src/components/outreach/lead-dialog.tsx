@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +15,8 @@ import {
   DialogPortal,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useCreateLead, useUpdateLead, useIndustries } from "@/hooks/use-leads";
-import type { Lead } from "@/types/lead";
+import { useCreateLead, useUpdateLead, useIndustries, useCheckDuplicates } from "@/hooks/use-leads";
+import type { DuplicateMatch, Lead } from "@/types/lead";
 
 interface LeadDialogProps {
   open: boolean;
@@ -28,6 +29,7 @@ interface LeadDialogProps {
 export function LeadDialog({ open, onOpenChange, mode, lead, onSuccess }: LeadDialogProps) {
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
+  const checkDuplicates = useCheckDuplicates();
   const { data: industries = [] } = useIndustries();
 
   const [businessName, setBusinessName] = useState(lead?.business_name ?? "");
@@ -43,18 +45,12 @@ export function LeadDialog({ open, onOpenChange, mode, lead, onSuccess }: LeadDi
   );
   const [notes, setNotes] = useState(lead?.notes ?? "");
   const [errors, setErrors] = useState<{ business_name?: string }>({});
+  const [duplicates, setDuplicates] = useState<DuplicateMatch[]>([]);
+  const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
 
-  const isLoading = createLead.isPending || updateLead.isPending;
+  const isLoading = createLead.isPending || updateLead.isPending || checkDuplicates.isPending;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!businessName.trim()) {
-      setErrors({ business_name: "Business name is required" });
-      return;
-    }
-    setErrors({});
-
+  const saveLead = async () => {
     try {
       if (mode === "create") {
         await createLead.mutateAsync({
@@ -88,6 +84,41 @@ export function LeadDialog({ open, onOpenChange, mode, lead, onSuccess }: LeadDi
         business_name: err instanceof Error ? err.message : "Something went wrong",
       });
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!businessName.trim()) {
+      setErrors({ business_name: "Business name is required" });
+      return;
+    }
+    setErrors({});
+
+    // Skip duplicate check if already confirmed or editing same lead
+    if (!duplicateConfirmed) {
+      const emailVal = email.trim();
+      const phoneVal = phone.trim();
+
+      if (emailVal || phoneVal) {
+        try {
+          const result = await checkDuplicates.mutateAsync({
+            emails: emailVal ? [emailVal] : [],
+            phones: phoneVal ? [phoneVal] : [],
+            exclude_id: lead?.id,
+          });
+
+          if (result.duplicates.length > 0) {
+            setDuplicates(result.duplicates);
+            return; // Stop — show warning, user must confirm
+          }
+        } catch {
+          // If check fails, proceed with save (non-blocking)
+        }
+      }
+    }
+
+    await saveLead();
   };
 
   return (
@@ -248,6 +279,49 @@ export function LeadDialog({ open, onOpenChange, mode, lead, onSuccess }: LeadDi
                 rows={2}
               />
             </div>
+
+            {/* Duplicate Warning */}
+            {duplicates.length > 0 && !duplicateConfirmed && (
+              <div className="flex flex-col gap-2 p-3 rounded-lg bg-[var(--accent-amber-muted)] border border-[var(--accent-amber)]/30">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-[var(--accent-amber)] mt-0.5 shrink-0" />
+                  <div className="flex flex-col gap-1">
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
+                      Possible duplicates found
+                    </p>
+                    {duplicates.map((d, i) => (
+                      <p key={i} className="text-xs text-[var(--text-secondary)]">
+                        {d.field === "email" ? "Email" : "Phone"} <span className="font-mono">{d.value}</span> already exists in{" "}
+                        <span className="font-medium">{d.existing_business_name}</span>
+                      </p>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex gap-2 ml-6">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setDuplicates([]);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      setDuplicateConfirmed(true);
+                      setDuplicates([]);
+                      saveLead();
+                    }}
+                  >
+                    Save Anyway
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex justify-end gap-2 pt-1">
