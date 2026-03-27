@@ -42,15 +42,51 @@ def _validate_url(url: str) -> None:
             raise ValueError("Requests to private/local addresses are not allowed")
 
 
-def _extract_text(html: str) -> str:
-    """Extract readable text from HTML, stripping scripts, styles, and boilerplate."""
-    soup = BeautifulSoup(html, "lxml")
+def _is_linkedin(url: str) -> bool:
+    """Check if the URL belongs to LinkedIn."""
+    hostname = urlparse(url).hostname or ""
+    return hostname.endswith("linkedin.com")
 
-    # Remove noise elements
+
+def _extract_linkedin_description(soup: BeautifulSoup) -> str | None:
+    """Extract only the job description from LinkedIn HTML.
+
+    LinkedIn wraps the "About the job" content in specific containers.
+    Try narrow selectors first, widen gradually.
+    """
+    for selector in [
+        ".show-more-less-html__markup",       # inner description markup
+        ".description__text",                  # description text wrapper
+        "#job-details",                        # job details section
+        "[class*='jobs-description-content']", # alternate class pattern
+        "[class*='jobs-description']",         # broader description block
+    ]:
+        element = soup.select_one(selector)
+        if element:
+            text = element.get_text(separator="\n", strip=True)
+            if len(text) > 50:
+                return text
+    return None
+
+
+def _clean_soup(soup: BeautifulSoup) -> None:
+    """Remove noise elements from parsed HTML in place."""
     for tag in soup(["script", "style", "nav", "header", "footer", "aside", "iframe"]):
         tag.decompose()
 
-    # Prefer known content containers
+
+def _extract_text(html: str, url: str = "") -> str:
+    """Extract readable text from HTML, stripping scripts, styles, and boilerplate."""
+    soup = BeautifulSoup(html, "lxml")
+    _clean_soup(soup)
+
+    # Site-specific extraction
+    if url and _is_linkedin(url):
+        result = _extract_linkedin_description(soup)
+        if result:
+            return result
+
+    # Generic: prefer known content containers
     for selector in [
         "article",
         "main",
@@ -98,4 +134,4 @@ async def fetch_job_description(url: str) -> str:
     if "text/html" not in content_type and "text/plain" not in content_type:
         raise ValueError(f"Unsupported content type: {content_type}")
 
-    return _extract_text(response.text)
+    return _extract_text(response.text, url=url)
