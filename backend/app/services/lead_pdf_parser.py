@@ -48,6 +48,11 @@ Quality rules:
 - business_name is required — skip entries where you cannot determine the business name.
 - SKIP entries that have ONLY a person's name with no business name, no phone, no email, \
 no website, and no description. A person's name alone is not a useful lead.
+- SKIP table of contents pages, indices, and directory listings that only show business \
+names with page numbers (e.g. "Laghman Express ...43"). These are navigation pages, \
+not advertisements. Return [] for such pages.
+- SKIP entries that have NO real contact information — at minimum one of phone, email, \
+or website must be present. A business name with only a description is not actionable.
 - service_description is extremely important for outreach context. Try hard to extract it \
 from the ad text. Only set to null if the ad truly contains nothing beyond the business name \
 and contact info.
@@ -121,7 +126,20 @@ async def extract_leads_from_image(
     if not isinstance(data, list):
         return []
 
-    return data
+    return [lead for lead in data if _has_contact_info(lead)]
+
+
+def _has_contact_info(lead: dict[str, Any]) -> bool:
+    """Return True if the lead has at least one real contact field."""
+    has_phone = bool(lead.get("phone"))
+    has_email = bool(lead.get("email"))
+    has_website = bool(lead.get("website")) and lead["website"].strip().lower() not in (
+        "example.com",
+        "www.example.com",
+        "http://example.com",
+        "https://example.com",
+    )
+    return has_phone or has_email or has_website
 
 
 _MAX_CONCURRENT_PAGES = 10
