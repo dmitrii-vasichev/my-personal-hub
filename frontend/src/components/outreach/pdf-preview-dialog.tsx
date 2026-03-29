@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   Dialog,
   DialogBackdrop,
@@ -306,7 +307,7 @@ export function PdfPreviewDialog({
                         />
                       </td>
                       <td className="px-1 py-1">
-                        <div className="group/desc relative">
+                        <Tooltip content={row.service_description ?? ""} delay={0}>
                           <Input
                             value={row.service_description ?? ""}
                             onChange={(e) =>
@@ -314,12 +315,7 @@ export function PdfPreviewDialog({
                             }
                             className="h-7 text-xs"
                           />
-                          {row.service_description && (
-                            <div className="pointer-events-none absolute left-0 top-full mt-1 hidden group-hover/desc:block max-w-sm rounded-md border border-[var(--border)] bg-[var(--surface-hover)] px-2 py-1 text-xs text-[var(--text-primary)] shadow-md whitespace-pre-wrap break-words z-50">
-                              {row.service_description}
-                            </div>
-                          )}
-                        </div>
+                        </Tooltip>
                       </td>
                       <td className="px-2 py-1.5">
                         <span className="text-xs text-[var(--text-tertiary)]">

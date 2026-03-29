@@ -19,7 +19,7 @@ export function Tooltip({ content, side = "top", delay = 300, children }: Toolti
         <TooltipPrimitive.Portal>
           <TooltipPrimitive.Positioner side={side} sideOffset={6}>
             <TooltipPrimitive.Popup
-              className="z-[100] rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1 text-xs text-[var(--text-primary)] shadow-md transition-opacity data-[ending-style]:opacity-0 data-[starting-style]:opacity-0"
+              className="z-[100] max-w-sm rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1 text-xs text-[var(--text-primary)] shadow-md whitespace-pre-wrap break-words transition-opacity data-[ending-style]:opacity-0 data-[starting-style]:opacity-0"
             >
               {content}
             </TooltipPrimitive.Popup>
