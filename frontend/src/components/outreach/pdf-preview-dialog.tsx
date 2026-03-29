@@ -308,18 +308,18 @@ export function PdfPreviewDialog({
                         />
                       </td>
                       <td className="px-1 py-1">
-                        <div className="flex items-center gap-0.5">
+                        <div className="flex items-center gap-1">
                           <Input
                             value={row.service_description ?? ""}
                             onChange={(e) =>
                               updateField(i, "service_description", e.target.value)
                             }
-                            className="h-7 text-xs"
+                            className="h-7 text-xs flex-1 min-w-0"
                           />
                           {row.service_description && (
                             <Popover>
-                              <PopoverTrigger className="shrink-0 p-0.5 rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors">
-                                <Expand className="h-3 w-3" />
+                              <PopoverTrigger className="shrink-0 h-5 w-5 inline-flex items-center justify-center rounded text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors">
+                                <Expand className="h-3.5 w-3.5" />
                               </PopoverTrigger>
                               <PopoverContent align="end" sideOffset={6} className="max-w-sm p-3">
                                 <p className="text-xs text-[var(--text-primary)] whitespace-pre-wrap break-words">
