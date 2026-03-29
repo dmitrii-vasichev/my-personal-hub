@@ -10,6 +10,7 @@ import {
   Mail,
   Pencil,
   Phone,
+  Trash2,
   User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,8 +22,9 @@ import {
   DialogPortal,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ProposalSection } from "@/components/outreach/proposal-section";
-import { useLeadStatusHistory, useChangeLeadStatus } from "@/hooks/use-leads";
+import { useLeadStatusHistory, useChangeLeadStatus, useDeleteLead } from "@/hooks/use-leads";
 import {
   LEAD_STATUS_LABELS,
   LEAD_STATUS_COLORS,
@@ -35,6 +37,7 @@ interface LeadDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   lead: Lead;
   onEdit?: () => void;
+  onDeleted?: () => void;
 }
 
 function formatDate(dateStr: string) {
@@ -158,8 +161,18 @@ export function LeadDetailDialog({
   onOpenChange,
   lead,
   onEdit,
+  onDeleted,
 }: LeadDetailDialogProps) {
   const { data: history = [] } = useLeadStatusHistory(lead.id);
+  const deleteLead = useDeleteLead();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const handleDelete = async () => {
+    await deleteLead.mutateAsync(lead.id);
+    setConfirmDelete(false);
+    onOpenChange(false);
+    onDeleted?.();
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -181,6 +194,15 @@ export function LeadDetailDialog({
               )}
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmDelete(true)}
+                className="gap-1.5 h-7 text-xs text-[var(--text-secondary)] hover:text-[var(--danger)] hover:bg-[var(--destructive-muted)]"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Delete
+              </Button>
               {onEdit && (
                 <Button variant="outline" size="sm" onClick={onEdit} className="gap-1.5 h-7 text-xs">
                   <Pencil className="h-3.5 w-3.5" />
@@ -311,6 +333,17 @@ export function LeadDetailDialog({
           </div>
         </DialogPopup>
       </DialogPortal>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onConfirm={handleDelete}
+        onCancel={() => setConfirmDelete(false)}
+        title="Delete Lead"
+        description={`Delete "${lead.business_name}"? This will also remove all status history for this lead.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteLead.isPending}
+      />
     </Dialog>
   );
 }
