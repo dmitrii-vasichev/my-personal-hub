@@ -5,13 +5,14 @@ import {
   AlertCircle,
   AlertTriangle,
   Check,
+  Expand,
   FileText,
   Loader2,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tooltip } from "@/components/ui/tooltip";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
   Dialog,
   DialogBackdrop,
@@ -307,7 +308,7 @@ export function PdfPreviewDialog({
                         />
                       </td>
                       <td className="px-1 py-1">
-                        <Tooltip content={row.service_description ?? ""} delay={0}>
+                        <div className="flex items-center gap-0.5">
                           <Input
                             value={row.service_description ?? ""}
                             onChange={(e) =>
@@ -315,7 +316,19 @@ export function PdfPreviewDialog({
                             }
                             className="h-7 text-xs"
                           />
-                        </Tooltip>
+                          {row.service_description && (
+                            <Popover>
+                              <PopoverTrigger className="shrink-0 p-0.5 rounded text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)] transition-colors">
+                                <Expand className="h-3 w-3" />
+                              </PopoverTrigger>
+                              <PopoverContent align="end" sideOffset={6} className="max-w-sm p-3">
+                                <p className="text-xs text-[var(--text-primary)] whitespace-pre-wrap break-words">
+                                  {row.service_description}
+                                </p>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </div>
                       </td>
                       <td className="px-2 py-1.5">
                         <span className="text-xs text-[var(--text-tertiary)]">
