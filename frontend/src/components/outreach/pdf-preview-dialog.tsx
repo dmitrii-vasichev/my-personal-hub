@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   AlertCircle,
   AlertTriangle,
@@ -8,6 +8,7 @@ import {
   Expand,
   FileText,
   Loader2,
+  Plus,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,7 @@ import {
   DialogPortal,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useBatchCreateLeads, useCheckDuplicates, useIndustries } from "@/hooks/use-leads";
+import { useBatchCreateLeads, useCheckDuplicates, useCreateIndustry, useIndustries } from "@/hooks/use-leads";
 import type { DuplicateMatch, ParsedLead, PdfParseError, CreateLeadInput } from "@/types/lead";
 
 interface PdfPreviewDialogProps {
@@ -47,6 +48,7 @@ export function PdfPreviewDialog({
   const batchCreate = useBatchCreateLeads();
   const checkDuplicates = useCheckDuplicates();
   const { data: industries = [] } = useIndustries();
+  const createIndustry = useCreateIndustry();
 
   const [rows, setRows] = useState<ParsedLead[]>(initialLeads);
   const [selected, setSelected] = useState<Set<number>>(
@@ -94,6 +96,28 @@ export function PdfPreviewDialog({
       }
       return next;
     });
+  };
+
+  // Map each unique industry_suggestion to its matched Industry (or undefined)
+  const industryMatchMap = useMemo(() => {
+    const map = new Map<string, number | undefined>();
+    for (const row of rows) {
+      const s = row.industry_suggestion;
+      if (!s || map.has(s.toLowerCase())) continue;
+      const matched = industries.find(
+        (ind) => ind.name.toLowerCase() === s.toLowerCase()
+      );
+      map.set(s.toLowerCase(), matched?.id);
+    }
+    return map;
+  }, [rows, industries]);
+
+  const handleCreateIndustry = async (name: string) => {
+    const slug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    await createIndustry.mutateAsync({ name, slug });
   };
 
   const handleSave = async () => {
@@ -341,9 +365,29 @@ export function PdfPreviewDialog({
                         </div>
                       </td>
                       <td className="px-2 py-1.5">
-                        <span className="text-xs text-[var(--text-tertiary)]">
-                          {row.industry_suggestion || "—"}
-                        </span>
+                        {row.industry_suggestion ? (
+                          industryMatchMap.get(row.industry_suggestion.toLowerCase()) != null ? (
+                            <span className="inline-flex items-center gap-1 text-xs text-[var(--accent-teal)]">
+                              <Check className="h-3 w-3" />
+                              {row.industry_suggestion}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
+                              {row.industry_suggestion}
+                              <button
+                                type="button"
+                                title={`Create "${row.industry_suggestion}" industry`}
+                                disabled={createIndustry.isPending}
+                                onClick={() => handleCreateIndustry(row.industry_suggestion!)}
+                                className="shrink-0 h-4 w-4 inline-flex items-center justify-center rounded bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-80 transition-opacity disabled:opacity-50"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-xs text-[var(--text-tertiary)]">—</span>
+                        )}
                       </td>
                       <td className="px-2 py-1.5">
                         <span className="text-xs font-mono text-[var(--text-tertiary)]">
