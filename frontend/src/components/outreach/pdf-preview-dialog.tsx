@@ -307,7 +307,7 @@ export function PdfPreviewDialog({
                         />
                       </td>
                       <td className="px-1 py-1">
-                        <Tooltip content={row.service_description ?? ""} side="top" delay={0}>
+                        <Tooltip content={row.service_description ?? ""} side="top" delay={0} portal={false}>
                           <Input
                             value={row.service_description ?? ""}
                             onChange={(e) =>
