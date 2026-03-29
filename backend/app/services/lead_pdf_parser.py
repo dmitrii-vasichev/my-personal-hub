@@ -35,10 +35,14 @@ For each business, return a JSON object with these fields:
 - website (string | null) — look for URLs in the ad text, even if not labeled \
 (e.g. "www.example.com", "example.com"); domains often appear near phone numbers or emails
 - service_description (string, required) — what the business does, offers, or sells. \
-This is critically important. Read the FULL text of the advertisement and summarize \
-the services/products in 1-2 sentences in Russian. If the ad says "Юридические услуги, \
-иммиграция, разводы" → write that. If it only lists a business name with a category \
-(e.g. under a "Рестораны" heading) → write the category as the description.
+This is critically important. Extract the COMPLETE list of services, products, and \
+specializations mentioned in the advertisement text, in Russian. Include ALL specific \
+details: service types, sub-specializations, categories, areas of expertise. \
+Do NOT summarize or shorten — preserve every detail from the ad. \
+If the ad says "Юридические услуги. Иммиграция: визы H1B, L1, грин-карты. Разводы, \
+custody. Банкротство Chapter 7 и 13." → write ALL of that. \
+If it only lists a business name with a category (e.g. under a "Рестораны" heading) \
+→ write the category as the description.
 - industry_suggestion (string | null) — suggested industry category in English \
 (e.g. "Legal Services", "Dental", "Real Estate", "Auto Repair", "Beauty Salon")
 
@@ -53,9 +57,9 @@ names with page numbers (e.g. "Laghman Express ...43"). These are navigation pag
 not advertisements. Return [] for such pages.
 - SKIP entries that have NO real contact information — at minimum one of phone, email, \
 or website must be present. A business name with only a description is not actionable.
-- service_description is extremely important for outreach context. Try hard to extract it \
-from the ad text. Only set to null if the ad truly contains nothing beyond the business name \
-and contact info.
+- service_description is extremely important for outreach context — it will be used to match \
+businesses with specific pain points. Extract every detail you can find in the ad text. \
+Only set to null if the ad truly contains nothing beyond the business name and contact info.
 - If a field is not present, set it to null.
 - Return valid JSON only — an array of objects. No markdown, no explanation.
 
