@@ -160,7 +160,7 @@ export function PdfPreviewDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogPortal>
         <DialogBackdrop />
-        <DialogPopup className="w-full max-w-5xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogPopup className="w-full max-w-7xl p-6 max-h-[90vh] overflow-hidden flex flex-col">
           <DialogClose />
 
           {/* Header */}
@@ -214,6 +214,12 @@ export function PdfPreviewDialog({
                     </th>
                     <th className="px-2 py-2 text-left text-[10.5px] uppercase tracking-[0.5px] font-mono font-medium text-[var(--text-tertiary)]">
                       Phone
+                    </th>
+                    <th className="px-2 py-2 text-left text-[10.5px] uppercase tracking-[0.5px] font-mono font-medium text-[var(--text-tertiary)]">
+                      Website
+                    </th>
+                    <th className="px-2 py-2 text-left text-[10.5px] uppercase tracking-[0.5px] font-mono font-medium text-[var(--text-tertiary)]">
+                      Description
                     </th>
                     <th className="px-2 py-2 text-left text-[10.5px] uppercase tracking-[0.5px] font-mono font-medium text-[var(--text-tertiary)]">
                       Industry
@@ -287,6 +293,26 @@ export function PdfPreviewDialog({
                             updateField(i, "phone", e.target.value)
                           }
                           className="h-7 text-xs"
+                        />
+                      </td>
+                      <td className="px-1 py-1">
+                        <Input
+                          value={row.website ?? ""}
+                          onChange={(e) =>
+                            updateField(i, "website", e.target.value)
+                          }
+                          placeholder="example.com"
+                          className="h-7 text-xs"
+                        />
+                      </td>
+                      <td className="px-1 py-1">
+                        <Input
+                          value={row.service_description ?? ""}
+                          onChange={(e) =>
+                            updateField(i, "service_description", e.target.value)
+                          }
+                          className="h-7 text-xs"
+                          title={row.service_description ?? ""}
                         />
                       </td>
                       <td className="px-2 py-1.5">

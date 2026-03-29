@@ -22,25 +22,36 @@ _ZOOM = _DPI / 72  # fitz default is 72 DPI
 
 EXTRACTION_PROMPT = """\
 You are an expert at extracting business contact information from Russian-language \
-newspaper and magazine pages.
+newspaper and magazine pages (directories, classified ads, display ads).
 
-Analyze the image and extract ALL business advertisements and contact blocks you can find.
+Analyze the image carefully and extract ALL business advertisements, contact blocks, \
+and service listings you can find.
 
 For each business, return a JSON object with these fields:
 - business_name (string, required) — the company or business name
 - contact_person (string | null) — owner or contact person name
 - email (string | null)
 - phone (string | null) — preserve original formatting
-- website (string | null)
-- service_description (string | null) — brief description of what the business does/offers
+- website (string | null) — look for URLs in the ad text, even if not labeled \
+(e.g. "www.example.com", "example.com"); domains often appear near phone numbers or emails
+- service_description (string, required) — what the business does, offers, or sells. \
+This is critically important. Read the FULL text of the advertisement and summarize \
+the services/products in 1-2 sentences in Russian. If the ad says "Юридические услуги, \
+иммиграция, разводы" → write that. If it only lists a business name with a category \
+(e.g. under a "Рестораны" heading) → write the category as the description.
 - industry_suggestion (string | null) — suggested industry category in English \
 (e.g. "Legal Services", "Dental", "Real Estate", "Auto Repair", "Beauty Salon")
 
-Rules:
+Quality rules:
 - Extract EVERY business/advertisement on the page, even small ones.
-- If a field is not present, set it to null.
 - Phone numbers: keep the original format (e.g. "(718) 555-1234").
 - business_name is required — skip entries where you cannot determine the business name.
+- SKIP entries that have ONLY a person's name with no business name, no phone, no email, \
+no website, and no description. A person's name alone is not a useful lead.
+- service_description is extremely important for outreach context. Try hard to extract it \
+from the ad text. Only set to null if the ad truly contains nothing beyond the business name \
+and contact info.
+- If a field is not present, set it to null.
 - Return valid JSON only — an array of objects. No markdown, no explanation.
 
 Return format: [{"business_name": "...", ...}, ...]
