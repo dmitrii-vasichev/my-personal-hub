@@ -5,14 +5,15 @@ import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 interface TooltipProps {
   content: string;
   side?: "top" | "bottom" | "left" | "right";
+  delay?: number;
   children: React.ReactElement;
 }
 
-export function Tooltip({ content, side = "top", children }: TooltipProps) {
+export function Tooltip({ content, side = "top", delay = 300, children }: TooltipProps) {
   if (!content) return children;
 
   return (
-    <TooltipPrimitive.Provider delay={300}>
+    <TooltipPrimitive.Provider delay={delay}>
       <TooltipPrimitive.Root>
         <TooltipPrimitive.Trigger render={children} />
         <TooltipPrimitive.Portal>
