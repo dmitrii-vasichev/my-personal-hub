@@ -22,7 +22,7 @@ import {
   DialogPortal,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useBatchCreateLeads, useCheckDuplicates } from "@/hooks/use-leads";
+import { useBatchCreateLeads, useCheckDuplicates, useIndustries } from "@/hooks/use-leads";
 import type { DuplicateMatch, ParsedLead, PdfParseError, CreateLeadInput } from "@/types/lead";
 
 interface PdfPreviewDialogProps {
@@ -46,6 +46,7 @@ export function PdfPreviewDialog({
 }: PdfPreviewDialogProps) {
   const batchCreate = useBatchCreateLeads();
   const checkDuplicates = useCheckDuplicates();
+  const { data: industries = [] } = useIndustries();
 
   const [rows, setRows] = useState<ParsedLead[]>(initialLeads);
   const [selected, setSelected] = useState<Set<number>>(
@@ -133,16 +134,25 @@ export function PdfPreviewDialog({
       }
     }
 
-    const leadsToSave: CreateLeadInput[] = selectedRows.map((row) => ({
-      business_name: row.business_name,
-      contact_person: row.contact_person || undefined,
-      email: row.email || undefined,
-      phone: row.phone || undefined,
-      website: row.website || undefined,
-      service_description: row.service_description || undefined,
-      source: "pdf",
-      source_detail: filename,
-    }));
+    const leadsToSave: CreateLeadInput[] = selectedRows.map((row) => {
+      const matchedIndustry = row.industry_suggestion
+        ? industries.find(
+            (ind) => ind.name.toLowerCase() === row.industry_suggestion!.toLowerCase()
+          )
+        : undefined;
+
+      return {
+        business_name: row.business_name,
+        contact_person: row.contact_person || undefined,
+        email: row.email || undefined,
+        phone: row.phone || undefined,
+        website: row.website || undefined,
+        service_description: row.service_description || undefined,
+        industry_id: matchedIndustry?.id,
+        source: "pdf",
+        source_detail: filename,
+      };
+    });
 
     try {
       await batchCreate.mutateAsync(leadsToSave);
