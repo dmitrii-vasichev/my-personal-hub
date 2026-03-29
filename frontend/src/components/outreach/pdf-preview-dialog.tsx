@@ -315,7 +315,7 @@ export function PdfPreviewDialog({
                             className="h-7 text-xs"
                           />
                           {row.service_description && (
-                            <div className="pointer-events-none absolute left-0 top-full mt-1 hidden group-hover/desc:block max-w-sm rounded-md border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1 text-xs text-[var(--text-primary)] shadow-md whitespace-pre-wrap break-words z-50">
+                            <div className="pointer-events-none absolute left-0 top-full mt-1 hidden group-hover/desc:block max-w-sm rounded-md border border-[var(--border)] bg-[var(--surface-hover)] px-2 py-1 text-xs text-[var(--text-primary)] shadow-md whitespace-pre-wrap break-words z-50">
                               {row.service_description}
                             </div>
                           )}
