@@ -182,7 +182,7 @@ export function LeadDetailDialog({
           <DialogClose />
 
           {/* Header */}
-          <div className="flex items-start justify-between gap-4 mb-5">
+          <div className="flex items-start justify-between gap-4 mb-5 pr-8">
             <div className="flex-1">
               <DialogTitle className="text-lg">
                 {lead.business_name}
