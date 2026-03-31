@@ -20,6 +20,10 @@ logger = logging.getLogger(__name__)
 _DPI = 200
 _ZOOM = _DPI / 72  # fitz default is 72 DPI
 
+# Retry settings for transient API errors (rate limits, server errors)
+_MAX_RETRIES = 3
+_RETRY_BASE_DELAY = 2.0  # seconds; actual delay = base * 2^attempt
+
 EXTRACTION_PROMPT = """\
 You are an expert at extracting business contact information from Russian-language \
 newspaper and magazine pages (directories, classified ads, display ads).
@@ -87,29 +91,50 @@ async def extract_leads_from_image(
     image_png: bytes,
     model: str = "gpt-4o",
 ) -> list[dict[str, Any]]:
-    """Send a single page image to GPT-4o Vision and parse extracted leads."""
+    """Send a single page image to GPT-4o Vision and parse extracted leads.
+
+    Retries up to _MAX_RETRIES times with exponential backoff on transient
+    errors (rate limits, server errors).
+    """
     b64 = base64.b64encode(image_png).decode()
 
-    response = await client.chat.completions.create(
-        model=model,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": EXTRACTION_PROMPT},
+    last_exc: Exception | None = None
+    for attempt in range(_MAX_RETRIES):
+        try:
+            response = await client.chat.completions.create(
+                model=model,
+                messages=[
                     {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/png;base64,{b64}",
-                            "detail": "high",
-                        },
-                    },
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": EXTRACTION_PROMPT},
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/png;base64,{b64}",
+                                    "detail": "high",
+                                },
+                            },
+                        ],
+                    }
                 ],
-            }
-        ],
-        temperature=0.1,
-        max_tokens=4096,
-    )
+                temperature=0.1,
+                max_tokens=4096,
+            )
+            break  # success
+        except (openai.RateLimitError, openai.APIStatusError) as e:
+            last_exc = e
+            if attempt < _MAX_RETRIES - 1:
+                delay = _RETRY_BASE_DELAY * (2 ** attempt)
+                logger.warning(
+                    "Retryable error on attempt %d/%d: %s — waiting %.1fs",
+                    attempt + 1, _MAX_RETRIES, e, delay,
+                )
+                await asyncio.sleep(delay)
+            else:
+                raise
+    else:
+        raise last_exc  # type: ignore[misc]
 
     raw = response.choices[0].message.content or "[]"
 
@@ -146,7 +171,9 @@ def _has_contact_info(lead: dict[str, Any]) -> bool:
     return has_phone or has_email or has_website
 
 
-_MAX_CONCURRENT_PAGES = 10
+_MAX_CONCURRENT_SMALL = 10  # PDFs under 40 pages
+_MAX_CONCURRENT_LARGE = 5   # PDFs with 40+ pages (avoid rate limits)
+_LARGE_PDF_THRESHOLD = 40
 
 
 async def parse_pdf(
@@ -157,8 +184,9 @@ async def parse_pdf(
     """
     Full pipeline: PDF → images → Vision API → extracted leads.
 
-    Pages are processed concurrently (up to _MAX_CONCURRENT_PAGES at a time)
-    to keep total wall-clock time reasonable for large PDFs.
+    Pages are processed concurrently with adaptive concurrency:
+    smaller PDFs use higher parallelism, large ones throttle to avoid
+    OpenAI rate limits.
 
     Returns:
         {
@@ -170,7 +198,11 @@ async def parse_pdf(
     images = pdf_to_images(pdf_bytes)
     client = openai.AsyncOpenAI(api_key=openai_api_key)
 
-    sem = asyncio.Semaphore(_MAX_CONCURRENT_PAGES)
+    concurrency = (
+        _MAX_CONCURRENT_LARGE if len(images) >= _LARGE_PDF_THRESHOLD
+        else _MAX_CONCURRENT_SMALL
+    )
+    sem = asyncio.Semaphore(concurrency)
 
     async def _process_page(
         i: int, img: bytes

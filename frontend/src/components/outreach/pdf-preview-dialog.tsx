@@ -214,10 +214,24 @@ export function PdfPreviewDialog({
           {errors.length > 0 && (
             <div className="flex items-start gap-2 mb-4 p-3 rounded-lg bg-[var(--accent-amber-muted)]">
               <AlertCircle className="h-4 w-4 text-[var(--accent-amber)] mt-0.5 shrink-0" />
-              <p className="text-xs text-[var(--text-secondary)]">
-                {errors.length} page(s) had extraction errors:{" "}
-                {errors.map((e) => `p.${e.page}`).join(", ")}
-              </p>
+              <div className="text-xs text-[var(--text-secondary)]">
+                <p>
+                  {errors.length} page(s) had extraction errors:{" "}
+                  {errors.map((e) => `p.${e.page}`).join(", ")}
+                </p>
+                <details className="mt-1">
+                  <summary className="cursor-pointer text-[var(--accent-amber)] hover:underline">
+                    Show details
+                  </summary>
+                  <ul className="mt-1 space-y-0.5 pl-3 list-disc">
+                    {errors.map((e) => (
+                      <li key={e.page}>
+                        p.{e.page}: {e.error}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </div>
             </div>
           )}
 
