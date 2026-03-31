@@ -379,29 +379,30 @@ export function PdfPreviewDialog({
                         </div>
                       </td>
                       <td className="px-2 py-1.5">
-                        {row.industry_suggestion ? (
-                          industryMatchMap.get(row.industry_suggestion.toLowerCase()) != null ? (
-                            <span className="inline-flex items-center gap-1 text-xs text-[var(--accent-teal)]">
-                              <Check className="h-3 w-3" />
-                              {row.industry_suggestion}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-xs text-[var(--text-tertiary)]">
-                              {row.industry_suggestion}
-                              <button
-                                type="button"
-                                title={`Create "${row.industry_suggestion}" industry`}
-                                disabled={createIndustry.isPending}
-                                onClick={() => handleCreateIndustry(row.industry_suggestion!)}
-                                className="shrink-0 h-4 w-4 inline-flex items-center justify-center rounded bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-80 transition-opacity disabled:opacity-50"
-                              >
-                                <Plus className="h-3 w-3" />
-                              </button>
-                            </span>
-                          )
-                        ) : (
-                          <span className="text-xs text-[var(--text-tertiary)]">—</span>
-                        )}
+                        <div className="flex items-center gap-1">
+                          <Input
+                            list="industries-list"
+                            value={row.industry_suggestion ?? ""}
+                            onChange={(e) => updateField(i, "industry_suggestion", e.target.value)}
+                            placeholder="Industry..."
+                            className={`h-7 text-xs flex-1 min-w-[100px] ${
+                              row.industry_suggestion && industryMatchMap.get(row.industry_suggestion.toLowerCase()) != null
+                                ? "border-[var(--accent-teal)] bg-[var(--accent-teal)]/10 text-[var(--accent-teal)] focus-visible:ring-[var(--accent-teal)]"
+                                : ""
+                            }`}
+                          />
+                          {row.industry_suggestion && industryMatchMap.get(row.industry_suggestion.toLowerCase()) == null && (
+                            <button
+                              type="button"
+                              title={`Create "${row.industry_suggestion}" industry`}
+                              disabled={createIndustry.isPending}
+                              onClick={() => handleCreateIndustry(row.industry_suggestion!)}
+                              className="shrink-0 h-6 w-6 inline-flex items-center justify-center rounded border border-[var(--border)] text-[var(--text-secondary)] hover:border-[var(--primary)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)] transition-colors disabled:opacity-50"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="px-2 py-1.5">
                         <span className="text-xs font-mono text-[var(--text-tertiary)]">
@@ -493,6 +494,12 @@ export function PdfPreviewDialog({
               </Button>
             </div>
           </div>
+
+          <datalist id="industries-list">
+            {industries.map((ind) => (
+              <option key={ind.id} value={ind.name} />
+            ))}
+          </datalist>
         </DialogPopup>
       </DialogPortal>
     </Dialog>

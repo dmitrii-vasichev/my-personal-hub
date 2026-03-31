@@ -90,6 +90,7 @@ async def extract_leads_from_image(
     client: openai.AsyncOpenAI,
     image_png: bytes,
     model: str = "gpt-4o",
+    existing_industries: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     """Send a single page image to GPT-4o Vision and parse extracted leads.
 
@@ -97,6 +98,11 @@ async def extract_leads_from_image(
     errors (rate limits, server errors).
     """
     b64 = base64.b64encode(image_png).decode()
+
+    prompt = EXTRACTION_PROMPT
+    if existing_industries:
+        industries_list = ", ".join(f'"{i}"' for i in existing_industries)
+        prompt += f"\n\nIMPORTANT: When selecting an `industry_suggestion`, preferentially use one of these EXACT existing strings if it fits: [{industries_list}]. If none fit perfectly, you may suggest a new category."
 
     last_exc: Exception | None = None
     for attempt in range(_MAX_RETRIES):
@@ -107,7 +113,7 @@ async def extract_leads_from_image(
                     {
                         "role": "user",
                         "content": [
-                            {"type": "text", "text": EXTRACTION_PROMPT},
+                            {"type": "text", "text": prompt},
                             {
                                 "type": "image_url",
                                 "image_url": {
@@ -180,6 +186,7 @@ async def parse_pdf(
     pdf_bytes: bytes,
     openai_api_key: str,
     filename: str = "upload.pdf",
+    existing_industries: list[str] | None = None,
 ) -> dict[str, Any]:
     """
     Full pipeline: PDF → images → Vision API → extracted leads.
@@ -210,7 +217,9 @@ async def parse_pdf(
         page_num = i + 1
         async with sem:
             try:
-                page_leads = await extract_leads_from_image(client, img)
+                page_leads = await extract_leads_from_image(
+                    client, img, existing_industries=existing_industries
+                )
                 for lead in page_leads:
                     lead["page"] = page_num
                     lead["source_detail"] = filename

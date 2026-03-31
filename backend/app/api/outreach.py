@@ -105,7 +105,15 @@ async def parse_pdf_endpoint(
         )
 
     try:
-        result_data = await parse_pdf(pdf_bytes, api_key, filename=file.filename)
+        industries = await outreach_service.list_industries(db, current_user)
+        existing_industries = [ind.name for ind in industries]
+        
+        result_data = await parse_pdf(
+            pdf_bytes, 
+            api_key, 
+            filename=file.filename,
+            existing_industries=existing_industries
+        )
     except Exception as e:
         logger.error("PDF parsing failed: %s", e)
         raise HTTPException(
