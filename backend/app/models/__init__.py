@@ -27,7 +27,7 @@ from app.models.garmin import (
     VitalsBriefing,
     VitalsSyncLog,
 )
-from app.models.outreach import Lead, LeadStatus, LeadStatusHistory, Industry
+from app.models.outreach import Lead, LeadStatus, LeadStatusHistory, LeadActivity, ActivityType, Industry
 
 __all__ = [
     "User",
@@ -69,5 +69,7 @@ __all__ = [
     "Lead",
     "LeadStatus",
     "LeadStatusHistory",
+    "LeadActivity",
+    "ActivityType",
     "Industry",
 ]

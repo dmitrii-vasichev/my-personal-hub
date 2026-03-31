@@ -3,7 +3,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from app.models.outreach import LeadStatus
+from app.models.outreach import ActivityType, LeadStatus
 
 
 # ── Nested schemas ───────────────────────────────────────────────────────────
@@ -29,6 +29,33 @@ class IndustryResponse(BaseModel):
     description: Optional[str]
     created_at: datetime
     updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ── Activity schemas ────────────────────────────────────────────────────────
+
+
+class ActivityCreate(BaseModel):
+    activity_type: ActivityType
+    subject: Optional[str] = None
+    body: Optional[str] = None
+
+
+class SendEmailRequest(BaseModel):
+    subject: str
+    body: str
+
+
+class ActivityResponse(BaseModel):
+    id: int
+    lead_id: int
+    activity_type: str
+    subject: Optional[str]
+    body: Optional[str]
+    gmail_message_id: Optional[str]
+    gmail_thread_id: Optional[str]
+    created_at: datetime
 
     model_config = {"from_attributes": True}
 
@@ -109,10 +136,12 @@ class LeadKanbanCard(BaseModel):
 
 class LeadKanbanResponse(BaseModel):
     new: list[LeadKanbanCard] = []
-    sent: list[LeadKanbanCard] = []
-    replied: list[LeadKanbanCard] = []
-    in_progress: list[LeadKanbanCard] = []
-    rejected: list[LeadKanbanCard] = []
+    contacted: list[LeadKanbanCard] = []
+    follow_up: list[LeadKanbanCard] = []
+    responded: list[LeadKanbanCard] = []
+    negotiating: list[LeadKanbanCard] = []
+    won: list[LeadKanbanCard] = []
+    lost: list[LeadKanbanCard] = []
     on_hold: list[LeadKanbanCard] = []
 
 
@@ -196,8 +225,8 @@ class OutreachAnalytics(BaseModel):
     total: int
     by_status: list[StatusCount]
     by_industry: list[IndustryBreakdown]
-    conversion_sent_to_replied: float | None = None
-    conversion_replied_to_in_progress: float | None = None
+    conversion_contacted_to_responded: float | None = None
+    conversion_responded_to_negotiating: float | None = None
 
 
 class IndustryCreate(BaseModel):
@@ -212,3 +241,71 @@ class IndustryUpdate(BaseModel):
     slug: Optional[str] = None
     drive_file_id: Optional[str] = None
     description: Optional[str] = None
+
+
+# ── Batch outreach schemas ─────────────────────────────────────────────────
+
+
+class BatchPrepareRequest(BaseModel):
+    """Filter leads for batch outreach and generate missing proposals."""
+    status: Optional[list[str]] = None
+    industry_id: Optional[int] = None
+    subject_template: str = "Коммерческое предложение — {business_name}"
+
+
+class BatchItemPreview(BaseModel):
+    lead_id: int
+    business_name: str
+    email: Optional[str]
+    industry_name: Optional[str]
+    subject: str
+    body: str
+    included: bool = True
+
+    model_config = {"from_attributes": True}
+
+
+class BatchPrepareResponse(BaseModel):
+    job_id: int
+    items: list[BatchItemPreview]
+    total: int
+    skipped_no_email: int
+    skipped_no_proposal: int
+
+
+class BatchItemUpdate(BaseModel):
+    lead_id: int
+    subject: Optional[str] = None
+    body: Optional[str] = None
+    included: bool = True
+
+
+class BatchSendRequest(BaseModel):
+    job_id: int
+    items: list[BatchItemUpdate]
+
+
+class BatchItemResponse(BaseModel):
+    id: int
+    lead_id: int
+    subject: str
+    body: str
+    status: str
+    error_message: Optional[str]
+    sent_at: Optional[datetime]
+    lead_business_name: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class BatchJobResponse(BaseModel):
+    id: int
+    status: str
+    total_count: int
+    sent_count: int
+    failed_count: int
+    items: list[BatchItemResponse] = []
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}

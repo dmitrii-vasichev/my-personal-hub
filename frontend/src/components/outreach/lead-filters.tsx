@@ -16,10 +16,12 @@ interface LeadFiltersBarProps {
 
 const STATUS_OPTIONS: LeadStatus[] = [
   "new",
-  "sent",
-  "replied",
-  "in_progress",
-  "rejected",
+  "contacted",
+  "follow_up",
+  "responded",
+  "negotiating",
+  "won",
+  "lost",
   "on_hold",
 ];
 

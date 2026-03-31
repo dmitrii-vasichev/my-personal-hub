@@ -77,7 +77,7 @@ export function OutreachAnalytics() {
 
   // KPI counts
   const statusMap = Object.fromEntries(data.by_status.map((s) => [s.status, s.count]));
-  const sentPlus = data.total - (statusMap["new"] ?? 0);
+  const contactedPlus = data.total - (statusMap["new"] ?? 0);
 
   return (
     <div className="space-y-6">
@@ -85,17 +85,17 @@ export function OutreachAnalytics() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KpiCard label="Total Leads" value={data.total} />
         <KpiCard
-          label="Sent"
-          value={sentPlus}
-          sub={data.total > 0 ? `${Math.round((sentPlus / data.total) * 100)}% of total` : undefined}
+          label="Contacted"
+          value={contactedPlus}
+          sub={data.total > 0 ? `${Math.round((contactedPlus / data.total) * 100)}% of total` : undefined}
         />
         <KpiCard
-          label="Sent → Replied"
-          value={data.conversion_sent_to_replied != null ? `${data.conversion_sent_to_replied}%` : "—"}
+          label="Contacted → Responded"
+          value={data.conversion_contacted_to_responded != null ? `${data.conversion_contacted_to_responded}%` : "—"}
         />
         <KpiCard
-          label="Replied → In Progress"
-          value={data.conversion_replied_to_in_progress != null ? `${data.conversion_replied_to_in_progress}%` : "—"}
+          label="Responded → Negotiating"
+          value={data.conversion_responded_to_negotiating != null ? `${data.conversion_responded_to_negotiating}%` : "—"}
         />
       </div>
 

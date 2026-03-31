@@ -7,9 +7,10 @@ from sqlalchemy import and_, asc, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.outreach import Industry, Lead, LeadStatus, LeadStatusHistory
+from app.models.outreach import ActivityType, Industry, Lead, LeadActivity, LeadStatus, LeadStatusHistory
 from app.models.user import User, UserRole
 from app.schemas.outreach import (
+    ActivityCreate,
     DuplicateMatch,
     IndustryBreakdown,
     IndustryCreate,
@@ -18,6 +19,7 @@ from app.schemas.outreach import (
     LeadStatusChange,
     LeadUpdate,
     OutreachAnalytics,
+    SendEmailRequest,
     StatusCount,
 )
 
@@ -280,6 +282,121 @@ async def get_lead_history(
     return list(result.scalars().all())
 
 
+# ── Activities ──────────────────────────────────────────────────────────────
+
+
+async def create_activity(
+    db: AsyncSession, lead_id: int, data: ActivityCreate, current_user: User
+) -> LeadActivity | None:
+    lead = await _load_lead(db, lead_id)
+    if lead is None or not _can_access(lead, current_user):
+        return None
+
+    activity = LeadActivity(
+        lead_id=lead_id,
+        activity_type=data.activity_type.value,
+        subject=data.subject,
+        body=data.body,
+    )
+    db.add(activity)
+    await db.commit()
+    await db.refresh(activity)
+    return activity
+
+
+async def list_activities(
+    db: AsyncSession, lead_id: int, current_user: User
+) -> list[LeadActivity] | None:
+    lead = await _load_lead(db, lead_id)
+    if lead is None or not _can_access(lead, current_user):
+        return None
+
+    result = await db.execute(
+        select(LeadActivity)
+        .where(LeadActivity.lead_id == lead_id)
+        .order_by(LeadActivity.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
+async def delete_activity(
+    db: AsyncSession, activity_id: int, current_user: User
+) -> bool:
+    result = await db.execute(
+        select(LeadActivity).where(LeadActivity.id == activity_id)
+    )
+    activity = result.scalar_one_or_none()
+    if activity is None:
+        return False
+
+    lead = await _load_lead(db, activity.lead_id)
+    if lead is None or not _can_access(lead, current_user):
+        return False
+
+    await db.delete(activity)
+    await db.commit()
+    return True
+
+
+# ── Gmail send ─────────────────────────────────────────────────────────────
+
+
+async def send_email_to_lead(
+    db: AsyncSession,
+    lead_id: int,
+    data: SendEmailRequest,
+    current_user: User,
+    credentials,
+) -> LeadActivity | None:
+    """Send email via Gmail and auto-log as outbound_email activity.
+
+    Also auto-transitions status: new → contacted on first send.
+    Returns the created activity, or None if lead not found / no access.
+    """
+    from app.services.google_gmail import send_email
+
+    lead = await _load_lead(db, lead_id)
+    if lead is None or not _can_access(lead, current_user):
+        return None
+
+    if not lead.email:
+        raise ValueError("Lead has no email address")
+
+    result = await send_email(
+        credentials=credentials,
+        to=lead.email,
+        subject=data.subject,
+        body=data.body,
+    )
+
+    activity = LeadActivity(
+        lead_id=lead_id,
+        activity_type=ActivityType.outbound_email.value,
+        subject=data.subject,
+        body=data.body,
+        gmail_message_id=result["message_id"],
+        gmail_thread_id=result["thread_id"],
+    )
+    db.add(activity)
+
+    # Auto-status transition: new → contacted
+    if lead.status == LeadStatus.new.value:
+        old_status = lead.status
+        lead.status = LeadStatus.contacted.value
+        lead.updated_at = datetime.now(timezone.utc)
+        history = LeadStatusHistory(
+            lead_id=lead.id,
+            old_status=old_status,
+            new_status=LeadStatus.contacted.value,
+            comment="Auto: first email sent",
+        )
+        db.add(history)
+
+    await db.commit()
+    await db.refresh(activity)
+    return activity
+
+
 # ── Analytics ───────────────────────────────────────────────────────────────
 
 
@@ -323,23 +440,24 @@ async def get_analytics(
         by_industry.append(IndustryBreakdown(industry_name="Unassigned", count=no_ind_count))
 
     # Conversion rates
-    replied = counts.get("replied", 0)
-    in_progress = counts.get("in_progress", 0)
+    responded = counts.get("responded", 0)
+    negotiating = counts.get("negotiating", 0)
+    won = counts.get("won", 0)
 
-    # "sent" means all leads that moved past new (sent + replied + in_progress + rejected + on_hold)
-    sent_plus = total - counts.get("new", 0)
-    # "replied" means replied + in_progress (those who progressed past replied)
-    replied_plus = replied + in_progress
+    # "contacted" means all leads that moved past new
+    contacted_plus = total - counts.get("new", 0)
+    # "responded" means responded + negotiating + won (those who progressed past responded)
+    responded_plus = responded + negotiating + won
 
-    conv_sent_replied = (replied_plus / sent_plus * 100) if sent_plus > 0 else None
-    conv_replied_ip = (in_progress / replied_plus * 100) if replied_plus > 0 else None
+    conv_contacted_responded = (responded_plus / contacted_plus * 100) if contacted_plus > 0 else None
+    conv_responded_negotiating = ((negotiating + won) / responded_plus * 100) if responded_plus > 0 else None
 
     return OutreachAnalytics(
         total=total,
         by_status=by_status,
         by_industry=by_industry,
-        conversion_sent_to_replied=round(conv_sent_replied, 1) if conv_sent_replied is not None else None,
-        conversion_replied_to_in_progress=round(conv_replied_ip, 1) if conv_replied_ip is not None else None,
+        conversion_contacted_to_responded=round(conv_contacted_responded, 1) if conv_contacted_responded is not None else None,
+        conversion_responded_to_negotiating=round(conv_responded_negotiating, 1) if conv_responded_negotiating is not None else None,
     )
 
 

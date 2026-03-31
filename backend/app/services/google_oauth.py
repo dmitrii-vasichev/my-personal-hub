@@ -1,5 +1,5 @@
 """
-Google OAuth2 service for Calendar integration.
+Google OAuth2 service for Calendar, Drive, and Gmail integration.
 
 Flow:
 1. User calls GET /api/calendar/oauth/connect -> gets authorization URL
@@ -37,7 +37,14 @@ SCOPES = [
     "https://www.googleapis.com/auth/calendar",
     "https://www.googleapis.com/auth/drive.readonly",
     "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/gmail.readonly",
 ]
+
+GMAIL_SCOPES = {
+    "https://www.googleapis.com/auth/gmail.send",
+    "https://www.googleapis.com/auth/gmail.readonly",
+}
 
 
 async def get_oauth_config(
@@ -242,9 +249,17 @@ async def get_status(
     )
     token_record = result.scalar_one_or_none()
     if not token_record:
-        return {"connected": False, "calendar_id": None, "last_synced": None}
+        return {"connected": False, "calendar_id": None, "last_synced": None, "gmail_available": False}
+
+    # Check if Gmail scopes are granted by trying to get valid credentials
+    gmail_available = False
+    creds = await get_credentials(db, user)
+    if creds and creds.scopes:
+        gmail_available = GMAIL_SCOPES.issubset(creds.scopes)
+
     return {
         "connected": True,
         "calendar_id": token_record.calendar_id,
         "last_synced": None,  # Will be populated by sync service
+        "gmail_available": gmail_available,
     }

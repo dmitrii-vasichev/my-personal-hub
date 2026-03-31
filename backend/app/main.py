@@ -26,7 +26,8 @@ from app.api.resumes import router as resumes_router
 from app.api.search import router as search_router
 from app.api.settings import router as settings_router
 from app.api.tasks import router as tasks_router
-from app.api.outreach import industry_router, router as outreach_router
+from app.api.gmail import router as gmail_router
+from app.api.outreach import batch_router, industry_router, router as outreach_router
 from app.api.users import router as users_router
 from app.core.config import settings
 from app.core.scheduler import scheduler, schedule_garmin_sync, schedule_user_digest, schedule_user_polling
@@ -145,8 +146,25 @@ async def lifespan(application: FastAPI):
             id="vitals_briefing_cleanup",
             replace_existing=True,
         )
+
+        # Schedule Gmail reply polling every 5 minutes
+        scheduler.add_job(
+            "app.services.gmail_poller:run_gmail_poll",
+            "interval",
+            minutes=5,
+            id="gmail_reply_poll",
+            replace_existing=True,
+            misfire_grace_time=300,
+        )
     except Exception as e:
         logger.warning("Could not restore polling jobs: %s", e)
+
+    # Resume incomplete batch outreach jobs
+    try:
+        from app.services.batch_outreach import resume_incomplete_jobs
+        await resume_incomplete_jobs()
+    except Exception as e:
+        logger.warning("Could not resume batch outreach jobs: %s", e)
 
     yield
 
@@ -182,6 +200,8 @@ app.include_router(garmin_router)
 app.include_router(vitals_dashboard_router)
 app.include_router(outreach_router)
 app.include_router(industry_router)
+app.include_router(gmail_router)
+app.include_router(batch_router)
 
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(

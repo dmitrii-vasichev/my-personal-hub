@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Send, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LeadFiltersBar } from "@/components/outreach/lead-filters";
 import { LeadsTable } from "@/components/outreach/leads-table";
@@ -13,8 +13,10 @@ import { PdfUploadDialog } from "@/components/outreach/pdf-upload-dialog";
 import { PdfPreviewDialog } from "@/components/outreach/pdf-preview-dialog";
 import { IndustryManager } from "@/components/outreach/industry-manager";
 import { OutreachAnalytics } from "@/components/outreach/outreach-analytics";
+import { BatchPrepareDialog } from "@/components/outreach/batch-prepare-dialog";
+import { BatchProgressDialog } from "@/components/outreach/batch-progress-dialog";
 import { useLeads, useLead } from "@/hooks/use-leads";
-import type { Lead, LeadFilters, ParsedLead, PdfParseError } from "@/types/lead";
+import type { BatchJobResponse, Lead, LeadFilters, ParsedLead, PdfParseError } from "@/types/lead";
 
 type PageTab = "leads" | "industries" | "analytics";
 
@@ -30,6 +32,11 @@ function OutreachPageInner() {
   // Lead detail dialog
   const [detailLeadId, setDetailLeadId] = useState<number | null>(null);
   const { data: detailLead } = useLead(detailLeadId ?? 0);
+
+  // Batch outreach state
+  const [batchPrepareOpen, setBatchPrepareOpen] = useState(false);
+  const [batchProgressOpen, setBatchProgressOpen] = useState(false);
+  const [batchJobId, setBatchJobId] = useState<number | null>(null);
 
   // PDF flow state
   const [pdfUploadOpen, setPdfUploadOpen] = useState(false);
@@ -60,6 +67,11 @@ function OutreachPageInner() {
     }
   };
 
+  const handleBatchStarted = (job: BatchJobResponse) => {
+    setBatchJobId(job.id);
+    setBatchProgressOpen(true);
+  };
+
   const handlePdfParsed = (
     result: { total_pages: number; leads: ParsedLead[]; errors: PdfParseError[] },
     filename: string
@@ -84,6 +96,15 @@ function OutreachPageInner() {
         <h1 className="text-xl font-semibold text-[var(--text-primary)]">Outreach</h1>
         {activeTab === "leads" && (
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setBatchPrepareOpen(true)}
+              className="gap-1.5"
+            >
+              <Send className="h-4 w-4" />
+              Batch Send
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -192,6 +213,18 @@ function OutreachPageInner() {
         errors={parseErrors}
         totalPages={parsedTotalPages}
         filename={parsedFilename}
+      />
+
+      <BatchPrepareDialog
+        open={batchPrepareOpen}
+        onOpenChange={setBatchPrepareOpen}
+        onBatchStarted={handleBatchStarted}
+      />
+
+      <BatchProgressDialog
+        open={batchProgressOpen}
+        onOpenChange={setBatchProgressOpen}
+        jobId={batchJobId}
       />
     </div>
   );

@@ -11,6 +11,8 @@ from app.core.encryption import decrypt_value
 from app.models.settings import UserSettings
 from app.models.user import User
 from app.schemas.outreach import (
+    ActivityCreate,
+    ActivityResponse,
     BatchLeadCreate,
     CheckDuplicatesRequest,
     CheckDuplicatesResponse,
@@ -28,7 +30,20 @@ from app.schemas.outreach import (
     PdfParseResponse,
     ProposalGenerateRequest,
 )
+from app.schemas.outreach import (
+    BatchJobResponse,
+    BatchPrepareRequest,
+    BatchPrepareResponse,
+    BatchSendRequest,
+)
 from app.services import outreach as outreach_service
+from app.services.batch_outreach import (
+    cancel_batch,
+    get_batch_job,
+    pause_batch,
+    prepare_batch,
+    start_batch_send,
+)
 from app.services.lead_pdf_parser import parse_pdf
 from app.services.lead_proposal import generate_proposal
 
@@ -236,6 +251,49 @@ async def get_lead_history(
     return history
 
 
+# ── Activities ──────────────────────────────────────────────────────────────
+
+
+@router.post(
+    "/{lead_id}/activities",
+    response_model=ActivityResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_activity(
+    lead_id: int,
+    data: ActivityCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    activity = await outreach_service.create_activity(db, lead_id, data, current_user)
+    if activity is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
+    return activity
+
+
+@router.get("/{lead_id}/activities", response_model=list[ActivityResponse])
+async def list_activities(
+    lead_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    activities = await outreach_service.list_activities(db, lead_id, current_user)
+    if activities is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead not found")
+    return activities
+
+
+@router.delete("/activities/{activity_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_activity(
+    activity_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    deleted = await outreach_service.delete_activity(db, activity_id, current_user)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found")
+
+
 # ── Proposal Generation ─────────────────────────────────────────────────────
 
 
@@ -315,3 +373,99 @@ async def delete_industry(
     deleted = await outreach_service.delete_industry(db, industry_id, current_user)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Industry not found")
+
+
+# ── Batch Outreach ──────────────────────────────────────────────────────────
+
+batch_router = APIRouter(prefix="/api/outreach/batch", tags=["outreach"])
+
+
+@batch_router.post("/prepare", response_model=BatchPrepareResponse)
+async def prepare_batch_endpoint(
+    data: BatchPrepareRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    """Filter leads, generate missing proposals, return preview for editing."""
+    try:
+        result = await prepare_batch(db, data, current_user)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        logger.error("Batch prepare failed: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Batch preparation failed: {e}",
+        )
+    return result
+
+
+@batch_router.post("/send", response_model=BatchJobResponse)
+async def send_batch_endpoint(
+    data: BatchSendRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    """Start batch send job. Emails are sent in background with rate limiting."""
+    try:
+        job = await start_batch_send(db, data.job_id, data.items, current_user)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch job not found")
+
+    # Return fresh status
+    result = await get_batch_job(db, job.id, current_user)
+    return result
+
+
+@batch_router.get("/{job_id}", response_model=BatchJobResponse)
+async def get_batch_status(
+    job_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    """Get batch job status with per-item progress."""
+    result = await get_batch_job(db, job_id, current_user)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch job not found")
+    return result
+
+
+@batch_router.post("/{job_id}/pause", response_model=BatchJobResponse)
+async def pause_batch_endpoint(
+    job_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    """Pause a running batch send."""
+    try:
+        job = await pause_batch(db, job_id, current_user)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch job not found")
+
+    result = await get_batch_job(db, job.id, current_user)
+    return result
+
+
+@batch_router.post("/{job_id}/cancel", response_model=BatchJobResponse)
+async def cancel_batch_endpoint(
+    job_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    """Cancel a batch send. Remaining items are skipped."""
+    try:
+        job = await cancel_batch(db, job_id, current_user)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch job not found")
+
+    result = await get_batch_job(db, job.id, current_user)
+    return result

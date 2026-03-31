@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ProposalSection } from "@/components/outreach/proposal-section";
+import { ActivityTimeline } from "@/components/outreach/activity-timeline";
 import { useLeadStatusHistory, useChangeLeadStatus, useDeleteLead } from "@/hooks/use-leads";
 import {
   LEAD_STATUS_LABELS,
@@ -62,10 +63,12 @@ function formatDateTime(dateStr: string) {
 
 const ALL_STATUSES: LeadStatus[] = [
   "new",
-  "sent",
-  "replied",
-  "in_progress",
-  "rejected",
+  "contacted",
+  "follow_up",
+  "responded",
+  "negotiating",
+  "won",
+  "lost",
   "on_hold",
 ];
 
@@ -292,6 +295,14 @@ export function LeadDetailDialog({
 
             {/* Proposal */}
             <ProposalSection lead={lead} />
+
+            {/* Activity timeline */}
+            <div>
+              <h3 className="text-sm font-medium text-[var(--text-primary)] mb-3">
+                Activity
+              </h3>
+              <ActivityTimeline leadId={lead.id} leadEmail={lead.email} proposalText={lead.proposal_text} />
+            </div>
 
             {/* Status history */}
             {history.length > 0 && (

@@ -1,10 +1,12 @@
 // Lead outreach status
 export type LeadStatus =
   | "new"
-  | "sent"
-  | "replied"
-  | "in_progress"
-  | "rejected"
+  | "contacted"
+  | "follow_up"
+  | "responded"
+  | "negotiating"
+  | "won"
+  | "lost"
   | "on_hold";
 
 export interface LeadStatusHistoryEntry {
@@ -62,52 +64,62 @@ export interface LeadKanbanCard {
 
 export interface LeadKanbanData {
   new: LeadKanbanCard[];
-  sent: LeadKanbanCard[];
-  replied: LeadKanbanCard[];
-  in_progress: LeadKanbanCard[];
-  rejected: LeadKanbanCard[];
+  contacted: LeadKanbanCard[];
+  follow_up: LeadKanbanCard[];
+  responded: LeadKanbanCard[];
+  negotiating: LeadKanbanCard[];
+  won: LeadKanbanCard[];
+  lost: LeadKanbanCard[];
   on_hold: LeadKanbanCard[];
 }
 
 // Human-readable labels
 export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   new: "New",
-  sent: "Sent",
-  replied: "Replied",
-  in_progress: "In Progress",
-  rejected: "Rejected",
+  contacted: "Contacted",
+  follow_up: "Follow Up",
+  responded: "Responded",
+  negotiating: "Negotiating",
+  won: "Won",
+  lost: "Lost",
   on_hold: "On Hold",
 };
 
 // Theme-aware status colors
 export const LEAD_STATUS_COLORS: Record<LeadStatus, string> = {
   new: "var(--tertiary)",
-  sent: "var(--primary)",
-  replied: "var(--accent-amber)",
-  in_progress: "var(--accent-teal)",
-  rejected: "var(--destructive)",
+  contacted: "var(--primary)",
+  follow_up: "var(--accent-amber)",
+  responded: "var(--accent-teal)",
+  negotiating: "var(--accent-purple, #8b5cf6)",
+  won: "var(--success, #22c55e)",
+  lost: "var(--destructive)",
   on_hold: "var(--tertiary)",
 };
 
 export const LEAD_STATUS_BG_COLORS: Record<LeadStatus, string> = {
   new: "var(--muted)",
-  sent: "var(--accent-muted)",
-  replied: "var(--accent-amber-muted)",
-  in_progress: "var(--accent-teal-muted)",
-  rejected: "var(--destructive-muted)",
+  contacted: "var(--accent-muted)",
+  follow_up: "var(--accent-amber-muted)",
+  responded: "var(--accent-teal-muted)",
+  negotiating: "var(--accent-purple-muted, rgba(139,92,246,0.1))",
+  won: "var(--success-muted, rgba(34,197,94,0.1))",
+  lost: "var(--destructive-muted)",
   on_hold: "var(--muted)",
 };
 
 // Pipeline columns for kanban
 export const LEAD_PIPELINE_COLUMNS: LeadStatus[] = [
   "new",
-  "sent",
-  "replied",
-  "in_progress",
+  "contacted",
+  "follow_up",
+  "responded",
+  "negotiating",
 ];
 
 export const LEAD_TERMINAL_STATUSES: LeadStatus[] = [
-  "rejected",
+  "won",
+  "lost",
   "on_hold",
 ];
 
@@ -153,6 +165,55 @@ export interface LeadFilters {
   sort_order?: "asc" | "desc";
 }
 
+// Activities
+export type ActivityType =
+  | "outbound_email"
+  | "inbound_email"
+  | "proposal_sent"
+  | "note"
+  | "outbound_call"
+  | "inbound_call"
+  | "meeting";
+
+export const ACTIVITY_TYPE_LABELS: Record<ActivityType, string> = {
+  outbound_email: "Email Sent",
+  inbound_email: "Email Received",
+  proposal_sent: "Proposal Sent",
+  note: "Note",
+  outbound_call: "Outbound Call",
+  inbound_call: "Inbound Call",
+  meeting: "Meeting",
+};
+
+export interface LeadActivity {
+  id: number;
+  lead_id: number;
+  activity_type: ActivityType;
+  subject?: string;
+  body?: string;
+  gmail_message_id?: string;
+  gmail_thread_id?: string;
+  created_at: string;
+}
+
+export interface CreateActivityInput {
+  activity_type: ActivityType;
+  subject?: string;
+  body?: string;
+}
+
+// Gmail
+export interface SendEmailInput {
+  subject: string;
+  body: string;
+}
+
+export interface GmailStatus {
+  connected: boolean;
+  gmail_available: boolean;
+  needs_reauth: boolean;
+}
+
 // PDF parsing
 export interface ParsedLead {
   business_name: string;
@@ -196,8 +257,8 @@ export interface OutreachAnalytics {
   total: number;
   by_status: StatusCount[];
   by_industry: IndustryBreakdown[];
-  conversion_sent_to_replied: number | null;
-  conversion_replied_to_in_progress: number | null;
+  conversion_contacted_to_responded: number | null;
+  conversion_responded_to_negotiating: number | null;
 }
 
 // Duplicate detection
@@ -230,4 +291,78 @@ export interface UpdateIndustryInput {
   slug?: string;
   drive_file_id?: string | null;
   description?: string | null;
+}
+
+// Batch outreach
+export type BatchJobStatus =
+  | "preparing"
+  | "sending"
+  | "paused"
+  | "completed"
+  | "cancelled"
+  | "failed";
+
+export type BatchItemStatus =
+  | "queued"
+  | "sending"
+  | "sent"
+  | "failed"
+  | "skipped";
+
+export interface BatchPrepareInput {
+  status?: string[];
+  industry_id?: number;
+  subject_template?: string;
+}
+
+export interface BatchItemPreview {
+  lead_id: number;
+  business_name: string;
+  email?: string;
+  industry_name?: string;
+  subject: string;
+  body: string;
+  included: boolean;
+}
+
+export interface BatchPrepareResponse {
+  job_id: number;
+  items: BatchItemPreview[];
+  total: number;
+  skipped_no_email: number;
+  skipped_no_proposal: number;
+}
+
+export interface BatchItemUpdate {
+  lead_id: number;
+  subject?: string;
+  body?: string;
+  included: boolean;
+}
+
+export interface BatchSendInput {
+  job_id: number;
+  items: BatchItemUpdate[];
+}
+
+export interface BatchItemResponse {
+  id: number;
+  lead_id: number;
+  subject: string;
+  body: string;
+  status: BatchItemStatus;
+  error_message?: string;
+  sent_at?: string;
+  lead_business_name?: string;
+}
+
+export interface BatchJobResponse {
+  id: number;
+  status: BatchJobStatus;
+  total_count: number;
+  sent_count: number;
+  failed_count: number;
+  items: BatchItemResponse[];
+  created_at: string;
+  updated_at: string;
 }

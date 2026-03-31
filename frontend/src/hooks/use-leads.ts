@@ -3,20 +3,28 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type {
+  BatchJobResponse,
+  BatchPrepareInput,
+  BatchPrepareResponse,
+  BatchSendInput,
   ChangeLeadStatusInput,
   CheckDuplicatesInput,
   CheckDuplicatesResponse,
+  CreateActivityInput,
   CreateLeadInput,
   CreateIndustryInput,
+  GmailStatus,
   GenerateProposalInput,
   Industry,
   Lead,
+  LeadActivity,
   LeadFilters,
   LeadKanbanCard,
   LeadKanbanData,
   LeadStatusHistoryEntry,
   OutreachAnalytics,
   PdfParseResponse,
+  SendEmailInput,
   UpdateIndustryInput,
   UpdateLeadInput,
 } from "@/types/lead";
@@ -66,6 +74,14 @@ export function useLeadStatusHistory(leadId: number) {
   return useQuery<LeadStatusHistoryEntry[]>({
     queryKey: [LEADS_KEY, leadId, "history"],
     queryFn: () => api.get<LeadStatusHistoryEntry[]>(`/api/leads/${leadId}/history`),
+    enabled: !!leadId,
+  });
+}
+
+export function useLeadActivities(leadId: number) {
+  return useQuery<LeadActivity[]>({
+    queryKey: [LEADS_KEY, leadId, "activities"],
+    queryFn: () => api.get<LeadActivity[]>(`/api/leads/${leadId}/activities`),
     enabled: !!leadId,
   });
 }
@@ -153,6 +169,69 @@ export function useChangeLeadStatus() {
     },
 
     onSettled: () => {
+      qc.invalidateQueries({ queryKey: [LEADS_KEY] });
+    },
+  });
+}
+
+// ── Activity mutations ─────────────────────────────────────────────────────
+
+export function useCreateActivity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ leadId, data }: { leadId: number; data: CreateActivityInput }) =>
+      api.post<LeadActivity>(`/api/leads/${leadId}/activities`, data),
+    onSuccess: (_result, { leadId }) => {
+      qc.invalidateQueries({ queryKey: [LEADS_KEY, leadId, "activities"] });
+    },
+  });
+}
+
+export function useDeleteActivity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ activityId, leadId }: { activityId: number; leadId: number }) =>
+      api.delete(`/api/leads/activities/${activityId}`),
+    onSuccess: (_result, { leadId }) => {
+      qc.invalidateQueries({ queryKey: [LEADS_KEY, leadId, "activities"] });
+    },
+  });
+}
+
+// ── Gmail ──────────────────────────────────────────────────────────────────
+
+const GMAIL_KEY = "gmail-status";
+
+export function useGmailStatus() {
+  return useQuery<GmailStatus>({
+    queryKey: [GMAIL_KEY],
+    queryFn: () => api.get<GmailStatus>("/api/gmail/status"),
+    staleTime: 60_000,
+  });
+}
+
+export function useSendEmail() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ leadId, data }: { leadId: number; data: SendEmailInput }) =>
+      api.post<LeadActivity>(`/api/gmail/leads/${leadId}/send-email`, data),
+    onSuccess: (_result, { leadId }) => {
+      qc.invalidateQueries({ queryKey: [LEADS_KEY, leadId, "activities"] });
+      qc.invalidateQueries({ queryKey: [LEADS_KEY, leadId, "history"] });
+      qc.invalidateQueries({ queryKey: [LEADS_KEY] });
+    },
+  });
+}
+
+export function useCheckReplies() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      api.post<{ threads_checked: number; new_replies: number; status_transitions: number }>(
+        "/api/gmail/check-replies",
+        {}
+      ),
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: [LEADS_KEY] });
     },
   });
@@ -254,6 +333,65 @@ export function useDeleteIndustry() {
     mutationFn: (id: number) => api.delete(`/api/industries/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [INDUSTRIES_KEY] });
+    },
+  });
+}
+
+// ── Batch outreach ─────────────────────────────────────────────────────────
+
+const BATCH_KEY = "batch-outreach";
+
+export function usePrepareBatch() {
+  return useMutation({
+    mutationFn: (data: BatchPrepareInput) =>
+      api.post<BatchPrepareResponse>("/api/outreach/batch/prepare", data),
+  });
+}
+
+export function useSendBatch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: BatchSendInput) =>
+      api.post<BatchJobResponse>("/api/outreach/batch/send", data),
+    onSuccess: (job) => {
+      qc.setQueryData([BATCH_KEY, job.id], job);
+    },
+  });
+}
+
+export function useBatchJob(jobId: number | null) {
+  return useQuery<BatchJobResponse>({
+    queryKey: [BATCH_KEY, jobId],
+    queryFn: () => api.get<BatchJobResponse>(`/api/outreach/batch/${jobId}`),
+    enabled: !!jobId,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      // Poll every 5s while sending
+      if (data?.status === "sending") return 5000;
+      return false;
+    },
+  });
+}
+
+export function usePauseBatch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: number) =>
+      api.post<BatchJobResponse>(`/api/outreach/batch/${jobId}/pause`, {}),
+    onSuccess: (job) => {
+      qc.setQueryData([BATCH_KEY, job.id], job);
+    },
+  });
+}
+
+export function useCancelBatch() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (jobId: number) =>
+      api.post<BatchJobResponse>(`/api/outreach/batch/${jobId}/cancel`, {}),
+    onSuccess: (job) => {
+      qc.setQueryData([BATCH_KEY, job.id], job);
+      qc.invalidateQueries({ queryKey: [LEADS_KEY] });
     },
   });
 }
