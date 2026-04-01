@@ -177,7 +177,7 @@ export function BatchPrepareDialog({
                         }
                         className={`px-3 py-1.5 rounded-md text-sm transition-colors border ${
                           selectedStatuses.includes(s)
-                            ? "bg-[var(--accent-muted)] border-[var(--accent)] text-[var(--accent)]"
+                            ? "bg-[var(--accent-muted)] border-[var(--primary)] text-[var(--primary)]"
                             : "bg-[var(--surface)] border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                         }`}
                       >
