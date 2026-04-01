@@ -15,7 +15,7 @@ import { IndustryManager } from "@/components/outreach/industry-manager";
 import { OutreachAnalytics } from "@/components/outreach/outreach-analytics";
 import { BatchPrepareDialog } from "@/components/outreach/batch-prepare-dialog";
 import { BatchProgressDialog } from "@/components/outreach/batch-progress-dialog";
-import { useLeads, useLead } from "@/hooks/use-leads";
+import { useLeads, useLead, useIndustries } from "@/hooks/use-leads";
 import type { BatchJobResponse, Lead, LeadFilters, ParsedLead, PdfParseError } from "@/types/lead";
 
 type PageTab = "leads" | "industries" | "analytics";
@@ -47,6 +47,7 @@ function OutreachPageInner() {
   const [parsedFilename, setParsedFilename] = useState("");
 
   const { data: leads = [], isLoading, error } = useLeads(filters);
+  const { data: industries = [] } = useIndustries();
 
   // Click on lead in table → open detail
   const handleLeadClick = (lead: Lead) => {
@@ -140,6 +141,12 @@ function OutreachPageInner() {
               }`}
             >
               {tab.label}
+              {tab.id === "leads" && !isLoading && leads.length > 0 && (
+                <span className="ml-1.5 text-xs text-[var(--text-tertiary)]">({leads.length})</span>
+              )}
+              {tab.id === "industries" && industries.length > 0 && (
+                <span className="ml-1.5 text-xs text-[var(--text-tertiary)]">({industries.length})</span>
+              )}
             </button>
           ))}
         </div>
