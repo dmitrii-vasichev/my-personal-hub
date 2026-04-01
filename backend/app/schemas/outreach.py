@@ -129,6 +129,7 @@ class LeadKanbanCard(BaseModel):
     status: str
     email: Optional[str] = None
     phone: Optional[str] = None
+    website: Optional[str] = None
     updated_at: datetime
 
     model_config = {"from_attributes": True}

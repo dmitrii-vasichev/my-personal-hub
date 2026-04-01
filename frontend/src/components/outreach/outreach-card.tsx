@@ -4,7 +4,8 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Mail, Phone } from "lucide-react";
 import type { LeadKanbanCard } from "@/types/lead";
-import { LEAD_STATUS_COLORS } from "@/types/lead";
+import { LEAD_STATUS_COLORS, getReachChannel } from "@/types/lead";
+import { ChannelBadge } from "./channel-chips";
 
 interface OutreachCardProps {
   card: LeadKanbanCard;
@@ -65,6 +66,9 @@ export function OutreachCard({ card, isDragging = false, onClick }: OutreachCard
         )}
 
         <div className="flex flex-col gap-1">
+          <div>
+            <ChannelBadge channel={getReachChannel(card)} />
+          </div>
           {card.email && (
             <div className="flex items-center gap-1 text-[11px] text-tertiary">
               <Mail className="h-3 w-3 flex-shrink-0" />

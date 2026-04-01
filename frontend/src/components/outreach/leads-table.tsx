@@ -15,7 +15,9 @@ import {
   LEAD_STATUS_LABELS,
   LEAD_STATUS_COLORS,
   LEAD_STATUS_BG_COLORS,
+  getReachChannel,
 } from "@/types/lead";
+import { ChannelBadge } from "./channel-chips";
 
 const columnHelper = createColumnHelper<Lead>();
 
@@ -81,6 +83,12 @@ export function LeadsTable({ leads, isLoading, error, onLeadClick }: LeadsTableP
         header: "Status",
         cell: (info) => <StatusBadge status={info.getValue()} />,
         size: 120,
+      }),
+      columnHelper.display({
+        id: "channel",
+        header: "Channel",
+        cell: (info) => <ChannelBadge channel={getReachChannel(info.row.original)} />,
+        size: 100,
       }),
       columnHelper.accessor("email", {
         header: "Email",

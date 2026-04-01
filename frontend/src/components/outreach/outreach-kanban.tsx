@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Users } from "lucide-react";
 import {
   DndContext,
@@ -11,8 +11,8 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import type { LeadKanbanCard, LeadStatus } from "@/types/lead";
-import { LEAD_PIPELINE_COLUMNS, LEAD_TERMINAL_STATUSES } from "@/types/lead";
+import type { LeadKanbanCard, LeadStatus, ReachChannel } from "@/types/lead";
+import { LEAD_PIPELINE_COLUMNS, LEAD_TERMINAL_STATUSES, getReachChannel } from "@/types/lead";
 import { useLeadKanban, useChangeLeadStatus } from "@/hooks/use-leads";
 import { OutreachColumn } from "./outreach-column";
 import { OutreachCardOverlay } from "./outreach-card";
@@ -42,10 +42,11 @@ function KanbanSkeleton() {
 }
 
 interface OutreachKanbanProps {
+  channelEnabled?: Record<ReachChannel, boolean>;
   onCardClick?: (cardId: number) => void;
 }
 
-export function OutreachKanban({ onCardClick }: OutreachKanbanProps = {}) {
+export function OutreachKanban({ channelEnabled, onCardClick }: OutreachKanbanProps = {}) {
   const { data: kanbanData, isLoading, error } = useLeadKanban();
   const changeStatus = useChangeLeadStatus();
   const [activeCard, setActiveCard] = useState<LeadKanbanCard | null>(null);
@@ -78,9 +79,21 @@ export function OutreachKanban({ onCardClick }: OutreachKanbanProps = {}) {
     }
   };
 
+  const filteredKanban = useMemo(() => {
+    if (!kanbanData) return null;
+    if (!channelEnabled) return kanbanData;
+    const allOn = channelEnabled.email && channelEnabled.website && channelEnabled.phone_only;
+    if (allOn) return kanbanData;
+    const result = {} as typeof kanbanData;
+    for (const key of Object.keys(kanbanData) as Array<keyof typeof kanbanData>) {
+      result[key] = kanbanData[key].filter((card) => channelEnabled[getReachChannel(card)]);
+    }
+    return result;
+  }, [kanbanData, channelEnabled]);
+
   if (isLoading) return <KanbanSkeleton />;
 
-  if (error || !kanbanData) {
+  if (error || !filteredKanban) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-sm text-destructive">Failed to load pipeline</p>
@@ -89,7 +102,7 @@ export function OutreachKanban({ onCardClick }: OutreachKanbanProps = {}) {
   }
 
   const allColumns = [...LEAD_PIPELINE_COLUMNS, ...LEAD_TERMINAL_STATUSES];
-  const isEmpty = allColumns.every((col) => (kanbanData[col] ?? []).length === 0);
+  const isEmpty = allColumns.every((col) => (filteredKanban[col] ?? []).length === 0);
 
   if (isEmpty) {
     return (
@@ -118,7 +131,7 @@ export function OutreachKanban({ onCardClick }: OutreachKanbanProps = {}) {
           <OutreachColumn
             key={status}
             status={status}
-            cards={kanbanData[status] ?? []}
+            cards={filteredKanban[status] ?? []}
             activeCardId={activeCard?.id ?? null}
             onCardClick={onCardClick}
           />
@@ -135,7 +148,7 @@ export function OutreachKanban({ onCardClick }: OutreachKanbanProps = {}) {
               <OutreachColumn
                 key={status}
                 status={status}
-                cards={kanbanData[status] ?? []}
+                cards={filteredKanban[status] ?? []}
                 activeCardId={activeCard?.id ?? null}
               />
             ))}

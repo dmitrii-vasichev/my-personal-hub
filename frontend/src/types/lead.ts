@@ -59,8 +59,36 @@ export interface LeadKanbanCard {
   status: LeadStatus;
   email?: string;
   phone?: string;
+  website?: string;
   updated_at: string;
 }
+
+// Reach channel — computed from email/website presence
+export type ReachChannel = "email" | "website" | "phone_only";
+
+export function getReachChannel(lead: { email?: string; website?: string }): ReachChannel {
+  if (lead.email) return "email";
+  if (lead.website) return "website";
+  return "phone_only";
+}
+
+export const REACH_CHANNEL_CONFIG: Record<ReachChannel, { label: string; color: string; bg: string }> = {
+  email: {
+    label: "Email",
+    color: "var(--success, #22c55e)",
+    bg: "var(--success-muted, rgba(34,197,94,0.1))",
+  },
+  website: {
+    label: "Website",
+    color: "var(--accent-amber)",
+    bg: "var(--accent-amber-muted)",
+  },
+  phone_only: {
+    label: "Phone only",
+    color: "var(--tertiary)",
+    bg: "var(--muted)",
+  },
+};
 
 export interface LeadKanbanData {
   new: LeadKanbanCard[];

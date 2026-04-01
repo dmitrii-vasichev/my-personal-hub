@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { Plus, Send, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LeadFiltersBar } from "@/components/outreach/lead-filters";
@@ -15,8 +15,10 @@ import { IndustryManager } from "@/components/outreach/industry-manager";
 import { OutreachAnalytics } from "@/components/outreach/outreach-analytics";
 import { BatchPrepareDialog } from "@/components/outreach/batch-prepare-dialog";
 import { BatchProgressDialog } from "@/components/outreach/batch-progress-dialog";
+import { ChannelChips } from "@/components/outreach/channel-chips";
 import { useLeads, useLead, useIndustries } from "@/hooks/use-leads";
-import type { BatchJobResponse, Lead, LeadFilters, ParsedLead, PdfParseError } from "@/types/lead";
+import type { BatchJobResponse, Lead, LeadFilters, ParsedLead, PdfParseError, ReachChannel } from "@/types/lead";
+import { getReachChannel } from "@/types/lead";
 
 type PageTab = "leads" | "industries" | "analytics";
 
@@ -46,8 +48,34 @@ function OutreachPageInner() {
   const [parsedTotalPages, setParsedTotalPages] = useState(0);
   const [parsedFilename, setParsedFilename] = useState("");
 
+  // Channel toggle filter (client-side)
+  const [channelEnabled, setChannelEnabled] = useState<Record<ReachChannel, boolean>>({
+    email: true,
+    website: true,
+    phone_only: true,
+  });
+
+  const handleChannelToggle = (ch: ReachChannel) => {
+    setChannelEnabled((prev) => ({ ...prev, [ch]: !prev[ch] }));
+  };
+
   const { data: leads = [], isLoading, error } = useLeads(filters);
   const { data: industries = [] } = useIndustries();
+
+  // Compute channel counts from fetched leads, then filter
+  const channelCounts = useMemo(() => {
+    const counts: Record<ReachChannel, number> = { email: 0, website: 0, phone_only: 0 };
+    for (const lead of leads) {
+      counts[getReachChannel(lead)]++;
+    }
+    return counts;
+  }, [leads]);
+
+  const filteredLeads = useMemo(() => {
+    const allEnabled = channelEnabled.email && channelEnabled.website && channelEnabled.phone_only;
+    if (allEnabled) return leads;
+    return leads.filter((lead) => channelEnabled[getReachChannel(lead)]);
+  }, [leads, channelEnabled]);
 
   // Click on lead in table → open detail
   const handleLeadClick = (lead: Lead) => {
@@ -142,7 +170,7 @@ function OutreachPageInner() {
             >
               {tab.label}
               {tab.id === "leads" && !isLoading && leads.length > 0 && (
-                <span className="ml-1.5 text-xs text-[var(--text-tertiary)]">({leads.length})</span>
+                <span className="ml-1.5 text-xs text-[var(--text-tertiary)]">({filteredLeads.length})</span>
               )}
               {tab.id === "industries" && industries.length > 0 && (
                 <span className="ml-1.5 text-xs text-[var(--text-tertiary)]">({industries.length})</span>
@@ -159,20 +187,28 @@ function OutreachPageInner() {
       {/* Tab content */}
       {activeTab === "leads" && (
         <>
-          {/* Filter bar */}
+          {/* Filter bar + channel chips */}
           <LeadFiltersBar filters={filters} onFiltersChange={setFilters} />
+          <ChannelChips
+            counts={channelCounts}
+            enabled={channelEnabled}
+            onToggle={handleChannelToggle}
+          />
 
           {/* Content — table or kanban */}
           <div className="flex-1 overflow-auto">
             {viewMode === "table" ? (
               <LeadsTable
-                leads={leads}
+                leads={filteredLeads}
                 isLoading={isLoading}
                 error={error as Error | null}
                 onLeadClick={handleLeadClick}
               />
             ) : (
-              <OutreachKanban onCardClick={handleCardClick} />
+              <OutreachKanban
+                channelEnabled={channelEnabled}
+                onCardClick={handleCardClick}
+              />
             )}
           </div>
         </>
