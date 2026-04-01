@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -87,7 +88,7 @@ USER PROFILE SUMMARY:
 {profile_summary}
 
 USER SKILLS:
-{', '.join(profile_skills) if profile_skills else 'No specific skills listed'}
+{json.dumps(profile_skills, indent=2, ensure_ascii=False) if profile_skills else 'No specific skills listed'}
 
 TASK: 
 Generate the detailed Markdown instructions (`prompt_instructions`) for this industry.
