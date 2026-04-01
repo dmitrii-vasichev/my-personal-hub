@@ -55,6 +55,7 @@ apscheduler==3.10.4
 
 # Garmin Connect (health data)
 garminconnect>=0.2.40
+garth>=0.8.0
 
 # Google Calendar integration
 google-auth==2.38.0

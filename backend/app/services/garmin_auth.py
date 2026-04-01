@@ -86,8 +86,21 @@ async def connect(
         await db.flush()
         raise GarminRateLimitError(RATE_LIMIT_MSG)
     except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg and "Too Many Requests" in error_msg:
+            failures = (conn.consecutive_failures or 0) + 1
+            conn.consecutive_failures = failures
+            cooldown = calculate_backoff_minutes(failures - 1)
+            conn.rate_limited_until = datetime.now(timezone.utc) + timedelta(minutes=cooldown)
+            conn.sync_status = "error"
+            conn.sync_error = RATE_LIMIT_MSG
+            if not conn.garth_tokens_encrypted:
+                conn.is_active = False
+            await db.flush()
+            raise GarminRateLimitError(RATE_LIMIT_MSG)
+
         conn.sync_status = "error"
-        conn.sync_error = str(e)
+        conn.sync_error = error_msg
         await db.flush()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
