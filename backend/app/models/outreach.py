@@ -230,7 +230,7 @@ class Industry(Base):
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(255), nullable=False)
-    drive_file_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    prompt_instructions: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(

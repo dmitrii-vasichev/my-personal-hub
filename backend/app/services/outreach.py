@@ -532,7 +532,7 @@ async def create_industry(
         user_id=current_user.id,
         name=data.name,
         slug=data.slug,
-        drive_file_id=data.drive_file_id,
+        prompt_instructions=data.prompt_instructions,
         description=data.description,
     )
     db.add(industry)
@@ -579,3 +579,56 @@ async def delete_industry(
     await db.delete(industry)
     await db.commit()
     return True
+
+
+# ── Industry Cases Export/Import ──────────────────────────────────────────────
+
+
+async def export_industry_cases_markdown(db: AsyncSession, current_user: User) -> str:
+    industries = await list_industries(db, current_user)
+    lines = []
+    for ind in industries:
+        lines.append(f"# {ind.name}")
+        if ind.prompt_instructions and ind.prompt_instructions.strip():
+            lines.append(ind.prompt_instructions.strip())
+        else:
+            lines.append("[No cases defined]")
+        lines.append("")
+    return "\n".join(lines)
+
+
+async def import_industry_cases_markdown(
+    db: AsyncSession, current_user: User, markdown_content: str
+) -> dict[str, int]:
+    import re
+    
+    industries = await list_industries(db, current_user)
+    ind_map = {ind.name.strip().lower(): ind for ind in industries}
+    
+    # Split by markdown headers
+    sections = re.split(r'^#\s+(.+)$', markdown_content, flags=re.MULTILINE)
+    
+    matched = 0
+    updated = 0
+    
+    if len(sections) > 1:
+        # First chunk is usually empty or preamble, headers start at index 1
+        for i in range(1, len(sections), 2):
+            header = sections[i].strip()
+            # clean up content
+            content = sections[i+1].strip() if i+1 < len(sections) else ""
+            if content == "[No cases defined]":
+                content = ""
+                
+            header_lower = header.lower()
+            if header_lower in ind_map:
+                matched += 1
+                ind = ind_map[header_lower]
+                if ind.prompt_instructions != content:
+                    ind.prompt_instructions = content
+                    ind.updated_at = datetime.now(timezone.utc)
+                    updated += 1
+                    
+        await db.commit()
+        
+    return {"matched_count": matched, "updated_count": updated}

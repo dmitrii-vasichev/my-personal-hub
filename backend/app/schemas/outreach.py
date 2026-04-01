@@ -25,7 +25,7 @@ class IndustryResponse(BaseModel):
     user_id: int
     name: str
     slug: str
-    drive_file_id: Optional[str]
+    prompt_instructions: Optional[str]
     description: Optional[str]
     created_at: datetime
     updated_at: datetime
@@ -232,15 +232,24 @@ class OutreachAnalytics(BaseModel):
 class IndustryCreate(BaseModel):
     name: str
     slug: str
-    drive_file_id: Optional[str] = None
+    prompt_instructions: Optional[str] = None
     description: Optional[str] = None
 
 
 class IndustryUpdate(BaseModel):
     name: Optional[str] = None
     slug: Optional[str] = None
-    drive_file_id: Optional[str] = None
+    prompt_instructions: Optional[str] = None
     description: Optional[str] = None
+
+
+class IndustryCasesImport(BaseModel):
+    markdown_content: str
+
+
+class IndustryCasesImportResponse(BaseModel):
+    matched_count: int
+    updated_count: int
 
 
 # ── Batch outreach schemas ─────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2, FileText } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,8 @@ import {
   useCreateIndustry,
   useUpdateIndustry,
   useDeleteIndustry,
+  useExportIndustryCases,
+  useImportIndustryCases,
 } from "@/hooks/use-leads";
 import type { Industry } from "@/types/lead";
 
@@ -45,7 +47,7 @@ function IndustryFormDialog({
 
   const [name, setName] = useState(industry?.name ?? "");
   const [slug, setSlug] = useState(industry?.slug ?? "");
-  const [driveFileId, setDriveFileId] = useState(industry?.drive_file_id ?? "");
+  const [promptInstructions, setPromptInstructions] = useState(industry?.prompt_instructions ?? "");
   const [description, setDescription] = useState(industry?.description ?? "");
   const [errors, setErrors] = useState<{ name?: string; slug?: string }>({});
 
@@ -81,7 +83,7 @@ function IndustryFormDialog({
         await createIndustry.mutateAsync({
           name: name.trim(),
           slug: slug.trim(),
-          drive_file_id: driveFileId.trim() || undefined,
+          prompt_instructions: promptInstructions.trim() || undefined,
           description: description.trim() || undefined,
         });
       } else if (industry) {
@@ -90,7 +92,7 @@ function IndustryFormDialog({
           data: {
             name: name.trim(),
             slug: slug.trim(),
-            drive_file_id: driveFileId.trim() || null,
+            prompt_instructions: promptInstructions.trim() || null,
             description: description.trim() || null,
           },
         });
@@ -159,20 +161,18 @@ function IndustryFormDialog({
 
             <div className="flex flex-col gap-1.5">
               <Label
-                htmlFor="ind-drive"
+                htmlFor="ind-prompt"
                 className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
               >
-                Google Drive File ID
+                Prompt Instructions (Cases)
               </Label>
-              <Input
-                id="ind-drive"
-                value={driveFileId}
-                onChange={(e) => setDriveFileId(e.target.value)}
-                placeholder="Google Drive Markdown file ID for template"
+              <Textarea
+                id="ind-prompt"
+                value={promptInstructions}
+                onChange={(e) => setPromptInstructions(e.target.value)}
+                placeholder="Instructions or cases for this industry..."
+                rows={4}
               />
-              <p className="text-xs text-[var(--text-tertiary)]">
-                Markdown template used for proposal generation
-              </p>
             </div>
 
             <div className="flex flex-col gap-1.5">
@@ -217,6 +217,81 @@ function IndustryFormDialog({
   );
 }
 
+// ── Import Dialog ──────────────────────────────────────────────────────────
+
+function ImportCasesDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const importCases = useImportIndustryCases();
+  const [content, setContent] = useState("");
+  const [result, setResult] = useState<{ matched: number; updated: number } | null>(null);
+
+  const handleImport = async () => {
+    if (!content.trim()) return;
+    try {
+      const res = await importCases.mutateAsync({ markdown_content: content });
+      setResult({ matched: res.matched_count, updated: res.updated_count });
+    } catch (e) {}
+  };
+
+  const handleClose = () => {
+    onOpenChange(false);
+    setContent("");
+    setResult(null);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogPortal>
+        <DialogBackdrop />
+        <DialogPopup className="w-full max-w-2xl p-6">
+          <DialogClose />
+          <DialogTitle className="mb-5">Import Industry Cases</DialogTitle>
+          {result ? (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--success-muted)] text-[var(--success)]">
+                <Check className="h-6 w-6" />
+              </div>
+              <div className="text-center">
+                <p className="font-medium text-[var(--text-primary)]">Import Successful</p>
+                <p className="text-sm text-[var(--text-secondary)] mt-1">
+                  Matched {result.matched} industries and updated {result.updated} of them.
+                </p>
+              </div>
+              <Button onClick={handleClose} className="mt-4">Done</Button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-[var(--text-secondary)]">
+                Paste the markdown file here. Headers (# Industry Name) should match your existing industries.
+              </p>
+              <Textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="# Industry Name&#10;Instructions here..."
+                rows={12}
+                className="font-mono text-xs"
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="ghost" onClick={handleClose} disabled={importCases.isPending}>
+                  Cancel
+                </Button>
+                <Button onClick={handleImport} disabled={!content.trim() || importCases.isPending}>
+                  {importCases.isPending ? "Importing..." : "Import"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogPopup>
+      </DialogPortal>
+    </Dialog>
+  );
+}
+
 // ── Industry Manager ───────────────────────────────────────────────────────
 
 export function IndustryManager() {
@@ -224,8 +299,26 @@ export function IndustryManager() {
   const deleteIndustry = useDeleteIndustry();
 
   const [formOpen, setFormOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [editingIndustry, setEditingIndustry] = useState<Industry | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<Industry | null>(null);
+
+  const exportCases = useExportIndustryCases();
+
+  const handleExport = async () => {
+    try {
+      const res = await exportCases.mutateAsync();
+      const blob = new Blob([res.markdown], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `industry-cases.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const handleEdit = (industry: Industry) => {
     setEditingIndustry(industry);
@@ -260,12 +353,22 @@ export function IndustryManager() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-[var(--text-secondary)]">
-          Manage industries and link Google Drive templates for proposal generation.
+          Manage industries and their prompt cases.
         </p>
-        <Button size="sm" onClick={handleCreate} className="gap-1.5">
-          <Plus className="h-4 w-4" />
-          Add Industry
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="ghost" className="gap-1.5" onClick={handleExport} disabled={exportCases.isPending}>
+            <Download className="h-4 w-4" />
+            {exportCases.isPending ? "Exporting..." : "Export"}
+          </Button>
+          <Button size="sm" variant="ghost" className="gap-1.5" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" />
+            Import
+          </Button>
+          <Button size="sm" onClick={handleCreate} className="gap-1.5">
+            <Plus className="h-4 w-4" />
+            Add Industry
+          </Button>
+        </div>
       </div>
 
       {industries.length === 0 ? (
@@ -286,7 +389,7 @@ export function IndustryManager() {
                   Description
                 </th>
                 <th className="px-4 py-2.5 text-center font-medium text-[var(--text-secondary)]">
-                  Template
+                  Cases
                 </th>
                 <th className="px-4 py-2.5 text-right font-medium text-[var(--text-secondary)]">
                   Actions
@@ -306,14 +409,14 @@ export function IndustryManager() {
                     {ind.description || "—"}
                   </td>
                   <td className="px-4 py-3 text-center">
-                    {ind.drive_file_id ? (
+                    {ind.prompt_instructions ? (
                       <span className="inline-flex items-center gap-1 text-xs text-[var(--accent-teal)]">
-                        <FileText className="h-3.5 w-3.5" />
-                        Linked
+                        <Check className="h-3.5 w-3.5" />
+                        Provided
                       </span>
                     ) : (
                       <span className="text-xs text-[var(--text-tertiary)]">
-                        Not linked
+                        Missing
                       </span>
                     )}
                   </td>
@@ -348,6 +451,8 @@ export function IndustryManager() {
         industry={editingIndustry}
         onSuccess={handleFormSuccess}
       />
+
+      <ImportCasesDialog open={importOpen} onOpenChange={setImportOpen} />
 
       <ConfirmDialog
         open={!!deleteTarget}

@@ -17,8 +17,6 @@ from app.models.outreach import Lead
 from app.models.settings import UserSettings
 from app.models.user import User
 from app.services.ai import get_llm_client
-from app.services import google_oauth
-from app.services.google_drive import get_file_content
 
 logger = logging.getLogger(__name__)
 
@@ -84,22 +82,6 @@ async def _get_openai_key(db: AsyncSession, user: User) -> str:
     return decrypt_value(settings.api_key_openai)
 
 
-async def _fetch_template(
-    db: AsyncSession, user: User, drive_file_id: str
-) -> str | None:
-    """Fetch industry template content from Google Drive."""
-    credentials = await google_oauth.get_credentials(db, user)
-    if not credentials:
-        logger.warning("No Google credentials for user %s, skipping template", user.id)
-        return None
-    try:
-        content = await get_file_content(credentials, drive_file_id)
-        return content
-    except Exception as e:
-        logger.warning("Failed to fetch Drive template %s: %s", drive_file_id, e)
-        return None
-
-
 async def generate_proposal(
     db: AsyncSession,
     user: User,
@@ -123,16 +105,13 @@ async def generate_proposal(
     # Get API key
     api_key = await _get_openai_key(db, user)
 
-    # Fetch industry template from Google Drive if available
     template_content: str | None = None
     industry_name: str | None = None
 
     if lead.industry:
         industry_name = lead.industry.name
-        if lead.industry.drive_file_id:
-            template_content = await _fetch_template(
-                db, user, lead.industry.drive_file_id
-            )
+        if lead.industry.prompt_instructions:
+            template_content = lead.industry.prompt_instructions
 
     # Build prompt and call LLM
     user_prompt = _build_user_prompt(

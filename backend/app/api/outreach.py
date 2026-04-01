@@ -2,6 +2,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
+from fastapi.responses import PlainTextResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,6 +17,8 @@ from app.schemas.outreach import (
     BatchLeadCreate,
     CheckDuplicatesRequest,
     CheckDuplicatesResponse,
+    IndustryCasesImport,
+    IndustryCasesImportResponse,
     IndustryCreate,
     IndustryResponse,
     IndustryUpdate,
@@ -357,6 +360,27 @@ async def list_industries(
     current_user: User = Depends(restrict_demo),
 ):
     return await outreach_service.list_industries(db, current_user)
+
+
+@industry_router.get("/cases/export")
+async def export_industry_cases(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    """Export all industry cases as a single Markdown file."""
+    markdown_content = await outreach_service.export_industry_cases_markdown(db, current_user)
+    return {"markdown": markdown_content}
+
+
+@industry_router.post("/cases/import", response_model=IndustryCasesImportResponse)
+async def import_industry_cases(
+    data: IndustryCasesImport,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    """Import industry cases from a single Markdown string."""
+    result = await outreach_service.import_industry_cases_markdown(db, current_user, data.markdown_content)
+    return result
 
 
 @industry_router.patch("/{industry_id}", response_model=IndustryResponse)

@@ -337,6 +337,26 @@ export function useDeleteIndustry() {
   });
 }
 
+export function useExportIndustryCases() {
+  return useMutation({
+    mutationFn: () => api.get<{ markdown: string }>("/api/industries/cases/export"),
+  });
+}
+
+export function useImportIndustryCases() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { markdown_content: string }) =>
+      api.post<{ matched_count: number; updated_count: number }>(
+        "/api/industries/cases/import",
+        data
+      ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [INDUSTRIES_KEY] });
+    },
+  });
+}
+
 // ── Batch outreach ─────────────────────────────────────────────────────────
 
 const BATCH_KEY = "batch-outreach";

@@ -23,7 +23,7 @@ export interface Industry {
   user_id: number;
   name: string;
   slug: string;
-  drive_file_id?: string;
+  prompt_instructions?: string;
   description?: string;
   created_at: string;
   updated_at: string;
@@ -282,15 +282,24 @@ export interface CheckDuplicatesResponse {
 export interface CreateIndustryInput {
   name: string;
   slug: string;
-  drive_file_id?: string;
+  prompt_instructions?: string;
   description?: string;
 }
 
 export interface UpdateIndustryInput {
   name?: string;
   slug?: string;
-  drive_file_id?: string | null;
+  prompt_instructions?: string | null;
   description?: string | null;
+}
+
+export interface IndustryCasesImportInput {
+  markdown_content: string;
+}
+
+export interface IndustryCasesImportResponse {
+  matched_count: number;
+  updated_count: number;
 }
 
 // Batch outreach
