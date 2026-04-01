@@ -21,6 +21,7 @@ export interface UserSettings {
   instruction_ats_audit: string | null;
   instruction_gap_analysis: string | null;
   instruction_cover_letter: string | null;
+  instruction_outreach_industry?: string | null;
   kanban_hidden_columns: string[];
   updated_at: string;
 }
@@ -47,5 +48,6 @@ export interface UpdateSettingsInput {
   instruction_ats_audit?: string;
   instruction_gap_analysis?: string;
   instruction_cover_letter?: string;
+  instruction_outreach_industry?: string;
   kanban_hidden_columns?: string[];
 }

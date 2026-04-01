@@ -357,6 +357,22 @@ export function useImportIndustryCases() {
   });
 }
 
+export function useGenerateIndustryInstructions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      language,
+    }: {
+      id: number;
+      language: string;
+    }) => api.post<Industry>(`/api/industries/${id}/generate-instructions`, { language }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [INDUSTRIES_KEY] });
+    },
+  });
+}
+
 // ── Batch outreach ─────────────────────────────────────────────────────────
 
 const BATCH_KEY = "batch-outreach";

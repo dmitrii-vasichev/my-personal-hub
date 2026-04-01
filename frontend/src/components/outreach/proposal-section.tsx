@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Copy, Check, Pencil, Save, Sparkles, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useGenerateProposal, useUpdateLead } from "@/hooks/use-leads";
 import type { Lead } from "@/types/lead";
@@ -19,6 +20,7 @@ export function ProposalSection({ lead }: ProposalSectionProps) {
   const [showInstructions, setShowInstructions] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
+  const [language, setLanguage] = useState("Russian");
 
   const hasProposal = !!lead.proposal_text;
   const isSaving = updateLead.isPending;
@@ -26,9 +28,10 @@ export function ProposalSection({ lead }: ProposalSectionProps) {
   const handleGenerate = () => {
     generateProposal.mutate({
       id: lead.id,
-      data: customInstructions.trim()
-        ? { custom_instructions: customInstructions.trim() }
-        : undefined,
+      data: {
+        custom_instructions: customInstructions.trim() || undefined,
+        language,
+      },
     });
   };
 
@@ -95,6 +98,18 @@ export function ProposalSection({ lead }: ProposalSectionProps) {
               )}
             </Button>
           )}
+          {!hasProposal || showInstructions ? (
+            <Select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="h-7 w-[100px] text-xs py-0 pl-2 pr-6"
+              disabled={generateProposal.isPending}
+            >
+              <option value="Russian">🇷🇺 RU</option>
+              <option value="English">🇺🇸 EN</option>
+            </Select>
+          ) : null}
+
           <Button
             size="sm"
             variant={hasProposal ? "ghost" : "default"}

@@ -240,6 +240,7 @@ export interface PdfParseResponse {
 // Proposal generation
 export interface GenerateProposalInput {
   custom_instructions?: string;
+  language?: string;
 }
 
 // Analytics

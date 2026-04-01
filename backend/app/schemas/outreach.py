@@ -185,6 +185,12 @@ class BatchLeadCreate(BaseModel):
 class ProposalGenerateRequest(BaseModel):
     """Optional custom instructions for proposal generation."""
     custom_instructions: Optional[str] = None
+    language: str = "Russian"
+
+
+class IndustryInstructionGenerateRequest(BaseModel):
+    """Language preference for generating industry instructions."""
+    language: str = "English"
 
 
 # ── Duplicate detection schemas ─────────────────────────────────────────────

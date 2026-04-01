@@ -20,15 +20,16 @@ from app.services.ai import get_llm_client
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """\
+def get_system_prompt(language: str) -> str:
+    lang_name = language.lower()
+    return f"""\
 You are an expert business development consultant specializing in cold outreach \
-for automation and IT services targeting Russian-speaking businesses in the US.
+for automation and IT services targeting businesses in the US.
 
-Your task is to write a personalized commercial proposal (коммерческое предложение) \
-in Russian for a specific business.
+Your task is to write a personalized commercial proposal in {lang_name} for a specific business.
 
 Rules:
-- Write in professional but friendly Russian.
+- Write in professional but friendly {lang_name}.
 - Be specific to the business — reference their industry and services.
 - Highlight how automation/IT services can solve their particular pain points.
 - Keep it concise: 3-5 paragraphs.
@@ -44,6 +45,7 @@ def _build_user_prompt(
     industry_name: str | None,
     template_content: str | None,
     custom_instructions: str | None,
+    language: str,
 ) -> str:
     """Build the user prompt from lead data and optional template."""
     parts: list[str] = []
@@ -65,7 +67,7 @@ def _build_user_prompt(
         parts.append(f"\nДополнительные инструкции: {custom_instructions}")
 
     parts.append(
-        "\nНапиши персонализированное коммерческое предложение для этого бизнеса."
+        f"\nWrite a personalized commercial proposal for this business in {language}."
     )
 
     return "\n".join(parts)
@@ -87,6 +89,7 @@ async def generate_proposal(
     user: User,
     lead_id: int,
     custom_instructions: str | None = None,
+    language: str = "Russian",
 ) -> Lead | None:
     """Generate a personalized proposal for a lead and save it.
 
@@ -120,10 +123,11 @@ async def generate_proposal(
         industry_name=industry_name,
         template_content=template_content,
         custom_instructions=custom_instructions,
+        language=language,
     )
 
     llm = get_llm_client("openai", api_key)
-    proposal_text = await llm.generate(SYSTEM_PROMPT, user_prompt)
+    proposal_text = await llm.generate(get_system_prompt(language), user_prompt)
 
     # Save to lead
     lead.proposal_text = proposal_text

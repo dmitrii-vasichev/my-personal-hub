@@ -61,6 +61,7 @@ class UserSettings(Base):
     instruction_ats_audit: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     instruction_gap_analysis: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     instruction_cover_letter: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    instruction_outreach_industry: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

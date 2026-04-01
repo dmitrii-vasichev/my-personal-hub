@@ -34,6 +34,12 @@ const FIELDS: InstructionField[] = [
     description:
       "Custom instructions for how AI should generate cover letters.",
   },
+  {
+    key: "instruction_outreach_industry",
+    label: "Outreach Industry Cases",
+    description:
+      "Master prompt for generating custom Outreach B2B Industry instructions (controls Tone of Voice, Micro-Automation focus, etc).",
+  },
 ];
 
 interface AiInstructionsTabProps {

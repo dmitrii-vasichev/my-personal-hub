@@ -20,6 +20,7 @@ from app.schemas.outreach import (
     IndustryCasesImport,
     IndustryCasesImportResponse,
     IndustryCreate,
+    IndustryInstructionGenerateRequest,
     IndustryResponse,
     IndustryUpdate,
     LeadCreate,
@@ -49,6 +50,7 @@ from app.services.batch_outreach import (
 )
 from app.services.lead_pdf_parser import parse_pdf
 from app.services.lead_proposal import generate_proposal
+from app.services.generate_industry_instructions import generate_industry_instructions_for_industry
 
 logger = logging.getLogger(__name__)
 
@@ -318,7 +320,11 @@ async def generate_proposal_endpoint(
     """Generate a personalized commercial proposal for a lead using AI."""
     try:
         lead = await generate_proposal(
-            db, current_user, lead_id, custom_instructions=data.custom_instructions
+            db,
+            current_user,
+            lead_id,
+            custom_instructions=data.custom_instructions,
+            language=data.language,
         )
     except ValueError as e:
         raise HTTPException(
@@ -405,6 +411,30 @@ async def delete_industry(
     deleted = await outreach_service.delete_industry(db, industry_id, current_user)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Industry not found")
+
+
+@industry_router.post("/{industry_id}/generate-instructions", response_model=IndustryResponse)
+async def generate_industry_instructions_endpoint(
+    industry_id: int,
+    data: IndustryInstructionGenerateRequest = IndustryInstructionGenerateRequest(),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    """Generate markdown prompt instructions for an industry using the User Profile."""
+    try:
+        industry = await generate_industry_instructions_for_industry(
+            db, current_user, industry_id, language=data.language
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        logger.error("Industry instruction generation failed for industry %d: %s", industry_id, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Generation failed: {e}",
+        )
+    
+    return industry
 
 
 # ── Batch Outreach ──────────────────────────────────────────────────────────

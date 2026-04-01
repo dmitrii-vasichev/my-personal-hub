@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Download, Upload, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, Download, Upload, Check, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -22,6 +23,7 @@ import {
   useDeleteIndustry,
   useExportIndustryCases,
   useImportIndustryCases,
+  useGenerateIndustryInstructions,
 } from "@/hooks/use-leads";
 import type { Industry } from "@/types/lead";
 
@@ -49,9 +51,11 @@ function IndustryFormDialog({
   const [slug, setSlug] = useState(industry?.slug ?? "");
   const [promptInstructions, setPromptInstructions] = useState(industry?.prompt_instructions ?? "");
   const [description, setDescription] = useState(industry?.description ?? "");
-  const [errors, setErrors] = useState<{ name?: string; slug?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; slug?: string; generate?: string }>({});
+  const [language, setLanguage] = useState("Russian");
 
-  const isLoading = createIndustry.isPending || updateIndustry.isPending;
+  const generateInstructions = useGenerateIndustryInstructions();
+  const isLoading = createIndustry.isPending || updateIndustry.isPending || generateInstructions.isPending;
 
   const autoSlug = (val: string) =>
     val
@@ -101,6 +105,23 @@ function IndustryFormDialog({
     } catch (err) {
       setErrors({
         name: err instanceof Error ? err.message : "Something went wrong",
+      });
+    }
+  };
+
+  const handleGenerate = async () => {
+    if (!industry) return; // Need an existing industry ID to generate
+    try {
+      const updatedIndustry = await generateInstructions.mutateAsync({
+        id: industry.id,
+        language: language,
+      });
+      if (updatedIndustry.prompt_instructions) {
+        setPromptInstructions(updatedIndustry.prompt_instructions);
+      }
+    } catch (err) {
+      setErrors({
+        generate: err instanceof Error ? err.message : "Generation failed",
       });
     }
   };
@@ -160,19 +181,54 @@ function IndustryFormDialog({
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <Label
-                htmlFor="ind-prompt"
-                className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
-              >
-                Prompt Instructions (Cases)
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label
+                  htmlFor="ind-prompt"
+                  className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide"
+                >
+                  Prompt Instructions (Cases)
+                </Label>
+                {mode === "edit" && industry && (
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value)}
+                      className="h-7 w-[100px] text-xs py-0 pl-2 pr-6"
+                      disabled={isLoading}
+                    >
+                      <option value="Russian">🇷🇺 RU</option>
+                      <option value="English">🇺🇸 EN</option>
+                    </Select>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 gap-1.5 text-xs text-[var(--accent-teal)] border-[var(--accent-teal)] hover:bg-[var(--accent-teal-transparent)]"
+                      onClick={handleGenerate}
+                      disabled={isLoading}
+                    >
+                      <Wand2 className="h-3.5 w-3.5" />
+                      {generateInstructions.isPending ? "Generating..." : "Generate AI-Cases"}
+                    </Button>
+                  </div>
+                )}
+              </div>
               <Textarea
                 id="ind-prompt"
                 value={promptInstructions}
                 onChange={(e) => setPromptInstructions(e.target.value)}
                 placeholder="Instructions or cases for this industry..."
-                rows={4}
+                rows={6}
+                disabled={generateInstructions.isPending}
               />
+              {mode === "create" && (
+                <p className="text-xs text-[var(--text-tertiary)] italic">
+                  Save this industry first to unlock AI-generation.
+                </p>
+              )}
+              {errors.generate && (
+                <p className="text-xs text-[var(--danger)]">{errors.generate}</p>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5">
