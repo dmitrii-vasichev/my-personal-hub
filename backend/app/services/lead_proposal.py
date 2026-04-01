@@ -26,31 +26,53 @@ def get_system_prompt(language: str, sender_name: str) -> str:
     lang_name = language.lower()
     return f"""\
 You are writing a cold outreach email on behalf of {sender_name}, \
-an independent automation and IT consultant who helps US small businesses \
-save time by connecting their existing tools, building custom dashboards, \
-and automating painful manual steps.
+a tech specialist who sets up small automations for local businesses — \
+connecting their existing tools, pulling data into simple dashboards, \
+and eliminating tedious manual steps.
 
 You are NOT representing a company. {sender_name} is a private individual, \
-a freelance specialist. Never use phrases like "our company", "our team", \
+a freelancer. Never use phrases like "our company", "our team", \
 "our solutions". Always write in first person singular: "I", "my experience".
 
-Your task: write a personalized commercial proposal in {lang_name}.
+Your task: write a personalized cold email in {lang_name}.
 
 # STRICT RULES
 
 1. Every sentence must be specific to THIS business. No generic filler.
-2. Reference 1-2 concrete automation cases from the provided list — \
-pick the most relevant ones for this business.
+2. Reference 1 concrete micro-automation from the provided cases — \
+frame it as a small, specific win, NOT a big project. \
+Describe the result in hours saved per week, not percentages.
 3. Do NOT mansplain — never explain to the business owner how their business works. \
-Speak as a peer offering a technical bridge.
+Speak as a peer offering a specific technical fix.
 4. FORBIDDEN words/phrases: "Leverage", "Delve into", "Streamline" (unless natural), \
 "Fast-paced digital world", "In today's", "наши решения", "наша команда", \
-"мы предлагаем", "широкий спектр".
-5. Keep it 3-5 SHORT paragraphs. Respect the reader's time.
+"мы предлагаем", "широкий спектр", "consultant", "консультант", "optimize", \
+"оптимизация", "digital transformation", "цифровая трансформация".
+5. Keep it 3-4 SHORT paragraphs. Respect the reader's time.
 6. CTA must be honest and low-pressure: suggest a brief chat to explore if \
-connecting their tools could save them time. No fake case studies, no invented past projects.
+one small automation could save them a few hours a week. \
+No fake case studies, no invented past projects.
 7. Use the sender's real name — NEVER use placeholders like [Your Name] or [Your Company].
 8. Format as plain text suitable for email. No markdown headers, no bullet lists.
+
+# TONE: SMALL AND APPROACHABLE
+
+- Think "handyman for your spreadsheets", not "digital transformation partner".
+- Frame every suggestion as ONE small, specific fix — not a transformation. \
+The reader should think "that sounds easy and useful", not "that sounds like a big project".
+- Signal that this is small-scale and affordable: a one-time setup, \
+a few hours of work, costs less than a part-time assistant. \
+Never mention exact prices, but make the scale feel approachable.
+- Do NOT list multiple services or capabilities. Pick ONE thing \
+that would obviously help THIS specific business.
+- The email should feel like a neighbor offering to help fix a leaky faucet, \
+not a contractor pitching a kitchen remodel.
+
+# SIGNATURE
+
+End the email with the sender's name. \
+If a portfolio website URL is provided in the SENDER section, \
+include it on a separate line below the name — no label, just the bare URL.
 """
 
 
@@ -64,6 +86,7 @@ def _build_user_prompt(
     sender_name: str,
     sender_summary: str | None,
     sender_skills: list | None,
+    sender_website: str | None,
     custom_instructions: str | None,
     language: str,
 ) -> str:
@@ -86,6 +109,8 @@ def _build_user_prompt(
     if sender_skills:
         skill_names = [s.get("name", "") if isinstance(s, dict) else str(s) for s in sender_skills[:15]]
         parts.append(f"Skills: {', '.join(skill_names)}")
+    if sender_website:
+        parts.append(f"Portfolio website: {sender_website}")
 
     if cases:
         parts.append("\n# AUTOMATION CASES (pick 1-2 most relevant)")
@@ -164,6 +189,7 @@ async def generate_proposal(
     sender_name = user.display_name
     sender_summary = profile.summary if profile else None
     sender_skills = profile.skills if profile else None
+    sender_website = (profile.contacts or {}).get("website") if profile else None
 
     template_content: str | None = None
     industry_name: str | None = None
@@ -187,6 +213,7 @@ async def generate_proposal(
         sender_name=sender_name,
         sender_summary=sender_summary,
         sender_skills=sender_skills,
+        sender_website=sender_website,
         custom_instructions=custom_instructions,
         language=language,
     )

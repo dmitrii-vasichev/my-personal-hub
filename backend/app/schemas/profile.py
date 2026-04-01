@@ -29,6 +29,7 @@ class ContactInfo(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     linkedin: Optional[str] = None
+    website: Optional[str] = None
     location: Optional[str] = None
 
 
