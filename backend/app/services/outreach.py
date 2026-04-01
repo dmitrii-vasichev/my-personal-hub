@@ -94,8 +94,21 @@ async def batch_create_leads(
     db: AsyncSession, items: list[LeadCreate], current_user: User
 ) -> list[Lead]:
     """Create multiple leads in a single transaction (used after PDF parsing)."""
-    created: list[Lead] = []
+    # Deduplicate within batch by normalized (business_name, phone, email)
+    seen: set[tuple[str, str, str]] = set()
+    unique_items: list[LeadCreate] = []
     for data in items:
+        key = (
+            (data.business_name or "").strip().lower(),
+            _normalize_phone(data.phone),
+            (data.email or "").strip().lower(),
+        )
+        if key not in seen:
+            seen.add(key)
+            unique_items.append(data)
+
+    created: list[Lead] = []
+    for data in unique_items:
         lead = Lead(
             user_id=current_user.id,
             business_name=data.business_name,
@@ -482,7 +495,9 @@ async def check_duplicates(
     if emails_clean:
         conditions.append(func.lower(Lead.email).in_(emails_clean))
     if phones_clean:
-        conditions.append(Lead.phone.in_(phones_clean))
+        conditions.append(
+            func.regexp_replace(Lead.phone, r"\D", "", "g").in_(phones_clean)
+        )
 
     q = select(Lead).where(and_(Lead.user_id == current_user.id, or_(*conditions)))
     if exclude_id is not None:
