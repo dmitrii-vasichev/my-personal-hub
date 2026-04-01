@@ -27,6 +27,7 @@ class IndustryResponse(BaseModel):
     slug: str
     prompt_instructions: Optional[str]
     description: Optional[str]
+    cases: list = []
     created_at: datetime
     updated_at: datetime
 
@@ -241,6 +242,7 @@ class IndustryCreate(BaseModel):
     slug: str
     prompt_instructions: Optional[str] = None
     description: Optional[str] = None
+    cases: list = []
 
 
 class IndustryUpdate(BaseModel):
@@ -248,6 +250,7 @@ class IndustryUpdate(BaseModel):
     slug: Optional[str] = None
     prompt_instructions: Optional[str] = None
     description: Optional[str] = None
+    cases: Optional[list] = None
 
 
 class IndustryCasesImport(BaseModel):

@@ -549,6 +549,7 @@ async def create_industry(
         slug=data.slug,
         prompt_instructions=data.prompt_instructions,
         description=data.description,
+        cases=data.cases,
     )
     db.add(industry)
     await db.commit()

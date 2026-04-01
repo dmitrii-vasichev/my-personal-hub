@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -46,6 +45,20 @@ NO Mansplaining: Do not tell the business owner how their business works. Speak 
 # INPUT DATA
 """
 
+CASES_EXTRACTION_PROMPT = """\
+You are a structured data extractor. Given industry outreach instructions, \
+extract 3-5 concrete automation cases that a freelance IT consultant can offer \
+to businesses in this industry.
+
+Each case must be a JSON object with these fields:
+- "title": short name of the automation/integration (under 10 words)
+- "problem": specific pain point this solves (1 sentence)
+- "solution": what exactly to build/integrate (1 sentence)
+- "result": expected business outcome — hours saved, errors reduced, etc. (1 sentence)
+
+Output ONLY a valid JSON array. No other text, no markdown fences, no explanation.
+"""
+
 async def _get_openai_key(db: AsyncSession, user: User) -> str:
     result = await db.execute(select(UserSettings).where(UserSettings.user_id == user.id))
     settings = result.scalar_one_or_none()
@@ -70,11 +83,11 @@ async def generate_industry_instructions_for_industry(
     profile = result.scalar_one_or_none()
     profile_summary = profile.summary if profile else "No profile summary available."
     profile_skills = profile.skills if profile else []
-    
+
     # 3. Fetch User Settings for the custom prompt override
     result = await db.execute(select(UserSettings).where(UserSettings.user_id == user.id))
     settings = result.scalar_one_or_none()
-    
+
     base_prompt = DEFAULT_INDUSTRY_GENERATOR_PROMPT
     if settings and settings.instruction_outreach_industry:
         base_prompt = settings.instruction_outreach_industry
@@ -90,7 +103,7 @@ USER PROFILE SUMMARY:
 USER SKILLS:
 {json.dumps(profile_skills, indent=2, ensure_ascii=False) if profile_skills else 'No specific skills listed'}
 
-TASK: 
+TASK:
 Generate the detailed Markdown instructions (`prompt_instructions`) for this industry.
 1. Outline the typical "Pain Points" using standard SaaS in this specific industry.
 2. Outline the tailored "Solutions" based ONLY on the User Profile (dashboards, integrations, micro-automation).
@@ -98,16 +111,41 @@ Generate the detailed Markdown instructions (`prompt_instructions`) for this ind
 4. The final output must be ENTIRELY in {language}.
 """
 
-    # 5. Call LLM
+    # 5. Call LLM for instructions
     api_key = await _get_openai_key(db, user)
     llm = get_llm_client("openai", api_key)
-    
-    # We call generate
+
     generated_markdown = await llm.generate(base_prompt, user_msg)
-    
-    # 6. Save back to industry
+
+    # 6. Extract structured cases from the generated instructions
+    cases = await _extract_cases(llm, generated_markdown, industry.name)
+
+    # 7. Save back to industry
     industry.prompt_instructions = generated_markdown
+    industry.cases = cases
     await db.commit()
     await db.refresh(industry)
-    
+
     return industry
+
+
+async def _extract_cases(llm, instructions_markdown: str, industry_name: str) -> list:
+    """Extract structured automation cases from generated industry instructions."""
+    user_msg = f"Industry: {industry_name}\n\nInstructions:\n{instructions_markdown}"
+
+    try:
+        raw = await llm.generate(CASES_EXTRACTION_PROMPT, user_msg)
+        # Strip markdown fences if LLM added them despite instructions
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned
+            if cleaned.endswith("```"):
+                cleaned = cleaned[:-3]
+            cleaned = cleaned.strip()
+        cases = json.loads(cleaned)
+        if isinstance(cases, list):
+            return cases
+    except (json.JSONDecodeError, Exception) as e:
+        logger.warning("Failed to extract structured cases for %s: %s", industry_name, e)
+
+    return []
