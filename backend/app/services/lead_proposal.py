@@ -84,7 +84,8 @@ def _build_user_prompt(
     if sender_summary:
         parts.append(f"Profile: {sender_summary}")
     if sender_skills:
-        parts.append(f"Skills: {', '.join(sender_skills[:15])}")
+        skill_names = [s.get("name", "") if isinstance(s, dict) else str(s) for s in sender_skills[:15]]
+        parts.append(f"Skills: {', '.join(skill_names)}")
 
     if cases:
         parts.append("\n# AUTOMATION CASES (pick 1-2 most relevant)")
