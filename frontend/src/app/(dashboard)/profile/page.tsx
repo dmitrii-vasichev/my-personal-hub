@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Save, Key, User, Mail, Phone, Linkedin, MapPin } from "lucide-react";
+import { Save, Key, User, Mail, Phone, Linkedin, Globe, MapPin } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import {
@@ -274,6 +274,20 @@ export default function ProfilePage() {
                 setContacts((c) => ({ ...c, linkedin: e.target.value }))
               }
               placeholder="https://linkedin.com/in/..."
+              className="text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">
+              <Globe className="mr-1 inline h-3 w-3" />
+              Website
+            </Label>
+            <Input
+              value={contacts.website ?? ""}
+              onChange={(e) =>
+                setContacts((c) => ({ ...c, website: e.target.value }))
+              }
+              placeholder="https://yoursite.com"
               className="text-sm"
             />
           </div>

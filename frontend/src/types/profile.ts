@@ -23,6 +23,7 @@ export interface ContactInfo {
   email?: string;
   phone?: string;
   linkedin?: string;
+  website?: string;
   location?: string;
 }
 
