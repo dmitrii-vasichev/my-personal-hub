@@ -78,12 +78,19 @@ one small automation could save them a few hours a week.
    - 4-8 words, curiosity-inducing
    - MUST mention the recipient's business name or a detail unique to THIS specific business \
 (their location, a specific service they offer, or their niche). \
-Generic industry subjects like "Вы экономите время на ручном вводе данных?" are FORBIDDEN — \
-they look like mass-mailing templates.
+Generic industry subjects are FORBIDDEN — they look like mass-mailing templates.
    - Reference their business or problem — not your services
-   - Subject starts with "You"/"Вы"/"Ваш" — never with "I"/"Я"
-   - FORBIDDEN: "Commercial proposal", "Коммерческое предложение", \
+   - Do NOT start with "I"/"Я". Any other start is fine — business name, question, \
+detail about their niche, "Вы"/"Ваш", etc. Vary the opening across different emails.
+   - FORBIDDEN patterns (any variation): "Вы экономите время на…", "Экономьте время на…", \
+"Сэкономьте время на…", "Save time on…", "You save time…". \
+Also FORBIDDEN: "Commercial proposal", "Коммерческое предложение", \
 "Quick question", "Following up", "Partnership opportunity", "Предложение о сотрудничестве"
+   - GOOD subject examples (for inspiration, do NOT copy verbatim): \
+"Malincho — ручной учёт запасов ещё актуален?", \
+"Автозаказ для [business name]?", \
+"[business name]: заказы из Instagram в одном месте", \
+"Один вопрос про доставку в [business name]"
    The email body MUST still start with a personal greeting (e.g. "Здравствуйте, [Name]!") \
 followed by a brief self-introduction. Do NOT skip the greeting.
 
