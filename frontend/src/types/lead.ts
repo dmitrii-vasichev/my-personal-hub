@@ -44,6 +44,7 @@ export interface Lead {
   status: LeadStatus;
   notes?: string;
   proposal_text?: string;
+  proposal_subject?: string;
   status_history?: LeadStatusHistoryEntry[];
   industry?: Industry;
   created_at: string;
@@ -177,6 +178,7 @@ export interface UpdateLeadInput {
   source_detail?: string | null;
   notes?: string | null;
   proposal_text?: string | null;
+  proposal_subject?: string | null;
 }
 
 export interface ChangeLeadStatusInput {

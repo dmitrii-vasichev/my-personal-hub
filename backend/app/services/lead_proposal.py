@@ -6,6 +6,7 @@ Flow: Lead + Industry template + User Profile → LLM → personalized proposal 
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -54,6 +55,14 @@ one small automation could save them a few hours a week. \
 No fake case studies, no invented past projects.
 7. Use the sender's real name — NEVER use placeholders like [Your Name] or [Your Company].
 8. Format as plain text suitable for email. No markdown headers, no bullet lists.
+9. Your FIRST line must be a subject line in this exact format:
+   Subject: <4-8 word subject line>
+   Then leave one blank line and write the email body.
+   The subject must be specific to this business, curiosity-inducing.
+   Reference their business or problem directly — NOT your services.
+   Start with "You"/"Вы"/"Ваш" — never with "I"/"Я".
+   FORBIDDEN subject patterns: "Commercial proposal", "Коммерческое предложение", \
+"Quick question", "Following up", "Partnership opportunity", "Предложение о сотрудничестве".
 
 # TONE: SMALL AND APPROACHABLE
 
@@ -142,6 +151,24 @@ def _build_user_prompt(
     return "\n".join(parts)
 
 
+def _parse_subject(raw_text: str) -> tuple[str | None, str]:
+    """Extract subject line from LLM response.
+
+    Expected format:
+        Subject: Some subject here
+
+        Email body text...
+
+    Returns (subject, body). If no subject found, returns (None, raw_text).
+    """
+    match = re.match(r"^Subject:\s*(.+)\n\n", raw_text, re.IGNORECASE)
+    if match:
+        subject = match.group(1).strip()
+        body = raw_text[match.end():]
+        return subject, body
+    return None, raw_text
+
+
 async def _get_openai_key(db: AsyncSession, user: User) -> str:
     """Retrieve and decrypt the user's OpenAI API key."""
     result = await db.execute(
@@ -219,12 +246,16 @@ async def generate_proposal(
     )
 
     llm = get_llm_client("openai", api_key)
-    proposal_text = await llm.generate(
+    raw_text = await llm.generate(
         get_system_prompt(language, sender_name), user_prompt
     )
 
+    # Parse subject line from LLM response
+    proposal_subject, proposal_text = _parse_subject(raw_text)
+
     # Save to lead
     lead.proposal_text = proposal_text
+    lead.proposal_subject = proposal_subject
     lead.updated_at = datetime.now(timezone.utc)
     await db.commit()
 

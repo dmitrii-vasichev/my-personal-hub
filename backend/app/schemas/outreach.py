@@ -89,6 +89,7 @@ class LeadUpdate(BaseModel):
     source_detail: Optional[str] = None
     notes: Optional[str] = None
     proposal_text: Optional[str] = None
+    proposal_subject: Optional[str] = None
 
 
 class LeadStatusChange(BaseModel):
@@ -111,6 +112,7 @@ class LeadResponse(BaseModel):
     status: str
     notes: Optional[str]
     proposal_text: Optional[str]
+    proposal_subject: Optional[str]
     status_history: list[LeadStatusHistoryResponse] = []
     industry: Optional[IndustryResponse] = None
     created_at: datetime

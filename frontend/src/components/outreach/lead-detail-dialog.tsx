@@ -301,7 +301,7 @@ export function LeadDetailDialog({
               <h3 className="text-sm font-medium text-[var(--text-primary)] mb-3">
                 Activity
               </h3>
-              <ActivityTimeline leadId={lead.id} leadEmail={lead.email} proposalText={lead.proposal_text} />
+              <ActivityTimeline leadId={lead.id} leadEmail={lead.email} proposalText={lead.proposal_text} proposalSubject={lead.proposal_subject} />
             </div>
 
             {/* Status history */}

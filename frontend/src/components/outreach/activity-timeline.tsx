@@ -209,12 +209,14 @@ function EmailComposeForm({
   leadId,
   leadEmail,
   proposalText,
+  proposalSubject,
   onClose,
   onSent,
 }: {
   leadId: number;
   leadEmail: string;
   proposalText?: string;
+  proposalSubject?: string;
   onClose: () => void;
   onSent?: () => void;
 }) {
@@ -240,6 +242,9 @@ function EmailComposeForm({
   const handleUseProposal = () => {
     if (proposalText) {
       setBody(proposalText);
+    }
+    if (proposalSubject && !subject) {
+      setSubject(proposalSubject);
     }
   };
 
@@ -304,9 +309,10 @@ interface ActivityTimelineProps {
   leadId: number;
   leadEmail?: string;
   proposalText?: string;
+  proposalSubject?: string;
 }
 
-export function ActivityTimeline({ leadId, leadEmail, proposalText }: ActivityTimelineProps) {
+export function ActivityTimeline({ leadId, leadEmail, proposalText, proposalSubject }: ActivityTimelineProps) {
   const { data: activities = [], isLoading } = useLeadActivities(leadId);
   const deleteActivity = useDeleteActivity();
   const { data: gmailStatus } = useGmailStatus();
@@ -404,6 +410,7 @@ export function ActivityTimeline({ leadId, leadEmail, proposalText }: ActivityTi
           leadId={leadId}
           leadEmail={leadEmail}
           proposalText={proposalText}
+          proposalSubject={proposalSubject}
           onClose={() => setShowEmailCompose(false)}
         />
       )}

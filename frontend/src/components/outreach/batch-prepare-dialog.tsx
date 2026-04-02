@@ -211,7 +211,7 @@ export function BatchPrepareDialog({
                 {/* Subject template */}
                 <div>
                   <label className="text-sm font-medium text-[var(--text-primary)] mb-1.5 block">
-                    Email Subject Template
+                    Fallback Subject Template
                   </label>
                   <input
                     value={subjectTemplate}
@@ -220,7 +220,7 @@ export function BatchPrepareDialog({
                     placeholder="Use {business_name} for business name"
                   />
                   <p className="text-xs text-[var(--text-tertiary)] mt-1">
-                    {"{business_name}"} will be replaced with the lead&apos;s business name
+                    Used only for leads without a generated subject. {"{business_name}"} will be replaced with the lead&apos;s business name.
                   </p>
                 </div>
 

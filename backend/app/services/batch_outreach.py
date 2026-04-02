@@ -97,7 +97,11 @@ async def prepare_batch(
                 skipped_no_proposal += 1
                 continue
 
-        subject = data.subject_template.replace("{business_name}", lead.business_name)
+        subject = (
+            lead.proposal_subject
+            if lead.proposal_subject
+            else data.subject_template.replace("{business_name}", lead.business_name)
+        )
 
         preview_items.append(BatchItemPreview(
             lead_id=lead.id,
