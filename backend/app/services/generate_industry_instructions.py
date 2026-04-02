@@ -43,23 +43,24 @@ Create 4-6 SPECIFIC automation scenarios for the given industry.
    BAD: "API Integration between tools"
    GOOD: "Auto-create QuickBooks invoice when Housecall Pro job is marked complete"
 
-2. Solutions must use lightweight tools appropriate for small business budgets:
-   - Python/Node.js scripts, Google Apps Script, n8n/Make workflows
-   - Simple custom web dashboards, API integrations between existing SaaS tools
-   - NEVER mention Tableau, Power BI, Salesforce, or other enterprise platforms
+2. Solutions must be lightweight and affordable for small businesses. \
+NEVER mention enterprise platforms (Tableau, Power BI, Salesforce, etc.).
 
-3. Each case must be UNIQUE — different pain point, different workflow, different outcome.
-   Do NOT repeat the same pattern (e.g. "sync X to Y") more than once.
+3. Describe solutions in BUSINESS terms, not technical terms. \
+The "solution" field should say WHAT happens automatically, not HOW it's built. \
+NEVER mention programming languages, frameworks, or technical tools \
+(Python, Node.js, API, script, n8n, Make, Google Apps Script, etc.). \
+BAD: "Build a Python script that calls the supplier API" \
+GOOD: "Automatic daily sync between supplier catalog and store inventory system"
 
-4. Frame outcomes as hours saved per week/month or specific errors eliminated.
-   Be realistic — a small automation saves 2-5 hours/week, not "transforms the business".
+4. Each case must be UNIQUE — different pain point, different workflow, different outcome. \
+Do NOT repeat the same pattern (e.g. "sync X to Y") more than once.
 
-5. Mention specific SaaS tools commonly used by small businesses in this industry \
+5. Frame outcomes as hours saved per week/month or specific errors eliminated. \
+Be realistic — a small automation saves 2-5 hours/week, not "transforms the business".
+
+6. Mention specific SaaS tools commonly used by small businesses in this industry \
 (the $5-30/mo tools, not enterprise software).
-
-6. Base solutions on the sender's actual skills (provided below). \
-If the sender knows Python and Google Sheets — propose scripts and spreadsheet automations. \
-If they know n8n — propose workflow automations.
 
 # OUTPUT FORMAT
 
@@ -68,7 +69,7 @@ Output ONLY a valid JSON array. No other text, no markdown fences, no explanatio
 Each object must have exactly these fields:
 - "title": specific name (under 10 words), e.g. "Auto-sync bookings to Google Calendar"
 - "problem": what the owner currently does manually (1 sentence)
-- "solution": what to build, mentioning specific tools (1 sentence)
+- "solution": what happens automatically, in business terms (1 sentence)
 - "result": measurable outcome — hours/week saved, error reduction (1 sentence)
 """
 

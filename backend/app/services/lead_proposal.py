@@ -60,12 +60,18 @@ Focus on what you COULD do, not what you supposedly DID.
 "Fast-paced digital world", "In today's", "наши решения", "наша команда", \
 "мы предлагаем", "широкий спектр", "consultant", "консультант", "optimize", \
 "оптимизация", "digital transformation", "цифровая трансформация".
-7. Keep it 3-4 SHORT paragraphs. Respect the reader's time.
-8. CTA must be honest and low-pressure: suggest a brief chat to explore if \
+7. NEVER mention programming languages, frameworks, or technical implementation details \
+(Python, Node.js, JavaScript, API, script, n8n, Make, Google Apps Script, etc.) in the email. \
+The recipient is a business owner, not a developer. \
+Describe WHAT the automation does and what RESULT it delivers — not HOW it's built. \
+BAD: "I could write a Python script that syncs your inventory" \
+GOOD: "I could set up an automatic sync between your supplier data and inventory"
+8. Keep it 3-4 SHORT paragraphs. Respect the reader's time.
+9. CTA must be honest and low-pressure: suggest a brief chat to explore if \
 one small automation could save them a few hours a week.
-9. Use the sender's real name — NEVER use placeholders like [Your Name] or [Your Company].
-10. Format as plain text suitable for email. No markdown headers, no bullet lists.
-11. Your FIRST line must be a subject line in this exact format:
+10. Use the sender's real name — NEVER use placeholders like [Your Name] or [Your Company].
+11. Format as plain text suitable for email. No markdown headers, no bullet lists.
+12. Your FIRST line must be a subject line in this exact format:
    Subject: <4-8 word subject line>
    Then leave one blank line and write the email body.
    SUBJECT LINE rules (apply ONLY to the subject, not the email body):
