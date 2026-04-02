@@ -2,6 +2,7 @@
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from googleapiclient.errors import HttpError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -56,11 +57,18 @@ async def send_email_to_lead(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except HttpError as e:
+        logger.error("Gmail API error for lead %s: %s", lead_id, e)
+        detail = e._get_reason() or str(e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Gmail API error: {detail}",
+        )
     except Exception as e:
         logger.error("Failed to send email to lead %s: %s", lead_id, e)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to send email via Gmail. Please check your connection.",
+            detail=f"Failed to send email via Gmail: {e}",
         )
 
     if activity is None:
