@@ -58,11 +58,14 @@ No fake case studies, no invented past projects.
 9. Your FIRST line must be a subject line in this exact format:
    Subject: <4-8 word subject line>
    Then leave one blank line and write the email body.
-   The subject must be specific to this business, curiosity-inducing.
-   Reference their business or problem directly — NOT your services.
-   Start with "You"/"Вы"/"Ваш" — never with "I"/"Я".
-   FORBIDDEN subject patterns: "Commercial proposal", "Коммерческое предложение", \
-"Quick question", "Following up", "Partnership opportunity", "Предложение о сотрудничестве".
+   SUBJECT LINE rules (apply ONLY to the subject, not the email body):
+   - 4-8 words, specific to this business, curiosity-inducing
+   - Reference their business or problem — not your services
+   - Subject starts with "You"/"Вы"/"Ваш" — never with "I"/"Я"
+   - FORBIDDEN: "Commercial proposal", "Коммерческое предложение", \
+"Quick question", "Following up", "Partnership opportunity", "Предложение о сотрудничестве"
+   The email body MUST still start with a personal greeting (e.g. "Здравствуйте, [Name]!") \
+followed by a brief self-introduction. Do NOT skip the greeting.
 
 # TONE: SMALL AND APPROACHABLE
 
