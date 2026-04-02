@@ -12,51 +12,64 @@ from app.core.encryption import decrypt_value
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_INDUSTRY_GENERATOR_PROMPT = """\
-You are an expert B2B copywriter and Business Development strategist in the US market.
-Your task is to generate a Markdown template (prompt_instructions) for a specific industry.
-This template will be injected into a downstream LLM agent that writes cold outreach emails to small business owners in this industry.
+DEFAULT_INDUSTRY_TONE_PROMPT = """\
+You are writing a SHORT industry-specific tone guide for cold email outreach \
+to small business owners.
 
-Your goal is to instruct the downstream LLM on HOW to write the email, WHAT pain points to target, and WHAT solutions to offer, based entirely on the provided User Profile.
+This guide will complement automation cases (provided separately) \
+when generating cold outreach emails.
 
-# CRITICAL STRATEGY RULES
+# RULES
 
-1. Anti-SaaS Competition & Smart Integration
-Never propose building a custom app that replaces their $5-$30/mo standard industry software (like Clio, Mindbody, Housecall Pro).
-Instead, identify the 2-3 most common cheap SaaS tools used in the US for this industry.
-Your proposed solution MUST focus on:
-- API Integrations (connecting their cheap SaaS to other tools like accounting or CRM).
-- Custom BI / Dashboards (pulling data from their fragmented tools into one clear view to show real ROI).
-- Micro-automation (automating one specific painful manual step they currently do outside of their SaaS).
-
-2. ROI & The "Invisible Assistant" (Micro-Automation)
-Do not sell a "massive IT overhaul". Sell "Micro-Automation".
-Frame the value as saving hours of manual data entry, acting like a digital assistant that runs in the background. Mention how this saves money compared to hiring an admin or suffering from missed invoices.
-
-3. Complete Honesty (No Fake Case Studies)
-NEVER instruct the downstream LLM to invent past experience or fake case studies (e.g., "I just built this for a similar firm").
-The CTA must be strictly honest capability-based: "Open to a brief chat to see if connecting your tools could save your team a few hours a week?" or "Happy to share some ideas on how I'd approach automating this logic for your specific setup."
-
-4. Strict "b2b-outreach" Tone of Voice
-Include strict instructions for the downstream LLM to avoid AI-fluff words: DO NOT construct emails using words like "Leverage", "Delve into", "Streamline" (unless natural), "Fast-paced digital world".
-Keep the downstream email under 3-5 short paragraphs.
-NO Mansplaining: Do not tell the business owner how their business works. Speak to them as a peer offering a technical bridge.
+- Output 5-10 lines of actionable tone guidance in plain text (no markdown headers)
+- Focus ONLY on: how business owners in this industry prefer to be addressed, \
+what language resonates, what to avoid, any professional nuances
+- Do NOT list solutions, pain points, or automation ideas — those come from cases
+- Do NOT repeat general email rules (formatting, length, CTA — handled elsewhere)
+- Do NOT mention specific software tools
 
 # INPUT DATA
 """
 
-CASES_EXTRACTION_PROMPT = """\
-You are a structured data extractor. Given industry outreach instructions, \
-extract 3-5 concrete automation cases that a freelance IT consultant can offer \
-to businesses in this industry.
+CASES_GENERATION_PROMPT = """\
+You are generating concrete automation cases for a freelance IT specialist \
+who helps small and medium businesses with lightweight automations.
 
-Each case must be a JSON object with these fields:
-- "title": short name of the automation/integration (under 10 words)
-- "problem": specific pain point this solves (1 sentence)
-- "solution": what exactly to build/integrate (1 sentence)
-- "result": expected business outcome — hours saved, errors reduced, etc. (1 sentence)
+Create 4-6 SPECIFIC automation scenarios for the given industry.
+
+# RULES
+
+1. Each case must describe a CONCRETE workflow, not a generic category.
+   BAD: "API Integration between tools"
+   GOOD: "Auto-create QuickBooks invoice when Housecall Pro job is marked complete"
+
+2. Solutions must use lightweight tools appropriate for small business budgets:
+   - Python/Node.js scripts, Google Apps Script, n8n/Make workflows
+   - Simple custom web dashboards, API integrations between existing SaaS tools
+   - NEVER mention Tableau, Power BI, Salesforce, or other enterprise platforms
+
+3. Each case must be UNIQUE — different pain point, different workflow, different outcome.
+   Do NOT repeat the same pattern (e.g. "sync X to Y") more than once.
+
+4. Frame outcomes as hours saved per week/month or specific errors eliminated.
+   Be realistic — a small automation saves 2-5 hours/week, not "transforms the business".
+
+5. Mention specific SaaS tools commonly used by small businesses in this industry \
+(the $5-30/mo tools, not enterprise software).
+
+6. Base solutions on the sender's actual skills (provided below). \
+If the sender knows Python and Google Sheets — propose scripts and spreadsheet automations. \
+If they know n8n — propose workflow automations.
+
+# OUTPUT FORMAT
 
 Output ONLY a valid JSON array. No other text, no markdown fences, no explanation.
+
+Each object must have exactly these fields:
+- "title": specific name (under 10 words), e.g. "Auto-sync bookings to Google Calendar"
+- "problem": what the owner currently does manually (1 sentence)
+- "solution": what to build, mentioning specific tools (1 sentence)
+- "result": measurable outcome — hours/week saved, error reduction (1 sentence)
 """
 
 async def _get_openai_key(db: AsyncSession, user: User) -> str:
@@ -88,40 +101,31 @@ async def generate_industry_instructions_for_industry(
     result = await db.execute(select(UserSettings).where(UserSettings.user_id == user.id))
     settings = result.scalar_one_or_none()
 
-    base_prompt = DEFAULT_INDUSTRY_GENERATOR_PROMPT
-    if settings and settings.instruction_outreach_industry:
-        base_prompt = settings.instruction_outreach_industry
-
-    # 4. Construct user message
-    user_msg = f"""
-INDUSTRY: {industry.name}
-INDUSTRY DESCRIPTION: {industry.description or 'No extra description provided.'}
-
-USER PROFILE SUMMARY:
-{profile_summary}
-
-USER SKILLS:
-{json.dumps(profile_skills, indent=2, ensure_ascii=False) if profile_skills else 'No specific skills listed'}
-
-TASK:
-Generate the detailed Markdown instructions (`prompt_instructions`) for this industry.
-1. Outline the typical "Pain Points" using standard SaaS in this specific industry.
-2. Outline the tailored "Solutions" based ONLY on the User Profile (dashboards, integrations, micro-automation).
-3. Provide explicit "Tone & Outreach Instructions" with a safe, honest Soft CTA.
-4. The final output must be ENTIRELY in {language}.
-"""
-
-    # 5. Call LLM for instructions
     api_key = await _get_openai_key(db, user)
     llm = get_llm_client("openai", api_key)
 
-    generated_markdown = await llm.generate(base_prompt, user_msg)
+    # 4. Generate short tone guide
+    tone_prompt = DEFAULT_INDUSTRY_TONE_PROMPT
+    if settings and settings.instruction_outreach_industry:
+        tone_prompt = settings.instruction_outreach_industry
 
-    # 6. Extract structured cases from the generated instructions
-    cases = await _extract_cases(llm, generated_markdown, industry.name)
+    tone_msg = f"""
+INDUSTRY: {industry.name}
+INDUSTRY DESCRIPTION: {industry.description or 'No extra description provided.'}
 
-    # 7. Save back to industry
-    industry.prompt_instructions = generated_markdown
+Generate a short tone guide for cold email outreach to business owners in this industry.
+Write entirely in {language}.
+"""
+    generated_tone = await llm.generate(tone_prompt, tone_msg)
+
+    # 5. Generate cases independently
+    cases = await _generate_cases(
+        llm, industry.name, industry.description,
+        profile_summary, profile_skills, language,
+    )
+
+    # 6. Save back to industry
+    industry.prompt_instructions = generated_tone
     industry.cases = cases
     await db.commit()
     await db.refresh(industry)
@@ -129,13 +133,32 @@ Generate the detailed Markdown instructions (`prompt_instructions`) for this ind
     return industry
 
 
-async def _extract_cases(llm, instructions_markdown: str, industry_name: str) -> list:
-    """Extract structured automation cases from generated industry instructions."""
-    user_msg = f"Industry: {industry_name}\n\nInstructions:\n{instructions_markdown}"
+async def _generate_cases(
+    llm,
+    industry_name: str,
+    industry_description: str | None,
+    profile_summary: str,
+    profile_skills: list,
+    language: str,
+) -> list:
+    """Generate structured automation cases for an industry based on sender profile."""
+    user_msg = f"""
+INDUSTRY: {industry_name}
+INDUSTRY DESCRIPTION: {industry_description or 'No extra description provided.'}
+
+SENDER PROFILE SUMMARY:
+{profile_summary}
+
+SENDER SKILLS:
+{json.dumps(profile_skills, indent=2, ensure_ascii=False) if profile_skills else 'No specific skills listed'}
+
+Generate 4-6 automation cases for businesses in this industry.
+Each case must be actionable by a freelancer with the skills listed above.
+Output in {language}.
+"""
 
     try:
-        raw = await llm.generate(CASES_EXTRACTION_PROMPT, user_msg)
-        # Strip markdown fences if LLM added them despite instructions
+        raw = await llm.generate(CASES_GENERATION_PROMPT, user_msg)
         cleaned = raw.strip()
         if cleaned.startswith("```"):
             cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned
@@ -146,6 +169,6 @@ async def _extract_cases(llm, instructions_markdown: str, industry_name: str) ->
         if isinstance(cases, list):
             return cases
     except (json.JSONDecodeError, Exception) as e:
-        logger.warning("Failed to extract structured cases for %s: %s", industry_name, e)
+        logger.warning("Failed to generate cases for %s: %s", industry_name, e)
 
     return []

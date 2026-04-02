@@ -107,7 +107,6 @@ def _build_user_prompt(
     contact_person: str | None,
     service_description: str | None,
     industry_name: str | None,
-    template_content: str | None,
     cases: list | None,
     sender_name: str,
     sender_summary: str | None,
@@ -116,7 +115,7 @@ def _build_user_prompt(
     custom_instructions: str | None,
     language: str,
 ) -> str:
-    """Build the user prompt from lead data, industry template, and sender profile."""
+    """Build the user prompt from lead data, industry cases, and sender profile."""
     parts: list[str] = []
 
     parts.append("# RECIPIENT")
@@ -152,11 +151,6 @@ def _build_user_prompt(
                 parts.append(f"Solution: {solution}")
             if result:
                 parts.append(f"Result: {result}")
-
-    if template_content:
-        parts.append(
-            f"\n# INDUSTRY OUTREACH INSTRUCTIONS\n{template_content}"
-        )
 
     if custom_instructions:
         parts.append(f"\n# ADDITIONAL INSTRUCTIONS\n{custom_instructions}")
@@ -235,14 +229,11 @@ async def generate_proposal(
     sender_skills = profile.skills if profile else None
     sender_website = (profile.contacts or {}).get("website") if profile else None
 
-    template_content: str | None = None
     industry_name: str | None = None
     cases: list | None = None
 
     if lead.industry:
         industry_name = lead.industry.name
-        if lead.industry.prompt_instructions:
-            template_content = lead.industry.prompt_instructions
         if lead.industry.cases:
             cases = lead.industry.cases
 
@@ -252,7 +243,6 @@ async def generate_proposal(
         contact_person=lead.contact_person,
         service_description=lead.service_description,
         industry_name=industry_name,
-        template_content=template_content,
         cases=cases,
         sender_name=sender_name,
         sender_summary=sender_summary,
