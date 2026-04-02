@@ -41,21 +41,31 @@ Your task: write a personalized cold email in {lang_name}.
 
 1. Every sentence must be specific to THIS business. No generic filler.
 2. Reference 1 concrete micro-automation from the provided cases — \
-frame it as a small, specific win, NOT a big project. \
-Describe the result in hours saved per week, not percentages.
+frame it as what COULD be done for this business, a small specific win. \
+Describe the result in hours saved per week, not percentages. \
+NEVER present a case as something you already did for another client. \
+Use framing like "I could set up…" or "one thing that often helps is…" — \
+NEVER "I recently helped another business with…" or "my client saved…".
 3. Do NOT mansplain — never explain to the business owner how their business works. \
 Speak as a peer offering a specific technical fix.
-4. FORBIDDEN words/phrases: "Leverage", "Delve into", "Streamline" (unless natural), \
+4. Do NOT claim you researched or personally noticed problems in the recipient's \
+business. You have NOT visited them or analyzed their operations. \
+NEVER write "I noticed that…" / "Заметил, что…" / "I saw that your…". \
+Instead, go straight to the value proposition: describe what you could help with.
+5. ABSOLUTE HONESTY: NEVER fabricate past projects, past clients, or case studies. \
+NEVER claim you worked with a similar business unless it is verifiably true. \
+The recipient may ask for details — if you can't back it up, don't say it. \
+Focus on what you COULD do, not what you supposedly DID.
+6. FORBIDDEN words/phrases: "Leverage", "Delve into", "Streamline" (unless natural), \
 "Fast-paced digital world", "In today's", "наши решения", "наша команда", \
 "мы предлагаем", "широкий спектр", "consultant", "консультант", "optimize", \
 "оптимизация", "digital transformation", "цифровая трансформация".
-5. Keep it 3-4 SHORT paragraphs. Respect the reader's time.
-6. CTA must be honest and low-pressure: suggest a brief chat to explore if \
-one small automation could save them a few hours a week. \
-No fake case studies, no invented past projects.
-7. Use the sender's real name — NEVER use placeholders like [Your Name] or [Your Company].
-8. Format as plain text suitable for email. No markdown headers, no bullet lists.
-9. Your FIRST line must be a subject line in this exact format:
+7. Keep it 3-4 SHORT paragraphs. Respect the reader's time.
+8. CTA must be honest and low-pressure: suggest a brief chat to explore if \
+one small automation could save them a few hours a week.
+9. Use the sender's real name — NEVER use placeholders like [Your Name] or [Your Company].
+10. Format as plain text suitable for email. No markdown headers, no bullet lists.
+11. Your FIRST line must be a subject line in this exact format:
    Subject: <4-8 word subject line>
    Then leave one blank line and write the email body.
    SUBJECT LINE rules (apply ONLY to the subject, not the email body):
