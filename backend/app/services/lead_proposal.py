@@ -69,7 +69,11 @@ one small automation could save them a few hours a week.
    Subject: <4-8 word subject line>
    Then leave one blank line and write the email body.
    SUBJECT LINE rules (apply ONLY to the subject, not the email body):
-   - 4-8 words, specific to this business, curiosity-inducing
+   - 4-8 words, curiosity-inducing
+   - MUST mention the recipient's business name or a detail unique to THIS specific business \
+(their location, a specific service they offer, or their niche). \
+Generic industry subjects like "Вы экономите время на ручном вводе данных?" are FORBIDDEN — \
+they look like mass-mailing templates.
    - Reference their business or problem — not your services
    - Subject starts with "You"/"Вы"/"Ваш" — never with "I"/"Я"
    - FORBIDDEN: "Commercial proposal", "Коммерческое предложение", \
