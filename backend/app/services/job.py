@@ -3,13 +3,21 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 from typing import Optional
 
-from sqlalchemy import asc, cast, desc, or_, select, String
+from sqlalchemy import and_, asc, cast, desc, func, or_, select, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models.job import ApplicationStatus, Job, StatusHistory
 from app.models.user import User, UserRole
 from app.schemas.job import JobCreate, JobStatusChange, JobTrackingUpdate, JobUpdate
+
+
+class DuplicateJobError(Exception):
+    """Raised when a job with the same URL or title+company already exists."""
+
+    def __init__(self, existing_job: Job):
+        self.existing_job = existing_job
+        super().__init__(f"Job already exists (id={existing_job.id})")
 
 
 def _exclude_demo_owners(owner_id_col):
@@ -43,11 +51,45 @@ async def _load_job_with_history(db: AsyncSession, job_id: int) -> Job | None:
 # ── CRUD ──────────────────────────────────────────────────────────────────────
 
 
+async def _find_existing_job(
+    db: AsyncSession,
+    user_id: int,
+    url: str | None,
+    title: str,
+    company: str,
+) -> Job | None:
+    """Find an existing job by URL (preferred) or title+company fallback."""
+    if url:
+        result = await db.execute(
+            select(Job).where(and_(Job.user_id == user_id, Job.url == url))
+        )
+        existing = result.scalar_one_or_none()
+        if existing:
+            return existing
+
+    result = await db.execute(
+        select(Job).where(
+            and_(
+                Job.user_id == user_id,
+                func.lower(Job.title) == title.lower(),
+                func.lower(Job.company) == company.lower(),
+            )
+        )
+    )
+    return result.scalar_one_or_none()
+
+
 async def create_job(
     db: AsyncSession,
     data: JobCreate,
     current_user: User,
 ) -> Job:
+    existing = await _find_existing_job(
+        db, current_user.id, data.url, data.title, data.company
+    )
+    if existing:
+        raise DuplicateJobError(existing)
+
     job = Job(
         user_id=current_user.id,
         title=data.title,

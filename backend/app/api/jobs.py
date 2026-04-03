@@ -22,6 +22,7 @@ from app.schemas.job import (
     StatusHistoryResponse,
 )
 from app.schemas.note import LinkedNoteBrief
+from app.services.job import DuplicateJobError
 from app.services import job as job_service
 from app.services import job_task_link as jtl_service
 from app.services import job_event_link as jel_service
@@ -38,7 +39,13 @@ async def create_job(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    job = await job_service.create_job(db, data, current_user)
+    try:
+        job = await job_service.create_job(db, data, current_user)
+    except DuplicateJobError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Job already exists (id={exc.existing_job.id})",
+        )
     return job
 
 

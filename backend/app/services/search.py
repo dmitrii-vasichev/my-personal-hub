@@ -4,6 +4,7 @@ Unified job search service with multi-provider support.
 from datetime import datetime
 from typing import Optional
 
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.job import Job
@@ -48,12 +49,47 @@ async def search_jobs(
         raise ValueError(f"Unknown provider: {provider}")
 
 
+async def _find_existing_job(
+    db: AsyncSession,
+    user_id: int,
+    url: Optional[str],
+    title: str,
+    company: str,
+) -> Job | None:
+    """Find an existing job by URL (preferred) or title+company fallback."""
+    if url:
+        result = await db.execute(
+            select(Job).where(and_(Job.user_id == user_id, Job.url == url))
+        )
+        existing = result.scalar_one_or_none()
+        if existing:
+            return existing
+
+    # Fallback: match by title + company (case-insensitive)
+    result = await db.execute(
+        select(Job).where(
+            and_(
+                Job.user_id == user_id,
+                func.lower(Job.title) == title.lower(),
+                func.lower(Job.company) == company.lower(),
+            )
+        )
+    )
+    return result.scalar_one_or_none()
+
+
 async def save_search_result(
     db: AsyncSession,
     user: User,
     result: SearchResult,
 ) -> Job:
-    """Persist a search result as a Job in the database."""
+    """Persist a search result as a Job. Returns existing job if duplicate."""
+    existing = await _find_existing_job(
+        db, user.id, result.url, result.title, result.company
+    )
+    if existing:
+        return existing
+
     job = Job(
         user_id=user.id,
         title=result.title,
