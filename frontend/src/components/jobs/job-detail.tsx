@@ -36,7 +36,7 @@ import {
 import { ResumeSection } from "@/components/jobs/resume-section";
 import { CoverLetterSection } from "@/components/jobs/cover-letter-section";
 import { ApplicationTimeline } from "@/components/jobs/application-timeline";
-import { useDeleteJob, useUpdateJob, useChangeJobStatus, useStatusHistory } from "@/hooks/use-jobs";
+import { useDeleteJob, useUpdateJob, useStatusHistory } from "@/hooks/use-jobs";
 import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS, APPLICATION_STATUS_BG_COLORS } from "@/types/job";
 import type { Job, UpdateJobInput } from "@/types/job";
 
@@ -60,19 +60,16 @@ export function JobDetail({ job }: JobDetailProps) {
   const router = useRouter();
   const deleteJob = useDeleteJob();
   const updateJob = useUpdateJob();
-  const changeJobStatus = useChangeJobStatus();
   const { data: history = [] } = useStatusHistory(job.id);
   const [trackingEditOpen, setTrackingEditOpen] = useState(false);
-  const [isStartingTracking, setIsStartingTracking] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
 
   const { data: linkedNotes = [], isLoading: notesLoading } = useJobLinkedNotes(job.id);
   const linkNote = useLinkNoteToJob(job.id);
   const unlinkNote = useUnlinkNoteFromJob(job.id);
 
-  const hasStatus = !!job.status;
   const showRejectionReason =
-    hasStatus && (REJECTION_STATUSES as readonly string[]).includes(job.status!) && !!job.rejection_reason;
+    (REJECTION_STATUSES as readonly string[]).includes(job.status!) && !!job.rejection_reason;
 
   const patchJob = useCallback(
     async (data: UpdateJobInput) => {
@@ -87,21 +84,6 @@ export function JobDetail({ job }: JobDetailProps) {
   const handleDelete = async () => {
     await deleteJob.mutateAsync(job.id);
     router.push("/jobs");
-  };
-
-  const handleStartTracking = async () => {
-    setIsStartingTracking(true);
-    try {
-      await changeJobStatus.mutateAsync({
-        id: job.id,
-        data: { new_status: "found" },
-      });
-      toast.success("Tracking started");
-    } catch {
-      // Stay on page if tracking fails
-    } finally {
-      setIsStartingTracking(false);
-    }
   };
 
   return (
@@ -234,10 +216,9 @@ export function JobDetail({ job }: JobDetailProps) {
             />
           </div>
 
-          {/* Tracking info sections (only when tracked) */}
-          {hasStatus && (
-            <>
-              {job.notes && (
+          {/* Tracking info sections */}
+          <>
+            {job.notes && (
                 <div>
                   <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                     Notes
@@ -312,21 +293,14 @@ export function JobDetail({ job }: JobDetailProps) {
                 </div>
               )}
             </>
-          )}
 
-          {/* Resume section (only when tracked) */}
-          {hasStatus && (
-            <div className="mt-2">
-              <ResumeSection jobId={job.id} />
-            </div>
-          )}
+          <div className="mt-2">
+            <ResumeSection jobId={job.id} />
+          </div>
 
-          {/* Cover Letter section (only when tracked) */}
-          {hasStatus && (
-            <div>
-              <CoverLetterSection jobId={job.id} />
-            </div>
-          )}
+          <div>
+            <CoverLetterSection jobId={job.id} />
+          </div>
 
           {/* Linked Tasks */}
           <LinkedTasksSection jobId={job.id} />
@@ -343,8 +317,8 @@ export function JobDetail({ job }: JobDetailProps) {
             isLinking={linkNote.isPending}
           />
 
-          {/* Status History (only when tracked) */}
-          {hasStatus && history.length > 0 && (
+          {/* Status History */}
+          {history.length > 0 && (
             <div>
               <h3 className="mb-4 text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
                 Status History
@@ -361,44 +335,33 @@ export function JobDetail({ job }: JobDetailProps) {
             <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
               Tracking
             </span>
-            {hasStatus && job.status ? (
-              <div className="flex flex-col gap-2">
-                <span
-                  className="inline-flex w-fit items-center rounded-md px-2.5 py-1 text-xs font-medium"
-                  style={{
-                    color: APPLICATION_STATUS_COLORS[job.status],
-                    backgroundColor: APPLICATION_STATUS_BG_COLORS[job.status],
-                  }}
-                >
-                  {APPLICATION_STATUS_LABELS[job.status]}
-                </span>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setStatusDialogOpen(true)}
-                  className="w-full justify-center text-xs"
-                >
-                  Change Status
-                </Button>
-
-                <button
-                  onClick={() => setTrackingEditOpen(true)}
-                  className="text-xs text-[var(--accent-foreground)] hover:text-[var(--accent-hover)] transition-colors text-center"
-                >
-                  Edit Tracking Info
-                </button>
-              </div>
-            ) : (
-              <Button
-                size="sm"
-                onClick={handleStartTracking}
-                disabled={isStartingTracking}
-                className="w-full justify-center text-xs bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white border-0"
+            <div className="flex flex-col gap-2">
+              <span
+                className="inline-flex w-fit items-center rounded-md px-2.5 py-1 text-xs font-medium"
+                style={{
+                  color: APPLICATION_STATUS_COLORS[job.status!],
+                  backgroundColor: APPLICATION_STATUS_BG_COLORS[job.status!],
+                }}
               >
-                {isStartingTracking ? "Starting…" : "Start Tracking"}
+                {APPLICATION_STATUS_LABELS[job.status!]}
+              </span>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setStatusDialogOpen(true)}
+                className="w-full justify-center text-xs"
+              >
+                Change Status
               </Button>
-            )}
+
+              <button
+                onClick={() => setTrackingEditOpen(true)}
+                className="text-xs text-[var(--accent-foreground)] hover:text-[var(--accent-hover)] transition-colors text-center"
+              >
+                Edit Tracking Info
+              </button>
+            </div>
           </div>
 
           <div className="border-t border-[var(--border)]" />
@@ -477,7 +440,7 @@ export function JobDetail({ job }: JobDetailProps) {
         />
       )}
 
-      {hasStatus && job.status && statusDialogOpen && (
+      {job.status && statusDialogOpen && (
         <StatusChangeDialog
           open={statusDialogOpen}
           onOpenChange={setStatusDialogOpen}

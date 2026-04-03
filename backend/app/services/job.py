@@ -105,7 +105,7 @@ async def create_job(
         match_score=data.match_score,
         tags=data.tags,
         found_at=data.found_at,
-        status=data.status,
+        status=data.status or ApplicationStatus.found,
     )
 
     if data.status == ApplicationStatus.applied:
@@ -114,14 +114,13 @@ async def create_job(
     db.add(job)
     await db.flush()
 
-    # Create initial status history entry if status is set
-    if data.status is not None:
-        history_entry = StatusHistory(
-            job_id=job.id,
-            old_status=None,
-            new_status=data.status.value,
-        )
-        db.add(history_entry)
+    # Create initial status history entry
+    history_entry = StatusHistory(
+        job_id=job.id,
+        old_status=None,
+        new_status=job.status.value,
+    )
+    db.add(history_entry)
 
     await db.commit()
     return await _load_job_with_history(db, job.id)  # type: ignore[return-value]

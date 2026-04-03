@@ -7,7 +7,7 @@ from typing import Optional
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.job import Job
+from app.models.job import ApplicationStatus, Job, StatusHistory
 from app.models.user import User
 from app.services.providers.base import SearchResult
 from app.services.providers import adzuna, serpapi, jsearch
@@ -103,8 +103,18 @@ async def save_search_result(
         source=result.source,
         tags=[],
         found_at=result.found_at or datetime.utcnow(),
+        status=ApplicationStatus.found,
     )
     db.add(job)
+    await db.flush()
+
+    history_entry = StatusHistory(
+        job_id=job.id,
+        old_status=None,
+        new_status=ApplicationStatus.found.value,
+    )
+    db.add(history_entry)
+
     await db.commit()
     await db.refresh(job)
     return job
