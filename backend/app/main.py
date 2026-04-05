@@ -156,6 +156,16 @@ async def lifespan(application: FastAPI):
             replace_existing=True,
             misfire_grace_time=300,
         )
+
+        # Schedule task reminder check every 2 minutes
+        scheduler.add_job(
+            "app.services.task_reminders:run_reminder_check",
+            "interval",
+            minutes=2,
+            id="task_reminder_check",
+            replace_existing=True,
+            misfire_grace_time=120,
+        )
     except Exception as e:
         logger.warning("Could not restore polling jobs: %s", e)
 
