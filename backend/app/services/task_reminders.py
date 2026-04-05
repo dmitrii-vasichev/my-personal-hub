@@ -62,13 +62,13 @@ async def run_reminder_check() -> None:
         try:
             now = datetime.now(tz=timezone.utc)
 
-            # Find all due, non-dismissed reminders across all users
+            # Find all due reminders not yet sent via Telegram
             result = await db.execute(
                 select(Task)
                 .where(
                     and_(
                         Task.reminder_at <= now,
-                        Task.reminder_dismissed.is_(False),
+                        Task.reminder_telegram_sent.is_(False),
                         Task.status.notin_([TaskStatus.done, TaskStatus.cancelled]),
                     )
                 )
@@ -107,7 +107,7 @@ async def run_reminder_check() -> None:
                         token, ps.bot_chat_id, task.title, time_str
                     )
                     if res["success"]:
-                        task.reminder_dismissed = True
+                        task.reminder_telegram_sent = True
 
                 await db.commit()
                 logger.info(

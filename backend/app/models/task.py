@@ -90,6 +90,7 @@ class Task(Base):
     deadline: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     reminder_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     reminder_dismissed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    reminder_telegram_sent: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
     completed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

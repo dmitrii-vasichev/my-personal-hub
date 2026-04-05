@@ -187,6 +187,7 @@ async def update_task(
     if data.reminder_at is not None:
         task.reminder_at = data.reminder_at
         task.reminder_dismissed = False
+        task.reminder_telegram_sent = False
 
     # Handle assignee change
     if data.assignee_id is not None:
