@@ -10,6 +10,5 @@
 ## Current Status
 
 - **Mode:** idle
-- **Last shipped:** Reminders Phase 3 — Mobile Access (2026-04-06)
-- **PRD:** docs/prd-reminders.md (all phases complete)
+- **Last shipped:** UI tweaks — Tasks table/kanban toggle, Jobs table improvements, timezone fix (2026-04-07)
 - **Next:** Nothing planned
