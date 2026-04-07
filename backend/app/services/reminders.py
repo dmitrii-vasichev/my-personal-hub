@@ -161,9 +161,9 @@ async def snooze_reminder(
     if not reminder:
         return None
 
-    reminder.snoozed_until = datetime.now(tz=timezone.utc) + timedelta(
-        minutes=minutes
-    )
+    new_time = datetime.now(tz=timezone.utc) + timedelta(minutes=minutes)
+    reminder.remind_at = new_time
+    reminder.snoozed_until = new_time
     reminder.snooze_count += 1
     reminder.notification_sent_count = 0
     reminder.telegram_message_id = None

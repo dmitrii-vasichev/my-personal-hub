@@ -249,7 +249,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
   const updateReminder = useUpdateReminder();
   const deleteReminder = useDeleteReminder();
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [snoozeOpen, setSnoozeOpen] = useState(false);
+  const [snoozeOpen, setSnoozeOpen] = useState<'desktop' | 'mobile' | null>(null);
   const [editOpen, setEditOpen] = useState(false);
 
   const time = format(parseISO(reminder.remind_at), "HH:mm");
@@ -262,7 +262,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
       {
         onSuccess: () => {
           toast.success("Rescheduled");
-          setSnoozeOpen(false);
+          setSnoozeOpen(null);
         },
         onError: () => toast.error("Failed to reschedule"),
       }
@@ -281,7 +281,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
       {
         onSuccess: () => {
           toast.success(`Snoozed for ${minutes >= 60 ? `${minutes / 60}h` : `${minutes}min`}`);
-          setSnoozeOpen(false);
+          setSnoozeOpen(null);
         },
         onError: () => toast.error("Failed to snooze"),
       }
@@ -311,7 +311,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
           <Pencil className="h-3.5 w-3.5" />
         </Button>
       </Tooltip>
-      <Popover open={snoozeOpen} onOpenChange={setSnoozeOpen}>
+      <Popover open={snoozeOpen === 'desktop'} onOpenChange={(open) => setSnoozeOpen(open ? 'desktop' : null)}>
         <Tooltip content="Snooze">
           <PopoverTrigger
             render={
@@ -329,7 +329,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
           <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
           <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
           <div className="my-1 h-px bg-border" />
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(false); setEditOpen(true); }}>Other...</button>
+          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(null); setEditOpen(true); }}>Other...</button>
         </PopoverContent>
       </Popover>
       <Tooltip content="Delete">
@@ -359,7 +359,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
         <Pencil className="h-5 w-5" />
         Edit
       </button>
-      <Popover open={snoozeOpen} onOpenChange={setSnoozeOpen}>
+      <Popover open={snoozeOpen === 'mobile'} onOpenChange={(open) => setSnoozeOpen(open ? 'mobile' : null)}>
         <PopoverTrigger
           render={
             <button
@@ -379,7 +379,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
           <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
           <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
           <div className="my-1 h-px bg-border" />
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(false); setEditOpen(true); }}>Other...</button>
+          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(null); setEditOpen(true); }}>Other...</button>
         </PopoverContent>
       </Popover>
       <button
