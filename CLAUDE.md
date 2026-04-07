@@ -9,7 +9,11 @@
 
 ## Current Status
 
-- **Mode:** idle
-- **Last shipped:** Reminders Phase 1 — Core + Telegram (2026-04-06)
+- **Mode:** build (ready to ship)
+- **Feature:** Reminders Phase 2 — Recurring + Birthdays
+- **Branch:** feature/reminders-phase2
+- **Execution:** subagent (5 tasks, all verified)
+- **Progress:** 5/5 tasks done
+- **Last completed:** Birthday scheduler job with timezone-aware dedup
 - **PRD:** docs/prd-reminders.md
-- **Next:** Phase 2 — Recurring reminders + Birthdays
+- **Next:** `/dev ship` → merge to main

@@ -16,6 +16,7 @@ import {
   Bell,
   ChevronDown,
   ListTodo,
+  Repeat,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,18 @@ import {
   useDeleteReminder,
 } from "@/hooks/use-reminders";
 import type { Reminder } from "@/types/reminder";
+
+// -- Recurrence badge label --
+
+function recurrenceLabel(rule: string): string {
+  const labels: Record<string, string> = {
+    daily: "Daily",
+    weekly: "Weekly",
+    monthly: "Monthly",
+    yearly: "Yearly",
+  };
+  return labels[rule] ?? rule;
+}
 
 // -- Snooze badge colors based on snooze_count --
 
@@ -155,6 +168,14 @@ function ReminderRow({ reminder }: { reminder: Reminder }) {
                 Task
               </span>
             </Link>
+          )}
+
+          {/* Recurrence badge */}
+          {reminder.recurrence_rule && (
+            <span className="inline-flex items-center gap-0.5 rounded-md bg-violet-100 px-1.5 py-0.5 text-[11px] font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+              <Repeat className="h-3 w-3" />
+              {recurrenceLabel(reminder.recurrence_rule)}
+            </span>
           )}
         </div>
 

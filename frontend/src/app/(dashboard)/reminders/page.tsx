@@ -1,6 +1,7 @@
 "use client";
 
 import { Bell } from "lucide-react";
+import { RemindersTabs } from "@/components/reminders/reminders-tabs";
 import { QuickAddForm } from "@/components/reminders/quick-add-form";
 import { ReminderList } from "@/components/reminders/reminder-list";
 import { useReminders } from "@/hooks/use-reminders";
@@ -17,6 +18,9 @@ export default function RemindersPage() {
           <h1 className="text-xl font-semibold text-foreground">Reminders</h1>
         </div>
       </div>
+
+      {/* Tab navigation */}
+      <RemindersTabs />
 
       {/* Quick-add form */}
       <QuickAddForm />

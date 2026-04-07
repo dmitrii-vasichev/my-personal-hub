@@ -29,6 +29,7 @@ from app.models.garmin import (
 )
 from app.models.outreach import Lead, LeadStatus, LeadStatusHistory, LeadActivity, ActivityType, Industry
 from app.models.reminder import Reminder, ReminderStatus
+from app.models.birthday import Birthday
 
 __all__ = [
     "User",
@@ -75,4 +76,5 @@ __all__ = [
     "Industry",
     "Reminder",
     "ReminderStatus",
+    "Birthday",
 ]

@@ -28,6 +28,7 @@ from app.api.settings import router as settings_router
 from app.api.tasks import router as tasks_router
 from app.api.gmail import router as gmail_router
 from app.api.outreach import batch_router, industry_router, router as outreach_router
+from app.api.birthdays import router as birthdays_router
 from app.api.reminders import router as reminders_router
 from app.api.users import router as users_router
 from app.core.config import settings
@@ -167,6 +168,17 @@ async def lifespan(application: FastAPI):
             replace_existing=True,
             misfire_grace_time=120,
         )
+
+        # Schedule daily birthday reminder generation at 01:00
+        scheduler.add_job(
+            "app.services.birthday_scheduler:run_birthday_check",
+            "cron",
+            hour=1,
+            minute=0,
+            id="birthday_check",
+            replace_existing=True,
+            misfire_grace_time=3600,
+        )
     except Exception as e:
         logger.warning("Could not restore polling jobs: %s", e)
 
@@ -214,6 +226,7 @@ app.include_router(industry_router)
 app.include_router(gmail_router)
 app.include_router(batch_router)
 app.include_router(reminders_router)
+app.include_router(birthdays_router)
 
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(

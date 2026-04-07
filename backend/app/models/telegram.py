@@ -194,6 +194,13 @@ class PulseSettings(Base):
     reminder_snooze_limit: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="5"
     )
+    # Birthday notification defaults
+    birthday_advance_days: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="3"
+    )
+    birthday_reminder_time: Mapped[time] = mapped_column(
+        Time, nullable=False, server_default="10:00:00"
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

@@ -5,12 +5,22 @@ import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { useCreateReminder } from "@/hooks/use-reminders";
+
+const RECURRENCE_OPTIONS = [
+  { value: "", label: "No repeat" },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+] as const;
 
 export function QuickAddForm() {
   const [title, setTitle] = useState("");
   const [remindAt, setRemindAt] = useState("");
+  const [recurrenceRule, setRecurrenceRule] = useState("");
   const createReminder = useCreateReminder();
 
   const canSubmit = title.trim().length > 0 && remindAt.length > 0;
@@ -20,11 +30,16 @@ export function QuickAddForm() {
     if (!canSubmit) return;
 
     createReminder.mutate(
-      { title: title.trim(), remind_at: remindAt },
+      {
+        title: title.trim(),
+        remind_at: remindAt,
+        recurrence_rule: recurrenceRule || undefined,
+      },
       {
         onSuccess: () => {
           setTitle("");
           setRemindAt("");
+          setRecurrenceRule("");
           toast.success("Reminder created");
         },
         onError: () => toast.error("Failed to create reminder"),
@@ -64,6 +79,23 @@ export function QuickAddForm() {
           onChange={setRemindAt}
           placeholder="Pick date & time"
         />
+      </div>
+
+      {/* Recurrence */}
+      <div className="flex min-w-[130px] flex-col gap-1">
+        <label className="text-xs font-medium text-muted-foreground">
+          Repeat
+        </label>
+        <Select
+          value={recurrenceRule}
+          onChange={(e) => setRecurrenceRule(e.target.value)}
+        >
+          {RECURRENCE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </Select>
       </div>
 
       {/* Submit */}

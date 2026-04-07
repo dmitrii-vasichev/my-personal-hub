@@ -19,12 +19,12 @@ export interface Reminder {
 export interface CreateReminderInput {
   title: string;
   remind_at: string;
-  recurrence_rule?: string;
+  recurrence_rule?: string | null;
   task_id?: number;
 }
 
 export interface UpdateReminderInput {
   title?: string;
   remind_at?: string;
-  recurrence_rule?: string;
+  recurrence_rule?: string | null;
 }
