@@ -25,6 +25,7 @@ async def run_reminder_check() -> None:
                 select(Reminder).where(
                     and_(
                         Reminder.status == ReminderStatus.pending,
+                        Reminder.is_floating == False,  # noqa: E712
                         Reminder.remind_at <= now,
                         # Either not snoozed, or snooze expired
                         (Reminder.snoozed_until.is_(None))

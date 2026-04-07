@@ -11,12 +11,16 @@ class ReminderCreate(BaseModel):
     remind_at: datetime
     recurrence_rule: Optional[str] = None
     task_id: Optional[int] = None
+    is_floating: bool = False
+    is_urgent: bool = False
 
 
 class ReminderUpdate(BaseModel):
     title: Optional[str] = None
     remind_at: Optional[datetime] = None
     recurrence_rule: Optional[str] = None
+    is_floating: Optional[bool] = None
+    is_urgent: Optional[bool] = None
 
 
 class ReminderSnooze(BaseModel):
@@ -35,6 +39,8 @@ class ReminderResponse(BaseModel):
     notification_sent_count: int
     task_id: Optional[int]
     completed_at: Optional[datetime]
+    is_floating: bool
+    is_urgent: bool
     created_at: datetime
     updated_at: datetime
 

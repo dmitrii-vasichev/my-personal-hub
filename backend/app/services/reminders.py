@@ -22,6 +22,8 @@ async def create_reminder(
     user: User,
     recurrence_rule: str | None = None,
     task_id: int | None = None,
+    is_floating: bool = False,
+    is_urgent: bool = False,
 ) -> Reminder:
     reminder = Reminder(
         user_id=user.id,
@@ -29,6 +31,8 @@ async def create_reminder(
         remind_at=remind_at,
         recurrence_rule=recurrence_rule,
         task_id=task_id,
+        is_floating=is_floating,
+        is_urgent=is_urgent,
     )
     db.add(reminder)
     await db.commit()
@@ -49,12 +53,19 @@ async def list_reminders(
     elif not include_done:
         conditions.append(Reminder.status == ReminderStatus.pending)
 
-    order = Reminder.completed_at.desc().nullslast() if status_filter == ReminderStatus.done else Reminder.remind_at
+    if status_filter == ReminderStatus.done:
+        order = (Reminder.completed_at.desc().nullslast(),)
+    else:
+        order = (
+            Reminder.is_urgent.desc(),    # urgent first
+            Reminder.is_floating.asc(),   # time-bound before floating
+            Reminder.remind_at,           # then by time
+        )
     result = await db.execute(
         select(Reminder)
         .options(selectinload(Reminder.task))
         .where(and_(*conditions))
-        .order_by(order)
+        .order_by(*order)
     )
     return list(result.scalars().all())
 

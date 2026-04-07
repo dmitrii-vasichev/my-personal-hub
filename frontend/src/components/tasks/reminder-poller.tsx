@@ -31,7 +31,7 @@ export function ReminderPoller() {
 
     const dueReminders = reminders.filter((r: Reminder) => {
       const remindAt = new Date(r.remind_at);
-      return r.status === "pending" && remindAt <= horizon;
+      return r.status === "pending" && !r.is_floating && remindAt <= horizon;
     });
 
     // Clean up IDs for reminders no longer in due list (snoozed past horizon / done)

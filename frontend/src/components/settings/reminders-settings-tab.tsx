@@ -17,6 +17,10 @@ export function RemindersSettingsTab() {
   const [repeatCount, setRepeatCount] = useState("5");
   const [repeatInterval, setRepeatInterval] = useState("5");
   const [snoozeLimit, setSnoozeLimit] = useState("5");
+  const [digestEnabled, setDigestEnabled] = useState(false);
+  const [digestIntervalHours, setDigestIntervalHours] = useState("3");
+  const [digestStartHour, setDigestStartHour] = useState("7");
+  const [digestEndHour, setDigestEndHour] = useState("22");
 
   // Sync form state when server settings arrive
   const [prevSettings, setPrevSettings] = useState<typeof settings>(undefined);
@@ -25,6 +29,10 @@ export function RemindersSettingsTab() {
     setRepeatCount(String(settings.reminder_repeat_count ?? 5));
     setRepeatInterval(String(settings.reminder_repeat_interval ?? 5));
     setSnoozeLimit(String(settings.reminder_snooze_limit ?? 5));
+    setDigestEnabled(settings.digest_reminders_enabled ?? false);
+    setDigestIntervalHours(String(settings.digest_reminders_interval_hours ?? 3));
+    setDigestStartHour(String(settings.digest_reminders_start_hour ?? 7));
+    setDigestEndHour(String(settings.digest_reminders_end_hour ?? 22));
   }
 
   const handleSave = async () => {
@@ -33,6 +41,10 @@ export function RemindersSettingsTab() {
         reminder_repeat_count: parseInt(repeatCount) || 5,
         reminder_repeat_interval: parseInt(repeatInterval) || 5,
         reminder_snooze_limit: parseInt(snoozeLimit) || 5,
+        digest_reminders_enabled: digestEnabled,
+        digest_reminders_interval_hours: parseInt(digestIntervalHours) || 3,
+        digest_reminders_start_hour: parseInt(digestStartHour) || 7,
+        digest_reminders_end_hour: parseInt(digestEndHour) || 22,
       });
     } catch {
       // Error handled by hook
@@ -121,6 +133,86 @@ export function RemindersSettingsTab() {
           <p className="text-[11px] text-muted-foreground">
             Number of snoozes before quick-snooze is disabled (0 = no snooze)
           </p>
+        </div>
+      </div>
+
+      {/* Reminder Digest */}
+      <div className="space-y-3 border-t border-border pt-5">
+        <h3 className="text-xs font-semibold uppercase text-muted-foreground">
+          Reminder Digest
+        </h3>
+        <p className="text-[11px] text-muted-foreground">
+          Bundle pending reminders into a single Telegram message sent at regular
+          intervals during your active hours.
+        </p>
+
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={digestEnabled}
+            onChange={(e) => setDigestEnabled(e.target.checked)}
+            className="rounded border-border accent-[var(--accent)]"
+          />
+          <span className="text-sm text-foreground">Enable digest</span>
+        </label>
+
+        <div className="grid grid-cols-3 gap-4">
+          {/* Interval */}
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">
+              Interval (hours)
+            </Label>
+            <Input
+              type="number"
+              min="1"
+              max="12"
+              value={digestIntervalHours}
+              onChange={(e) => setDigestIntervalHours(e.target.value)}
+              className="text-sm"
+              disabled={!digestEnabled}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Send digest every N hours (1-12)
+            </p>
+          </div>
+
+          {/* Start Hour */}
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">
+              Start Hour
+            </Label>
+            <Input
+              type="number"
+              min="0"
+              max="23"
+              value={digestStartHour}
+              onChange={(e) => setDigestStartHour(e.target.value)}
+              className="text-sm"
+              disabled={!digestEnabled}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              First digest no earlier than (0-23)
+            </p>
+          </div>
+
+          {/* End Hour */}
+          <div className="space-y-1">
+            <Label className="text-xs uppercase text-muted-foreground">
+              End Hour
+            </Label>
+            <Input
+              type="number"
+              min="0"
+              max="23"
+              value={digestEndHour}
+              onChange={(e) => setDigestEndHour(e.target.value)}
+              className="text-sm"
+              disabled={!digestEnabled}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Last digest no later than (0-23)
+            </p>
+          </div>
         </div>
       </div>
     </section>

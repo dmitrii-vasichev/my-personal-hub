@@ -25,6 +25,10 @@ class PulseSettingsResponse(BaseModel):
     reminder_repeat_count: int = 5
     reminder_repeat_interval: int = 5
     reminder_snooze_limit: int = 5
+    digest_reminders_enabled: bool = True
+    digest_reminders_interval_hours: int = 3
+    digest_reminders_start_hour: int = 7
+    digest_reminders_end_hour: int = 22
     updated_at: datetime
 
     model_config = {"from_attributes": True}
@@ -49,3 +53,7 @@ class PulseSettingsUpdate(BaseModel):
     reminder_repeat_count: Optional[int] = Field(None, ge=1, le=50)
     reminder_repeat_interval: Optional[int] = Field(None, ge=1, le=1440)
     reminder_snooze_limit: Optional[int] = Field(None, ge=0, le=50)
+    digest_reminders_enabled: Optional[bool] = None
+    digest_reminders_interval_hours: Optional[int] = Field(None, ge=1, le=24)
+    digest_reminders_start_hour: Optional[int] = Field(None, ge=0, le=23)
+    digest_reminders_end_hour: Optional[int] = Field(None, ge=0, le=23)

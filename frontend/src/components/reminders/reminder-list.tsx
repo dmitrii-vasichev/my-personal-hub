@@ -14,6 +14,7 @@ import {
   Clock,
   Trash2,
   Bell,
+  Flag,
   ListTodo,
   Pencil,
   Repeat,
@@ -33,7 +34,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 import {
   useMarkDone,
   useSnoozeReminder,
@@ -93,15 +95,28 @@ function groupByDate(reminders: Reminder[]): DateGroup[] {
     groups.get(key)!.reminders.push(r);
   }
 
-  // Sort groups chronologically, reminders within group by time
+  // Sort groups chronologically, reminders within group by tier
   const sorted = Array.from(groups.values()).sort(
     (a, b) => a.sortKey - b.sortKey
   );
   for (const g of sorted) {
-    g.reminders.sort(
-      (a, b) =>
-        new Date(a.remind_at).getTime() - new Date(b.remind_at).getTime()
-    );
+    g.reminders.sort((a, b) => {
+      // 1. Urgent floating first
+      const aUrgentFloat = a.is_urgent && a.is_floating ? 0 : 1;
+      const bUrgentFloat = b.is_urgent && b.is_floating ? 0 : 1;
+      if (aUrgentFloat !== bUrgentFloat) return aUrgentFloat - bUrgentFloat;
+
+      // 2. Time-bound before normal floating
+      const aFloat = a.is_floating ? 1 : 0;
+      const bFloat = b.is_floating ? 1 : 0;
+      if (aFloat !== bFloat) return aFloat - bFloat;
+
+      // 3. Within same tier: time-bound by time, floating by creation
+      if (!a.is_floating && !b.is_floating) {
+        return new Date(a.remind_at).getTime() - new Date(b.remind_at).getTime();
+      }
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    });
   }
   return sorted;
 }
@@ -116,6 +131,17 @@ function tomorrowAt(hour: number): string {
   const sign = offset <= 0 ? "+" : "-";
   const abs = Math.abs(offset);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(hour)}:00:00${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}`;
+}
+
+// -- Timezone offset helper --
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+function withTzOffset(dateStr: string, timeStr: string): string {
+  const offset = new Date().getTimezoneOffset();
+  const sign = offset <= 0 ? "+" : "-";
+  const abs = Math.abs(offset);
+  return `${dateStr}T${timeStr}:00${sign}${pad2(Math.floor(abs / 60))}:${pad2(abs % 60)}`;
 }
 
 const RECURRENCE_OPTIONS = [
@@ -135,24 +161,37 @@ function EditReminderForm({
   reminder: Reminder;
   onClose: () => void;
 }) {
+  // Parse initial date/time from reminder
+  const initialDate = format(parseISO(reminder.remind_at), "yyyy-MM-dd");
+  const initialTime = reminder.is_floating ? "" : format(parseISO(reminder.remind_at), "HH:mm");
+
   const [title, setTitle] = useState(reminder.title);
-  const [remindAt, setRemindAt] = useState(reminder.remind_at);
+  const [date, setDate] = useState(initialDate);
+  const [time, setTime] = useState(initialTime);
+  const [isUrgent, setIsUrgent] = useState(reminder.is_urgent);
   const [recurrenceRule, setRecurrenceRule] = useState(
     reminder.recurrence_rule ?? ""
   );
   const updateReminder = useUpdateReminder();
 
-  const canSubmit = title.trim().length > 0 && remindAt.length > 0;
+  const canSubmit = title.trim().length > 0 && date.length > 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
+
+    const isFloating = time === "";
+    const remindAt = isFloating
+      ? withTzOffset(date, "00:00")
+      : withTzOffset(date, time);
 
     updateReminder.mutate(
       {
         id: reminder.id,
         title: title.trim(),
         remind_at: remindAt,
+        is_floating: isFloating,
+        is_urgent: isUrgent,
         recurrence_rule: recurrenceRule || null,
       },
       {
@@ -167,21 +206,43 @@ function EditReminderForm({
 
   return (
     <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-      <div className="space-y-1.5">
-        <label className="text-xs font-medium text-muted-foreground">
-          Title
-        </label>
-        <Input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          autoComplete="off"
-        />
+      <div className="flex items-end gap-2">
+        <div className="flex-1 space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground">
+            Title
+          </label>
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            autoComplete="off"
+          />
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={() => setIsUrgent(!isUrgent)}
+          className={
+            isUrgent
+              ? "border-red-500 bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600"
+              : ""
+          }
+          title={isUrgent ? "Remove urgent" : "Mark as urgent"}
+        >
+          <Flag className="h-4 w-4" fill={isUrgent ? "currentColor" : "none"} />
+        </Button>
       </div>
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-muted-foreground">
-          Date & Time
+          Date
         </label>
-        <DateTimePicker value={remindAt} onChange={setRemindAt} />
+        <DatePicker value={date} onChange={setDate} placeholder="Pick date" />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-muted-foreground">
+          Time (optional)
+        </label>
+        <TimePicker value={time} onChange={setTime} />
       </div>
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-muted-foreground">
@@ -252,7 +313,9 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
   const [snoozeOpen, setSnoozeOpen] = useState<'desktop' | 'mobile' | null>(null);
   const [editOpen, setEditOpen] = useState(false);
 
-  const time = format(parseISO(reminder.remind_at), "HH:mm");
+  const timeDisplay = reminder.is_floating
+    ? (reminder.is_urgent ? "\u{1F534}" : "\u{1F4CC}")
+    : format(parseISO(reminder.remind_at), "HH:mm");
   const isPending =
     markDone.isPending || snooze.isPending || updateReminder.isPending || deleteReminder.isPending;
 
@@ -311,27 +374,29 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
           <Pencil className="h-3.5 w-3.5" />
         </Button>
       </Tooltip>
-      <Popover open={snoozeOpen === 'desktop'} onOpenChange={(open) => setSnoozeOpen(open ? 'desktop' : null)}>
-        <Tooltip content="Snooze">
-          <PopoverTrigger
-            render={
-              <Button variant="ghost" size="icon-xs" disabled={isPending}>
-                <Bell className="h-3.5 w-3.5" />
-              </Button>
-            }
-          />
-        </Tooltip>
-        <PopoverContent align="end" className="w-48 p-1">
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(15)}>15 minutes</button>
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(60)}>1 hour</button>
-          <div className="my-1 h-px bg-border" />
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(10))}>Tomorrow, 10:00</button>
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
-          <div className="my-1 h-px bg-border" />
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(null); setEditOpen(true); }}>Other...</button>
-        </PopoverContent>
-      </Popover>
+      {!reminder.is_floating && (
+        <Popover open={snoozeOpen === 'desktop'} onOpenChange={(open) => setSnoozeOpen(open ? 'desktop' : null)}>
+          <Tooltip content="Snooze">
+            <PopoverTrigger
+              render={
+                <Button variant="ghost" size="icon-xs" disabled={isPending}>
+                  <Bell className="h-3.5 w-3.5" />
+                </Button>
+              }
+            />
+          </Tooltip>
+          <PopoverContent align="end" className="w-48 p-1">
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(15)}>15 minutes</button>
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(60)}>1 hour</button>
+            <div className="my-1 h-px bg-border" />
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(10))}>Tomorrow, 10:00</button>
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
+            <div className="my-1 h-px bg-border" />
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(null); setEditOpen(true); }}>Other...</button>
+          </PopoverContent>
+        </Popover>
+      )}
       <Tooltip content="Delete">
         <Button variant="ghost" size="icon-xs" onClick={() => setConfirmDelete(true)} disabled={isPending}>
           <Trash2 className="h-3.5 w-3.5 text-destructive" />
@@ -342,7 +407,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
 
   /* -- Mobile expanded action panel -- */
   const mobileActions = expanded && (
-    <div className="grid grid-cols-4 gap-2 border-t border-border bg-muted/30 px-4 py-2.5 md:hidden">
+    <div className={`grid ${reminder.is_floating ? "grid-cols-3" : "grid-cols-4"} gap-2 border-t border-border bg-muted/30 px-4 py-2.5 md:hidden`}>
       <button
         className="flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-medium active:bg-muted"
         onClick={handleDone}
@@ -359,29 +424,31 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
         <Pencil className="h-5 w-5" />
         Edit
       </button>
-      <Popover open={snoozeOpen === 'mobile'} onOpenChange={(open) => setSnoozeOpen(open ? 'mobile' : null)}>
-        <PopoverTrigger
-          render={
-            <button
-              className="flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-medium active:bg-muted"
-              disabled={isPending}
-            >
-              <Bell className="h-5 w-5" />
-              Snooze
-            </button>
-          }
-        />
-        <PopoverContent align="center" className="w-48 p-1">
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(15)}>15 minutes</button>
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(60)}>1 hour</button>
-          <div className="my-1 h-px bg-border" />
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(10))}>Tomorrow, 10:00</button>
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
-          <div className="my-1 h-px bg-border" />
-          <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(null); setEditOpen(true); }}>Other...</button>
-        </PopoverContent>
-      </Popover>
+      {!reminder.is_floating && (
+        <Popover open={snoozeOpen === 'mobile'} onOpenChange={(open) => setSnoozeOpen(open ? 'mobile' : null)}>
+          <PopoverTrigger
+            render={
+              <button
+                className="flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-medium active:bg-muted"
+                disabled={isPending}
+              >
+                <Bell className="h-5 w-5" />
+                Snooze
+              </button>
+            }
+          />
+          <PopoverContent align="center" className="w-48 p-1">
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(15)}>15 minutes</button>
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(60)}>1 hour</button>
+            <div className="my-1 h-px bg-border" />
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(10))}>Tomorrow, 10:00</button>
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
+            <div className="my-1 h-px bg-border" />
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(null); setEditOpen(true); }}>Other...</button>
+          </PopoverContent>
+        </Popover>
+      )}
       <button
         className="flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-medium text-destructive active:bg-muted"
         onClick={() => setConfirmDelete(true)}
@@ -403,7 +470,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
         >
           {/* Time */}
           <span className="w-12 shrink-0 text-sm font-mono text-muted-foreground">
-            {time}
+            {timeDisplay}
           </span>
 
           {/* Title + badges */}
@@ -411,6 +478,12 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
             <span className="truncate text-sm font-medium text-foreground">
               {reminder.title}
             </span>
+
+            {reminder.is_urgent && (
+              <span className="inline-flex items-center rounded-md bg-red-100 px-1.5 py-0.5 text-[11px] font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                Urgent
+              </span>
+            )}
 
             {reminder.snooze_count > 0 && (
               <span

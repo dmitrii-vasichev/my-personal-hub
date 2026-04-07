@@ -194,6 +194,22 @@ class PulseSettings(Base):
     reminder_snooze_limit: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="5"
     )
+    # Floating reminder digest settings
+    digest_reminders_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="true"
+    )
+    digest_reminders_interval_hours: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="3"
+    )
+    digest_reminders_start_hour: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="7"
+    )
+    digest_reminders_end_hour: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="22"
+    )
+    last_reminder_digest_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     # Birthday notification defaults
     birthday_advance_days: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="3"

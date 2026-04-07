@@ -13,6 +13,8 @@ export interface Reminder {
   task_id: number | null;
   task_title: string | null;
   completed_at: string | null;
+  is_floating: boolean;
+  is_urgent: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -22,10 +24,14 @@ export interface CreateReminderInput {
   remind_at: string;
   recurrence_rule?: string | null;
   task_id?: number;
+  is_floating?: boolean;
+  is_urgent?: boolean;
 }
 
 export interface UpdateReminderInput {
   title?: string;
   remind_at?: string;
   recurrence_rule?: string | null;
+  is_floating?: boolean;
+  is_urgent?: boolean;
 }

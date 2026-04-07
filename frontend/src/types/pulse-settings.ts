@@ -19,6 +19,10 @@ export interface PulseSettings {
   reminder_repeat_count: number;
   reminder_repeat_interval: number;
   reminder_snooze_limit: number;
+  digest_reminders_enabled: boolean;
+  digest_reminders_interval_hours: number;
+  digest_reminders_start_hour: number;
+  digest_reminders_end_hour: number;
   updated_at: string;
 }
 
@@ -41,4 +45,8 @@ export interface PulseSettingsUpdate {
   reminder_repeat_count?: number;
   reminder_repeat_interval?: number;
   reminder_snooze_limit?: number;
+  digest_reminders_enabled?: boolean;
+  digest_reminders_interval_hours?: number;
+  digest_reminders_start_hour?: number;
+  digest_reminders_end_hour?: number;
 }

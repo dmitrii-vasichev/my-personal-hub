@@ -51,6 +51,8 @@ async def create_reminder(
         current_user,
         recurrence_rule=data.recurrence_rule,
         task_id=data.task_id,
+        is_floating=data.is_floating,
+        is_urgent=data.is_urgent,
     )
     return _to_response(reminder)
 
