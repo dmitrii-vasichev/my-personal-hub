@@ -39,9 +39,10 @@ const navItems = [
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  onNavClick?: () => void;
 }
 
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, onNavClick }: SidebarProps) {
   const pathname = usePathname();
   const { user, isDemo } = useAuth();
   const { resolvedTheme } = useTheme();
@@ -94,6 +95,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={onNavClick}
               className={cn(
                 "relative flex items-center gap-[10px] rounded-lg px-[10px] py-[8px] text-[14px] transition-all duration-150",
                 isActive

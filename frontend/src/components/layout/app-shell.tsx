@@ -48,7 +48,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={closeMobileMenu} />
           <div className="relative z-50">
-            <Sidebar collapsed={false} onToggle={closeMobileMenu} />
+            <Sidebar collapsed={false} onToggle={closeMobileMenu} onNavClick={closeMobileMenu} />
           </div>
         </div>
       )}
