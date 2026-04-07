@@ -10,5 +10,5 @@
 ## Current Status
 
 - **Mode:** idle
-- **Last shipped:** UI tweaks — Tasks table/kanban toggle, Jobs table improvements, timezone fix (2026-04-07)
+- **Last shipped:** Floating reminders with periodic digest and urgent flag (2026-04-07)
 - **Next:** Nothing planned
