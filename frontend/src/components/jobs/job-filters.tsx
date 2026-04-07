@@ -9,11 +9,6 @@ import type { JobFilters } from "@/types/job";
 import { APPLICATION_STATUS_LABELS } from "@/types/job";
 import type { ApplicationStatus } from "@/types/job";
 
-interface JobFiltersBarProps {
-  filters: JobFilters;
-  onFiltersChange: (filters: JobFilters) => void;
-}
-
 const KNOWN_SOURCES = ["LinkedIn", "Indeed", "Glassdoor", "Greenhouse", "Lever", "Other"];
 
 const STATUS_OPTIONS: ApplicationStatus[] = [
@@ -31,42 +26,53 @@ const STATUS_OPTIONS: ApplicationStatus[] = [
   "withdrawn",
 ];
 
-export function JobFiltersBar({ filters, onFiltersChange }: JobFiltersBarProps) {
-  const [search, setSearch] = useState(filters.search ?? "");
+/* ── Search input with debounce ── */
 
-  // Debounce search — 300ms delay before updating parent
+interface JobSearchInputProps {
+  value?: string;
+  onChange: (search: string | undefined) => void;
+}
+
+export function JobSearchInput({ value, onChange }: JobSearchInputProps) {
+  const [search, setSearch] = useState(value ?? "");
+
   useEffect(() => {
     const t = setTimeout(() => {
-      onFiltersChange({ ...filters, search: search || undefined });
+      onChange(search || undefined);
     }, 300);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
-  const activeCount = [
-    filters.search,
-    filters.source,
-    filters.status,
-  ].filter(Boolean).length;
+  return (
+    <div className="relative flex-1 min-w-0">
+      <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-tertiary pointer-events-none" />
+      <Input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Search jobs…"
+        className="pl-8 h-8 text-sm border-border-subtle bg-surface focus-visible:border-primary"
+      />
+    </div>
+  );
+}
+
+/* ── Source / Status dropdowns + Clear button ── */
+
+interface JobFilterDropdownsProps {
+  filters: JobFilters;
+  onFiltersChange: (filters: JobFilters) => void;
+}
+
+export function JobFilterDropdowns({ filters, onFiltersChange }: JobFilterDropdownsProps) {
+  const activeCount = [filters.source, filters.status].filter(Boolean).length;
 
   const clearAll = () => {
-    setSearch("");
-    onFiltersChange({});
+    onFiltersChange({ ...filters, source: undefined, status: undefined });
   };
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      {/* Search input */}
-      <div className="relative flex-1 min-w-48 max-w-72">
-        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-tertiary pointer-events-none" />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search jobs…"
-          className="pl-8 h-8 text-sm border-border-subtle bg-surface focus-visible:border-primary"
-        />
-      </div>
-
+    <>
       {/* Source filter */}
       <Select
         value={filters.source ?? ""}
@@ -114,6 +120,6 @@ export function JobFiltersBar({ filters, onFiltersChange }: JobFiltersBarProps) 
           </span>
         </Button>
       )}
-    </div>
+    </>
   );
 }

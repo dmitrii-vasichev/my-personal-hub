@@ -2,9 +2,9 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, Search, BarChart2, Send } from "lucide-react";
+import { Plus, Search, BarChart2, Send, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { JobFiltersBar } from "@/components/jobs/job-filters";
+import { JobSearchInput, JobFilterDropdowns } from "@/components/jobs/job-filters";
 import { JobsTable } from "@/components/jobs/jobs-table";
 import { JobDialog } from "@/components/jobs/job-dialog";
 import { ApplicationKanban } from "@/components/jobs/application-kanban";
@@ -26,6 +26,7 @@ function JobsPageInner() {
   });
   const [viewMode, setViewMode] = useState<JobsViewMode>("table");
   const [filters, setFilters] = useState<JobFilters>({});
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | undefined>();
 
@@ -100,20 +101,50 @@ function JobsPageInner() {
       {/* Tab content */}
       {activeTab === "jobs" ? (
         <>
-          {/* Filter bar + view toggle + applied today */}
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1">
-              <JobFiltersBar filters={filters} onFiltersChange={setFilters} />
-            </div>
-            <div className="flex items-center gap-3">
-              {appliedTodayCount > 0 && (
-                <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--accent-teal)]">
-                  <Send className="h-3.5 w-3.5" />
-                  <span>Applied today: {appliedTodayCount}</span>
+          {/* Toolbar */}
+          <div className="flex flex-col gap-2">
+            {/* Main row */}
+            <div className="flex items-center gap-2 md:gap-4">
+              <div className="flex flex-1 items-center gap-2">
+                <JobSearchInput
+                  value={filters.search}
+                  onChange={(search) => setFilters((f) => ({ ...f, search }))}
+                />
+                <div className="hidden md:flex items-center gap-2">
+                  <JobFilterDropdowns filters={filters} onFiltersChange={setFilters} />
                 </div>
-              )}
-              <ViewToggle value={viewMode} onChange={setViewMode} />
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                {appliedTodayCount > 0 && (
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--accent-teal)]">
+                    <Send className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline">Applied today:</span> {appliedTodayCount}
+                  </div>
+                )}
+                <div className="hidden md:block">
+                  <ViewToggle value={viewMode} onChange={setViewMode} />
+                </div>
+                <button
+                  onClick={() => setShowMobileFilters((v) => !v)}
+                  className={`md:hidden shrink-0 p-1.5 rounded-md border transition-colors ${
+                    showMobileFilters
+                      ? "border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/10"
+                      : "border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
+                  }`}
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                </button>
+              </div>
             </div>
+
+            {/* Mobile filter panel */}
+            {showMobileFilters && (
+              <div className="flex md:hidden items-center gap-2 flex-wrap">
+                <JobFilterDropdowns filters={filters} onFiltersChange={setFilters} />
+                <ViewToggle value={viewMode} onChange={setViewMode} />
+              </div>
+            )}
           </div>
 
           {/* Jobs content — table or kanban */}
