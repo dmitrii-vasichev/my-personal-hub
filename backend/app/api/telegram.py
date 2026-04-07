@@ -1,4 +1,6 @@
 import logging
+from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import select
@@ -113,6 +115,17 @@ async def _get_user_by_chat_id(
     return user, ps
 
 
+def _format_time(dt: datetime, tz_name: Optional[str]) -> str:
+    """Format datetime in the user's timezone for callback confirmations."""
+    try:
+        from zoneinfo import ZoneInfo
+
+        local_dt = dt.astimezone(ZoneInfo(tz_name or "UTC"))
+        return local_dt.strftime("%b %d, %I:%M %p")
+    except Exception:
+        return dt.strftime("%b %d, %H:%M UTC")
+
+
 async def _answer_callback(
     bot_token: str, callback_id: str, text: str
 ) -> None:
@@ -122,6 +135,19 @@ async def _answer_callback(
         await bot.answer_callback_query(callback_query_id=callback_id, text=text)
     except TelegramError as e:
         logger.warning("Failed to answer callback query: %s", e)
+
+
+async def _edit_callback_message(
+    bot_token: str, chat_id: int, message_id: int, text: str
+) -> None:
+    """Edit the original reminder message to show persistent confirmation."""
+    try:
+        bot = Bot(token=bot_token)
+        await bot.edit_message_text(
+            chat_id=chat_id, message_id=message_id, text=text
+        )
+    except TelegramError as e:
+        logger.warning("Failed to edit callback message: %s", e)
 
 
 @router.post("/reminder-callback")
@@ -159,12 +185,19 @@ async def handle_reminder_callback(
             return {"ok": True}
 
         token = decrypt_value(ps.bot_token)
+        message_id = callback_query["message"]["message_id"]
 
         if action == "done" and len(parts) == 3:
             reminder_id = int(parts[2])
             result = await reminder_service.mark_done(db, reminder_id, user)
             answer_text = "Done!" if result else "Reminder not found"
             await _answer_callback(token, callback_id, answer_text)
+            if result:
+                confirm = f"\u2705 {result.title}\nDone"
+                if result.recurrence_rule:
+                    next_str = _format_time(result.remind_at, ps.timezone)
+                    confirm = f"\u2705 {result.title}\nDone \u2014 next: {next_str}"
+                await _edit_callback_message(token, chat_id, message_id, confirm)
 
         elif action == "snooze" and len(parts) == 4:
             minutes = int(parts[2])
@@ -174,6 +207,10 @@ async def handle_reminder_callback(
             )
             answer_text = f"Snoozed {minutes} min" if result else "Reminder not found"
             await _answer_callback(token, callback_id, answer_text)
+            if result:
+                next_str = _format_time(result.remind_at, ps.timezone)
+                confirm = f"\u23f1 {result.title}\nSnoozed {minutes} min \u2014 next: {next_str}"
+                await _edit_callback_message(token, chat_id, message_id, confirm)
 
     except Exception:
         logger.exception("Error handling reminder callback")
