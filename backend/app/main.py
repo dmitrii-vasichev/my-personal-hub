@@ -67,6 +67,20 @@ async def lifespan(application: FastAPI):
             if all_settings:
                 logger.info("Restored polling + digest jobs for %d users", len(all_settings))
 
+            # Set up Telegram webhooks for reminder callbacks
+            if settings.BACKEND_URL:
+                from app.core.encryption import decrypt_value
+                from app.services.reminder_notifications import setup_reminder_webhook
+
+                webhook_count = 0
+                for ps in all_settings:
+                    if ps.bot_token:
+                        token = decrypt_value(ps.bot_token)
+                        if await setup_reminder_webhook(token, settings.BACKEND_URL):
+                            webhook_count += 1
+                if webhook_count:
+                    logger.info("Set up Telegram webhooks for %d bots", webhook_count)
+
         # Restore Garmin sync jobs
         from app.models.garmin import GarminConnection
         from app.models.telegram import PulseDigest, PulseSource

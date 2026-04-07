@@ -21,7 +21,10 @@ export function ReminderPoller() {
   const shownIds = useRef<Set<number>>(new Set());
 
   useEffect(() => {
-    if (!reminders?.length) return;
+    if (!reminders?.length) {
+      shownIds.current.clear();
+      return;
+    }
 
     const now = new Date();
     const horizon = new Date(now.getTime() + 15 * 60 * 1000); // +15 min
@@ -30,6 +33,15 @@ export function ReminderPoller() {
       const remindAt = new Date(r.remind_at);
       return r.status === "pending" && remindAt <= horizon;
     });
+
+    // Clean up IDs for reminders no longer in due list (snoozed past horizon / done)
+    const dueIds = new Set(dueReminders.map((r) => r.id));
+    for (const id of shownIds.current) {
+      if (!dueIds.has(id)) {
+        shownIds.current.delete(id);
+        toast.dismiss(`reminder-${id}`);
+      }
+    }
 
     for (const reminder of dueReminders) {
       if (shownIds.current.has(reminder.id)) continue;
@@ -48,21 +60,14 @@ export function ReminderPoller() {
           onClick: () => {
             markDoneMutation.mutate(reminder.id);
             toast.dismiss(toastId);
-            shownIds.current.delete(reminder.id);
           },
         },
         cancel: {
-          label: "Snooze 10m",
+          label: "Snooze 15m",
           onClick: () => {
-            snoozeMutation.mutate({ id: reminder.id, minutes: 10 });
+            snoozeMutation.mutate({ id: reminder.id, minutes: 15 });
             toast.dismiss(toastId);
-            shownIds.current.delete(reminder.id);
           },
-        },
-        onDismiss: () => {
-          // Dismiss just hides the toast; reminder stays pending
-          // Will re-show on next poll cycle if still due
-          shownIds.current.delete(reminder.id);
         },
       });
     }

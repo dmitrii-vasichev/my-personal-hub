@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     # Frontend URL for OAuth redirects
     FRONTEND_URL: str = "http://localhost:3000"
 
+    # Backend public URL (required for Telegram webhook)
+    BACKEND_URL: str = ""
+
     # CORS — comma-separated list of allowed origins
     CORS_ORIGINS: str = "http://localhost:3000"
 

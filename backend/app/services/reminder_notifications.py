@@ -92,3 +92,16 @@ async def send_reminder_notification(
     except Exception as e:
         logger.error("Unexpected error sending reminder: %s", e)
         return {"success": False, "message_id": None, "error": str(e)}
+
+
+async def setup_reminder_webhook(bot_token: str, backend_url: str) -> bool:
+    """Register Telegram webhook so callback_query events reach our endpoint."""
+    webhook_url = f"{backend_url.rstrip('/')}/api/pulse/telegram/reminder-callback"
+    try:
+        bot = Bot(token=bot_token)
+        await bot.set_webhook(url=webhook_url, allowed_updates=["callback_query"])
+        logger.info("Telegram webhook set: %s", webhook_url)
+        return True
+    except TelegramError as e:
+        logger.warning("Failed to set Telegram webhook: %s", e)
+        return False

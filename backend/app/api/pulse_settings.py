@@ -1,12 +1,14 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings as app_settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.core.encryption import decrypt_value, encrypt_value
 from app.models.user import User
 from app.schemas.pulse_settings import PulseSettingsResponse, PulseSettingsUpdate
 from app.services import pulse_settings as settings_service
+from app.services.reminder_notifications import setup_reminder_webhook
 from app.services.telegram_notifications import verify_bot_connection
 
 router = APIRouter(prefix="/api/pulse/settings", tags=["pulse-settings"])
@@ -63,11 +65,17 @@ async def update_settings(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Encrypt bot_token before saving
+    # Encrypt bot_token before saving; keep raw token for webhook setup
+    raw_bot_token = data.bot_token
     if data.bot_token is not None:
         data.bot_token = encrypt_value(data.bot_token)
     settings = await settings_service.update_settings(db, current_user.id, data)
     await db.commit()
+
+    # Set up Telegram webhook when bot_token is provided
+    if raw_bot_token and app_settings.BACKEND_URL:
+        await setup_reminder_webhook(raw_bot_token, app_settings.BACKEND_URL)
+
     return _to_response(settings)
 
 
