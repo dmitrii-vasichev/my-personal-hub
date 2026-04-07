@@ -10,44 +10,49 @@ import {
   useReactTable,
   type SortingState,
 } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown, Briefcase } from "lucide-react";
-import type { Job } from "@/types/job";
-import {
-  APPLICATION_STATUS_LABELS,
-  APPLICATION_STATUS_COLORS,
-  APPLICATION_STATUS_BG_COLORS,
-} from "@/types/job";
+import { ArrowDown, ArrowUp, ArrowUpDown, ListChecks, Calendar } from "lucide-react";
+import type { Task, TaskStatus, TaskPriority } from "@/types/task";
+import { TASK_STATUS_LABELS, PRIORITY_LABELS } from "@/types/task";
+import { TagPills } from "./tag-pill";
 
-const columnHelper = createColumnHelper<Job>();
+const columnHelper = createColumnHelper<Task>();
 
-function MatchScoreBadge({ score }: { score?: number }) {
-  if (score === undefined || score === null) return null;
-  const cls =
-    score >= 80
-      ? "bg-accent-teal-muted text-accent-teal border-accent-teal/20"
-      : score >= 60
-      ? "bg-accent-amber-muted text-accent-amber border-accent-amber/20"
-      : "bg-muted text-muted-foreground border-border";
+const STATUS_COLORS: Record<TaskStatus, { color: string; bg: string }> = {
+  backlog: { color: "var(--tertiary)", bg: "var(--muted)" },
+  new: { color: "var(--primary)", bg: "var(--accent-muted)" },
+  in_progress: { color: "var(--accent-amber)", bg: "var(--accent-amber-muted)" },
+  review: { color: "var(--accent-violet)", bg: "var(--accent-violet-muted, var(--accent-muted))" },
+  done: { color: "var(--accent-teal)", bg: "var(--accent-teal-muted)" },
+  cancelled: { color: "var(--tertiary)", bg: "var(--muted)" },
+};
+
+const PRIORITY_BADGE_COLORS: Record<TaskPriority, { color: string; bg: string }> = {
+  urgent: { color: "var(--destructive)", bg: "var(--destructive-muted)" },
+  high: { color: "var(--accent-amber)", bg: "var(--accent-amber-muted)" },
+  medium: { color: "var(--accent-foreground)", bg: "var(--accent-muted)" },
+  low: { color: "var(--tertiary)", bg: "var(--muted)" },
+};
+
+function StatusBadge({ status }: { status: TaskStatus }) {
+  const colors = STATUS_COLORS[status];
   return (
     <span
-      className={`inline-flex px-2 py-0.5 rounded-md text-[11px] font-mono font-medium border ${cls}`}
+      className="inline-flex px-2 py-0.5 rounded-md text-[11px] font-mono font-medium"
+      style={{ color: colors.color, backgroundColor: colors.bg }}
     >
-      {score}%
+      {TASK_STATUS_LABELS[status]}
     </span>
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function PriorityBadge({ priority }: { priority: TaskPriority }) {
+  const colors = PRIORITY_BADGE_COLORS[priority];
   return (
     <span
-      className="inline-flex px-2 py-0.5 rounded-md text-[11px] font-mono font-medium border"
-      style={{
-        color: APPLICATION_STATUS_COLORS[status as keyof typeof APPLICATION_STATUS_COLORS],
-        backgroundColor: APPLICATION_STATUS_BG_COLORS[status as keyof typeof APPLICATION_STATUS_BG_COLORS],
-        borderColor: "transparent",
-      }}
+      className="inline-flex px-2 py-0.5 rounded-md text-[11px] font-mono font-medium"
+      style={{ color: colors.color, backgroundColor: colors.bg }}
     >
-      {APPLICATION_STATUS_LABELS[status as keyof typeof APPLICATION_STATUS_LABELS] ?? status}
+      {PRIORITY_LABELS[priority]}
     </span>
   );
 }
@@ -58,22 +63,25 @@ function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
   return <ArrowUpDown className="h-3 w-3 opacity-40" />;
 }
 
-function formatDate(dateStr?: string): string {
+function formatDate(dateStr?: string | null): string {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
-    year: "numeric",
   });
 }
 
-interface JobsTableProps {
-  jobs: Job[];
+function isDeadlineOverdue(deadline: string): boolean {
+  return new Date(deadline) < new Date();
+}
+
+interface TasksTableProps {
+  tasks: Task[];
   isLoading: boolean;
   error: Error | null;
 }
 
-export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
+export function TasksTable({ tasks, isLoading, error }: TasksTableProps) {
   const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -86,51 +94,56 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
             <div className="text-sm font-medium text-[var(--text-primary)] truncate">
               {info.getValue()}
             </div>
-            <div className="text-xs text-[var(--text-secondary)] truncate">
-              {info.row.original.company}
-            </div>
+            {info.row.original.owner_name && (
+              <div className="text-xs text-[var(--text-tertiary)] truncate">
+                {info.row.original.owner_name}
+              </div>
+            )}
           </div>
         ),
         size: 280,
       }),
       columnHelper.accessor("status", {
         header: "Status",
-        cell: (info) => {
-          const status = info.getValue();
-          if (!status) return <span className="text-xs text-[var(--text-tertiary)]">—</span>;
-          return <StatusBadge status={status} />;
-        },
-        size: 140,
+        cell: (info) => <StatusBadge status={info.getValue()} />,
+        size: 130,
       }),
-      columnHelper.accessor("match_score", {
-        header: "Match",
-        cell: (info) => <MatchScoreBadge score={info.getValue()} />,
-        size: 80,
-      }),
-      columnHelper.accessor("source", {
-        header: "Source",
-        cell: (info) => (
-          <span className="text-xs font-mono text-[var(--text-secondary)]">
-            {info.getValue()}
-          </span>
-        ),
+      columnHelper.accessor("priority", {
+        header: "Priority",
+        cell: (info) => <PriorityBadge priority={info.getValue()} />,
         size: 100,
       }),
-      columnHelper.accessor("created_at", {
-        header: "Added",
-        cell: (info) => (
-          <span className="text-xs font-mono text-[var(--text-secondary)]">
-            {formatDate(info.getValue())}
-          </span>
-        ),
-        size: 120,
+      columnHelper.display({
+        id: "tags",
+        header: "Tags",
+        cell: (info) => <TagPills tags={info.row.original.tags} limit={2} />,
+        size: 150,
+      }),
+      columnHelper.accessor("deadline", {
+        header: "Deadline",
+        cell: (info) => {
+          const val = info.getValue();
+          if (!val) return <span className="text-xs text-[var(--text-tertiary)]">—</span>;
+          const overdue = isDeadlineOverdue(val);
+          return (
+            <span
+              className={`inline-flex items-center gap-1 text-xs font-mono ${
+                overdue ? "text-[var(--danger)]" : "text-[var(--text-secondary)]"
+              }`}
+            >
+              <Calendar className="h-3 w-3" />
+              {formatDate(val)}
+            </span>
+          );
+        },
+        size: 110,
       }),
     ],
     []
   );
 
   const table = useReactTable({
-    data: jobs,
+    data: tasks,
     columns,
     state: { sorting },
     onSortingChange: setSorting,
@@ -162,22 +175,22 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
 
   if (error) {
     return (
-      <div className="flex flex-1 items-center justify-center text-[var(--destructive)]">
-        Failed to load jobs
+      <div className="flex flex-1 items-center justify-center text-[var(--danger)]">
+        Failed to load tasks
       </div>
     );
   }
 
-  if (jobs.length === 0) {
+  if (tasks.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--border)]">
-          <Briefcase className="h-5 w-5 text-[var(--text-tertiary)]" />
+          <ListChecks className="h-5 w-5 text-[var(--text-tertiary)]" />
         </div>
         <div>
-          <p className="text-sm font-medium text-[var(--text-secondary)]">No jobs found</p>
+          <p className="text-sm font-medium text-[var(--text-secondary)]">No tasks found</p>
           <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-            Add a job to start tracking your applications
+            Create a task to get started
           </p>
         </div>
       </div>
@@ -200,7 +213,9 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
                   >
                     <div className="flex items-center gap-1.5">
                       {flexRender(header.column.columnDef.header, header.getContext())}
-                      <SortIcon isSorted={header.column.getIsSorted()} />
+                      {header.column.getCanSort() && (
+                        <SortIcon isSorted={header.column.getIsSorted()} />
+                      )}
                     </div>
                   </th>
                 ))}
@@ -212,7 +227,7 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
               <tr
                 key={row.id}
                 className="border-t border-[rgba(255,255,255,0.03)] hover:bg-[var(--surface-hover)] cursor-pointer transition-colors"
-                onClick={() => router.push(`/jobs/${row.original.id}`)}
+                onClick={() => router.push(`/tasks/${row.original.id}`)}
               >
                 {row.getVisibleCells().map((cell) => (
                   <td key={cell.id} className="px-4 py-2.5">

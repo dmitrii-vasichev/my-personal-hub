@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, Search, BarChart2 } from "lucide-react";
+import { Plus, Search, BarChart2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { JobFiltersBar } from "@/components/jobs/job-filters";
 import { JobsTable } from "@/components/jobs/jobs-table";
@@ -30,6 +30,11 @@ function JobsPageInner() {
   const [editingJob, setEditingJob] = useState<Job | undefined>();
 
   const { data: jobs = [], isLoading, error } = useJobs(filters);
+
+  const appliedTodayCount = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return jobs.filter((j) => j.applied_date === today).length;
+  }, [jobs]);
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -88,12 +93,20 @@ function JobsPageInner() {
       {/* Tab content */}
       {activeTab === "jobs" ? (
         <>
-          {/* Filter bar + view toggle */}
+          {/* Filter bar + view toggle + applied today */}
           <div className="flex items-center justify-between gap-4">
             <div className="flex-1">
               <JobFiltersBar filters={filters} onFiltersChange={setFilters} />
             </div>
-            <ViewToggle value={viewMode} onChange={setViewMode} />
+            <div className="flex items-center gap-3">
+              {appliedTodayCount > 0 && (
+                <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--accent-teal)]">
+                  <Send className="h-3.5 w-3.5" />
+                  <span>Applied today: {appliedTodayCount}</span>
+                </div>
+              )}
+              <ViewToggle value={viewMode} onChange={setViewMode} />
+            </div>
           </div>
 
           {/* Jobs content — table or kanban */}

@@ -6,11 +6,13 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Plus, BarChart2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { KanbanBoard } from "@/components/tasks/kanban-board";
+import { TasksTable } from "@/components/tasks/tasks-table";
+import { TasksViewToggle, type TasksViewMode } from "@/components/tasks/view-toggle";
 import { BulkActionToolbar } from "@/components/tasks/bulk-action-toolbar";
 import { TaskFiltersBar } from "@/components/tasks/task-filters";
 import { ColumnVisibilityButton } from "@/components/tasks/column-visibility-button";
 import { TaskDialog } from "@/components/tasks/task-dialog";
-import { useKanbanTasks, useUpdateTask, useReorderTask } from "@/hooks/use-tasks";
+import { useKanbanTasks, useTasks, useUpdateTask, useReorderTask } from "@/hooks/use-tasks";
 import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
 import type { KanbanBoard as KanbanBoardType, TaskFilters, TaskStatus } from "@/types/task";
 import { DEFAULT_HIDDEN_COLUMNS } from "@/types/task";
@@ -65,6 +67,7 @@ export default function TasksPage() {
     // 3. Default: all tags (no filtering)
     return {};
   });
+  const [viewMode, setViewMode] = useState<TasksViewMode>("kanban");
   const [createDialogStatus, setCreateDialogStatus] = useState<TaskStatus | null>(null);
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<number>>(new Set());
 
@@ -101,9 +104,13 @@ export default function TasksPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.tag_ids, filters.include_untagged]);
 
-  const { data: board, isLoading, error } = useKanbanTasks(filters);
+  const { data: board, isLoading: kanbanLoading, error: kanbanError } = useKanbanTasks(filters);
+  const { data: tasksList = [], isLoading: tableLoading, error: tableError } = useTasks(filters);
   const updateTask = useUpdateTask();
   const reorderTask = useReorderTask();
+
+  const isLoading = viewMode === "kanban" ? kanbanLoading : tableLoading;
+  const error = viewMode === "kanban" ? kanbanError : tableError;
 
   // Column visibility from settings
   const { data: settings } = useSettings();
@@ -249,20 +256,33 @@ export default function TasksPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <TaskFiltersBar
-        filters={filters}
-        onFiltersChange={setFilters}
-        extraButtons={
-          <ColumnVisibilityButton
-            hiddenColumns={hiddenColumns}
-            onHiddenColumnsChange={handleHiddenColumnsChange}
+      {/* Filters + view toggle */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1">
+          <TaskFiltersBar
+            filters={filters}
+            onFiltersChange={setFilters}
+            extraButtons={
+              viewMode === "kanban" ? (
+                <ColumnVisibilityButton
+                  hiddenColumns={hiddenColumns}
+                  onHiddenColumnsChange={handleHiddenColumnsChange}
+                />
+              ) : undefined
+            }
           />
-        }
-      />
+        </div>
+        <TasksViewToggle value={viewMode} onChange={setViewMode} />
+      </div>
 
-      {/* Board */}
-      {isLoading ? (
+      {/* Content — table or kanban */}
+      {viewMode === "table" ? (
+        <TasksTable
+          tasks={tasksList}
+          isLoading={tableLoading}
+          error={tableError as Error | null}
+        />
+      ) : isLoading ? (
         <div className="flex flex-1 items-center justify-center text-[var(--text-tertiary)]">
           Loading tasks…
         </div>
