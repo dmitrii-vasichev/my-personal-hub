@@ -341,8 +341,8 @@ function ReminderRow({ reminder }: { reminder: Reminder }) {
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+        {/* Actions — always visible on mobile, hover-only on desktop */}
+        <div className="flex shrink-0 items-center gap-1 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
           {/* Done */}
           <Tooltip content="Mark done">
             <Button
