@@ -6,6 +6,7 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.timezone import user_today
 from app.models.birthday import Birthday
 from app.models.user import User
 
@@ -26,9 +27,11 @@ def next_birthday_date(birth_date: date, today: date | None = None) -> date:
     return date(today.year + 1, month, min(day, 28))
 
 
-def days_until(next_birthday: date) -> int:
+def days_until(next_birthday: date, today: date | None = None) -> int:
     """Calculate days until the next birthday."""
-    return (next_birthday - date.today()).days
+    if today is None:
+        today = date.today()
+    return (next_birthday - today).days
 
 
 async def create_birthday(
@@ -59,6 +62,7 @@ async def list_birthdays(
     user: User,
 ) -> list[Birthday]:
     """List all birthdays for a user, sorted by next upcoming date."""
+    today = await user_today(db, user.id)
     result = await db.execute(
         select(Birthday)
         .where(Birthday.user_id == user.id)
@@ -66,7 +70,7 @@ async def list_birthdays(
     )
     birthdays = list(result.scalars().all())
     # Sort by next upcoming birthday date
-    birthdays.sort(key=lambda b: next_birthday_date(b.birth_date))
+    birthdays.sort(key=lambda b: next_birthday_date(b.birth_date, today=today))
     return birthdays
 
 

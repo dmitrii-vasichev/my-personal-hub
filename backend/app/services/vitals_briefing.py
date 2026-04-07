@@ -9,6 +9,7 @@ from typing import Optional
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.timezone import user_today
 from app.models.calendar import CalendarEvent
 from app.models.garmin import (
     VitalsActivity,
@@ -484,7 +485,7 @@ async def generate_vitals_briefing(
 ) -> Optional[VitalsBriefing]:
     """Orchestrate data collection, prompt assembly, LLM call, and save result."""
     if target_date is None:
-        target_date = date.today()
+        target_date = await user_today(db, user_id)
 
     # Get LLM client
     llm_result = await _get_llm_for_user(db, user_id)
@@ -551,7 +552,7 @@ async def maybe_auto_generate_briefing(
     db: AsyncSession, user_id: int
 ) -> None:
     """Generate briefing after sync if conditions are met."""
-    today = date.today()
+    today = await user_today(db, user_id)
 
     # Check if briefing already exists for today
     result = await db.execute(

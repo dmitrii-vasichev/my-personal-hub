@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_factory
+from app.core.timezone import user_today
 from app.models.garmin import (
     GarminConnection,
     VitalsActivity,
@@ -68,7 +69,7 @@ async def sync_user_data(db: AsyncSession, user_id: int) -> None:
     try:
         client = await garmin_auth.get_garmin_client(db, user_id)
 
-        today = date.today()
+        today = await user_today(db, user_id)
         yesterday = today - timedelta(days=1)
 
         # Determine activity date range: 7 days on first sync, 2 days on subsequent
