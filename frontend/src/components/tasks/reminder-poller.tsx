@@ -55,6 +55,7 @@ export function ReminderPoller() {
           : `Due: ${new Date(reminder.remind_at).toLocaleString()}`,
         icon: <Bell size={14} className="text-accent-amber" />,
         duration: Infinity,
+        closeButton: true,
         action: {
           label: "Done",
           onClick: () => {
