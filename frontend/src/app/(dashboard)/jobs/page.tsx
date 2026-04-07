@@ -34,9 +34,9 @@ function JobsPageInner() {
   const appliedTodayCount = useMemo(() => {
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-    const appliedStatuses = new Set(["applied", "screening", "technical_interview", "final_interview", "offer", "accepted"]);
+    const notAppliedStatuses = new Set(["found", "saved", "resume_generated"]);
     return jobs.filter((j) => {
-      if (!j.status || !appliedStatuses.has(j.status)) return false;
+      if (!j.status || notAppliedStatuses.has(j.status)) return false;
       const created = new Date(j.created_at);
       const createdStr = `${created.getFullYear()}-${String(created.getMonth() + 1).padStart(2, "0")}-${String(created.getDate()).padStart(2, "0")}`;
       return createdStr === todayStr;
