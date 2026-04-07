@@ -42,6 +42,9 @@ def make_pulse_settings(user_id: int = 1) -> PulseSettings:
     s.notify_digest_ready = True
     s.notify_urgent_jobs = True
     s.poll_message_limit = 100
+    s.reminder_repeat_count = 5
+    s.reminder_repeat_interval = 5
+    s.reminder_snooze_limit = 5
     s.updated_at = datetime(2026, 3, 16, 12, 0, 0, tzinfo=timezone.utc)
     return s
 

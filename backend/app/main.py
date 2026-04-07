@@ -28,6 +28,7 @@ from app.api.settings import router as settings_router
 from app.api.tasks import router as tasks_router
 from app.api.gmail import router as gmail_router
 from app.api.outreach import batch_router, industry_router, router as outreach_router
+from app.api.reminders import router as reminders_router
 from app.api.users import router as users_router
 from app.core.config import settings
 from app.core.scheduler import scheduler, schedule_garmin_sync, schedule_user_digest, schedule_user_polling
@@ -157,12 +158,12 @@ async def lifespan(application: FastAPI):
             misfire_grace_time=300,
         )
 
-        # Schedule task reminder check every 2 minutes
+        # Schedule unified reminder check every 2 minutes
         scheduler.add_job(
-            "app.services.task_reminders:run_reminder_check",
+            "app.services.reminder_scheduler:run_reminder_check",
             "interval",
             minutes=2,
-            id="task_reminder_check",
+            id="reminder_check",
             replace_existing=True,
             misfire_grace_time=120,
         )
@@ -212,6 +213,7 @@ app.include_router(outreach_router)
 app.include_router(industry_router)
 app.include_router(gmail_router)
 app.include_router(batch_router)
+app.include_router(reminders_router)
 
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(

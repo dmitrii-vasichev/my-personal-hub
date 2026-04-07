@@ -9,6 +9,11 @@
 
 ## Current Status
 
-- **Mode:** idle
-- **Last shipped:** Outreach CRM v2 — Activity Log, Gmail Integration & Batch Outreach (2026-03-31)
-- **Next:** nothing planned
+- **Mode:** build → ready for ship
+- **Feature:** Reminders module — unified notification layer
+- **Branch:** feature/reminders-module
+- **PRD:** docs/prd-reminders.md
+- **Plan:** docs/plans/2026-04-06-reminders-phase1.md (13 tasks)
+- **Phase:** 1/3 — Core Reminders + Telegram — COMPLETE
+- **Execution:** subagent mode (13/13 tasks done)
+- **Next:** /dev ship to merge Phase 1, then Phase 2 (Recurring + Birthdays)

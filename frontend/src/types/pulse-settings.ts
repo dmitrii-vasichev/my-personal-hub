@@ -16,6 +16,9 @@ export interface PulseSettings {
   prompt_news: string | null;
   prompt_jobs: string | null;
   prompt_learning: string | null;
+  reminder_repeat_count: number;
+  reminder_repeat_interval: number;
+  reminder_snooze_limit: number;
   updated_at: string;
 }
 
@@ -35,4 +38,7 @@ export interface PulseSettingsUpdate {
   prompt_news?: string | null;
   prompt_jobs?: string | null;
   prompt_learning?: string | null;
+  reminder_repeat_count?: number;
+  reminder_repeat_interval?: number;
+  reminder_snooze_limit?: number;
 }

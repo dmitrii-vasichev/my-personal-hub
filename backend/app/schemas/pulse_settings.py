@@ -22,6 +22,9 @@ class PulseSettingsResponse(BaseModel):
     prompt_news: Optional[str] = None
     prompt_jobs: Optional[str] = None
     prompt_learning: Optional[str] = None
+    reminder_repeat_count: int = 5
+    reminder_repeat_interval: int = 5
+    reminder_snooze_limit: int = 5
     updated_at: datetime
 
     model_config = {"from_attributes": True}
@@ -43,3 +46,6 @@ class PulseSettingsUpdate(BaseModel):
     prompt_news: Optional[str] = Field(None, max_length=5000)
     prompt_jobs: Optional[str] = Field(None, max_length=5000)
     prompt_learning: Optional[str] = Field(None, max_length=5000)
+    reminder_repeat_count: Optional[int] = Field(None, ge=1, le=50)
+    reminder_repeat_interval: Optional[int] = Field(None, ge=1, le=1440)
+    reminder_snooze_limit: Optional[int] = Field(None, ge=0, le=50)

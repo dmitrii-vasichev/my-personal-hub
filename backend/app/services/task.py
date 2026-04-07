@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -12,6 +13,8 @@ from app.models.task import Task, TaskStatus, TaskUpdate, UpdateType, Visibility
 from app.models.user import User, UserRole
 from app.schemas.task import TaskCreate, TaskUpdate as TaskUpdateSchema, TaskUpdateCreate
 from app.services.tag import sync_task_tags
+
+logger = logging.getLogger(__name__)
 
 
 class PermissionDeniedError(Exception):
@@ -138,8 +141,14 @@ async def create_task(
         content="Task created",
     )
     db.add(initial_update)
+
+    # Create linked Reminder record if reminder_at is set (before commit for atomicity)
+    if data.reminder_at:
+        await _sync_task_reminder(db, task, current_user)
+
     await db.commit()
     await db.refresh(task)
+
     return task
 
 
@@ -184,10 +193,12 @@ async def update_task(
         task.checklist = [item.model_dump() for item in data.checklist]
     if data.visibility is not None:
         task.visibility = data.visibility
+    reminder_at_changed = False
     if data.reminder_at is not None:
         task.reminder_at = data.reminder_at
         task.reminder_dismissed = False
         task.reminder_telegram_sent = False
+        reminder_at_changed = True
 
     # Handle assignee change
     if data.assignee_id is not None:
@@ -226,8 +237,14 @@ async def update_task(
         await sync_task_tags(db, task.id, data.tag_ids, current_user.id)
 
     task.updated_at = datetime.now(timezone.utc)
+
+    # Sync linked Reminder record when reminder_at changes (before commit for atomicity)
+    if reminder_at_changed:
+        await _sync_task_reminder(db, task, current_user)
+
     await db.commit()
     await db.refresh(task)
+
     return task
 
 
@@ -440,3 +457,45 @@ def _resolve_assignee(assignee_id: Optional[int], current_user: User) -> Optiona
         return assignee_id
     # Regular user can only assign to themselves
     return current_user.id if assignee_id == current_user.id else None
+
+
+async def _sync_task_reminder(
+    db: AsyncSession,
+    task: Task,
+    user: User,
+) -> None:
+    """Sync Reminder record with task's reminder_at. Works within caller's transaction.
+
+    This function intentionally does NOT commit — the caller is responsible
+    for committing the transaction so that the task and reminder changes
+    are persisted atomically.
+    """
+    from app.models.reminder import Reminder
+    from sqlalchemy import select as sa_select
+
+    # Find existing linked reminder
+    result = await db.execute(
+        sa_select(Reminder).where(
+            Reminder.task_id == task.id, Reminder.user_id == user.id
+        )
+    )
+    existing = result.scalar_one_or_none()
+
+    if task.reminder_at:
+        if existing:
+            existing.remind_at = task.reminder_at
+            existing.title = task.title
+            existing.notification_sent_count = 0
+            existing.snoozed_until = None
+            existing.telegram_message_id = None
+        else:
+            reminder = Reminder(
+                user_id=user.id,
+                title=task.title,
+                remind_at=task.reminder_at,
+                task_id=task.id,
+            )
+            db.add(reminder)
+    elif existing:
+        # reminder_at was cleared — remove linked reminder
+        await db.delete(existing)

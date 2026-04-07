@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
   CheckSquare,
+  Bell,
   Briefcase,
   Calendar,
   FileText,
@@ -24,6 +25,7 @@ import { useAuth } from "@/lib/auth";
 const navItems = [
   { label: "Dashboard", href: "/", icon: LayoutDashboard },
   { label: "Tasks", href: "/tasks", icon: CheckSquare },
+  { label: "Reminders", href: "/reminders", icon: Bell },
   { label: "Meetings", href: "/calendar", icon: Calendar },
   { label: "Job Hunt", href: "/jobs", icon: Briefcase },
   { label: "Outreach", href: "/outreach", icon: Megaphone, hideForDemo: true },

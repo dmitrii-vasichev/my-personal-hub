@@ -184,6 +184,16 @@ class PulseSettings(Base):
     prompt_news: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     prompt_jobs: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     prompt_learning: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Reminder notification settings
+    reminder_repeat_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="5"
+    )
+    reminder_repeat_interval: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="5"
+    )
+    reminder_snooze_limit: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="5"
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),

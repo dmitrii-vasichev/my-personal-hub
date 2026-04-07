@@ -15,6 +15,7 @@ import { AiKnowledgeBaseTab } from "@/components/settings/ai-knowledge-base-tab"
 import { TagsManagementTab } from "@/components/settings/tags-management-tab";
 import { TelegramTab } from "@/components/settings/telegram-tab";
 import { PulseSettingsTab } from "@/components/settings/pulse-settings-tab";
+import { RemindersSettingsTab } from "@/components/settings/reminders-settings-tab";
 import { GarminSettingsTab } from "@/components/settings/garmin-tab";
 import type { UpdateSettingsInput } from "@/types/settings";
 
@@ -44,6 +45,7 @@ const ADMIN_TABS = [
   { id: "integrations", label: "Integrations" },
   { id: "telegram", label: "Telegram" },
   { id: "pulse", label: "Pulse" },
+  { id: "reminders", label: "Reminders" },
   { id: "garmin", label: "Garmin" },
   { id: "users", label: "Users" },
 ] as const;
@@ -344,6 +346,8 @@ export default function SettingsPage() {
         {activeTab === "telegram" && isAdmin && <TelegramTab />}
 
         {activeTab === "pulse" && isAdmin && <PulseSettingsTab />}
+
+        {activeTab === "reminders" && isAdmin && <RemindersSettingsTab />}
 
         {activeTab === "garmin" && isAdmin && <GarminSettingsTab />}
 

@@ -61,26 +61,6 @@ async def send_urgent_job_notification(
         return {"success": False, "error": str(e)}
 
 
-async def send_task_reminder_notification(
-    bot_token: str,
-    chat_id: int,
-    task_title: str,
-    reminder_at: str,
-) -> dict[str, Any]:
-    """Send a task reminder notification via Telegram Bot API."""
-    try:
-        bot = Bot(token=bot_token)
-        text = f"\u23f0 Reminder: {task_title}\nScheduled: {reminder_at}"
-        await bot.send_message(chat_id=chat_id, text=text)
-        return {"success": True, "error": None}
-    except TelegramError as e:
-        logger.warning("Task reminder notification failed: %s", e)
-        return {"success": False, "error": str(e)}
-    except Exception as e:
-        logger.error("Unexpected error sending task reminder: %s", e)
-        return {"success": False, "error": str(e)}
-
-
 async def verify_bot_connection(
     bot_token: str,
     chat_id: int,
