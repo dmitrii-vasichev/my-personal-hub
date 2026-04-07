@@ -9,11 +9,7 @@
 
 ## Current Status
 
-- **Mode:** build → ready for ship
-- **Feature:** Reminders module — unified notification layer
-- **Branch:** feature/reminders-module
+- **Mode:** idle
+- **Last shipped:** Reminders Phase 1 — Core + Telegram (2026-04-06)
 - **PRD:** docs/prd-reminders.md
-- **Plan:** docs/plans/2026-04-06-reminders-phase1.md (13 tasks)
-- **Phase:** 1/3 — Core Reminders + Telegram — COMPLETE
-- **Execution:** subagent mode (13/13 tasks done)
-- **Next:** /dev ship to merge Phase 1, then Phase 2 (Recurring + Birthdays)
+- **Next:** Phase 2 — Recurring reminders + Birthdays
