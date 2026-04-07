@@ -161,7 +161,7 @@ async def snooze_reminder(
     if not reminder:
         return None
 
-    new_time = datetime.now(tz=timezone.utc) + timedelta(minutes=minutes)
+    new_time = reminder.remind_at + timedelta(minutes=minutes)
     reminder.remind_at = new_time
     reminder.snoozed_until = new_time
     reminder.snooze_count += 1
