@@ -47,12 +47,15 @@ export function ReminderPoller() {
           label: "Done",
           onClick: () => {
             markDoneMutation.mutate(reminder.id);
+            toast.dismiss(toastId);
+            shownIds.current.delete(reminder.id);
           },
         },
         cancel: {
           label: "Snooze 10m",
           onClick: () => {
             snoozeMutation.mutate({ id: reminder.id, minutes: 10 });
+            toast.dismiss(toastId);
             shownIds.current.delete(reminder.id);
           },
         },
