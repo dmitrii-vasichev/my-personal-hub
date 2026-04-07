@@ -9,11 +9,7 @@
 
 ## Current Status
 
-- **Mode:** build (ready to ship)
-- **Feature:** Reminders Phase 2 — Recurring + Birthdays
-- **Branch:** feature/reminders-phase2
-- **Execution:** subagent (5 tasks, all verified)
-- **Progress:** 5/5 tasks done
-- **Last completed:** Birthday scheduler job with timezone-aware dedup
+- **Mode:** idle
+- **Last shipped:** Reminders Phase 2 — Recurring + Birthdays (2026-04-06)
 - **PRD:** docs/prd-reminders.md
-- **Next:** `/dev ship` → merge to main
+- **Next:** Phase 3 — Mobile Access (Telegram Mini App + PWA)
