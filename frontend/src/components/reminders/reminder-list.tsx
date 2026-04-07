@@ -18,6 +18,7 @@ import {
   ListTodo,
   Pencil,
   Repeat,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -242,7 +243,30 @@ function EditReminderForm({
         <label className="text-xs font-medium text-muted-foreground">
           Time (optional)
         </label>
-        <TimePicker value={time} onChange={setTime} />
+        {time ? (
+          <div className="flex items-center gap-1">
+            <TimePicker value={time} onChange={setTime} />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => setTime("")}
+              title="Clear time"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            className="justify-start text-left font-normal text-muted-foreground w-full"
+            onClick={() => setTime("09:00")}
+          >
+            <Clock className="h-4 w-4 opacity-60 shrink-0" />
+            <span className="text-sm">Add time</span>
+          </Button>
+        )}
       </div>
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-muted-foreground">
