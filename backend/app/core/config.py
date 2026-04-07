@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     TELEGRAM_API_ID: int = 0
     TELEGRAM_API_HASH: str = ""
 
+    # Telegram Bot token — optional override for Mini App initData validation.
+    # If empty, the token is read from PulseSettings in the database.
+    TELEGRAM_BOT_TOKEN: str = ""
+
     # Frontend URL for OAuth redirects
     FRONTEND_URL: str = "http://localhost:3000"
 
