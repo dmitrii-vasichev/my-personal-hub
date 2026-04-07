@@ -10,6 +10,6 @@
 ## Current Status
 
 - **Mode:** idle
-- **Last shipped:** Reminders Phase 2 — Recurring + Birthdays (2026-04-06)
-- **PRD:** docs/prd-reminders.md
-- **Next:** Phase 3 — Mobile Access (Telegram Mini App + PWA)
+- **Last shipped:** Reminders Phase 3 — Mobile Access (2026-04-06)
+- **PRD:** docs/prd-reminders.md (all phases complete)
+- **Next:** Nothing planned
