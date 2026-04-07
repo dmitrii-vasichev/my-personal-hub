@@ -32,7 +32,8 @@ function JobsPageInner() {
   const { data: jobs = [], isLoading, error } = useJobs(filters);
 
   const appliedTodayCount = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     return jobs.filter((j) => j.applied_date === today).length;
   }, [jobs]);
 
