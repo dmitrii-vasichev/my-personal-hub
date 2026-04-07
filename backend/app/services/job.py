@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import and_, asc, cast, desc, func, or_, select, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.timezone import user_today
 from app.models.job import ApplicationStatus, Job, StatusHistory
 from app.models.user import User, UserRole
 from app.schemas.job import JobCreate, JobStatusChange, JobTrackingUpdate, JobUpdate
@@ -109,7 +110,7 @@ async def create_job(
     )
 
     if data.status == ApplicationStatus.applied:
-        job.applied_date = date.today()
+        job.applied_date = await user_today(db, current_user.id)
 
     db.add(job)
     await db.flush()
@@ -250,7 +251,7 @@ async def change_status(
     old_status = job.status.value if job.status else None
 
     if data.new_status == ApplicationStatus.applied and job.applied_date is None:
-        job.applied_date = date.today()
+        job.applied_date = await user_today(db, current_user.id)
 
     job.status = data.new_status
     job.updated_at = datetime.now(timezone.utc)

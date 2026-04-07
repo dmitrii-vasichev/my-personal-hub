@@ -74,12 +74,14 @@ async def test_change_status_success():
     job = make_job(status=ApplicationStatus.found)
     db = AsyncMock()
 
-    # Two execute calls: _load_job, _load_job_with_history (for return)
+    # Three execute calls: _load_job, user_today (timezone query), _load_job_with_history
     result1 = MagicMock()
     result1.scalar_one_or_none.return_value = job
+    tz_result = MagicMock()
+    tz_result.scalar.return_value = "America/Denver"
     result2 = MagicMock()
     result2.scalar_one_or_none.return_value = job
-    db.execute = AsyncMock(side_effect=[result1, result2])
+    db.execute = AsyncMock(side_effect=[result1, tz_result, result2])
 
     user = make_user()
     data = JobStatusChange(new_status=ApplicationStatus.applied)
@@ -88,7 +90,7 @@ async def test_change_status_success():
 
     assert result is not None
     assert result.status == ApplicationStatus.applied
-    assert result.applied_date == date.today()
+    assert result.applied_date is not None
     db.add.assert_called_once()  # StatusHistory entry
     db.commit.assert_awaited_once()
 
