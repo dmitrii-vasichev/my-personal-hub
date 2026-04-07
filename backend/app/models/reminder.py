@@ -54,6 +54,9 @@ class Reminder(Base):
     task_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=True, unique=True, index=True
     )
+    completed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -12,6 +12,7 @@ export interface Reminder {
   notification_sent_count: number;
   task_id: number | null;
   task_title: string | null;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 }

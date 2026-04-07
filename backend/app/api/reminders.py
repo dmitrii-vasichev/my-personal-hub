@@ -26,10 +26,15 @@ def _to_response(r) -> ReminderResponse:
 @router.get("/", response_model=list[ReminderResponse])
 async def list_reminders(
     include_done: bool = False,
+    status: str | None = None,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    reminders = await reminder_service.list_reminders(db, current_user, include_done)
+    from app.models.reminder import ReminderStatus
+    status_filter = ReminderStatus(status) if status else None
+    reminders = await reminder_service.list_reminders(
+        db, current_user, include_done=include_done, status_filter=status_filter
+    )
     return [_to_response(r) for r in reminders]
 
 
@@ -88,6 +93,18 @@ async def mark_done(
     reminder = await reminder_service.mark_done(db, reminder_id, current_user)
     if not reminder:
         raise HTTPException(status_code=404, detail="Reminder not found")
+    return _to_response(reminder)
+
+
+@router.post("/{reminder_id}/restore", response_model=ReminderResponse)
+async def restore_reminder(
+    reminder_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    reminder = await reminder_service.restore_reminder(db, reminder_id, current_user)
+    if not reminder:
+        raise HTTPException(status_code=404, detail="Reminder not found or not completed")
     return _to_response(reminder)
 
 

@@ -53,6 +53,22 @@ export function useMarkDone() {
   });
 }
 
+export function useCompletedReminders() {
+  return useQuery<Reminder[]>({
+    queryKey: [REMINDERS_KEY, { status: "done" }],
+    queryFn: () => api.get<Reminder[]>("/api/reminders/?status=done"),
+  });
+}
+
+export function useRestoreReminder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      api.post<Reminder>(`/api/reminders/${id}/restore`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: [REMINDERS_KEY] }),
+  });
+}
+
 export function useSnoozeReminder() {
   const qc = useQueryClient();
   return useMutation({

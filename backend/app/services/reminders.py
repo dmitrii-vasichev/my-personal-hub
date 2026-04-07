@@ -40,16 +40,21 @@ async def list_reminders(
     db: AsyncSession,
     user: User,
     include_done: bool = False,
+    status_filter: ReminderStatus | None = None,
 ) -> list[Reminder]:
-    """List reminders grouped by date (returned sorted by remind_at)."""
+    """List reminders. Use status_filter to get only pending/done."""
     conditions = [Reminder.user_id == user.id]
-    if not include_done:
+    if status_filter:
+        conditions.append(Reminder.status == status_filter)
+    elif not include_done:
         conditions.append(Reminder.status == ReminderStatus.pending)
+
+    order = Reminder.completed_at.desc().nullslast() if status_filter == ReminderStatus.done else Reminder.remind_at
     result = await db.execute(
         select(Reminder)
         .options(selectinload(Reminder.task))
         .where(and_(*conditions))
-        .order_by(Reminder.remind_at)
+        .order_by(order)
     )
     return list(result.scalars().all())
 
@@ -122,7 +127,25 @@ async def mark_done(
         reminder.telegram_message_id = None
     else:
         reminder.status = ReminderStatus.done
+        reminder.completed_at = datetime.now(tz=timezone.utc)
 
+    await db.commit()
+    await db.refresh(reminder)
+    return reminder
+
+
+async def restore_reminder(
+    db: AsyncSession,
+    reminder_id: int,
+    user: User,
+) -> Optional[Reminder]:
+    """Restore a completed reminder back to pending."""
+    reminder = await get_reminder(db, reminder_id, user)
+    if not reminder or reminder.status != ReminderStatus.done:
+        return None
+    reminder.status = ReminderStatus.pending
+    reminder.completed_at = None
+    reminder.remind_at = datetime.now(tz=timezone.utc)
     await db.commit()
     await db.refresh(reminder)
     return reminder

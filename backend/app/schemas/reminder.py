@@ -34,6 +34,7 @@ class ReminderResponse(BaseModel):
     snooze_count: int
     notification_sent_count: int
     task_id: Optional[int]
+    completed_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
 
