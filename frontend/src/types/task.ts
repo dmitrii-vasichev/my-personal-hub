@@ -29,6 +29,7 @@ export interface Task {
   visibility: Visibility;
   deadline: string | null;
   reminder_at: string | null;
+  reminder_floating: boolean;
   completed_at: string | null;
   kanban_order: number;
   created_at: string;
@@ -68,6 +69,7 @@ export interface CreateTaskInput {
   priority?: TaskPriority;
   deadline?: string;
   reminder_at?: string;
+  reminder_floating?: boolean;
   checklist?: ChecklistItem[];
   assignee_id?: number;
   visibility?: Visibility;
@@ -81,6 +83,7 @@ export interface UpdateTaskInput {
   priority?: TaskPriority;
   deadline?: string | null;
   reminder_at?: string | null;
+  reminder_floating?: boolean;
   checklist?: ChecklistItem[];
   assignee_id?: number | null;
   visibility?: Visibility;

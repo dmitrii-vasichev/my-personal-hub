@@ -31,6 +31,7 @@ class TaskCreate(BaseModel):
     priority: TaskPriority = TaskPriority.medium
     deadline: Optional[datetime] = None
     reminder_at: Optional[datetime] = None
+    reminder_floating: bool = False
     checklist: list[ChecklistItem] = []
     assignee_id: Optional[int] = None
     visibility: Visibility = Visibility.family
@@ -44,6 +45,7 @@ class TaskUpdate(BaseModel):
     priority: Optional[TaskPriority] = None
     deadline: Optional[datetime] = None
     reminder_at: Optional[datetime] = None
+    reminder_floating: Optional[bool] = None
     checklist: Optional[list[ChecklistItem]] = None
     assignee_id: Optional[int] = None
     visibility: Optional[Visibility] = None
@@ -79,6 +81,7 @@ class TaskResponse(BaseModel):
     visibility: Visibility
     deadline: Optional[datetime]
     reminder_at: Optional[datetime]
+    reminder_floating: bool
     reminder_dismissed: bool
     completed_at: Optional[datetime]
     kanban_order: float = 0

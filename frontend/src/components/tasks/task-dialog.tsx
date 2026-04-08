@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Clock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,11 +18,20 @@ import {
 } from "@/components/ui/dialog";
 import { ChecklistEditor } from "./checklist-editor";
 import { DatePicker } from "@/components/ui/date-picker";
-import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 import { useCreateTask } from "@/hooks/use-tasks";
 import { TagPicker } from "./tag-picker";
 import type { ChecklistItem, TaskPriority, TaskStatus, Visibility } from "@/types/task";
 import { TASK_STATUS_LABELS, TASK_STATUS_ORDER } from "@/types/task";
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+function withTzOffset(date: string, time: string): string {
+  const offset = new Date().getTimezoneOffset();
+  const sign = offset <= 0 ? "+" : "-";
+  const abs = Math.abs(offset);
+  return `${date}T${time}:00${sign}${pad2(Math.floor(abs / 60))}:${pad2(abs % 60)}`;
+}
 
 interface TaskDialogProps {
   onClose: () => void;
@@ -37,7 +47,8 @@ export function TaskDialog({ onClose, onSuccess, initialStatus }: TaskDialogProp
   const [status, setStatus] = useState<TaskStatus>(initialStatus ?? "new");
   const [priority, setPriority] = useState<TaskPriority>("medium");
   const [deadline, setDeadline] = useState("");
-  const [reminderAt, setReminderAt] = useState("");
+  const [reminderDate, setReminderDate] = useState("");
+  const [reminderTime, setReminderTime] = useState("");
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
   const [visibility, setVisibility] = useState<Visibility>("family");
   const [tagIds, setTagIds] = useState<number[]>([]);
@@ -55,13 +66,21 @@ export function TaskDialog({ onClose, onSuccess, initialStatus }: TaskDialogProp
     }
 
     try {
+      const isFloating = reminderDate !== "" && reminderTime === "";
+      const reminderAt = reminderDate
+        ? isFloating
+          ? withTzOffset(reminderDate, "00:00")
+          : withTzOffset(reminderDate, reminderTime)
+        : undefined;
+
       await createTask.mutateAsync({
         title: title.trim(),
         description: description.trim() || undefined,
         status,
         priority,
         deadline: deadline || undefined,
-        reminder_at: reminderAt || undefined,
+        reminder_at: reminderAt,
+        reminder_floating: reminderAt ? isFloating : undefined,
         checklist,
         visibility,
         tag_ids: tagIds.length > 0 ? tagIds : undefined,
@@ -173,12 +192,42 @@ export function TaskDialog({ onClose, onSuccess, initialStatus }: TaskDialogProp
               <Label className="text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wide">
                 Reminder
               </Label>
-              <DateTimePicker
-                value={reminderAt}
-                onChange={setReminderAt}
-                placeholder="No reminder"
-                clearable
-              />
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <DatePicker
+                    value={reminderDate}
+                    onChange={(v) => { setReminderDate(v); if (!v) setReminderTime(""); }}
+                    placeholder="No reminder"
+                    clearable
+                  />
+                </div>
+                {reminderDate && (
+                  reminderTime ? (
+                    <div className="flex items-center gap-1">
+                      <TimePicker value={reminderTime} onChange={setReminderTime} />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => setReminderTime("")}
+                        title="Clear time (all-day)"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="justify-start text-left font-normal text-muted-foreground"
+                      onClick={() => setReminderTime("09:00")}
+                    >
+                      <Clock className="h-4 w-4 opacity-60 shrink-0" />
+                      <span className="text-sm">Add time</span>
+                    </Button>
+                  )
+                )}
+              </div>
             </div>
 
             {/* Checklist */}

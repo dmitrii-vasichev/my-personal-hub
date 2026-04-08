@@ -10,6 +10,7 @@ import { Select } from "@/components/ui/select";
 import { InlineEditText } from "@/components/ui/inline-edit-text";
 import { InlineEditSelect } from "@/components/ui/inline-edit-select";
 import { InlineEditDate } from "@/components/ui/inline-edit-date";
+import { TaskReminderEdit } from "@/components/tasks/task-reminder-edit";
 import { CollapsibleDescription } from "@/components/ui/collapsible-description";
 import { ChecklistEditor } from "@/components/tasks/checklist-editor";
 import { TaskTimeline } from "@/components/tasks/task-timeline";
@@ -425,11 +426,10 @@ export default function TaskDetailPage() {
               Reminder
             </span>
             {canEdit ? (
-              <InlineEditDate
+              <TaskReminderEdit
                 value={task.reminder_at}
-                onSave={(v) => patchTask({ reminder_at: v })}
-                placeholder="No reminder"
-                mode="datetime"
+                isFloating={task.reminder_floating}
+                onSave={(data) => patchTask(data)}
               />
             ) : task.reminder_at ? (
               <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)]">

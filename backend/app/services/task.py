@@ -119,6 +119,7 @@ async def create_task(
         priority=data.priority,
         deadline=data.deadline,
         reminder_at=data.reminder_at,
+        reminder_floating=data.reminder_floating,
         checklist=[item.model_dump() for item in data.checklist],
         assignee_id=_resolve_assignee(data.assignee_id, current_user),
         visibility=data.visibility,
@@ -187,17 +188,21 @@ async def update_task(
         task.description = data.description
     if data.priority is not None:
         task.priority = data.priority
-    if data.deadline is not None:
+    if "deadline" in data.model_fields_set:
         task.deadline = data.deadline
     if data.checklist is not None:
         task.checklist = [item.model_dump() for item in data.checklist]
     if data.visibility is not None:
         task.visibility = data.visibility
     reminder_at_changed = False
-    if data.reminder_at is not None:
+    if "reminder_at" in data.model_fields_set:
         task.reminder_at = data.reminder_at
-        task.reminder_dismissed = False
-        task.reminder_telegram_sent = False
+        if data.reminder_at is not None:
+            task.reminder_dismissed = False
+            task.reminder_telegram_sent = False
+        reminder_at_changed = True
+    if data.reminder_floating is not None:
+        task.reminder_floating = data.reminder_floating
         reminder_at_changed = True
 
     # Handle assignee change
@@ -485,6 +490,7 @@ async def _sync_task_reminder(
         if existing:
             existing.remind_at = task.reminder_at
             existing.title = task.title
+            existing.is_floating = task.reminder_floating
             existing.notification_sent_count = 0
             existing.snoozed_until = None
             existing.telegram_message_id = None
@@ -493,6 +499,7 @@ async def _sync_task_reminder(
                 user_id=user.id,
                 title=task.title,
                 remind_at=task.reminder_at,
+                is_floating=task.reminder_floating,
                 task_id=task.id,
             )
             db.add(reminder)
