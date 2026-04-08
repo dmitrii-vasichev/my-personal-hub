@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 import { useCreateBirthday } from "@/hooks/use-birthdays";
 
 export function BirthdayAddForm() {
@@ -140,18 +141,13 @@ export function BirthdayAddForm() {
                 />
               </div>
 
-              <div className="flex w-[110px] flex-col gap-1">
-                <label
-                  htmlFor="birthday-time"
-                  className="text-xs font-medium text-muted-foreground"
-                >
+              <div className="flex flex-col gap-1 md:min-w-[130px]">
+                <label className="text-xs font-medium text-muted-foreground">
                   Remind at
                 </label>
-                <Input
-                  id="birthday-time"
-                  type="time"
+                <TimePicker
                   value={reminderTime}
-                  onChange={(e) => setReminderTime(e.target.value)}
+                  onChange={setReminderTime}
                 />
               </div>
 

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Tooltip } from "@/components/ui/tooltip";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 import {
   Dialog,
   DialogPortal,
@@ -140,10 +141,9 @@ function EditBirthdayForm({
           <label className="text-xs font-medium text-muted-foreground">
             Remind at
           </label>
-          <Input
-            type="time"
+          <TimePicker
             value={reminderTime}
-            onChange={(e) => setReminderTime(e.target.value)}
+            onChange={setReminderTime}
           />
         </div>
       </div>
