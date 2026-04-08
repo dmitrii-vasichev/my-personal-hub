@@ -15,6 +15,7 @@ export function useReminders(includeDone = false) {
     queryKey: [REMINDERS_KEY, { includeDone }],
     queryFn: () =>
       api.get<Reminder[]>(`/api/reminders/?include_done=${includeDone}`),
+    refetchInterval: 30_000,
   });
 }
 
