@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Copy, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,11 +40,15 @@ export function PromptEditor({ category }: PromptEditorProps) {
   const savedPrompt = settings?.[field] ?? null;
   const defaultPrompt = defaults?.[category] ?? "";
 
-  // Sync draft with saved value when settings load or category changes
-  useEffect(() => {
+  const [prevCategory, setPrevCategory] = useState(category);
+  const [prevSavedPrompt, setPrevSavedPrompt] = useState(savedPrompt);
+
+  if (category !== prevCategory || savedPrompt !== prevSavedPrompt) {
+    setPrevCategory(category);
+    setPrevSavedPrompt(savedPrompt);
     setDraft(savedPrompt ?? "");
     setHasUnsaved(false);
-  }, [savedPrompt, category]);
+  }
 
   const handleDraftChange = (value: string) => {
     if (value.length <= MAX_CHARS) {

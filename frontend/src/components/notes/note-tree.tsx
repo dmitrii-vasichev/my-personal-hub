@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   ChevronRight,
   ChevronDown,
@@ -63,17 +63,14 @@ function TreeNode({
       node.type === "folder" &&
       containsFile(node, autoExpandFileId));
   const [expanded, setExpanded] = useState(shouldAutoExpand);
+  const [prevAutoExpandFileId, setPrevAutoExpandFileId] = useState(autoExpandFileId);
 
-  // React to autoExpandFileId changes after initial mount (e.g. deep link from linked note)
-  useEffect(() => {
-    if (
-      autoExpandFileId &&
-      node.type === "folder" &&
-      containsFile(node, autoExpandFileId)
-    ) {
+  if (autoExpandFileId !== prevAutoExpandFileId) {
+    setPrevAutoExpandFileId(autoExpandFileId);
+    if (autoExpandFileId && node.type === "folder" && containsFile(node, autoExpandFileId)) {
       setExpanded(true);
     }
-  }, [autoExpandFileId, node]);
+  }
 
   const currentPath = buildPath(parentPath, node.name);
   const isSelected = node.google_file_id === selectedFileId;
