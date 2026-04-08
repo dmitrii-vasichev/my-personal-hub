@@ -184,11 +184,11 @@ async def lifespan(application: FastAPI):
             misfire_grace_time=120,
         )
 
-        # Schedule reminder digest check every 15 minutes
+        # Schedule reminder digest check at :00, :15, :30, :45 every hour
         scheduler.add_job(
             "app.services.digest_scheduler:run_reminder_digest",
-            "interval",
-            minutes=15,
+            "cron",
+            minute="*/15",
             id="reminder_digest",
             replace_existing=True,
             misfire_grace_time=300,

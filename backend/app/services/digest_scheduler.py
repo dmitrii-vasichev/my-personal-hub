@@ -60,8 +60,16 @@ async def _process_user_digest(db, ps: PulseSettings, now: datetime) -> None:
 
     # Check if within digest window
     if current_hour < ps.digest_reminders_start_hour:
+        logger.debug(
+            "Digest skip user %s: hour %d < start %d (%s)",
+            ps.user_id, current_hour, ps.digest_reminders_start_hour, tz_name,
+        )
         return
     if current_hour >= ps.digest_reminders_end_hour:
+        logger.debug(
+            "Digest skip user %s: hour %d >= end %d (%s)",
+            ps.user_id, current_hour, ps.digest_reminders_end_hour, tz_name,
+        )
         return
 
     # Check if enough time has passed since last digest
@@ -69,9 +77,13 @@ async def _process_user_digest(db, ps: PulseSettings, now: datetime) -> None:
     if ps.last_reminder_digest_at:
         elapsed = (now - ps.last_reminder_digest_at).total_seconds()
         if elapsed < interval_seconds:
+            logger.debug(
+                "Digest skip user %s: %.0fs since last, need %ds",
+                ps.user_id, elapsed, interval_seconds,
+            )
             return
 
-    # Fetch pending reminders for today
+    # Fetch pending reminders: today's timed + ALL pending floating
     today_start = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = local_now.replace(hour=23, minute=59, second=59, microsecond=0)
 
@@ -80,8 +92,16 @@ async def _process_user_digest(db, ps: PulseSettings, now: datetime) -> None:
             and_(
                 Reminder.user_id == ps.user_id,
                 Reminder.status == ReminderStatus.pending,
-                Reminder.remind_at >= today_start.astimezone(ZoneInfo("UTC")),
-                Reminder.remind_at <= today_end.astimezone(ZoneInfo("UTC")),
+                (
+                    # Today's timed reminders
+                    (
+                        (Reminder.is_floating == False)  # noqa: E712
+                        & (Reminder.remind_at >= today_start.astimezone(ZoneInfo("UTC")))
+                        & (Reminder.remind_at <= today_end.astimezone(ZoneInfo("UTC")))
+                    )
+                    # All pending floating reminders (regardless of date)
+                    | (Reminder.is_floating == True)  # noqa: E712
+                ),
             )
         ).order_by(
             Reminder.is_urgent.desc(),
@@ -92,6 +112,7 @@ async def _process_user_digest(db, ps: PulseSettings, now: datetime) -> None:
     reminders = list(result.scalars().all())
 
     if not reminders:
+        logger.debug("Digest skip user %s: no pending reminders", ps.user_id)
         return
 
     # Build digest message
