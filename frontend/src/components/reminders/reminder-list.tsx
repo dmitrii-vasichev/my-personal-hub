@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Tooltip } from "@/components/ui/tooltip";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import {
@@ -386,7 +385,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
   const updateReminder = useUpdateReminder();
   const deleteReminder = useDeleteReminder();
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [snoozeOpen, setSnoozeOpen] = useState<'desktop' | 'mobile' | null>(null);
+  const [snoozeOpen, setSnoozeOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
   const timeDisplay = reminder.is_floating
@@ -401,7 +400,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
       {
         onSuccess: () => {
           toast.success("Rescheduled");
-          setSnoozeOpen(null);
+          setSnoozeOpen(false);
         },
         onError: () => toast.error("Failed to reschedule"),
       }
@@ -420,7 +419,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
       {
         onSuccess: () => {
           toast.success(`Snoozed for ${minutes >= 60 ? `${minutes / 60}h` : `${minutes}min`}`);
-          setSnoozeOpen(null);
+          setSnoozeOpen(false);
         },
         onError: () => toast.error("Failed to snooze"),
       }
@@ -437,53 +436,9 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
     });
   };
 
-  /* -- Desktop inline action icons (hidden on mobile) -- */
-  const desktopActions = (
-    <div className="hidden shrink-0 items-center gap-1 md:flex md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
-      <Tooltip content="Mark done">
-        <Button variant="ghost" size="icon-xs" onClick={handleDone} disabled={isPending}>
-          <Check className="h-3.5 w-3.5 text-green-600" />
-        </Button>
-      </Tooltip>
-      <Tooltip content="Edit">
-        <Button variant="ghost" size="icon-xs" onClick={() => setEditOpen(true)} disabled={isPending}>
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
-      </Tooltip>
-      {!reminder.is_floating && (
-        <Popover open={snoozeOpen === 'desktop'} onOpenChange={(open) => setSnoozeOpen(open ? 'desktop' : null)}>
-          <Tooltip content="Snooze">
-            <PopoverTrigger
-              render={
-                <Button variant="ghost" size="icon-xs" disabled={isPending}>
-                  <Bell className="h-3.5 w-3.5" />
-                </Button>
-              }
-            />
-          </Tooltip>
-          <PopoverContent align="end" className="w-48 p-1">
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(15)}>15 minutes</button>
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(60)}>1 hour</button>
-            <div className="my-1 h-px bg-border" />
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(10))}>Tomorrow, 10:00</button>
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
-            <div className="my-1 h-px bg-border" />
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(null); setEditOpen(true); }}>Other...</button>
-          </PopoverContent>
-        </Popover>
-      )}
-      <Tooltip content="Delete">
-        <Button variant="ghost" size="icon-xs" onClick={() => setConfirmDelete(true)} disabled={isPending}>
-          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-        </Button>
-      </Tooltip>
-    </div>
-  );
-
-  /* -- Mobile expanded action panel -- */
-  const mobileActions = expanded && (
-    <div className={`grid ${reminder.is_floating ? "grid-cols-3" : "grid-cols-4"} gap-2 border-t border-border bg-muted/30 px-4 py-2.5 md:hidden`}>
+  /* -- Expanded action panel (click-to-expand) -- */
+  const expandedActions = expanded && (
+    <div className={`grid ${reminder.is_floating ? "grid-cols-3" : "grid-cols-4"} gap-2 border-t border-border bg-muted/30 px-4 py-2.5`}>
       <button
         className="flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-medium active:bg-muted"
         onClick={handleDone}
@@ -501,7 +456,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
         Edit
       </button>
       {!reminder.is_floating && (
-        <Popover open={snoozeOpen === 'mobile'} onOpenChange={(open) => setSnoozeOpen(open ? 'mobile' : null)}>
+        <Popover open={snoozeOpen} onOpenChange={setSnoozeOpen}>
           <PopoverTrigger
             render={
               <button
@@ -521,7 +476,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
             <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
             <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
             <div className="my-1 h-px bg-border" />
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(null); setEditOpen(true); }}>Other...</button>
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(false); setEditOpen(true); }}>Other...</button>
           </PopoverContent>
         </Popover>
       )}
@@ -541,7 +496,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
       <div className={`group overflow-hidden rounded-lg border border-border bg-card transition-colors hover:bg-muted/50 ${expanded ? "ring-1 ring-primary/20" : ""}`}>
         {/* Main row — tappable on mobile */}
         <div
-          className="flex cursor-pointer items-center gap-3 px-4 py-3 md:cursor-default"
+          className="flex cursor-pointer items-center gap-3 px-4 py-3"
           onClick={onToggle}
         >
           {/* Time */}
@@ -586,13 +541,10 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
               </span>
             )}
           </div>
-
-          {/* Desktop: inline hover actions */}
-          {desktopActions}
         </div>
 
-        {/* Mobile: expanded action panel */}
-        {mobileActions}
+        {/* Expanded action panel */}
+        {expandedActions}
       </div>
 
       <ConfirmDialog

@@ -6,7 +6,6 @@ import { Cake, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tooltip } from "@/components/ui/tooltip";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
@@ -218,35 +217,9 @@ function BirthdayRow({
     });
   };
 
-  /* -- Desktop inline action icons (hidden on mobile) -- */
-  const desktopActions = (
-    <div className="hidden shrink-0 items-center gap-1 md:flex md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
-      <Tooltip content="Edit">
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={() => setEditOpen(true)}
-          disabled={isPending}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
-      </Tooltip>
-      <Tooltip content="Delete">
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          onClick={() => setConfirmDelete(true)}
-          disabled={isPending}
-        >
-          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-        </Button>
-      </Tooltip>
-    </div>
-  );
-
-  /* -- Mobile expanded action panel -- */
-  const mobileActions = expanded && (
-    <div className="grid grid-cols-2 gap-2 border-t border-border bg-muted/30 px-4 py-2.5 md:hidden">
+  /* -- Expanded action panel (click-to-expand) -- */
+  const expandedActions = expanded && (
+    <div className="grid grid-cols-2 gap-2 border-t border-border bg-muted/30 px-4 py-2.5">
       <button
         className="flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-medium active:bg-muted"
         onClick={() => setEditOpen(true)}
@@ -273,7 +246,7 @@ function BirthdayRow({
       >
         {/* Main row — tappable on mobile */}
         <div
-          className="flex cursor-pointer items-center gap-3 px-4 py-3 md:cursor-default"
+          className="flex cursor-pointer items-center gap-3 px-4 py-3"
           onClick={onToggle}
         >
           {/* Name */}
@@ -301,13 +274,10 @@ function BirthdayRow({
               {daysUntilLabel(birthday.days_until)}
             </span>
           </div>
-
-          {/* Desktop: inline hover actions */}
-          {desktopActions}
         </div>
 
-        {/* Mobile: expanded action panel */}
-        {mobileActions}
+        {/* Expanded action panel */}
+        {expandedActions}
       </div>
 
       <ConfirmDialog
