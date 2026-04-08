@@ -502,7 +502,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
           onClick={onToggle}
         >
           {/* Time */}
-          <span className="w-12 shrink-0 text-sm font-mono text-muted-foreground">
+          <span className="w-16 shrink-0 whitespace-nowrap text-xs font-mono text-muted-foreground">
             {timeDisplay}
           </span>
 
