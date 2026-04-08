@@ -47,7 +47,21 @@ import type { Reminder } from "@/types/reminder";
 
 // -- Recurrence badge label --
 
+const WEEKDAYS = [
+  { key: "mon", label: "Mon" },
+  { key: "tue", label: "Tue" },
+  { key: "wed", label: "Wed" },
+  { key: "thu", label: "Thu" },
+  { key: "fri", label: "Fri" },
+  { key: "sat", label: "Sat" },
+  { key: "sun", label: "Sun" },
+] as const;
+
 function recurrenceLabel(rule: string): string {
+  if (rule.startsWith("custom:")) {
+    const days = rule.slice(7).split(",");
+    return days.map((d) => d.charAt(0).toUpperCase() + d.slice(1)).join(", ");
+  }
   const labels: Record<string, string> = {
     daily: "Daily",
     weekly: "Weekly",
@@ -151,6 +165,7 @@ const RECURRENCE_OPTIONS = [
   { value: "weekly", label: "Weekly" },
   { value: "monthly", label: "Monthly" },
   { value: "yearly", label: "Yearly" },
+  { value: "custom", label: "Custom…" },
 ] as const;
 
 // -- Edit dialog (form mounts fresh when dialog opens → no useEffect needed) --
@@ -170,12 +185,26 @@ function EditReminderForm({
   const [date, setDate] = useState(initialDate);
   const [time, setTime] = useState(initialTime);
   const [isUrgent, setIsUrgent] = useState(reminder.is_urgent);
+
+  const existingRule = reminder.recurrence_rule ?? "";
+  const isExistingCustom = existingRule.startsWith("custom:");
   const [recurrenceRule, setRecurrenceRule] = useState(
-    reminder.recurrence_rule ?? ""
+    isExistingCustom ? "custom" : existingRule
+  );
+  const [customDays, setCustomDays] = useState<string[]>(
+    isExistingCustom ? existingRule.slice(7).split(",") : []
   );
   const updateReminder = useUpdateReminder();
 
-  const canSubmit = title.trim().length > 0 && date.length > 0;
+  const isCustom = recurrenceRule === "custom";
+  const toggleDay = (day: string) =>
+    setCustomDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  const canSubmit =
+    title.trim().length > 0 &&
+    date.length > 0 &&
+    (!isCustom || customDays.length > 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,7 +222,9 @@ function EditReminderForm({
         remind_at: remindAt,
         is_floating: isFloating,
         is_urgent: isUrgent,
-        recurrence_rule: recurrenceRule || null,
+        recurrence_rule: isCustom
+          ? `custom:${customDays.join(",")}`
+          : recurrenceRule || null,
       },
       {
         onSuccess: () => {
@@ -273,8 +304,11 @@ function EditReminderForm({
           Repeat
         </label>
         <Select
-          value={recurrenceRule}
-          onChange={(e) => setRecurrenceRule(e.target.value)}
+          value={isCustom ? "custom" : recurrenceRule}
+          onChange={(e) => {
+            setRecurrenceRule(e.target.value);
+            if (e.target.value !== "custom") setCustomDays([]);
+          }}
         >
           {RECURRENCE_OPTIONS.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -282,6 +316,24 @@ function EditReminderForm({
             </option>
           ))}
         </Select>
+        {isCustom && (
+          <div className="flex gap-1 pt-1">
+            {WEEKDAYS.map((wd) => (
+              <button
+                key={wd.key}
+                type="button"
+                onClick={() => toggleDay(wd.key)}
+                className={`h-8 w-9 rounded-md border text-xs font-medium transition-colors ${
+                  customDays.includes(wd.key)
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-input bg-transparent text-muted-foreground hover:bg-muted dark:bg-input/30"
+                }`}
+              >
+                {wd.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="ghost" onClick={onClose}>

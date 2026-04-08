@@ -41,8 +41,8 @@ class Reminder(Base):
         DateTime(timezone=True), nullable=True
     )
     recurrence_rule: Mapped[Optional[str]] = mapped_column(
-        String(20), nullable=True
-    )  # "daily", "weekly", "monthly", "yearly"
+        String(50), nullable=True
+    )  # "daily", "weekly", "monthly", "yearly", "custom:mon,wed,fri"
     snooze_count: Mapped[int] = mapped_column(
         Integer, default=0, server_default="0", nullable=False
     )

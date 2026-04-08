@@ -16,6 +16,17 @@ const RECURRENCE_OPTIONS = [
   { value: "weekly", label: "Weekly" },
   { value: "monthly", label: "Monthly" },
   { value: "yearly", label: "Yearly" },
+  { value: "custom", label: "Custom…" },
+] as const;
+
+const WEEKDAYS = [
+  { key: "mon", label: "Mon" },
+  { key: "tue", label: "Tue" },
+  { key: "wed", label: "Wed" },
+  { key: "thu", label: "Thu" },
+  { key: "fri", label: "Fri" },
+  { key: "sat", label: "Sat" },
+  { key: "sun", label: "Sun" },
 ] as const;
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -33,10 +44,20 @@ export function QuickAddForm() {
   const [time, setTime] = useState("");
   const [isUrgent, setIsUrgent] = useState(false);
   const [recurrenceRule, setRecurrenceRule] = useState("");
+  const [customDays, setCustomDays] = useState<string[]>([]);
   const [expanded, setExpanded] = useState(false);
   const createReminder = useCreateReminder();
 
-  const canSubmit = title.trim().length > 0 && date.length > 0;
+  const isCustom = recurrenceRule === "custom";
+  const canSubmit =
+    title.trim().length > 0 &&
+    date.length > 0 &&
+    (!isCustom || customDays.length > 0);
+
+  const toggleDay = (day: string) =>
+    setCustomDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
 
   const collapse = () => {
     setExpanded(false);
@@ -45,6 +66,7 @@ export function QuickAddForm() {
     setTime("");
     setIsUrgent(false);
     setRecurrenceRule("");
+    setCustomDays([]);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -62,7 +84,9 @@ export function QuickAddForm() {
         remind_at: remindAt,
         is_floating: isFloating,
         is_urgent: isUrgent,
-        recurrence_rule: recurrenceRule || undefined,
+        recurrence_rule: isCustom
+          ? `custom:${customDays.join(",")}`
+          : recurrenceRule || undefined,
       },
       {
         onSuccess: () => {
@@ -162,8 +186,11 @@ export function QuickAddForm() {
                   Repeat
                 </label>
                 <Select
-                  value={recurrenceRule}
-                  onChange={(e) => setRecurrenceRule(e.target.value)}
+                  value={isCustom ? "custom" : recurrenceRule}
+                  onChange={(e) => {
+                    setRecurrenceRule(e.target.value);
+                    if (e.target.value !== "custom") setCustomDays([]);
+                  }}
                 >
                   {RECURRENCE_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -172,6 +199,25 @@ export function QuickAddForm() {
                   ))}
                 </Select>
               </div>
+
+              {isCustom && (
+                <div className="flex items-end gap-1">
+                  {WEEKDAYS.map((wd) => (
+                    <button
+                      key={wd.key}
+                      type="button"
+                      onClick={() => toggleDay(wd.key)}
+                      className={`h-8 w-9 rounded-md border text-xs font-medium transition-colors ${
+                        customDays.includes(wd.key)
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-input bg-transparent text-muted-foreground hover:bg-muted dark:bg-input/30"
+                      }`}
+                    >
+                      {wd.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               <Button
                 type="button"

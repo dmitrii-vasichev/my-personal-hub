@@ -195,8 +195,20 @@ async def snooze_reminder(
     return reminder
 
 
+_DAY_MAP = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6}
+
+
 def _next_occurrence(current: datetime, rule: str) -> datetime:
     """Calculate next occurrence based on recurrence rule."""
+    if rule.startswith("custom:"):
+        days = [_DAY_MAP[d] for d in rule[7:].split(",") if d in _DAY_MAP]
+        if not days:
+            return current + timedelta(days=1)
+        for i in range(1, 8):
+            candidate = current + timedelta(days=i)
+            if candidate.weekday() in days:
+                return candidate
+
     match rule:
         case "daily":
             return current + timedelta(days=1)
