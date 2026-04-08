@@ -92,13 +92,23 @@ async def update_reminder(
     reminder = await get_reminder(db, reminder_id, user)
     if not reminder:
         return None
+
+    old_remind_at = reminder.remind_at
+
     for key, value in kwargs.items():
         setattr(reminder, key, value)
+
     # Reset notification state if remind_at changed
     if "remind_at" in kwargs:
+        new_remind_at = kwargs["remind_at"]
+        now = datetime.now(tz=timezone.utc)
+        # Count as postpone: reminder was due (past or now) and moved forward
+        if old_remind_at <= now and new_remind_at > old_remind_at:
+            reminder.snooze_count += 1
         reminder.notification_sent_count = 0
         reminder.snoozed_until = None
         reminder.telegram_message_id = None
+
     await db.commit()
     await db.refresh(reminder)
     return reminder
