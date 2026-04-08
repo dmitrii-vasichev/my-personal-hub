@@ -18,15 +18,18 @@ router = APIRouter(prefix="/api/reminders/birthdays", tags=["birthdays"])
 
 def _to_response(b, today: date) -> BirthdayResponse:
     next_bd = next_birthday_date(b.birth_date, today=today)
+    turning_age = next_bd.year - b.birth_year if b.birth_year else None
     return BirthdayResponse(
         id=b.id,
         user_id=b.user_id,
         name=b.name,
         birth_date=b.birth_date,
+        birth_year=b.birth_year,
         advance_days=b.advance_days,
         reminder_time=b.reminder_time,
         next_birthday=next_bd,
         days_until=days_until(next_bd, today=today),
+        turning_age=turning_age,
         created_at=b.created_at,
         updated_at=b.updated_at,
     )
@@ -53,6 +56,7 @@ async def create_birthday(
         current_user,
         name=data.name,
         birth_date=data.birth_date,
+        birth_year=data.birth_year,
         advance_days=data.advance_days,
         reminder_time=data.reminder_time,
     )

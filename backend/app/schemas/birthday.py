@@ -7,6 +7,7 @@ from pydantic import BaseModel
 class BirthdayCreate(BaseModel):
     name: str
     birth_date: date
+    birth_year: Optional[int] = None
     advance_days: int = 3
     reminder_time: time = time(10, 0)
 
@@ -14,6 +15,7 @@ class BirthdayCreate(BaseModel):
 class BirthdayUpdate(BaseModel):
     name: Optional[str] = None
     birth_date: Optional[date] = None
+    birth_year: Optional[int] = None
     advance_days: Optional[int] = None
     reminder_time: Optional[time] = None
 
@@ -23,10 +25,12 @@ class BirthdayResponse(BaseModel):
     user_id: int
     name: str
     birth_date: date
+    birth_year: Optional[int] = None
     advance_days: int
     reminder_time: time
     next_birthday: date  # computed: next upcoming birthday date
     days_until: int  # computed: days until next birthday
+    turning_age: Optional[int] = None  # computed: age they will turn on next birthday
     created_at: datetime
     updated_at: datetime
 

@@ -1,5 +1,7 @@
 from datetime import date, datetime, time
 
+from typing import Optional
+
 from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Time, func
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -15,6 +17,7 @@ class Birthday(Base):
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     birth_date: Mapped[date] = mapped_column(Date, nullable=False)
+    birth_year: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     advance_days: Mapped[int] = mapped_column(
         Integer, nullable=False, default=3, server_default="3"
     )

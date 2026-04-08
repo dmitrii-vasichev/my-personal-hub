@@ -39,6 +39,7 @@ async def create_birthday(
     user: User,
     name: str,
     birth_date: date,
+    birth_year: int | None = None,
     advance_days: int = 3,
     reminder_time=None,
 ) -> Birthday:
@@ -48,6 +49,7 @@ async def create_birthday(
         user_id=user.id,
         name=name,
         birth_date=birth_date,
+        birth_year=birth_year,
         advance_days=advance_days,
         reminder_time=reminder_time or _time(10, 0),
     )
