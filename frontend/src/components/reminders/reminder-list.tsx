@@ -388,9 +388,10 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
   const [snoozeOpen, setSnoozeOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
+  const effectiveTime = reminder.snoozed_until ?? reminder.remind_at;
   const timeDisplay = reminder.is_floating
     ? (reminder.is_urgent ? "\u{1F534}" : "\u{1F4CC}")
-    : format(parseISO(reminder.remind_at), "HH:mm");
+    : format(parseISO(effectiveTime), "h:mm a");
   const isPending =
     markDone.isPending || snooze.isPending || updateReminder.isPending || deleteReminder.isPending;
 

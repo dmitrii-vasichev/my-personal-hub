@@ -30,8 +30,8 @@ export function ReminderPoller() {
     const horizon = new Date(now.getTime() + 15 * 60 * 1000); // +15 min
 
     const dueReminders = reminders.filter((r: Reminder) => {
-      const remindAt = new Date(r.remind_at);
-      return r.status === "pending" && !r.is_floating && remindAt <= horizon;
+      const effectiveTime = new Date(r.snoozed_until ?? r.remind_at);
+      return r.status === "pending" && !r.is_floating && effectiveTime <= horizon;
     });
 
     // Clean up IDs for reminders no longer in due list (snoozed past horizon / done)
@@ -52,7 +52,7 @@ export function ReminderPoller() {
         id: toastId,
         description: reminder.task_title
           ? `Task: ${reminder.task_title}`
-          : `Due: ${new Date(reminder.remind_at).toLocaleString()}`,
+          : `Due: ${new Date(reminder.snoozed_until ?? reminder.remind_at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}`,
         icon: <Bell size={14} className="text-accent-amber" />,
         duration: Infinity,
         closeButton: true,

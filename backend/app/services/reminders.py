@@ -185,7 +185,8 @@ async def snooze_reminder(
     now = datetime.now(tz=timezone.utc)
     base = max(reminder.remind_at, now)
     new_time = base + timedelta(minutes=minutes)
-    reminder.remind_at = new_time
+    # Only set snoozed_until — keep remind_at unchanged so recurring
+    # reminders return to their original schedule after mark_done.
     reminder.snoozed_until = new_time
     reminder.snooze_count += 1
     reminder.notification_sent_count = 0

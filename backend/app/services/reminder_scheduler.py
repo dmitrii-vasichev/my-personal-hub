@@ -67,14 +67,16 @@ async def run_reminder_check() -> None:
                         if minutes_since_last < repeat_interval:
                             continue
 
+                    # Show snoozed time when applicable
+                    display_dt = reminder.snoozed_until or reminder.remind_at
                     # Format time in user's timezone
                     try:
                         from zoneinfo import ZoneInfo
 
-                        local_dt = reminder.remind_at.astimezone(ZoneInfo(tz_name))
+                        local_dt = display_dt.astimezone(ZoneInfo(tz_name))
                         time_str = local_dt.strftime("%b %d, %Y %I:%M %p")
                     except Exception:
-                        time_str = reminder.remind_at.strftime(
+                        time_str = display_dt.strftime(
                             "%b %d, %Y %H:%M UTC"
                         )
 

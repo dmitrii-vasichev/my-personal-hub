@@ -37,7 +37,7 @@ function CompletedRow({ reminder }: { reminder: Reminder }) {
         </p>
         <p className="text-xs text-muted-foreground">
           {reminder.completed_at
-            ? `Completed ${format(parseISO(reminder.completed_at), "MMM d, HH:mm")}`
+            ? `Completed ${format(parseISO(reminder.completed_at), "MMM d, h:mm a")}`
             : `Done`}
         </p>
       </div>
