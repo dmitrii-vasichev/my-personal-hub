@@ -58,28 +58,38 @@ async def _process_user_digest(db, ps: PulseSettings, now: datetime) -> None:
     local_now = now.astimezone(user_tz)
     current_hour = local_now.hour
 
+    start_h = ps.digest_reminders_start_hour
+    end_h = ps.digest_reminders_end_hour
+    interval_h = ps.digest_reminders_interval_hours
+
     # Check if within digest window
-    if current_hour < ps.digest_reminders_start_hour:
+    if current_hour < start_h:
         logger.debug(
             "Digest skip user %s: hour %d < start %d (%s)",
-            ps.user_id, current_hour, ps.digest_reminders_start_hour, tz_name,
+            ps.user_id, current_hour, start_h, tz_name,
         )
         return
-    if current_hour >= ps.digest_reminders_end_hour:
+    if current_hour >= end_h:
         logger.debug(
             "Digest skip user %s: hour %d >= end %d (%s)",
-            ps.user_id, current_hour, ps.digest_reminders_end_hour, tz_name,
+            ps.user_id, current_hour, end_h, tz_name,
         )
         return
 
-    # Check if enough time has passed since last digest
-    interval_seconds = ps.digest_reminders_interval_hours * 3600
+    # Find the latest scheduled slot <= current time
+    # Slots: start_h, start_h + interval, start_h + 2*interval, ...
+    current_slot_hour = start_h + ((current_hour - start_h) // interval_h) * interval_h
+    current_slot = local_now.replace(
+        hour=current_slot_hour, minute=0, second=0, microsecond=0,
+    )
+
+    # Check if we already sent a digest for this slot
     if ps.last_reminder_digest_at:
-        elapsed = (now - ps.last_reminder_digest_at).total_seconds()
-        if elapsed < interval_seconds:
+        last_local = ps.last_reminder_digest_at.astimezone(user_tz)
+        if last_local >= current_slot:
             logger.debug(
-                "Digest skip user %s: %.0fs since last, need %ds",
-                ps.user_id, elapsed, interval_seconds,
+                "Digest skip user %s: already sent at %s for slot %02d:00 (%s)",
+                ps.user_id, last_local.strftime("%H:%M"), current_slot_hour, tz_name,
             )
             return
 
