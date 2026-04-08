@@ -37,6 +37,7 @@ def _build_keyboard(
     rows = [
         [
             InlineKeyboardButton("15 min", callback_data=f"rem_snooze_15_{reminder_id}"),
+            InlineKeyboardButton("30 min", callback_data=f"rem_snooze_30_{reminder_id}"),
             InlineKeyboardButton("1 hour", callback_data=f"rem_snooze_60_{reminder_id}"),
         ],
         [InlineKeyboardButton("Done", callback_data=f"rem_done_{reminder_id}")],

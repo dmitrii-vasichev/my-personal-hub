@@ -470,6 +470,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
           />
           <PopoverContent align="center" className="w-48 p-1">
             <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(15)}>15 minutes</button>
+            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(30)}>30 minutes</button>
             <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(60)}>1 hour</button>
             <div className="my-1 h-px bg-border" />
             <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(10))}>Tomorrow, 10:00</button>
