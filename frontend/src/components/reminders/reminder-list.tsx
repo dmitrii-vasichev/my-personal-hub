@@ -17,6 +17,7 @@ import {
   Flag,
   ListTodo,
   Pencil,
+  Pin,
   Repeat,
   X,
 } from "lucide-react";
@@ -391,9 +392,6 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
   const [editOpen, setEditOpen] = useState(false);
 
   const effectiveTime = reminder.snoozed_until ?? reminder.remind_at;
-  const timeDisplay = reminder.is_floating
-    ? (reminder.is_urgent ? "\u{1F534}" : "\u{1F4CC}")
-    : format(parseISO(effectiveTime), "h:mm a");
   const isPending =
     markDone.isPending || snooze.isPending || updateReminder.isPending || deleteReminder.isPending;
 
@@ -503,10 +501,12 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
           className="flex cursor-pointer items-center gap-3 px-4 py-3"
           onClick={onToggle}
         >
-          {/* Time */}
-          <span className="w-16 shrink-0 whitespace-nowrap text-xs font-mono text-muted-foreground">
-            {timeDisplay}
-          </span>
+          {/* Icon indicator */}
+          {reminder.is_floating ? (
+            <Pin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          ) : (
+            <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          )}
 
           {/* Title + badges */}
           <div className="flex min-w-0 flex-1 items-center gap-2">
@@ -545,6 +545,13 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
               </span>
             )}
           </div>
+
+          {/* Time (right-aligned) */}
+          {!reminder.is_floating && (
+            <span className="shrink-0 whitespace-nowrap text-xs font-mono text-muted-foreground">
+              {format(parseISO(effectiveTime), "h:mm a")}
+            </span>
+          )}
         </div>
 
         {/* Expanded action panel */}
