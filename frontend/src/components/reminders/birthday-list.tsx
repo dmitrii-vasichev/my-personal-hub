@@ -143,6 +143,7 @@ function EditBirthdayForm({
           <TimePicker
             value={reminderTime}
             onChange={setReminderTime}
+            className="w-full"
           />
         </div>
       </div>
