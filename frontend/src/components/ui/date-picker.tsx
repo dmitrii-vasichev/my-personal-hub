@@ -19,6 +19,8 @@ interface DatePickerProps {
   placeholder?: string;
   /** Show clear button */
   clearable?: boolean;
+  /** Only pick month + day; year is irrelevant (stored as 2000) */
+  monthDayOnly?: boolean;
   /** Additional class for the trigger button */
   className?: string;
 }
@@ -28,27 +30,42 @@ export function DatePicker({
   onChange,
   placeholder = "Select date",
   clearable = false,
+  monthDayOnly = false,
   className,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
 
+  const REFERENCE_YEAR = 2000;
+
   const date = value ? parse(value, "yyyy-MM-dd", new Date()) : undefined;
 
   const displayText = date
-    ? format(date, "MMM d, yyyy")
+    ? format(date, monthDayOnly ? "MMM d" : "MMM d, yyyy")
     : null;
 
   // Sync input field when popover opens
   React.useEffect(() => {
     if (open) {
-      setInputValue(date ? format(date, "dd.MM.yyyy") : "");
+      setInputValue(
+        date ? format(date, monthDayOnly ? "dd.MM" : "dd.MM.yyyy") : ""
+      );
     }
-  }, [open, date]);
+  }, [open, date, monthDayOnly]);
+
+  function emitDate(day: Date) {
+    if (monthDayOnly) {
+      // Normalize year so the stored value is always REFERENCE_YEAR
+      const normalized = new Date(REFERENCE_YEAR, day.getMonth(), day.getDate());
+      onChange(format(normalized, "yyyy-MM-dd"));
+    } else {
+      onChange(format(day, "yyyy-MM-dd"));
+    }
+  }
 
   function handleSelect(day: Date | undefined) {
     if (day) {
-      onChange(format(day, "yyyy-MM-dd"));
+      emitDate(day);
     }
     setOpen(false);
   }
@@ -60,17 +77,26 @@ export function DatePicker({
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     let v = e.target.value;
-
-    // Auto-insert dots: "01" -> "01.", "01.12" -> "01.12."
     const digits = v.replace(/\D/g, "");
-    if (digits.length >= 2 && !v.includes(".")) {
-      v = digits.slice(0, 2) + "." + digits.slice(2);
-    } else if (digits.length >= 4 && v.split(".").length < 3) {
-      v = digits.slice(0, 2) + "." + digits.slice(2, 4) + "." + digits.slice(4);
+
+    if (monthDayOnly) {
+      // Auto-insert dot: "01" -> "01."
+      if (digits.length >= 2 && !v.includes(".")) {
+        v = digits.slice(0, 2) + "." + digits.slice(2);
+      }
+      // Limit to DD.MM
+      if (digits.length > 4) return;
+    } else {
+      // Auto-insert dots: "01" -> "01.", "01.12" -> "01.12."
+      if (digits.length >= 2 && !v.includes(".")) {
+        v = digits.slice(0, 2) + "." + digits.slice(2);
+      } else if (digits.length >= 4 && v.split(".").length < 3) {
+        v = digits.slice(0, 2) + "." + digits.slice(2, 4) + "." + digits.slice(4);
+      }
+      // Limit to DD.MM.YYYY
+      if (digits.length > 8) return;
     }
 
-    // Limit to DD.MM.YYYY
-    if (v.replace(/\D/g, "").length > 8) return;
     setInputValue(v);
   }
 
@@ -90,10 +116,23 @@ export function DatePicker({
 
   function tryApplyInput(close: boolean) {
     if (!inputValue.trim()) return;
-    const parsed = parse(inputValue, "dd.MM.yyyy", new Date());
-    if (isValid(parsed) && parsed.getFullYear() >= 1900 && parsed.getFullYear() <= 2100) {
-      onChange(format(parsed, "yyyy-MM-dd"));
-      if (close) setOpen(false);
+
+    if (monthDayOnly) {
+      const parsed = parse(
+        inputValue + "." + REFERENCE_YEAR,
+        "dd.MM.yyyy",
+        new Date()
+      );
+      if (isValid(parsed)) {
+        emitDate(parsed);
+        if (close) setOpen(false);
+      }
+    } else {
+      const parsed = parse(inputValue, "dd.MM.yyyy", new Date());
+      if (isValid(parsed) && parsed.getFullYear() >= 1900 && parsed.getFullYear() <= 2100) {
+        onChange(format(parsed, "yyyy-MM-dd"));
+        if (close) setOpen(false);
+      }
     }
   }
 
@@ -130,7 +169,7 @@ export function DatePicker({
             onChange={handleInputChange}
             onKeyDown={handleInputKeyDown}
             onBlur={handleInputBlur}
-            placeholder="DD.MM.YYYY"
+            placeholder={monthDayOnly ? "DD.MM" : "DD.MM.YYYY"}
             className="h-8 text-sm"
           />
         </div>

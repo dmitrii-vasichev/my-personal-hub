@@ -100,6 +100,7 @@ export function BirthdayAddForm() {
                   value={birthDate}
                   onChange={setBirthDate}
                   placeholder="Select date"
+                  monthDayOnly
                 />
               </div>
 

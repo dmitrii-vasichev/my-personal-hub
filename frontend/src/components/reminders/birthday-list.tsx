@@ -107,6 +107,7 @@ function EditBirthdayForm({
             value={birthDate}
             onChange={setBirthDate}
             placeholder="Select date"
+            monthDayOnly
           />
         </div>
         <div className="space-y-1.5">
