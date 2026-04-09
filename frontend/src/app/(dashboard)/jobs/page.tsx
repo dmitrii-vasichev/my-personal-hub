@@ -2,7 +2,7 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, Search, BarChart2, Send, SlidersHorizontal } from "lucide-react";
+import { Plus, Search, BarChart2, Send, SlidersHorizontal, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { JobSearchInput, JobFilterDropdowns } from "@/components/jobs/job-filters";
 import { JobsTable } from "@/components/jobs/jobs-table";
@@ -11,6 +11,7 @@ import { ApplicationKanban } from "@/components/jobs/application-kanban";
 import { JobSearch } from "@/components/jobs/job-search";
 import { JobAnalytics } from "@/components/jobs/job-analytics";
 import { ViewToggle, type JobsViewMode } from "@/components/jobs/view-toggle";
+import { BulkImportDialog } from "@/components/jobs/bulk-import-dialog";
 import { useJobs } from "@/hooks/use-jobs";
 import type { Job, JobFilters } from "@/types/job";
 
@@ -28,6 +29,7 @@ function JobsPageInner() {
   const [filters, setFilters] = useState<JobFilters>({});
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | undefined>();
 
   const { data: jobs = [], isLoading, error } = useJobs(filters);
@@ -49,14 +51,26 @@ function JobsPageInner() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-[var(--text-primary)]">Jobs</h1>
-        <Button
-          size="sm"
-          onClick={() => { setEditingJob(undefined); setDialogOpen(true); }}
-          className="gap-1.5"
-        >
-          <Plus className="h-4 w-4" />
-          Add Job
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setBulkImportOpen(true)}
+            className="gap-1.5"
+          >
+            <Upload className="h-4 w-4" />
+            <span className="hidden sm:inline">Import from LinkedIn</span>
+            <span className="sm:hidden">Import</span>
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => { setEditingJob(undefined); setDialogOpen(true); }}
+            className="gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            Add Job
+          </Button>
+        </div>
       </div>
 
       {/* Tab bar */}
@@ -180,6 +194,11 @@ function JobsPageInner() {
           setDialogOpen(false);
           setEditingJob(undefined);
         }}
+      />
+
+      <BulkImportDialog
+        open={bulkImportOpen}
+        onOpenChange={setBulkImportOpen}
       />
     </div>
   );

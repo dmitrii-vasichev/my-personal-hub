@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type {
+  BulkImportResponse,
   ChangeStatusInput,
   CreateJobInput,
   Job,
@@ -143,6 +144,17 @@ export function useChangeJobStatus() {
     },
 
     onSettled: () => {
+      qc.invalidateQueries({ queryKey: [JOBS_KEY] });
+    },
+  });
+}
+
+export function useBulkImportJobs() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (urls: string[]) =>
+      api.post<BulkImportResponse>("/api/jobs/bulk-import", { urls }),
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: [JOBS_KEY] });
     },
   });

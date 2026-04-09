@@ -19,6 +19,10 @@ class JobMetadata:
     company: str = ""
     location: str = ""
     description: str = ""
+    salary_min: int | None = None
+    salary_max: int | None = None
+    salary_currency: str = "USD"
+    salary_period: str = "yearly"
 
 # Private/reserved IP ranges to block (SSRF protection)
 _BLOCKED_NETWORKS = [
@@ -70,6 +74,46 @@ def _first_text(soup: BeautifulSoup, selectors: list[str], min_len: int = 1) -> 
     return ""
 
 
+_SALARY_RE = re.compile(
+    r"\$\s*([\d,]+(?:\.\d+)?)\s*[Kk]?"
+    r"(?:\s*[-–—/]\s*\$?\s*([\d,]+(?:\.\d+)?)\s*[Kk]?)?"
+    r"(?:\s*/?\s*(hr|hour|yr|year|annually|monthly|mo|week|wk))?"
+    , re.IGNORECASE,
+)
+
+_PERIOD_MAP = {
+    "hr": "hourly", "hour": "hourly",
+    "yr": "yearly", "year": "yearly", "annually": "yearly",
+    "mo": "monthly", "monthly": "monthly",
+    "week": "weekly", "wk": "weekly",
+}
+
+
+def _parse_salary_text(text: str, meta: JobMetadata) -> None:
+    """Best-effort extraction of salary range from text."""
+    m = _SALARY_RE.search(text)
+    if not m:
+        return
+
+    def _to_int(s: str) -> int:
+        s = s.replace(",", "")
+        val = float(s)
+        # Detect shorthand like "120K" — the K is captured by [Kk]? but
+        # sits right after the number in the original text
+        if val < 1000 and "k" in text[m.start():m.end()].lower():
+            val *= 1000
+        return int(val)
+
+    try:
+        meta.salary_min = _to_int(m.group(1))
+        if m.group(2):
+            meta.salary_max = _to_int(m.group(2))
+        period_raw = (m.group(3) or "").lower()
+        meta.salary_period = _PERIOD_MAP.get(period_raw, "yearly")
+    except (ValueError, AttributeError):
+        pass
+
+
 def _extract_linkedin_metadata(soup: BeautifulSoup) -> JobMetadata:
     """Extract structured job metadata from LinkedIn HTML."""
     meta = JobMetadata()
@@ -102,6 +146,22 @@ def _extract_linkedin_metadata(soup: BeautifulSoup) -> JobMetadata:
         "[class*='jobs-description-content']",
         "[class*='jobs-description']",
     ], min_len=50)
+
+    # Salary (best-effort)
+    salary_text = _first_text(soup, [
+        ".salary-main-rail__current-range",
+        ".compensation__salary",
+        ".job-details-jobs-unified-top-card__job-insight--highlight span",
+        ".topcard__flavor--salary",
+        "[class*='salary']",
+        "[class*='compensation']",
+    ])
+    if salary_text:
+        _parse_salary_text(salary_text, meta)
+
+    # If no salary from dedicated selectors, try description text
+    if meta.salary_min is None and meta.description:
+        _parse_salary_text(meta.description[:500], meta)
 
     # Fallback: try og:title which often has "Title at Company"
     if not meta.title or not meta.company:

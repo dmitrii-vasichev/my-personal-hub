@@ -9,6 +9,9 @@ from app.core.database import get_db
 from app.core.deps import get_current_user, restrict_demo
 from app.models.user import User
 from app.schemas.job import (
+    BulkImportItemResult,
+    BulkImportRequest,
+    BulkImportResponse,
     JobCreate,
     JobResponse,
     JobStatusChange,
@@ -197,6 +200,105 @@ async def fetch_description(
         location=meta.location,
         description=meta.description,
     )
+
+
+# ── Bulk import from LinkedIn ────────────────────────────────────────────────
+
+
+def _is_linkedin_job_url(url: str) -> bool:
+    """Check if URL looks like a LinkedIn job posting."""
+    from urllib.parse import urlparse
+    parsed = urlparse(url.strip())
+    hostname = parsed.hostname or ""
+    return hostname.endswith("linkedin.com") and "/jobs/" in parsed.path
+
+
+@router.post("/bulk-import", response_model=BulkImportResponse)
+async def bulk_import_jobs(
+    data: BulkImportRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    """Import multiple jobs from LinkedIn URLs: fetch metadata + AI match."""
+    import logging
+    logger = logging.getLogger(__name__)
+
+    response = BulkImportResponse()
+
+    for url in data.urls:
+        url = url.strip()
+        if not url:
+            continue
+
+        # Validate LinkedIn URL
+        if not _is_linkedin_job_url(url):
+            response.skipped += 1
+            response.results.append(BulkImportItemResult(
+                url=url, status="skipped", error="Not a LinkedIn job URL",
+            ))
+            continue
+
+        # Fetch metadata
+        try:
+            meta = await fetch_job_metadata(url)
+        except Exception as exc:
+            response.failed += 1
+            response.results.append(BulkImportItemResult(
+                url=url, status="failed", error=f"Fetch failed: {exc}",
+            ))
+            continue
+
+        if not meta.title or not meta.company:
+            response.failed += 1
+            response.results.append(BulkImportItemResult(
+                url=url, status="failed",
+                error="Could not extract job title or company",
+            ))
+            continue
+
+        # Create job
+        job_data = JobCreate(
+            title=meta.title,
+            company=meta.company,
+            location=meta.location or None,
+            url=url,
+            source="linkedin",
+            description=meta.description or None,
+            salary_min=meta.salary_min,
+            salary_max=meta.salary_max,
+            salary_currency=meta.salary_currency,
+            salary_period=meta.salary_period,
+        )
+
+        try:
+            job = await job_service.create_job(db, job_data, current_user)
+        except DuplicateJobError as exc:
+            response.duplicates += 1
+            response.results.append(BulkImportItemResult(
+                url=url, status="duplicate",
+                job_id=exc.existing_job.id,
+                title=meta.title, company=meta.company,
+                error="Job already exists",
+            ))
+            continue
+
+        # Run AI match (best effort — don't fail the whole import)
+        match_score = None
+        try:
+            result = await match_service.match_job(db, job.id, current_user)
+            match_score = result.get("score")
+        except Exception as exc:
+            logger.warning("AI match failed for job %d: %s", job.id, exc)
+
+        response.created += 1
+        response.results.append(BulkImportItemResult(
+            url=url, status="created",
+            job_id=job.id,
+            title=job.title, company=job.company,
+            match_score=match_score,
+        ))
+
+    return response
 
 
 # ── AI Job Matching ──────────────────────────────────────────────────────────

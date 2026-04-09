@@ -140,6 +140,31 @@ class JobResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ── Bulk import schemas ──────────────────────────────────────────────────────
+
+
+class BulkImportRequest(BaseModel):
+    urls: list[str]
+
+
+class BulkImportItemResult(BaseModel):
+    url: str
+    status: str  # "created" | "skipped" | "duplicate" | "failed"
+    job_id: Optional[int] = None
+    title: Optional[str] = None
+    company: Optional[str] = None
+    match_score: Optional[int] = None
+    error: Optional[str] = None
+
+
+class BulkImportResponse(BaseModel):
+    created: int = 0
+    skipped: int = 0
+    duplicates: int = 0
+    failed: int = 0
+    results: list[BulkImportItemResult] = []
+
+
 # ── Kanban schemas ───────────────────────────────────────────────────────────
 
 

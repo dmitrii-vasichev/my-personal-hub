@@ -234,6 +234,25 @@ export interface ChangeStatusInput {
   comment?: string;
 }
 
+// Bulk import types
+export interface BulkImportItemResult {
+  url: string;
+  status: "created" | "skipped" | "duplicate" | "failed";
+  job_id?: number;
+  title?: string;
+  company?: string;
+  match_score?: number;
+  error?: string;
+}
+
+export interface BulkImportResponse {
+  created: number;
+  skipped: number;
+  duplicates: number;
+  failed: number;
+  results: BulkImportItemResult[];
+}
+
 export interface JobFilters {
   search?: string;
   company?: string;
