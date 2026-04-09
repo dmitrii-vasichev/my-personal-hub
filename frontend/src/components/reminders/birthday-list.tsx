@@ -251,30 +251,31 @@ function BirthdayRow({
           className="flex cursor-pointer items-center gap-3 px-4 py-3"
           onClick={onToggle}
         >
-          {/* Name */}
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span className="truncate text-sm font-medium text-foreground">
-              {birthday.name}
-            </span>
-
-            {/* Birth date */}
-            <span className="text-sm text-muted-foreground">
-              {formattedDate}
-            </span>
-
-            {/* Turning age badge */}
-            {birthday.turning_age != null && (
-              <span className="inline-flex items-center rounded-md bg-violet-100 px-1.5 py-0.5 text-[11px] font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
-                turns {birthday.turning_age}
+          <div className="min-w-0 flex-1">
+            {/* Top line: name + days-until badge */}
+            <div className="flex items-center gap-2">
+              <span className="truncate text-sm font-medium text-foreground">
+                {birthday.name}
               </span>
-            )}
+              <span
+                className={`ml-auto shrink-0 inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium ${daysUntilBadgeClass(birthday.days_until)}`}
+              >
+                {daysUntilLabel(birthday.days_until)}
+              </span>
+            </div>
 
-            {/* Days until badge */}
-            <span
-              className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium ${daysUntilBadgeClass(birthday.days_until)}`}
-            >
-              {daysUntilLabel(birthday.days_until)}
-            </span>
+            {/* Bottom line: date + turning age */}
+            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span>{formattedDate}</span>
+              {birthday.turning_age != null && (
+                <>
+                  <span>·</span>
+                  <span className="text-violet-500 dark:text-violet-400">
+                    turns {birthday.turning_age}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
