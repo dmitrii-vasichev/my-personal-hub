@@ -159,9 +159,13 @@ def _extract_linkedin_metadata(soup: BeautifulSoup) -> JobMetadata:
     if salary_text:
         _parse_salary_text(salary_text, meta)
 
-    # If no salary from dedicated selectors, try description text
-    if meta.salary_min is None and meta.description:
-        _parse_salary_text(meta.description[:500], meta)
+    # Sanity check: discard obviously wrong values
+    if meta.salary_min is not None:
+        is_hourly = meta.salary_period == "hourly"
+        min_reasonable = 7 if is_hourly else 15_000
+        if meta.salary_min < min_reasonable:
+            meta.salary_min = None
+            meta.salary_max = None
 
     # Fallback: try og:title which often has "Title at Company"
     if not meta.title or not meta.company:
