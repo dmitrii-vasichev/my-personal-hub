@@ -13,8 +13,8 @@ export function BirthdayAddForm() {
   const [name, setName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [birthYear, setBirthYear] = useState("");
-  const [advanceDays, setAdvanceDays] = useState("3");
-  const [reminderTime, setReminderTime] = useState("10:00");
+  const [advanceDays, setAdvanceDays] = useState("0");
+  const [reminderTime, setReminderTime] = useState("08:00");
   const [expanded, setExpanded] = useState(false);
   const createBirthday = useCreateBirthday();
 
@@ -25,8 +25,8 @@ export function BirthdayAddForm() {
     setName("");
     setBirthDate("");
     setBirthYear("");
-    setAdvanceDays("3");
-    setReminderTime("10:00");
+    setAdvanceDays("0");
+    setReminderTime("08:00");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -40,8 +40,8 @@ export function BirthdayAddForm() {
         name: name.trim(),
         birth_date: birthDate,
         birth_year: yearNum && yearNum > 1900 && yearNum <= new Date().getFullYear() ? yearNum : null,
-        advance_days: parseInt(advanceDays, 10) || 3,
-        reminder_time: reminderTime || "10:00",
+        advance_days: Number.isFinite(parseInt(advanceDays, 10)) ? parseInt(advanceDays, 10) : 0,
+        reminder_time: reminderTime || "08:00",
       },
       {
         onSuccess: () => {

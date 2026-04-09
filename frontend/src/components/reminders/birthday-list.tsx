@@ -73,8 +73,8 @@ function EditBirthdayForm({
           yearNum && yearNum > 1900 && yearNum <= new Date().getFullYear()
             ? yearNum
             : null,
-        advance_days: parseInt(advanceDays, 10) || 3,
-        reminder_time: reminderTime || "10:00",
+        advance_days: Number.isFinite(parseInt(advanceDays, 10)) ? parseInt(advanceDays, 10) : 0,
+        reminder_time: reminderTime || "08:00",
       },
       {
         onSuccess: () => {
