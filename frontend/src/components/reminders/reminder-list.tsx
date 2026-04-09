@@ -510,7 +510,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
 
           {/* Title + badges */}
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span className="truncate text-sm font-medium text-foreground">
+            <span className={`${expanded ? "break-words" : "truncate"} text-sm font-medium text-foreground`}>
               {reminder.title}
             </span>
 

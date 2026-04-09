@@ -10,5 +10,5 @@
 ## Current Status
 
 - **Mode:** idle
-- **Last shipped:** Floating reminders with periodic digest and urgent flag (2026-04-07)
+- **Last shipped:** Task reminder bugs — clear/reset, optional time (floating), deadline clear fix (2026-04-08)
 - **Next:** Nothing planned
