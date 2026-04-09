@@ -1,4 +1,4 @@
-"""Unified reminder scheduler — replaces old task_reminders.run_reminder_check."""
+"""Unified reminder scheduler — event-driven + polling safety net."""
 
 import logging
 from datetime import datetime, timezone
@@ -9,6 +9,75 @@ from app.models.reminder import Reminder, ReminderStatus
 from app.models.telegram import PulseSettings
 
 logger = logging.getLogger(__name__)
+
+
+async def fire_single_reminder(reminder_id: int) -> None:
+    """Event-driven job: send first notification for a specific reminder at exact time."""
+    from app.core.database import async_session_factory
+    from app.core.encryption import decrypt_value
+    from app.services.reminder_notifications import send_reminder_notification
+
+    async with async_session_factory() as db:
+        try:
+            result = await db.execute(
+                select(Reminder).where(Reminder.id == reminder_id)
+            )
+            reminder = result.scalar_one_or_none()
+            if not reminder or reminder.status != ReminderStatus.pending:
+                return
+            if reminder.is_floating:
+                return
+            if reminder.notification_sent_count > 0:
+                return  # already sent, let polling handle repeats
+
+            now = datetime.now(tz=timezone.utc)
+            if reminder.snoozed_until and reminder.snoozed_until > now:
+                return  # re-snoozed since scheduling, new job will handle it
+
+            ps_result = await db.execute(
+                select(PulseSettings).where(
+                    PulseSettings.user_id == reminder.user_id
+                )
+            )
+            ps = ps_result.scalar_one_or_none()
+            if not ps or not ps.bot_token or not ps.bot_chat_id:
+                return
+
+            token = decrypt_value(ps.bot_token)
+            tz_name = ps.timezone or "UTC"
+
+            display_dt = reminder.snoozed_until or reminder.remind_at
+            try:
+                from zoneinfo import ZoneInfo
+
+                local_dt = display_dt.astimezone(ZoneInfo(tz_name))
+                time_str = local_dt.strftime("%b %d, %Y %I:%M %p")
+            except Exception:
+                time_str = display_dt.strftime("%b %d, %Y %H:%M UTC")
+
+            res = await send_reminder_notification(
+                bot_token=token,
+                chat_id=ps.bot_chat_id,
+                reminder_id=reminder.id,
+                title=reminder.title,
+                time_str=time_str,
+                snooze_count=reminder.snooze_count,
+                snooze_limit=ps.reminder_snooze_limit,
+            )
+            if res["success"]:
+                reminder.notification_sent_count += 1
+                if res.get("message_id"):
+                    reminder.telegram_message_id = res["message_id"]
+                await db.commit()
+                logger.info(
+                    "Event-driven notification sent for reminder %s",
+                    reminder_id,
+                )
+
+        except Exception as e:
+            logger.error(
+                "Event-driven reminder %s failed: %s", reminder_id, e
+            )
 
 
 async def run_reminder_check() -> None:

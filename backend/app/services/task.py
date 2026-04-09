@@ -486,6 +486,8 @@ async def _sync_task_reminder(
     )
     existing = result.scalar_one_or_none()
 
+    from app.core.scheduler import cancel_reminder_notification, schedule_reminder_notification
+
     if task.reminder_at:
         if existing:
             existing.remind_at = task.reminder_at
@@ -494,6 +496,10 @@ async def _sync_task_reminder(
             existing.notification_sent_count = 0
             existing.snoozed_until = None
             existing.telegram_message_id = None
+            if not task.reminder_floating:
+                schedule_reminder_notification(existing.id, task.reminder_at)
+            else:
+                cancel_reminder_notification(existing.id)
         else:
             reminder = Reminder(
                 user_id=user.id,
@@ -503,6 +509,10 @@ async def _sync_task_reminder(
                 task_id=task.id,
             )
             db.add(reminder)
+            await db.flush()  # get reminder.id for scheduling
+            if not task.reminder_floating:
+                schedule_reminder_notification(reminder.id, task.reminder_at)
     elif existing:
         # reminder_at was cleared — remove linked reminder
+        cancel_reminder_notification(existing.id)
         await db.delete(existing)

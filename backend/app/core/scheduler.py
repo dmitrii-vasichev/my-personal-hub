@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -9,6 +10,42 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 logger = logging.getLogger(__name__)
 
 scheduler = AsyncIOScheduler()
+
+
+# --------------- Reminder event-driven scheduling ---------------
+
+
+def schedule_reminder_notification(reminder_id: int, fire_at: datetime) -> None:
+    """Schedule a one-shot job to send notification at exact fire_at time."""
+    job_id = f"reminder_notify_{reminder_id}"
+
+    existing = scheduler.get_job(job_id)
+    if existing:
+        scheduler.remove_job(job_id)
+
+    now = datetime.now(tz=timezone.utc)
+    if fire_at <= now:
+        fire_at = now  # already due — fire immediately
+
+    scheduler.add_job(
+        "app.services.reminder_scheduler:fire_single_reminder",
+        "date",
+        run_date=fire_at,
+        id=job_id,
+        args=[reminder_id],
+        replace_existing=True,
+        misfire_grace_time=300,
+    )
+    logger.info("Scheduled reminder %s notification at %s", reminder_id, fire_at)
+
+
+def cancel_reminder_notification(reminder_id: int) -> None:
+    """Cancel a scheduled reminder notification job."""
+    job_id = f"reminder_notify_{reminder_id}"
+    existing = scheduler.get_job(job_id)
+    if existing:
+        scheduler.remove_job(job_id)
+        logger.info("Cancelled reminder %s notification", reminder_id)
 
 
 def schedule_user_polling(user_id: int, interval_minutes: int) -> None:

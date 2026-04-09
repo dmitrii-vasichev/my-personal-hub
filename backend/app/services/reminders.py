@@ -9,10 +9,19 @@ from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.scheduler import cancel_reminder_notification, schedule_reminder_notification
 from app.models.reminder import Reminder, ReminderStatus
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
+
+
+def _schedule_if_eligible(reminder: Reminder) -> None:
+    """Schedule event-driven notification if reminder is pending and time-bound."""
+    if reminder.is_floating or reminder.status != ReminderStatus.pending:
+        return
+    fire_at = reminder.snoozed_until or reminder.remind_at
+    schedule_reminder_notification(reminder.id, fire_at)
 
 
 async def create_reminder(
@@ -37,6 +46,7 @@ async def create_reminder(
     db.add(reminder)
     await db.commit()
     await db.refresh(reminder)
+    _schedule_if_eligible(reminder)
     return reminder
 
 
@@ -111,6 +121,7 @@ async def update_reminder(
 
     await db.commit()
     await db.refresh(reminder)
+    _schedule_if_eligible(reminder)
     return reminder
 
 
@@ -124,6 +135,7 @@ async def delete_reminder(
         return False
     await db.delete(reminder)
     await db.commit()
+    cancel_reminder_notification(reminder_id)
     return True
 
 
@@ -152,6 +164,12 @@ async def mark_done(
 
     await db.commit()
     await db.refresh(reminder)
+
+    if reminder.recurrence_rule and reminder.status == ReminderStatus.pending:
+        _schedule_if_eligible(reminder)
+    else:
+        cancel_reminder_notification(reminder_id)
+
     return reminder
 
 
@@ -169,6 +187,7 @@ async def restore_reminder(
     reminder.remind_at = datetime.now(tz=timezone.utc)
     await db.commit()
     await db.refresh(reminder)
+    _schedule_if_eligible(reminder)
     return reminder
 
 
@@ -193,6 +212,7 @@ async def snooze_reminder(
     reminder.telegram_message_id = None
     await db.commit()
     await db.refresh(reminder)
+    _schedule_if_eligible(reminder)
     return reminder
 
 

@@ -38,6 +38,31 @@ from app.core.scheduler import scheduler, schedule_garmin_sync, schedule_user_di
 logger = logging.getLogger(__name__)
 
 
+async def _restore_reminder_jobs() -> None:
+    """Re-schedule event-driven notification jobs for all pending reminders after restart."""
+    from app.core.database import async_session_factory
+    from app.core.scheduler import schedule_reminder_notification
+    from app.models.reminder import Reminder, ReminderStatus
+    from sqlalchemy import select, and_
+
+    async with async_session_factory() as db:
+        result = await db.execute(
+            select(Reminder).where(
+                and_(
+                    Reminder.status == ReminderStatus.pending,
+                    Reminder.is_floating == False,  # noqa: E712
+                    Reminder.notification_sent_count == 0,
+                )
+            )
+        )
+        reminders = result.scalars().all()
+        for r in reminders:
+            fire_at = r.snoozed_until or r.remind_at
+            schedule_reminder_notification(r.id, fire_at)
+        if reminders:
+            logger.info("Restored %d event-driven reminder jobs", len(reminders))
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     # Startup: start scheduler and restore polling jobs
@@ -174,7 +199,7 @@ async def lifespan(application: FastAPI):
             misfire_grace_time=300,
         )
 
-        # Schedule unified reminder check every 2 minutes
+        # Polling safety net for repeat notifications (2 min interval)
         scheduler.add_job(
             "app.services.reminder_scheduler:run_reminder_check",
             "interval",
@@ -183,6 +208,9 @@ async def lifespan(application: FastAPI):
             replace_existing=True,
             misfire_grace_time=120,
         )
+
+        # Restore event-driven reminder jobs after restart
+        await _restore_reminder_jobs()
 
         # Schedule reminder digest check at :00, :15, :30, :45 every hour
         scheduler.add_job(
