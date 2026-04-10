@@ -1,16 +1,25 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   createColumnHelper,
   flexRender,
   getCoreRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  type PaginationState,
   type SortingState,
 } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ArrowUpDown, Briefcase } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Briefcase,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import type { ApplicationStatus, Job } from "@/types/job";
 import {
   APPLICATION_STATUS_LABELS,
@@ -18,7 +27,20 @@ import {
   APPLICATION_STATUS_BG_COLORS,
 } from "@/types/job";
 import { InlineEditSelect } from "@/components/ui/inline-edit-select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { useChangeJobStatus } from "@/hooks/use-jobs";
+
+const PAGE_SIZE_OPTIONS = [25, 50, 100] as const;
+const DEFAULT_PAGE_SIZE = 50;
+const PAGE_SIZE_LABELS: Record<string, string> = Object.fromEntries(
+  PAGE_SIZE_OPTIONS.map((n) => [String(n), `${n} / page`])
+);
 
 const STATUS_OPTIONS = (Object.keys(APPLICATION_STATUS_LABELS) as ApplicationStatus[]).map(
   (s) => ({ value: s, label: APPLICATION_STATUS_LABELS[s] })
@@ -106,6 +128,10 @@ interface JobsTableProps {
 export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
   const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
 
   const columns = useMemo(
     () => [
@@ -160,11 +186,22 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
   const table = useReactTable({
     data: jobs,
     columns,
-    state: { sorting },
+    state: { sorting, pagination },
     onSortingChange: setSorting,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
+
+  // Clamp pageIndex when filters reduce the row count below the current page
+  // (e.g., user is on page 3, then applies a filter leaving only 1 page).
+  useEffect(() => {
+    const pageCount = Math.max(1, Math.ceil(jobs.length / pagination.pageSize));
+    if (pagination.pageIndex >= pageCount) {
+      setPagination((p) => ({ ...p, pageIndex: pageCount - 1 }));
+    }
+  }, [jobs.length, pagination.pageSize, pagination.pageIndex]);
 
   if (isLoading) {
     return (
@@ -212,6 +249,13 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
     );
   }
 
+  const pageCount = table.getPageCount();
+  const firstRowOnPage = pagination.pageIndex * pagination.pageSize + 1;
+  const lastRowOnPage = Math.min(
+    (pagination.pageIndex + 1) * pagination.pageSize,
+    jobs.length
+  );
+
   return (
     <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
       <div className="overflow-x-auto">
@@ -251,6 +295,55 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Pagination footer */}
+      <div className="flex items-center justify-between gap-3 border-t border-[var(--border)] bg-[var(--surface-hover)]/40 px-4 py-2">
+        <div className="flex items-center gap-3">
+          <SelectRoot
+            value={String(pagination.pageSize)}
+            onValueChange={(value) => table.setPageSize(Number(value))}
+            labels={PAGE_SIZE_LABELS}
+          >
+            <SelectTrigger className="h-7 w-[110px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectPopup>
+              {PAGE_SIZE_OPTIONS.map((n) => (
+                <SelectItem key={n} value={String(n)}>
+                  {n} / page
+                </SelectItem>
+              ))}
+            </SelectPopup>
+          </SelectRoot>
+          <span className="text-[11px] font-mono text-[var(--text-tertiary)]">
+            {firstRowOnPage}–{lastRowOnPage} of {jobs.length}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-[var(--border)] text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--text-secondary)]"
+            aria-label="Previous page"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <span className="px-2 text-[11px] font-mono text-[var(--text-secondary)]">
+            Page {pagination.pageIndex + 1} of {pageCount}
+          </span>
+          <button
+            type="button"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-[var(--border)] text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--text-secondary)]"
+            aria-label="Next page"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   );
