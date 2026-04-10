@@ -10,5 +10,5 @@
 ## Current Status
 
 - **Mode:** idle
-- **Last shipped:** Migrate all Select callsites to portal-based compound API (2026-04-10)
+- **Last shipped:** Add client-side pagination to jobs table (2026-04-10)
 - **Next:** Nothing planned
