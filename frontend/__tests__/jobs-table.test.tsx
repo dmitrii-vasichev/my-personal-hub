@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { JobsTable } from "@/components/jobs/jobs-table";
 import type { Job } from "@/types/job";
 
@@ -14,6 +16,13 @@ vi.mock("next/navigation", () => ({
     back: vi.fn(),
   }),
 }));
+
+function renderWithQueryClient(ui: ReactNode) {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
 
 const mockJobs: Job[] = [
   {
@@ -65,14 +74,14 @@ describe("JobsTable", () => {
   });
 
   it("renders jobs with correct columns", () => {
-    render(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
+    renderWithQueryClient(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
 
     // Check column headers
     expect(screen.getByText("Title")).toBeInTheDocument();
     expect(screen.getByText("Status")).toBeInTheDocument();
     expect(screen.getByText("Match")).toBeInTheDocument();
     expect(screen.getByText("Source")).toBeInTheDocument();
-    expect(screen.getByText("Found")).toBeInTheDocument();
+    expect(screen.getByText("Added")).toBeInTheDocument();
 
     // Check job data
     expect(screen.getByText("Senior Frontend Developer")).toBeInTheDocument();
@@ -83,7 +92,7 @@ describe("JobsTable", () => {
   });
 
   it("shows match score badges with correct colors", () => {
-    render(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
+    renderWithQueryClient(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
 
     // 85% — green
     const highScore = screen.getByText("85%");
@@ -99,13 +108,13 @@ describe("JobsTable", () => {
   });
 
   it("shows application status for tracked jobs", () => {
-    render(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
+    renderWithQueryClient(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
 
     expect(screen.getByText("Applied")).toBeInTheDocument();
   });
 
   it("shows dash for untracked jobs status", () => {
-    render(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
+    renderWithQueryClient(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
 
     // Two untracked jobs should show dashes
     const dashes = screen.getAllByText("—");
@@ -113,13 +122,13 @@ describe("JobsTable", () => {
   });
 
   it("shows empty state when no jobs", () => {
-    render(<JobsTable jobs={[]} isLoading={false} error={null} />);
+    renderWithQueryClient(<JobsTable jobs={[]} isLoading={false} error={null} />);
 
     expect(screen.getByText("No jobs found")).toBeInTheDocument();
   });
 
   it("shows loading skeleton when loading", () => {
-    const { container } = render(
+    const { container } = renderWithQueryClient(
       <JobsTable jobs={[]} isLoading={true} error={null} />
     );
 
@@ -127,7 +136,7 @@ describe("JobsTable", () => {
   });
 
   it("shows error message on error", () => {
-    render(
+    renderWithQueryClient(
       <JobsTable jobs={[]} isLoading={false} error={new Error("Network error")} />
     );
 
@@ -136,7 +145,7 @@ describe("JobsTable", () => {
 
   it("navigates to job detail on row click", async () => {
     const user = userEvent.setup();
-    render(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
+    renderWithQueryClient(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
 
     const firstRow = screen.getByText("Senior Frontend Developer").closest("tr");
     await user.click(firstRow!);
@@ -146,7 +155,7 @@ describe("JobsTable", () => {
 
   it("column headers are clickable for sorting", async () => {
     const user = userEvent.setup();
-    render(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
+    renderWithQueryClient(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
 
     const titleHeader = screen.getByText("Title").closest("th");
     expect(titleHeader).toBeInTheDocument();
@@ -156,7 +165,7 @@ describe("JobsTable", () => {
   });
 
   it("displays source for each job", () => {
-    render(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
+    renderWithQueryClient(<JobsTable jobs={mockJobs} isLoading={false} error={null} />);
 
     expect(screen.getByText("LinkedIn")).toBeInTheDocument();
     expect(screen.getByText("Indeed")).toBeInTheDocument();
