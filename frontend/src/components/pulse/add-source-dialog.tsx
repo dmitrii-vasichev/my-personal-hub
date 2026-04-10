@@ -9,7 +9,13 @@ import type { PulseSourceResolveResult } from "@/types/pulse-source";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogPortal,
@@ -17,6 +23,11 @@ import {
   DialogPopup,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+const CATEGORY_LABELS_MAP: Record<string, string> = {
+  ...Object.fromEntries(SOURCE_CATEGORIES.map((cat) => [cat, cat.charAt(0).toUpperCase() + cat.slice(1)])),
+  custom: "Custom...",
+};
 
 interface AddSourceDialogProps {
   open: boolean;
@@ -151,18 +162,23 @@ export function AddSourceDialog({ open, onClose }: AddSourceDialogProps) {
             {/* Category */}
             <div className="space-y-1">
               <Label className="text-xs uppercase text-muted-foreground">Category</Label>
-              <Select
+              <SelectRoot
                 value={category}
-                onChange={(e) => setCategory((e.target as HTMLSelectElement).value)}
-                className="text-sm"
+                onValueChange={setCategory}
+                labels={CATEGORY_LABELS_MAP}
               >
-                {SOURCE_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
-                  </option>
-                ))}
-                <option value="custom">Custom...</option>
-              </Select>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectPopup>
+                  {SOURCE_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom">Custom...</SelectItem>
+                </SelectPopup>
+              </SelectRoot>
               {category === "custom" && (
                 <Input
                   value={customCategory}

@@ -5,7 +5,13 @@ import { Plus, Pencil, Trash2, Download, Upload, Check, Wand2 } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -26,6 +32,11 @@ import {
   useGenerateIndustryInstructions,
 } from "@/hooks/use-leads";
 import type { Industry } from "@/types/lead";
+
+const LANGUAGE_LABELS: Record<string, string> = {
+  Russian: "🇷🇺 RU",
+  English: "🇺🇸 EN",
+};
 
 // ── Industry form dialog ───────────────────────────────────────────────────
 
@@ -190,15 +201,20 @@ function IndustryFormDialog({
                 </Label>
                 {mode === "edit" && industry && (
                   <div className="flex items-center gap-2">
-                    <Select
+                    <SelectRoot
                       value={language}
-                      onChange={(e) => setLanguage(e.target.value)}
-                      className="h-7 w-[100px] text-xs py-0 pl-2 pr-6"
+                      onValueChange={setLanguage}
                       disabled={isLoading}
+                      labels={LANGUAGE_LABELS}
                     >
-                      <option value="Russian">🇷🇺 RU</option>
-                      <option value="English">🇺🇸 EN</option>
-                    </Select>
+                      <SelectTrigger className="h-7 w-[100px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectPopup>
+                        <SelectItem value="Russian">🇷🇺 RU</SelectItem>
+                        <SelectItem value="English">🇺🇸 EN</SelectItem>
+                      </SelectPopup>
+                    </SelectRoot>
                     <Button
                       type="button"
                       size="sm"

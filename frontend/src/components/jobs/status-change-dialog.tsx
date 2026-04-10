@@ -4,7 +4,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -35,6 +41,10 @@ const ALL_STATUSES: ApplicationStatus[] = [
   "ghosted",
   "withdrawn",
 ];
+
+const STATUS_LABELS_MAP: Record<string, string> = Object.fromEntries(
+  ALL_STATUSES.map((s) => [s, APPLICATION_STATUS_LABELS[s]])
+);
 
 interface StatusChangeDialogProps {
   open: boolean;
@@ -149,18 +159,23 @@ export function StatusChangeDialog({
               >
                 New Status
               </Label>
-              <Select
-                id="status-select"
+              <SelectRoot
                 value={newStatus}
-                onChange={(e) => setNewStatus(e.target.value as ApplicationStatus)}
+                onValueChange={(value) => setNewStatus(value as ApplicationStatus)}
                 disabled={isLoading}
+                labels={STATUS_LABELS_MAP}
               >
-                {ALL_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {APPLICATION_STATUS_LABELS[s]}
-                  </option>
-                ))}
-              </Select>
+                <SelectTrigger id="status-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectPopup>
+                  {ALL_STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {APPLICATION_STATUS_LABELS[s]}
+                    </SelectItem>
+                  ))}
+                </SelectPopup>
+              </SelectRoot>
             </div>
 
             {/* Optional comment */}

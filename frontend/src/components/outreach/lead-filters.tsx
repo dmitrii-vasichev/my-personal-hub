@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useIndustries } from "@/hooks/use-leads";
 import type { LeadFilters, LeadStatus } from "@/types/lead";
@@ -25,9 +31,19 @@ const STATUS_OPTIONS: LeadStatus[] = [
   "on_hold",
 ];
 
+const STATUS_LABELS_MAP: Record<string, string> = {
+  "": "All statuses",
+  ...Object.fromEntries(STATUS_OPTIONS.map((s) => [s, LEAD_STATUS_LABELS[s]])),
+};
+
 export function LeadFiltersBar({ filters, onFiltersChange }: LeadFiltersBarProps) {
   const [search, setSearch] = useState(filters.search ?? "");
   const { data: industries = [] } = useIndustries();
+
+  const industryLabels: Record<string, string> = {
+    "": "All industries",
+    ...Object.fromEntries(industries.map((ind) => [ind.id.toString(), ind.name])),
+  };
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -60,38 +76,48 @@ export function LeadFiltersBar({ filters, onFiltersChange }: LeadFiltersBarProps
         />
       </div>
 
-      <Select
+      <SelectRoot
         value={filters.status ?? ""}
-        onChange={(e) =>
-          onFiltersChange({ ...filters, status: e.target.value || undefined })
+        onValueChange={(value) =>
+          onFiltersChange({ ...filters, status: (value as LeadStatus) || undefined })
         }
-        className="w-40 h-8 text-sm"
+        labels={STATUS_LABELS_MAP}
       >
-        <option value="">All statuses</option>
-        {STATUS_OPTIONS.map((s) => (
-          <option key={s} value={s}>
-            {LEAD_STATUS_LABELS[s]}
-          </option>
-        ))}
-      </Select>
+        <SelectTrigger className="w-40">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectPopup>
+          <SelectItem value="">All statuses</SelectItem>
+          {STATUS_OPTIONS.map((s) => (
+            <SelectItem key={s} value={s}>
+              {LEAD_STATUS_LABELS[s]}
+            </SelectItem>
+          ))}
+        </SelectPopup>
+      </SelectRoot>
 
-      <Select
+      <SelectRoot
         value={filters.industry_id?.toString() ?? ""}
-        onChange={(e) =>
+        onValueChange={(value) =>
           onFiltersChange({
             ...filters,
-            industry_id: e.target.value ? Number(e.target.value) : undefined,
+            industry_id: value ? Number(value) : undefined,
           })
         }
-        className="w-44 h-8 text-sm"
+        labels={industryLabels}
       >
-        <option value="">All industries</option>
-        {industries.map((ind) => (
-          <option key={ind.id} value={ind.id}>
-            {ind.name}
-          </option>
-        ))}
-      </Select>
+        <SelectTrigger className="w-44">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectPopup>
+          <SelectItem value="">All industries</SelectItem>
+          {industries.map((ind) => (
+            <SelectItem key={ind.id} value={ind.id.toString()}>
+              {ind.name}
+            </SelectItem>
+          ))}
+        </SelectPopup>
+      </SelectRoot>
 
       {activeCount > 0 && (
         <Button

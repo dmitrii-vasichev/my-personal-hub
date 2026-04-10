@@ -1,41 +1,64 @@
 "use client";
 
+import type * as React from "react";
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { Check, ChevronDown } from "lucide-react";
-import type { SelectHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
-
-// LEGACY native-select wrapper. Kept for back-compat with existing callsites
-// that import { Select } from "@/components/ui/select" — they will be migrated
-// to the compound API below in a follow-up chore.
-function Select({
-  className,
-  children,
-  ...props
-}: SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <div className="relative">
-      <select
-        className={cn(
-          "h-8 w-full appearance-none rounded-lg border border-input bg-transparent px-2.5 py-1 pr-8 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-3 focus:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 dark:bg-input/30",
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-    </div>
-  );
-}
 
 // Compound Select API based on @base-ui/react/select.
 // Pattern matches existing ui/popover.tsx and ui/dialog.tsx wrappers.
 
-const SelectRoot = SelectPrimitive.Root;
-const SelectTrigger = SelectPrimitive.Trigger;
 const SelectValue = SelectPrimitive.Value;
 const SelectIcon = SelectPrimitive.Icon;
+
+// Wraps base-ui's SelectRoot for our string-keyed selects:
+// - Coerces nullable onValueChange to a non-null string callback
+//   (base-ui can emit `null` when no item matches; we always have one).
+// - Accepts a `labels` map (forwarded to base-ui's `items` prop) so that
+//   <SelectValue> displays the human-readable label of the selected value
+//   instead of the raw value string.
+type LabelsMap = Record<string, React.ReactNode>;
+
+function SelectRoot({
+  labels,
+  onValueChange,
+  ...props
+}: Omit<SelectPrimitive.Root.Props<string>, "onValueChange" | "items"> & {
+  labels?: LabelsMap;
+  onValueChange?: (value: string) => void;
+}) {
+  return (
+    <SelectPrimitive.Root<string>
+      items={labels}
+      onValueChange={(value) => onValueChange?.(value ?? "")}
+      {...props}
+    />
+  );
+}
+
+function SelectTrigger({
+  className,
+  children,
+  ...props
+}: SelectPrimitive.Trigger.Props) {
+  return (
+    <SelectPrimitive.Trigger
+      className={cn(
+        "flex h-8 w-full items-center justify-between gap-2 rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm text-foreground outline-none transition-colors",
+        "focus:border-ring focus:ring-3 focus:ring-ring/50",
+        "disabled:pointer-events-none disabled:opacity-50 dark:bg-input/30",
+        "[&>span]:truncate",
+        className
+      )}
+      {...props}
+    >
+      {children}
+      <SelectPrimitive.Icon>
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+      </SelectPrimitive.Icon>
+    </SelectPrimitive.Trigger>
+  );
+}
 
 function SelectPopup({
   className,
@@ -104,9 +127,6 @@ function SelectItem({
 }
 
 export {
-  // Legacy
-  Select,
-  // Compound API
   SelectRoot,
   SelectTrigger,
   SelectValue,

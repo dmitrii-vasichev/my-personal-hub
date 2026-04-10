@@ -34,7 +34,13 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
 import {
@@ -167,6 +173,10 @@ const RECURRENCE_OPTIONS = [
   { value: "yearly", label: "Yearly" },
   { value: "custom", label: "Custom…" },
 ] as const;
+
+const RECURRENCE_LABELS: Record<string, string> = Object.fromEntries(
+  RECURRENCE_OPTIONS.map((opt) => [opt.value, opt.label])
+);
 
 // -- Edit dialog (form mounts fresh when dialog opens → no useEffect needed) --
 
@@ -305,19 +315,25 @@ function EditReminderForm({
         <label className="text-xs font-medium text-muted-foreground">
           Repeat
         </label>
-        <Select
+        <SelectRoot
           value={isCustom ? "custom" : recurrenceRule}
-          onChange={(e) => {
-            setRecurrenceRule(e.target.value);
-            if (e.target.value !== "custom") setCustomDays([]);
+          onValueChange={(value) => {
+            setRecurrenceRule(value);
+            if (value !== "custom") setCustomDays([]);
           }}
+          labels={RECURRENCE_LABELS}
         >
-          {RECURRENCE_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </Select>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectPopup>
+            {RECURRENCE_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectPopup>
+        </SelectRoot>
         {isCustom && (
           <div className="flex gap-1 pt-1">
             {WEEKDAYS.map((wd) => (

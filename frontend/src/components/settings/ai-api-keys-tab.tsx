@@ -1,8 +1,20 @@
 "use client";
 
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { ApiKeyInput } from "@/app/(dashboard)/settings/page";
+
+const LLM_PROVIDER_LABELS: Record<string, string> = {
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  gemini: "Google Gemini",
+};
 
 interface AdminSettings {
   has_api_key_openai: boolean;
@@ -46,15 +58,20 @@ export function AiApiKeysTab({
 
         <div className="space-y-1">
           <Label className="text-xs uppercase text-muted-foreground">Default LLM Provider</Label>
-          <Select
+          <SelectRoot
             value={llmProvider}
-            onChange={(e) => setLlmProvider((e.target as HTMLSelectElement).value)}
-            className="text-sm"
+            onValueChange={setLlmProvider}
+            labels={LLM_PROVIDER_LABELS}
           >
-            <option value="openai">OpenAI</option>
-            <option value="anthropic">Anthropic</option>
-            <option value="gemini">Google Gemini</option>
-          </Select>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectPopup>
+              <SelectItem value="openai">OpenAI</SelectItem>
+              <SelectItem value="anthropic">Anthropic</SelectItem>
+              <SelectItem value="gemini">Google Gemini</SelectItem>
+            </SelectPopup>
+          </SelectRoot>
         </div>
 
         <ApiKeyInput

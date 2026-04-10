@@ -89,12 +89,18 @@ describe("JobSearch improvements", () => {
     expect(screen.getByText("Search for jobs across external job boards")).toBeInTheDocument();
   });
 
-  it("renders provider selector with options", () => {
+  it("renders provider selector with options", async () => {
+    const user = userEvent.setup();
     renderWithClient(<JobSearch />);
 
+    // Default selected provider label is shown in the trigger
     expect(screen.getByText("Adzuna")).toBeInTheDocument();
-    expect(screen.getByText("SerpAPI (Google Jobs)")).toBeInTheDocument();
-    expect(screen.getByText("JSearch (RapidAPI)")).toBeInTheDocument();
+
+    // Open the popup to assert other options exist
+    await user.click(screen.getByRole("combobox"));
+
+    expect(screen.getByRole("option", { name: "SerpAPI (Google Jobs)" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "JSearch (RapidAPI)" })).toBeInTheDocument();
   });
 
   it("renders Auto search button", () => {

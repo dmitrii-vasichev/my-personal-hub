@@ -6,7 +6,13 @@ import { ArrowLeft, Calendar, ChevronDown, ChevronUp, Clock, Eye, Lock, Trash2, 
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { InlineEditText } from "@/components/ui/inline-edit-text";
 import { InlineEditSelect } from "@/components/ui/inline-edit-select";
 import { InlineEditDate } from "@/components/ui/inline-edit-date";
@@ -29,6 +35,10 @@ import { PRIORITY_BG_COLORS, PRIORITY_DOT_COLORS, TASK_STATUS_LABELS, TASK_STATU
 import type { ChecklistItem, TaskPriority, TaskStatus, UpdateTaskInput, Visibility } from "@/types/task";
 
 const CHECKLIST_COLLAPSE_THRESHOLD = 5;
+
+const TASK_STATUS_LABELS_MAP: Record<string, string> = Object.fromEntries(
+  TASK_STATUS_ORDER.map((s) => [s, TASK_STATUS_LABELS[s]])
+);
 
 const PRIORITY_OPTIONS = [
   { value: "urgent", label: "Urgent", className: PRIORITY_BG_COLORS.urgent },
@@ -277,16 +287,21 @@ export default function TaskDetailPage() {
             <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
               Status
             </span>
-            <Select
+            <SelectRoot
               value={task.status}
-              onChange={(e) => handleStatusChange(e.target.value as TaskStatus)}
-              className="h-8 text-sm"
+              onValueChange={(value) => handleStatusChange(value as TaskStatus)}
               disabled={!canEdit}
+              labels={TASK_STATUS_LABELS_MAP}
             >
-              {TASK_STATUS_ORDER.map((s) => (
-                <option key={s} value={s}>{TASK_STATUS_LABELS[s]}</option>
-              ))}
-            </Select>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectPopup>
+                {TASK_STATUS_ORDER.map((s) => (
+                  <SelectItem key={s} value={s}>{TASK_STATUS_LABELS[s]}</SelectItem>
+                ))}
+              </SelectPopup>
+            </SelectRoot>
           </div>
 
           {/* Priority */}

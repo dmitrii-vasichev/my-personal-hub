@@ -4,7 +4,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
@@ -19,6 +25,11 @@ import {
 import { useCreateCalendarEvent, useUpdateCalendarEvent } from "@/hooks/use-calendar";
 import type { CalendarEvent, CalendarEventCreate } from "@/types/calendar";
 import type { Visibility } from "@/types/task";
+
+const VISIBILITY_LABELS: Record<string, string> = {
+  family: "👨‍👩‍👧 Family",
+  private: "🔒 Private",
+};
 
 interface EventDialogProps {
   open: boolean;
@@ -209,14 +220,19 @@ export function EventDialog({ open, onClose, prefillDate, event }: EventDialogPr
 
             <div className="space-y-1.5">
               <Label htmlFor="visibility">Visibility</Label>
-              <Select
-                id="visibility"
+              <SelectRoot
                 value={visibility}
-                onChange={(e) => setVisibility(e.target.value as Visibility)}
+                onValueChange={(value) => setVisibility(value as Visibility)}
+                labels={VISIBILITY_LABELS}
               >
-                <option value="family">👨‍👩‍👧 Family</option>
-                <option value="private">🔒 Private</option>
-              </Select>
+                <SelectTrigger id="visibility">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectPopup>
+                  <SelectItem value="family">👨‍👩‍👧 Family</SelectItem>
+                  <SelectItem value="private">🔒 Private</SelectItem>
+                </SelectPopup>
+              </SelectRoot>
             </div>
 
             {error && <p className="text-sm text-[--danger]">{error}</p>}

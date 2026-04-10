@@ -3,11 +3,22 @@
 import { useState } from "react";
 import { X, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import type { SkillEntry } from "@/types/profile";
 
 const LEVELS = ["Beginner", "Intermediate", "Advanced", "Expert"] as const;
+
+const LEVEL_LABELS: Record<string, string> = {
+  "": "Level",
+  ...Object.fromEntries(LEVELS.map((l) => [l, l])),
+};
 
 interface SkillsEditorProps {
   skills: SkillEntry[];
@@ -92,18 +103,23 @@ export function SkillsEditor({ skills, onChange }: SkillsEditorProps) {
           />
         </div>
         <div className="w-32">
-          <Select
+          <SelectRoot
             value={newLevel}
-            onChange={(e) => setNewLevel(e.target.value)}
-            className="text-sm"
+            onValueChange={setNewLevel}
+            labels={LEVEL_LABELS}
           >
-            <option value="">Level</option>
-            {LEVELS.map((l) => (
-              <option key={l} value={l}>
-                {l}
-              </option>
-            ))}
-          </Select>
+            <SelectTrigger>
+              <SelectValue placeholder="Level" />
+            </SelectTrigger>
+            <SelectPopup>
+              <SelectItem value="">Level</SelectItem>
+              {LEVELS.map((l) => (
+                <SelectItem key={l} value={l}>
+                  {l}
+                </SelectItem>
+              ))}
+            </SelectPopup>
+          </SelectRoot>
         </div>
         <div className="w-20">
           <Input

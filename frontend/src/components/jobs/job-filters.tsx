@@ -3,7 +3,13 @@
 import { useEffect, useState } from "react";
 import { Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import type { JobFilters } from "@/types/job";
 import { APPLICATION_STATUS_LABELS } from "@/types/job";
@@ -25,6 +31,16 @@ const STATUS_OPTIONS: ApplicationStatus[] = [
   "ghosted",
   "withdrawn",
 ];
+
+const SOURCE_LABELS: Record<string, string> = {
+  "": "All sources",
+  ...Object.fromEntries(KNOWN_SOURCES.map((s) => [s, s])),
+};
+
+const STATUS_LABELS_MAP: Record<string, string> = {
+  "": "All statuses",
+  ...Object.fromEntries(STATUS_OPTIONS.map((s) => [s, APPLICATION_STATUS_LABELS[s]])),
+};
 
 /* ── Search input with debounce ── */
 
@@ -74,36 +90,46 @@ export function JobFilterDropdowns({ filters, onFiltersChange }: JobFilterDropdo
   return (
     <>
       {/* Source filter */}
-      <Select
+      <SelectRoot
         value={filters.source ?? ""}
-        onChange={(e) =>
-          onFiltersChange({ ...filters, source: e.target.value || undefined })
+        onValueChange={(value) =>
+          onFiltersChange({ ...filters, source: value || undefined })
         }
-        className="w-36 h-8 text-sm"
+        labels={SOURCE_LABELS}
       >
-        <option value="">All sources</option>
-        {KNOWN_SOURCES.map((s) => (
-          <option key={s} value={s}>
-            {s}
-          </option>
-        ))}
-      </Select>
+        <SelectTrigger className="w-36">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectPopup>
+          <SelectItem value="">All sources</SelectItem>
+          {KNOWN_SOURCES.map((s) => (
+            <SelectItem key={s} value={s}>
+              {s}
+            </SelectItem>
+          ))}
+        </SelectPopup>
+      </SelectRoot>
 
       {/* Status filter */}
-      <Select
+      <SelectRoot
         value={filters.status ?? ""}
-        onChange={(e) =>
-          onFiltersChange({ ...filters, status: e.target.value || undefined })
+        onValueChange={(value) =>
+          onFiltersChange({ ...filters, status: value || undefined })
         }
-        className="w-44 h-8 text-sm"
+        labels={STATUS_LABELS_MAP}
       >
-        <option value="">All statuses</option>
-        {STATUS_OPTIONS.map((s) => (
-          <option key={s} value={s}>
-            {APPLICATION_STATUS_LABELS[s]}
-          </option>
-        ))}
-      </Select>
+        <SelectTrigger className="w-44">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectPopup>
+          <SelectItem value="">All statuses</SelectItem>
+          {STATUS_OPTIONS.map((s) => (
+            <SelectItem key={s} value={s}>
+              {APPLICATION_STATUS_LABELS[s]}
+            </SelectItem>
+          ))}
+        </SelectPopup>
+      </SelectRoot>
 
       {/* Clear all */}
       {activeCount > 0 && (

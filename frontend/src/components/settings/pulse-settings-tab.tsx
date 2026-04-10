@@ -5,7 +5,13 @@ import { RefreshCw, Save, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import {
   usePulseSettings,
   useUpdatePulseSettings,
@@ -13,6 +19,34 @@ import {
   useTestBotConnection,
 } from "@/hooks/use-pulse-settings";
 import { usePollStatus } from "@/hooks/use-pulse-sources";
+
+const DIGEST_SCHEDULE_LABELS: Record<string, string> = {
+  daily: "Daily",
+  every_n_days: "Every N days",
+  weekly: "Weekly",
+};
+
+const TIMEZONE_LABELS: Record<string, string> = {
+  "America/Denver": "America/Denver (MT)",
+  "America/New_York": "America/New_York (ET)",
+  "America/Chicago": "America/Chicago (CT)",
+  "America/Los_Angeles": "America/Los_Angeles (PT)",
+  "Europe/Moscow": "Europe/Moscow (MSK)",
+  "Europe/London": "Europe/London (GMT)",
+  "Europe/Berlin": "Europe/Berlin (CET)",
+  "Asia/Tokyo": "Asia/Tokyo (JST)",
+  UTC: "UTC",
+};
+
+const DIGEST_DAY_LABELS: Record<string, string> = {
+  "0": "Monday",
+  "1": "Tuesday",
+  "2": "Wednesday",
+  "3": "Thursday",
+  "4": "Friday",
+  "5": "Saturday",
+  "6": "Sunday",
+};
 
 export function PulseSettingsTab() {
   const { data: settings, isLoading } = usePulseSettings();
@@ -173,15 +207,20 @@ export function PulseSettingsTab() {
           <Label className="text-xs uppercase text-muted-foreground">
             Digest Schedule
           </Label>
-          <Select
+          <SelectRoot
             value={digestSchedule}
-            onChange={(e) => setDigestSchedule((e.target as HTMLSelectElement).value)}
-            className="text-sm"
+            onValueChange={setDigestSchedule}
+            labels={DIGEST_SCHEDULE_LABELS}
           >
-            <option value="daily">Daily</option>
-            <option value="every_n_days">Every N days</option>
-            <option value="weekly">Weekly</option>
-          </Select>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectPopup>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="every_n_days">Every N days</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+            </SelectPopup>
+          </SelectRoot>
         </div>
 
         {/* Digest Time */}
@@ -202,21 +241,26 @@ export function PulseSettingsTab() {
           <Label className="text-xs uppercase text-muted-foreground">
             Timezone
           </Label>
-          <Select
+          <SelectRoot
             value={timezone}
-            onChange={(e) => setTimezone((e.target as HTMLSelectElement).value)}
-            className="text-sm"
+            onValueChange={setTimezone}
+            labels={TIMEZONE_LABELS}
           >
-            <option value="America/Denver">America/Denver (MT)</option>
-            <option value="America/New_York">America/New_York (ET)</option>
-            <option value="America/Chicago">America/Chicago (CT)</option>
-            <option value="America/Los_Angeles">America/Los_Angeles (PT)</option>
-            <option value="Europe/Moscow">Europe/Moscow (MSK)</option>
-            <option value="Europe/London">Europe/London (GMT)</option>
-            <option value="Europe/Berlin">Europe/Berlin (CET)</option>
-            <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
-            <option value="UTC">UTC</option>
-          </Select>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectPopup>
+              <SelectItem value="America/Denver">America/Denver (MT)</SelectItem>
+              <SelectItem value="America/New_York">America/New_York (ET)</SelectItem>
+              <SelectItem value="America/Chicago">America/Chicago (CT)</SelectItem>
+              <SelectItem value="America/Los_Angeles">America/Los_Angeles (PT)</SelectItem>
+              <SelectItem value="Europe/Moscow">Europe/Moscow (MSK)</SelectItem>
+              <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
+              <SelectItem value="Europe/Berlin">Europe/Berlin (CET)</SelectItem>
+              <SelectItem value="Asia/Tokyo">Asia/Tokyo (JST)</SelectItem>
+              <SelectItem value="UTC">UTC</SelectItem>
+            </SelectPopup>
+          </SelectRoot>
           <p className="text-[11px] text-muted-foreground">Digest time is in this timezone</p>
         </div>
 
@@ -226,19 +270,24 @@ export function PulseSettingsTab() {
             <Label className="text-xs uppercase text-muted-foreground">
               Day of Week
             </Label>
-            <Select
+            <SelectRoot
               value={digestDay}
-              onChange={(e) => setDigestDay((e.target as HTMLSelectElement).value)}
-              className="text-sm"
+              onValueChange={setDigestDay}
+              labels={DIGEST_DAY_LABELS}
             >
-              <option value="0">Monday</option>
-              <option value="1">Tuesday</option>
-              <option value="2">Wednesday</option>
-              <option value="3">Thursday</option>
-              <option value="4">Friday</option>
-              <option value="5">Saturday</option>
-              <option value="6">Sunday</option>
-            </Select>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectPopup>
+                <SelectItem value="0">Monday</SelectItem>
+                <SelectItem value="1">Tuesday</SelectItem>
+                <SelectItem value="2">Wednesday</SelectItem>
+                <SelectItem value="3">Thursday</SelectItem>
+                <SelectItem value="4">Friday</SelectItem>
+                <SelectItem value="5">Saturday</SelectItem>
+                <SelectItem value="6">Sunday</SelectItem>
+              </SelectPopup>
+            </SelectRoot>
           </div>
         )}
 

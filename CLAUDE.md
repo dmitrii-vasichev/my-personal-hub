@@ -10,5 +10,5 @@
 ## Current Status
 
 - **Mode:** idle
-- **Last shipped:** Task reminder bugs — clear/reset, optional time (floating), deadline clear fix (2026-04-08)
+- **Last shipped:** Migrate all Select callsites to portal-based compound API (2026-04-10)
 - **Next:** Nothing planned

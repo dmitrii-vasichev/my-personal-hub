@@ -5,7 +5,13 @@ import { Clock, Flag, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
 import { useCreateReminder } from "@/hooks/use-reminders";
@@ -18,6 +24,10 @@ const RECURRENCE_OPTIONS = [
   { value: "yearly", label: "Yearly" },
   { value: "custom", label: "Custom…" },
 ] as const;
+
+const RECURRENCE_LABELS: Record<string, string> = Object.fromEntries(
+  RECURRENCE_OPTIONS.map((opt) => [opt.value, opt.label])
+);
 
 const WEEKDAYS = [
   { key: "mon", label: "Mon" },
@@ -185,19 +195,25 @@ export function QuickAddForm() {
                 <label className="text-xs font-medium text-muted-foreground">
                   Repeat
                 </label>
-                <Select
+                <SelectRoot
                   value={isCustom ? "custom" : recurrenceRule}
-                  onChange={(e) => {
-                    setRecurrenceRule(e.target.value);
-                    if (e.target.value !== "custom") setCustomDays([]);
+                  onValueChange={(value) => {
+                    setRecurrenceRule(value);
+                    if (value !== "custom") setCustomDays([]);
                   }}
+                  labels={RECURRENCE_LABELS}
                 >
-                  {RECURRENCE_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </Select>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectPopup>
+                    {RECURRENCE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectPopup>
+                </SelectRoot>
               </div>
 
               {isCustom && (

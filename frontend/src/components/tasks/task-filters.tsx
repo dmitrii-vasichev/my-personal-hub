@@ -3,10 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, X, Tag, ChevronDown, Check, CircleOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useTags } from "@/hooks/use-tags";
 import type { TaskFilters } from "@/types/task";
+
+const PRIORITY_LABELS: Record<string, string> = {
+  "": "All priorities",
+  urgent: "Urgent",
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+};
 
 interface TaskFiltersBarProps {
   filters: TaskFilters;
@@ -136,19 +150,24 @@ export function TaskFiltersBar({ filters, onFiltersChange, extraButtons }: TaskF
       </div>
 
       {/* Priority filter */}
-      <Select
+      <SelectRoot
         value={filters.priority ?? ""}
-        onChange={(e) =>
-          onFiltersChange({ ...filters, priority: e.target.value || undefined })
+        onValueChange={(value) =>
+          onFiltersChange({ ...filters, priority: value || undefined })
         }
-        className="w-32 h-8 text-sm"
+        labels={PRIORITY_LABELS}
       >
-        <option value="">All priorities</option>
-        <option value="urgent">Urgent</option>
-        <option value="high">High</option>
-        <option value="medium">Medium</option>
-        <option value="low">Low</option>
-      </Select>
+        <SelectTrigger className="w-32">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectPopup>
+          <SelectItem value="">All priorities</SelectItem>
+          <SelectItem value="urgent">Urgent</SelectItem>
+          <SelectItem value="high">High</SelectItem>
+          <SelectItem value="medium">Medium</SelectItem>
+          <SelectItem value="low">Low</SelectItem>
+        </SelectPopup>
+      </SelectRoot>
 
       {/* Tag filter — multi-select */}
       {tags.length > 0 && (

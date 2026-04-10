@@ -7,7 +7,13 @@ import { useCreateUser } from "@/hooks/use-users";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogPortal,
@@ -16,6 +22,11 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+
+const ROLE_LABELS: Record<string, string> = {
+  member: "Member",
+  admin: "Admin",
+};
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -122,14 +133,19 @@ export function CreateUserDialog({ open, onClose }: CreateUserDialogProps) {
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs uppercase text-muted-foreground">Role</Label>
-                  <Select
+                  <SelectRoot
                     value={role}
-                    onChange={(e) => setRole((e.target as HTMLSelectElement).value as "admin" | "member")}
-                    className="text-sm"
+                    onValueChange={(value) => setRole(value as "admin" | "member")}
+                    labels={ROLE_LABELS}
                   >
-                    <option value="member">Member</option>
-                    <option value="admin">Admin</option>
-                  </Select>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectPopup>
+                      <SelectItem value="member">Member</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectPopup>
+                  </SelectRoot>
                 </div>
               </div>
               <div className="mt-6 flex justify-end gap-2">

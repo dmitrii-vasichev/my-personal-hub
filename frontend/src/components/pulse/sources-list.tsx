@@ -11,9 +11,21 @@ import { CATEGORY_LABELS } from "@/types/pulse-source";
 import type { PulseSource, PulseSourceUpdate } from "@/types/pulse-source";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useAuth } from "@/lib/auth";
+
+const CATEGORY_EDIT_LABELS: Record<string, string> = {
+  news: "News",
+  jobs: "Jobs",
+  learning: "Learning",
+};
 
 function formatTimeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -136,17 +148,22 @@ export function SourcesList({ onAddClick }: SourcesListProps) {
                 </td>
                 <td className="py-2.5 pr-4">
                   {editingId === source.id ? (
-                    <Select
+                    <SelectRoot
                       value={editData.category ?? source.category}
-                      onChange={(e) =>
-                        setEditData({ ...editData, category: (e.target as HTMLSelectElement).value })
+                      onValueChange={(value) =>
+                        setEditData({ ...editData, category: value })
                       }
-                      className="text-xs w-24"
+                      labels={CATEGORY_EDIT_LABELS}
                     >
-                      <option value="news">News</option>
-                      <option value="jobs">Jobs</option>
-                      <option value="learning">Learning</option>
-                    </Select>
+                      <SelectTrigger className="text-xs w-24">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectPopup>
+                        <SelectItem value="news">News</SelectItem>
+                        <SelectItem value="jobs">Jobs</SelectItem>
+                        <SelectItem value="learning">Learning</SelectItem>
+                      </SelectPopup>
+                    </SelectRoot>
                   ) : (
                     <span className="inline-flex items-center rounded-md bg-surface-hover px-2 py-0.5 text-xs font-medium text-foreground">
                       {CATEGORY_LABELS[source.category] ?? source.category}

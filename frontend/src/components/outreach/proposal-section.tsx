@@ -3,10 +3,21 @@
 import { useState } from "react";
 import { Copy, Check, Pencil, Save, Sparkles, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useGenerateProposal, useUpdateLead } from "@/hooks/use-leads";
 import type { Lead } from "@/types/lead";
+
+const LANGUAGE_LABELS: Record<string, string> = {
+  Russian: "🇷🇺 RU",
+  English: "🇺🇸 EN",
+};
 
 interface ProposalSectionProps {
   lead: Lead;
@@ -99,15 +110,20 @@ export function ProposalSection({ lead }: ProposalSectionProps) {
             </Button>
           )}
           {!hasProposal || showInstructions ? (
-            <Select
+            <SelectRoot
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="h-7 w-[100px] text-xs py-0 pl-2 pr-6"
+              onValueChange={setLanguage}
               disabled={generateProposal.isPending}
+              labels={LANGUAGE_LABELS}
             >
-              <option value="Russian">🇷🇺 RU</option>
-              <option value="English">🇺🇸 EN</option>
-            </Select>
+              <SelectTrigger className="h-7 w-[100px] text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectPopup>
+                <SelectItem value="Russian">🇷🇺 RU</SelectItem>
+                <SelectItem value="English">🇺🇸 EN</SelectItem>
+              </SelectPopup>
+            </SelectRoot>
           ) : null}
 
           <Button

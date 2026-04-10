@@ -7,7 +7,13 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DemoModeBadge } from "@/components/ui/demo-mode-badge";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useAuth } from "@/lib/auth";
 import { useJobSearch, useSaveSearchResult } from "@/hooks/use-search";
@@ -19,6 +25,10 @@ const PROVIDERS: { value: SearchProvider; label: string }[] = [
   { value: "serpapi", label: "SerpAPI (Google Jobs)" },
   { value: "jsearch", label: "JSearch (RapidAPI)" },
 ];
+
+const PROVIDER_LABELS: Record<string, string> = Object.fromEntries(
+  PROVIDERS.map((p) => [p.value, p.label])
+);
 
 function formatSalary(min: number | null, max: number | null, currency: string): string | null {
   if (!min && !max) return null;
@@ -168,17 +178,22 @@ export function JobSearch() {
           placeholder="Location (optional)"
           className="sm:w-44 text-sm"
         />
-        <Select
+        <SelectRoot
           value={provider}
-          onChange={(e) => setProvider((e.target as HTMLSelectElement).value as SearchProvider)}
-          className="sm:w-44 text-sm"
+          onValueChange={(value) => setProvider(value as SearchProvider)}
+          labels={PROVIDER_LABELS}
         >
-          {PROVIDERS.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
-          ))}
-        </Select>
+          <SelectTrigger className="sm:w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectPopup>
+            {PROVIDERS.map((p) => (
+              <SelectItem key={p.value} value={p.value}>
+                {p.label}
+              </SelectItem>
+            ))}
+          </SelectPopup>
+        </SelectRoot>
         <Tooltip content="Max results">
           <Input
             type="number"

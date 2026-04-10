@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogBackdrop,
@@ -49,6 +55,11 @@ export function LeadDialog({ open, onOpenChange, mode, lead, onSuccess }: LeadDi
   const [duplicateConfirmed, setDuplicateConfirmed] = useState(false);
 
   const isLoading = createLead.isPending || updateLead.isPending || checkDuplicates.isPending;
+
+  const industryLabels: Record<string, string> = {
+    "": "None",
+    ...Object.fromEntries(industries.map((ind) => [ind.id.toString(), ind.name])),
+  };
 
   const saveLead = async () => {
     try {
@@ -180,18 +191,23 @@ export function LeadDialog({ open, onOpenChange, mode, lead, onSuccess }: LeadDi
                 >
                   Industry
                 </Label>
-                <Select
-                  id="lead-industry"
+                <SelectRoot
                   value={industryId}
-                  onChange={(e) => setIndustryId(e.target.value)}
+                  onValueChange={setIndustryId}
+                  labels={industryLabels}
                 >
-                  <option value="">None</option>
-                  {industries.map((ind) => (
-                    <option key={ind.id} value={ind.id}>
-                      {ind.name}
-                    </option>
-                  ))}
-                </Select>
+                  <SelectTrigger id="lead-industry">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectPopup>
+                    <SelectItem value="">None</SelectItem>
+                    {industries.map((ind) => (
+                      <SelectItem key={ind.id} value={ind.id.toString()}>
+                        {ind.name}
+                      </SelectItem>
+                    ))}
+                  </SelectPopup>
+                </SelectRoot>
               </div>
             </div>
 

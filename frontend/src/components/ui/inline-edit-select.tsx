@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Pencil } from "lucide-react";
+import { Select as SelectPrimitive } from "@base-ui/react/select";
 import {
   SelectRoot,
-  SelectTrigger,
   SelectPopup,
   SelectItem,
 } from "@/components/ui/select";
@@ -54,12 +54,12 @@ export function InlineEditSelect({
       onValueChange={handleValueChange}
       disabled={saving}
     >
-      <SelectTrigger
+      <SelectPrimitive.Trigger
         className="group/ie inline-flex items-center gap-1 rounded border-0 bg-transparent p-0 text-inherit cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/30"
       >
         {renderValue ? renderValue(currentOption) : defaultRender(currentOption)}
         <Pencil className="h-3 w-3 shrink-0 text-[var(--text-tertiary)] opacity-0 group-hover/ie:opacity-100 transition-opacity" />
-      </SelectTrigger>
+      </SelectPrimitive.Trigger>
       <SelectPopup>
         {options.map((opt) => (
           <SelectItem key={opt.value} value={opt.value}>
