@@ -11,12 +11,18 @@ import {
   type SortingState,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown, Briefcase } from "lucide-react";
-import type { Job } from "@/types/job";
+import type { ApplicationStatus, Job } from "@/types/job";
 import {
   APPLICATION_STATUS_LABELS,
   APPLICATION_STATUS_COLORS,
   APPLICATION_STATUS_BG_COLORS,
 } from "@/types/job";
+import { InlineEditSelect } from "@/components/ui/inline-edit-select";
+import { useChangeJobStatus } from "@/hooks/use-jobs";
+
+const STATUS_OPTIONS = (Object.keys(APPLICATION_STATUS_LABELS) as ApplicationStatus[]).map(
+  (s) => ({ value: s, label: APPLICATION_STATUS_LABELS[s] })
+);
 
 const columnHelper = createColumnHelper<Job>();
 
@@ -48,6 +54,30 @@ function StatusBadge({ status }: { status: string }) {
       }}
     >
       {APPLICATION_STATUS_LABELS[status as keyof typeof APPLICATION_STATUS_LABELS] ?? status}
+    </span>
+  );
+}
+
+function StatusCell({ jobId, status }: { jobId: number; status?: ApplicationStatus }) {
+  const changeStatus = useChangeJobStatus();
+
+  if (!status) {
+    return <span className="text-xs text-[var(--text-tertiary)]">—</span>;
+  }
+
+  return (
+    <span onClick={(e) => e.stopPropagation()}>
+      <InlineEditSelect
+        value={status}
+        options={STATUS_OPTIONS}
+        onSave={async (newValue) => {
+          await changeStatus.mutateAsync({
+            id: jobId,
+            data: { new_status: newValue as ApplicationStatus },
+          });
+        }}
+        renderValue={(opt) => <StatusBadge status={opt?.value ?? status} />}
+      />
     </span>
   );
 }
@@ -95,11 +125,9 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
       }),
       columnHelper.accessor("status", {
         header: "Status",
-        cell: (info) => {
-          const status = info.getValue();
-          if (!status) return <span className="text-xs text-[var(--text-tertiary)]">—</span>;
-          return <StatusBadge status={status} />;
-        },
+        cell: (info) => (
+          <StatusCell jobId={info.row.original.id} status={info.getValue()} />
+        ),
         size: 140,
       }),
       columnHelper.accessor("match_score", {
