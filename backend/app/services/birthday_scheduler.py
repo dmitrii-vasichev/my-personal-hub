@@ -10,11 +10,9 @@ from app.models.birthday import Birthday
 from app.models.reminder import Reminder, ReminderStatus
 from app.models.telegram import PulseSettings
 from app.models.user import User
-from app.services.birthdays import next_birthday_date
+from app.services.birthdays import BIRTHDAY_TITLE_PREFIX, next_birthday_date
 
 logger = logging.getLogger(__name__)
-
-BIRTHDAY_TITLE_PREFIX = "\U0001f382 "  # 🎂
 
 
 async def run_birthday_check() -> None:
