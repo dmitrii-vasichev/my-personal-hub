@@ -19,6 +19,7 @@ import {
   Briefcase,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
 } from "lucide-react";
 import type { ApplicationStatus, Job } from "@/types/job";
 import {
@@ -137,16 +138,33 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
     () => [
       columnHelper.accessor("title", {
         header: "Title",
-        cell: (info) => (
-          <div className="min-w-0">
-            <div className="text-sm font-medium text-[var(--text-primary)] truncate">
-              {info.getValue()}
+        cell: (info) => {
+          const url = info.row.original.url;
+          return (
+            <div className="min-w-0 flex items-center gap-1.5">
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium text-[var(--text-primary)] truncate">
+                  {info.getValue()}
+                </div>
+                <div className="text-xs text-[var(--text-secondary)] truncate">
+                  {info.row.original.company}
+                </div>
+              </div>
+              {url && (
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="shrink-0 p-1 rounded-md text-[var(--text-tertiary)] hover:text-[var(--accent-foreground)] hover:bg-[var(--surface-hover)] transition-colors"
+                  title="Open job posting"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
             </div>
-            <div className="text-xs text-[var(--text-secondary)] truncate">
-              {info.row.original.company}
-            </div>
-          </div>
-        ),
+          );
+        },
         size: 280,
       }),
       columnHelper.accessor("status", {
