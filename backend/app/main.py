@@ -33,7 +33,13 @@ from app.api.miniapp import router as miniapp_router
 from app.api.reminders import router as reminders_router
 from app.api.users import router as users_router
 from app.core.config import settings
-from app.core.scheduler import scheduler, schedule_garmin_sync, schedule_user_digest, schedule_user_polling
+from app.core.scheduler import (
+    scheduler,
+    schedule_garmin_sync,
+    schedule_user_birthday_check,
+    schedule_user_digest,
+    schedule_user_polling,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -89,8 +95,14 @@ async def lifespan(application: FastAPI):
                     interval_days=ps.digest_interval_days,
                     timezone=ps.timezone or "America/Denver",
                 )
+                schedule_user_birthday_check(
+                    ps.user_id, ps.timezone or "America/Denver"
+                )
             if all_settings:
-                logger.info("Restored polling + digest jobs for %d users", len(all_settings))
+                logger.info(
+                    "Restored polling + digest + birthday jobs for %d users",
+                    len(all_settings),
+                )
 
             # Set up Telegram webhooks for reminder callbacks
             if settings.BACKEND_URL:
@@ -222,16 +234,6 @@ async def lifespan(application: FastAPI):
             misfire_grace_time=300,
         )
 
-        # Schedule daily birthday reminder generation at 01:00
-        scheduler.add_job(
-            "app.services.birthday_scheduler:run_birthday_check",
-            "cron",
-            hour=1,
-            minute=0,
-            id="birthday_check",
-            replace_existing=True,
-            misfire_grace_time=3600,
-        )
     except Exception as e:
         logger.warning("Could not restore polling jobs: %s", e)
 

@@ -4,7 +4,11 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.scheduler import schedule_user_digest, schedule_user_polling
+from app.core.scheduler import (
+    schedule_user_birthday_check,
+    schedule_user_digest,
+    schedule_user_polling,
+)
 from app.models.telegram import PulseSettings
 from app.schemas.pulse_settings import PulseSettingsUpdate
 
@@ -35,6 +39,7 @@ async def update_settings(
     reschedule_polling = "polling_interval_minutes" in update_data
     digest_fields = {"digest_schedule", "digest_time", "digest_day", "digest_interval_days", "timezone"}
     reschedule_digest = bool(digest_fields & update_data.keys())
+    reschedule_birthday = "timezone" in update_data
 
     for key, value in update_data.items():
         setattr(settings, key, value)
@@ -56,6 +61,11 @@ async def update_settings(
             day_of_week=settings.digest_day,
             interval_days=settings.digest_interval_days,
             timezone=settings.timezone or "America/Denver",
+        )
+
+    if reschedule_birthday:
+        schedule_user_birthday_check(
+            user_id, settings.timezone or "America/Denver"
         )
 
     return settings

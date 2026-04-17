@@ -168,6 +168,54 @@ def remove_user_digest(user_id: int) -> None:
         logger.info("Removed digest job for user %s", user_id)
 
 
+def schedule_user_birthday_check(
+    user_id: int, timezone: str = "America/Denver"
+) -> None:
+    """Schedule daily birthday reminder generation at 00:05 in user's timezone.
+
+    Running in user-local time ensures the reminder row is created before
+    reminder_time passes in the user's day, so polling doesn't fire it late.
+    """
+    job_id = f"birthday_check_user_{user_id}"
+
+    existing = scheduler.get_job(job_id)
+    if existing:
+        scheduler.remove_job(job_id)
+
+    try:
+        tz = ZoneInfo(timezone)
+    except (KeyError, ValueError):
+        logger.warning(
+            "Invalid timezone '%s' for user %s birthday check, falling back to America/Denver",
+            timezone, user_id,
+        )
+        tz = ZoneInfo("America/Denver")
+
+    scheduler.add_job(
+        "app.services.birthday_scheduler:run_user_birthday_check",
+        "cron",
+        hour=0,
+        minute=5,
+        timezone=tz,
+        id=job_id,
+        args=[user_id],
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+    logger.info(
+        "Scheduled birthday check for user %s at 00:05 %s", user_id, timezone
+    )
+
+
+def remove_user_birthday_check(user_id: int) -> None:
+    """Remove birthday check job for a user."""
+    job_id = f"birthday_check_user_{user_id}"
+    existing = scheduler.get_job(job_id)
+    if existing:
+        scheduler.remove_job(job_id)
+        logger.info("Removed birthday check for user %s", user_id)
+
+
 def schedule_garmin_sync(user_id: int, interval_minutes: int) -> None:
     """Schedule (or reschedule) periodic Garmin sync for a user."""
     job_id = f"garmin_sync_{user_id}"
