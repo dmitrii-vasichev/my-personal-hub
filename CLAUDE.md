@@ -10,5 +10,5 @@
 ## Current Status
 
 - **Mode:** idle
-- **Last shipped:** Add client-side pagination to jobs table (2026-04-10)
+- **Last shipped:** Fix birthday reminder timezone — per-user cron at 00:05 local (2026-04-16)
 - **Next:** Nothing planned
