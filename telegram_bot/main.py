@@ -17,26 +17,14 @@ from log_setup import setup_logging
 
 log = logging.getLogger(__name__)
 
-SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-
 # Deterministic UUID for the default CC session — `claude -p --session-id`
 # requires a valid UUID, so we derive one from the logical label "tg-default"
 # to keep a single continuous conversation across bot restarts.
 TG_DEFAULT_SESSION_UUID = str(uuid.uuid5(uuid.NAMESPACE_DNS, "tg-default"))
 
-
-async def _spin(message, stop: asyncio.Event) -> None:
-    idx = 0
-    while not stop.is_set():
-        try:
-            await message.edit_text(f"{SPINNER_FRAMES[idx % len(SPINNER_FRAMES)]} thinking…")
-        except Exception:  # noqa: BLE001 — TG edit may rate-limit
-            pass
-        idx += 1
-        try:
-            await asyncio.wait_for(stop.wait(), timeout=2.0)
-        except asyncio.TimeoutError:
-            continue
+# Minimum pause between consecutive sendMessage calls in a chunked reply.
+# Keeps bursts under Telegram's anti-abuse thresholds for fresh bots.
+CHUNK_SEND_INTERVAL_S = 0.7
 
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -48,21 +36,19 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     prompt = update.message.text or ""
     log.info("dispatching to cc len=%d", len(prompt))
 
+    # Single static status message — no spinner animation. Telegram's
+    # anti-abuse classifier has been observed (2026-04-18) to flag fresh
+    # bots that emit sub-15-second `editMessageText` bursts; we now edit
+    # this message exactly once, on the final state transition.
     status = await update.message.reply_text("🤔 thinking…")
-    stop = asyncio.Event()
-    spinner_task = asyncio.create_task(_spin(status, stop))
 
-    try:
-        result = await run_cc(
-            prompt,
-            binary_path=settings.cc_binary_path,
-            workdir=settings.cc_workdir,
-            session_id=TG_DEFAULT_SESSION_UUID,
-            timeout=settings.cc_timeout,
-        )
-    finally:
-        stop.set()
-        await spinner_task
+    result = await run_cc(
+        prompt,
+        binary_path=settings.cc_binary_path,
+        workdir=settings.cc_workdir,
+        session_id=TG_DEFAULT_SESSION_UUID,
+        timeout=settings.cc_timeout,
+    )
 
     if result.timed_out:
         await status.edit_text("⏱ timed out")
@@ -83,7 +69,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     await status.edit_text("✅ done")
     if result.stdout.strip():
-        for chunk in chunk_reply(result.stdout):
+        chunks = chunk_reply(result.stdout)
+        for i, chunk in enumerate(chunks):
+            if i > 0:
+                await asyncio.sleep(CHUNK_SEND_INTERVAL_S)
             await update.message.reply_text(chunk)
     else:
         await update.message.reply_text("(empty reply)")
@@ -96,7 +85,10 @@ def main() -> None:
     app.bot_data["settings"] = settings
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
     log.info("starting bot polling session_default=%s", TG_DEFAULT_SESSION_UUID)
-    app.run_polling(drop_pending_updates=True)
+    # Do not pass drop_pending_updates — PTB would then call deleteWebhook
+    # on every start. For a polling-only bot with no webhook, that call
+    # is noise that anti-abuse may interpret as state churn on a fresh token.
+    app.run_polling()
 
 
 if __name__ == "__main__":

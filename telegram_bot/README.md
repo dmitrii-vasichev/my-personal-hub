@@ -54,15 +54,35 @@ in `~/Library/Logs/com.my-personal-hub.telegram-bot.log`.
 
 Send any text from the whitelisted Telegram account. Expected flow:
 
-1. A status message `🤔 thinking…` appears and cycles spinner frames every 2 s.
-2. On success: status becomes `✅ done`, then CC's reply arrives (chunked to
-   ≤4000-char messages on paragraph / code-fence boundaries).
+1. A static status message `🤔 thinking…` appears and stays unchanged while
+   CC is running (no spinner animation — see "Anti-abuse hygiene" below).
+2. On success: status is edited once to `✅ done`, then CC's reply arrives
+   (chunked to ≤4000-char messages on paragraph / code-fence boundaries,
+   with a short pause between chunks).
 3. On non-zero exit: status becomes `❌ failed`, plus a short `⚠️ CC error`
    message with the last 3 stderr lines.
 4. On timeout: status becomes `⏱ timed out`, plus a message noting that
    `CC_TIMEOUT` was exceeded.
 
 Stop with `Ctrl-C`.
+
+## Anti-abuse hygiene
+
+Fresh Telegram bot tokens are watched closely by Telegram's anti-abuse
+classifier. On 2026-04-18 our first bot was frozen within minutes of going
+live with a 2-second-cadence spinner + immediate polling + sub-second
+replies — a pattern that looks to the classifier like an automated spam
+campaign. This package avoids those signals:
+
+- No timer-driven spinner. The `🤔 thinking…` status is edited exactly once
+  per invocation, at the end.
+- Chunked replies are paced (~0.7s between `sendMessage` calls).
+- `drop_pending_updates=True` is not passed on startup (no `deleteWebhook`
+  churn on every restart).
+
+When creating a new bot via `@BotFather`, let it sit a few minutes before
+sending any traffic. Prefer neutral usernames (avoid `_cc_`, `_claude_`,
+`_bridge_` in combination with `_bot`).
 
 ## Session model
 

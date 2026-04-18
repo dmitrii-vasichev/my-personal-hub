@@ -82,7 +82,7 @@ The goal is a Telegram bot that acts as a **remote CC terminal**: text or voice 
 
 #### CC invocation and output
 - [ ] FR-16: CC launched via `asyncio.create_subprocess_exec`, stdout and stderr captured. Subprocess timeout 300 seconds (configurable via `CC_TIMEOUT`).
-- [ ] FR-17: On message receipt the bot immediately posts a status message "🤔 thinking…", captures its `message_id`. While CC is running, the bot edits the status with human-readable progress parsed from `--output-format stream-json` tool-use events. Minimum interval between edits is 2 seconds to respect Telegram rate limits.
+- [ ] FR-17: On message receipt the bot immediately posts a status message "🤔 thinking…", captures its `message_id`. Status edits happen only on real state transitions — either the final CC result (Phase 1) or, later, discrete tool-use events parsed from `--output-format stream-json` (Phase 3). No timer-driven "spinner" animation in any phase. Minimum interval between consecutive edits of the same message is **≥ 10 seconds** to stay well clear of Telegram's anti-abuse thresholds (see NFR "Anti-abuse hygiene").
 - [ ] FR-18: When CC finishes, the bot sends the final reply as a new message. If the reply exceeds 4096 characters it is split on paragraph or code-fence boundaries into multiple messages.
 - [ ] FR-19: On CC crash or non-zero exit code the bot replies "⚠️ CC error: `<last stderr line>`" and updates the status to "❌ failed".
 
@@ -116,6 +116,12 @@ The goal is a Telegram bot that acts as a **remote CC terminal**: text or voice 
   - PIN is stored as a bcrypt hash; the raw PIN is never logged.
 - **Privacy.** Voice blobs are transient: downloaded, transcribed, deleted. No persistent voice storage.
 - **Observability.** Bot logs to `~/Library/Logs/com.my-personal-hub.telegram-bot.log` via launchd stdout/stderr redirection. Log rotation uses `RotatingFileHandler`, 5 MB × 5 files.
+- **Anti-abuse hygiene.** The bot MUST NOT emit Telegram API traffic patterns that resemble spam/automation bursts. Concretely:
+  - **No animated status messages.** The status message is edited at most once per CC invocation — on the final state transition (`✅ done` / `❌ failed` / `⏱ timed out` / similar). If a richer progress scheme is added later (e.g., Phase 3 `stream-json` tool-use parsing), edits are gated on real CC state transitions and the minimum interval between consecutive edits of the same message is **≥ 10 seconds**.
+  - **Chunked replies are paced.** When a long CC reply is split into multiple `sendMessage` calls, consecutive sends are separated by at least 0.5 seconds.
+  - **No needless webhook toggling on start.** The bot does not pass `drop_pending_updates=True` to long-polling start; it lets PTB run with default behaviour to avoid a `deleteWebhook` call on every restart.
+  - **No burst on first run.** After a fresh `@BotFather` token is issued, the bot owner is expected to wait at least a few minutes and send one probe message before any heavier traffic. Creating a new token and immediately firing `getMe` → `deleteWebhook` → `getUpdates` → many `editMessageText` calls is a known anti-abuse trigger (2026-04-18 incident: our first bot `dv_cc_bridge_bot` was frozen by Telegram within minutes of a 2-second-cadence spinner; the owner's sessions were cascade-terminated as a precaution).
+  - **Rationale.** Telegram's automated classifier acts on traffic-pattern metadata, not message content. A fresh token combined with high-frequency edits and instantaneous replies is the closest heuristic match to a spam campaign.
 
 ## Technical Architecture
 
@@ -197,8 +203,8 @@ If `stream-json` output is malformed or empty for a given invocation, the fallba
 ### Phase 1 — Foundation (text-only, no safety)
 Goal: prove the wire-up works end-to-end.
 - `telegram_bot/` package scaffold (FR-1, FR-4).
-- Text handler that calls `claude -p` with a fixed `session-id=tg-default` (FR-2, FR-15, FR-16, FR-18, FR-19).
-- Status-message spinner without progress parsing.
+- Text handler that calls `claude -p` against `uuid5(NAMESPACE_DNS, "tg-default")` (FR-2, FR-15, FR-16, FR-18, FR-19).
+- Single static "🤔 thinking…" status message; one terminal edit (`✅ done` / `❌ failed` / `⏱ timed out`). No spinner animation.
 - Hardcoded whitelist by reading `telegram_user_id` from env var (no Hub call yet).
 - Manual start via `python main.py`, no launchd.
 
