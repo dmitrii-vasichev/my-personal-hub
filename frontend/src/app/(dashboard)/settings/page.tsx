@@ -17,6 +17,7 @@ import { TelegramTab } from "@/components/settings/telegram-tab";
 import { PulseSettingsTab } from "@/components/settings/pulse-settings-tab";
 import { RemindersSettingsTab } from "@/components/settings/reminders-settings-tab";
 import { GarminSettingsTab } from "@/components/settings/garmin-tab";
+import { ApiTokensTab } from "@/components/settings/api-tokens-tab";
 import type { UpdateSettingsInput } from "@/types/settings";
 
 // Type guard for admin settings response
@@ -38,6 +39,7 @@ function hasApiKeys(s: unknown): s is {
 
 const ADMIN_TABS = [
   { id: "general", label: "General" },
+  { id: "api-tokens", label: "API Tokens" },
   { id: "tags", label: "Tags" },
   { id: "ai-keys", label: "AI & API Keys" },
   { id: "ai-instructions", label: "AI Instructions" },
@@ -266,7 +268,10 @@ export default function SettingsPage() {
   }
 
   const adminSettings = hasApiKeys(settings) ? settings : null;
-  const visibleTabs = isAdmin && !isDemo ? ADMIN_TABS : ADMIN_TABS.filter((t) => t.id === "general" || t.id === "tags");
+  const visibleTabs =
+    isAdmin && !isDemo
+      ? ADMIN_TABS
+      : ADMIN_TABS.filter((t) => t.id === "general" || t.id === "tags" || t.id === "api-tokens");
 
   return (
     <div className="space-y-6 p-6">
@@ -319,6 +324,8 @@ export default function SettingsPage() {
             setStaleDays={setStaleDays}
           />
         )}
+
+        {activeTab === "api-tokens" && <ApiTokensTab />}
 
         {activeTab === "tags" && <TagsManagementTab />}
 

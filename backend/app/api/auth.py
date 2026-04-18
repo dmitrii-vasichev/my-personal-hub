@@ -6,6 +6,9 @@ from app.core.database import get_db
 from app.core.deps import get_current_user, require_admin, restrict_demo
 from app.models.user import User
 from app.schemas.auth import (
+    ApiTokenCreate,
+    ApiTokenCreateResponse,
+    ApiTokenListItem,
     ChangePasswordRequest,
     LoginRequest,
     LoginResponse,
@@ -15,6 +18,7 @@ from app.schemas.auth import (
     UpdateProfileRequest,
     UserResponse,
 )
+from app.services import api_token as api_token_service
 from app.services.auth import (
     authenticate_user,
     change_user_password,
@@ -132,3 +136,61 @@ async def update_profile(
         # the pre-change timezone until the backend restarts.
         await apply_user_timezone_change(db, user.id, user.timezone)
     return user
+
+
+# --- API token management (Phase 2) ----------------------------------------
+
+
+@router.post(
+    "/tokens",
+    response_model=ApiTokenCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_api_token(
+    payload: ApiTokenCreate,
+    user: User = Depends(restrict_demo),
+    db: AsyncSession = Depends(get_db),
+):
+    """Mint a new API token for the authenticated user.
+
+    Raw token is returned exactly once; only its hash is stored.
+    """
+    try:
+        token, raw = await api_token_service.create_token(db, user, payload.name)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Token with this name already exists",
+        )
+    return ApiTokenCreateResponse(
+        id=token.id,
+        name=token.name,
+        token_prefix=token.token_prefix,
+        raw_token=raw,
+        created_at=token.created_at,
+    )
+
+
+@router.get("/tokens", response_model=list[ApiTokenListItem])
+async def list_api_tokens(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """List active (non-revoked) tokens for the current user."""
+    tokens = await api_token_service.list_tokens(db, user)
+    return tokens
+
+
+@router.delete("/tokens/{token_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def revoke_api_token(
+    token_id: int,
+    user: User = Depends(restrict_demo),
+    db: AsyncSession = Depends(get_db),
+):
+    """Revoke a token by id. 404 if not found or already revoked."""
+    ok = await api_token_service.revoke_token(db, user, token_id)
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Token not found",
+        )

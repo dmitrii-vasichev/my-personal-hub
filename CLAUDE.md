@@ -9,6 +9,10 @@
 
 ## Current Status
 
-- **Mode:** idle
-- **Last shipped:** Planner ↔ Personal Hub Phase 1 — backend foundation + frontend timezone move (2026-04-17)
-- **Next:** Phase 2 — port `/planner` skill from markdown-to-Drive to HTTP API. Also covers Drive render side-effect (FR-17, deferred from Phase 1).
+- **Mode:** plan → ready for build
+- **Feature:** Planner ↔ Personal Hub Phase 2 — skill port + API tokens
+- **Branch:** feature/planner-phase2-backend
+- **PRD:** docs/prd-planner-hub-phase2.md
+- **Plan:** docs/plans/2026-04-17-planner-hub-phase2.md
+- **Phase:** Stage A (backend) — 8 tasks
+- **Next:** /dev build — Task A1 (ApiToken model + schemas)

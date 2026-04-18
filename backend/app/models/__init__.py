@@ -31,6 +31,7 @@ from app.models.outreach import Lead, LeadStatus, LeadStatusHistory, LeadActivit
 from app.models.reminder import Reminder, ReminderStatus
 from app.models.birthday import Birthday
 from app.models.daily_plan import DailyPlan, PlanItem, PlanItemStatus
+from app.models.api_token import ApiToken
 
 __all__ = [
     "User",
@@ -81,4 +82,5 @@ __all__ = [
     "DailyPlan",
     "PlanItem",
     "PlanItemStatus",
+    "ApiToken",
 ]

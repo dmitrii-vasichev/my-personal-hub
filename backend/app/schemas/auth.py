@@ -120,3 +120,29 @@ class UpdateProfileRequest(BaseModel):
         if v is None:
             return v
         return _validate_tz(v)
+
+
+# --- API token schemas (Phase 2) ---
+
+class ApiTokenCreate(BaseModel):
+    name: str
+
+
+class ApiTokenCreateResponse(BaseModel):
+    id: int
+    name: str
+    token_prefix: str
+    raw_token: str  # shown exactly once
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ApiTokenListItem(BaseModel):
+    id: int
+    name: str
+    token_prefix: str
+    created_at: datetime
+    last_used_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}

@@ -8,37 +8,40 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import decode_access_token
 from app.models.user import User, UserRole
+from app.services.api_token import resolve_token
 from app.services.auth import get_user_by_id
 
 security = HTTPBearer()
+
+
+async def _resolve_user(
+    token: str, db: AsyncSession
+) -> User | None:
+    # Try JWT first (fast, no DB hit on the hot path).
+    try:
+        payload = decode_access_token(token)
+        user_id = int(payload["sub"])
+    except (InvalidTokenError, KeyError, ValueError):
+        # Fall through to API token.
+        return await resolve_token(db, token)
+    return await get_user_by_id(db, user_id)
 
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    try:
-        payload = decode_access_token(credentials.credentials)
-        user_id = int(payload["sub"])
-    except (InvalidTokenError, KeyError, ValueError):
+    user = await _resolve_user(credentials.credentials, db)
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
         )
-
-    user = await get_user_by_id(db, user_id)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-        )
-
     if user.is_blocked:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is blocked",
         )
-
     return user
 
 

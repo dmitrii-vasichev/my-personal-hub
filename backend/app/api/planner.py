@@ -64,6 +64,47 @@ async def create_or_replace_plan(
     return await planner_service.upsert_plan(db, current_user, payload)
 
 
+@router.get("/plans/today", response_model=DailyPlanResponse)
+async def read_plan_today(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Shortcut: return the current user's plan for today (user's tz) or 404.
+
+    Declared before the ``/plans/{date}`` route so FastAPI's in-order route
+    matching resolves ``today`` as a literal path segment rather than trying
+    to parse it as a date (which would 422).
+    """
+    today = _today_for_user(current_user)
+    plan = await planner_service.get_plan(db, current_user, today)
+    if plan is None:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return plan
+
+
+@router.patch(
+    "/plans/today/items/{item_id}", response_model=PlanItemResponse
+)
+async def patch_item_today(
+    item_id: int,
+    payload: PlanItemUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(restrict_demo),
+):
+    """Shortcut: patch a plan item on today's plan (user's tz).
+
+    Must be declared before ``/plans/{date}/items/{item_id}`` for the same
+    route-matching reason as ``read_plan_today``. Demo users receive 403.
+    """
+    today = _today_for_user(current_user)
+    item = await planner_service.update_item(
+        db, current_user, today, item_id, payload
+    )
+    if item is None:
+        raise HTTPException(status_code=404, detail="Plan item not found")
+    return item
+
+
 @router.get("/plans/{date}", response_model=DailyPlanResponse)
 async def read_plan(
     date: date_type,
