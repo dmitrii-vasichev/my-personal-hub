@@ -61,16 +61,19 @@ The goal is a Telegram bot that acts as a **remote CC terminal**: text or voice 
 
 #### Auth and whitelist
 - [ ] FR-5: On every incoming update, the bot calls `POST /api/telegram/auth/check-sender` with `telegram_user_id` from the update. If the sender is not whitelisted, the update is silently ignored (no reply in TG, no identifiable entry in logs).
-- [ ] FR-6: New Hub endpoint `POST /api/telegram/auth/check-sender` — Bearer-auth with the bot's Phase 2 API token. Returns `{hub_user_id}` if `users.telegram_user_id == requested_id`, else 404.
-- [ ] FR-7: New Hub endpoint `POST /api/telegram/auth/verify-pin` — Bearer-auth, body `{hub_user_id, pin}`. Bcrypt-compare against `users.telegram_pin_hash`. Returns `{ok: true}` or 401.
-- [ ] FR-8: New Hub endpoint `PUT /api/users/me/telegram-pin` — JWT-auth, body `{pin}` (4–8 digits). Hashes with bcrypt, writes `users.telegram_pin_hash`.
-- [ ] FR-9: New Hub endpoint `PUT /api/users/me/telegram-user-id` — JWT-auth, body `{telegram_user_id: int}`. Writes `users.telegram_user_id`.
-- [ ] FR-10: Settings UI addition — new subsection "Telegram Bridge" in the existing Settings page with:
+- [ ] FR-6: New Hub endpoint `POST /api/telegram/auth/check-sender` — authenticated via the existing `api_tokens` mechanism (the bot stores a `phub_…` token in `telegram_bot/.env`; endpoint resolves the owner via the hybrid `get_current_user` dep that already accepts both JWT and API tokens). Body `{telegram_user_id}`. Returns `{hub_user_id}` if `users.telegram_user_id == requested_id`, else 404.
+- [ ] FR-7: New Hub endpoint `POST /api/telegram/auth/verify-pin` — same hybrid auth as FR-6, body `{pin}` (owner id comes from auth, not body). Bcrypt-compares against `users.telegram_pin_hash`. Returns `{ok: true}` or 401. **Rate-limited**: 5 failed attempts within 10 minutes per `user_id` triggers a 15-minute lockout returning 429. Counter state is in-memory per backend process (single-tenant, resets on restart).
+- [ ] FR-8: New Hub endpoint `PUT /api/users/me/telegram-pin` — authenticated via `get_current_user` (JWT session token from the Settings UI), body `{pin}` (4–8 digits). Hashes with bcrypt, writes `users.telegram_pin_hash`.
+- [ ] FR-9: New Hub endpoint `PUT /api/users/me/telegram-user-id` — authenticated via `get_current_user`, body `{telegram_user_id: int}`. Writes `users.telegram_user_id`.
+- [ ] FR-10: Settings UI addition — new section "Telegram Bridge" inside the existing Settings → **Telegram** tab, rendered below the existing Pulse section. As part of the addition the existing section's heading is renamed from "Telegram Connection" to "Telegram Pulse" to disambiguate. The Bridge section contains:
   - Input to set `telegram_user_id` (numeric).
   - Input plus button to set or rotate PIN.
-  - Status indicator: whether both fields are configured.
-- [ ] FR-11: `/unlock <pin>` command — bot calls `verify-pin`; on success, stores `unlock_until = now() + 10min` in bot's in-memory state for that chat, replies "🔓 unlocked for 10 min". On failure, replies "⛔ wrong PIN".
-- [ ] FR-12: Danger-zone enforcement — CC subprocess is launched with a dedicated `settings.json` profile. When `unlock_until` is in the past or unset, the profile is `locked.settings.json`. While unlocked, it is `unlocked.settings.json`. Both profiles deny `~/Documents/Notes/Personal/**` unconditionally.
+  - Status indicator: whether both fields are configured (green/yellow badge).
+- [ ] FR-11: `/unlock <pin>` command — bot calls `verify-pin`; on success, stores `unlock_until = now() + 10min` in bot's in-memory state for that chat, replies "🔓 unlocked for 10 min". On 401 replies "⛔ wrong PIN". On 429 replies "⛔ too many attempts. Retry in ~N min." with the `N` extracted from the backend's error detail.
+- [ ] FR-12: Danger-zone enforcement — CC subprocess is launched with a dedicated `settings.json` profile via `claude -p --settings <path>`. When `unlock_until` is in the past or unset, the profile is `locked.settings.json`. While unlocked, it is `unlocked.settings.json`. Specific rules:
+  - Both profiles deny `Bash(sudo*)`, `Bash(curl*)`, `Bash(wget*)`, `Bash(rm -rf*)`, and — enumerated per tool — `Read`, `Edit`, `Write`, `Glob`, `Grep` under `/Users/dmitry.vasichev/Documents/Notes/Personal/**`.
+  - `locked` additionally denies `Bash(git push*)` and `Bash(rm*)` (the non-`-rf` form).
+  - `unlocked` allows `Bash(git push*)` and `Bash(rm*)` (still without `-rf`). `Bash(rm -rf*)` remains denied in both profiles so that a compromised 10-minute window cannot wipe directories.
 
 #### Session management
 
@@ -177,14 +180,23 @@ In-memory only (lost on bot restart → re-unlock required):
 - `queues: dict[chat_id, asyncio.Queue]`
 - `active_subprocess: dict[chat_id, asyncio.subprocess.Process | None]`
 
+### Pre-existing infrastructure (reused by Phase 2)
+
+Phase 2 reuses four pieces already shipped in prior phases — no fresh build-out required:
+
+- **`users.telegram_user_id` + `users.telegram_pin_hash` columns** — pre-provisioned by Alembic revision `6e6fee7795cb` (Phase 1, Task 1) with the unique constraint and index already in place. Phase 2 does **not** add a migration.
+- **`api_tokens` table + `app/services/api_token.py` + `POST /api/auth/tokens` endpoint + Settings → API Tokens UI** — the bot authenticates by minting a `phub_…` token through the UI and storing it in `telegram_bot/.env` as `HUB_API_TOKEN`. No separate bot shared-secret.
+- **`app/core/deps.py:get_current_user`** — already resolves both JWT session tokens and `phub_…` API tokens through one dependency. All four Phase 2 endpoints hang off this.
+- **`app/core/security.py:hash_password` / `verify_password`** — bcrypt helpers used for the PIN.
+
 ### Hub API additions
 
 | Endpoint | Auth | Body | Returns |
 |----------|------|------|---------|
-| `POST /api/telegram/auth/check-sender` | Bearer (bot token) | `{telegram_user_id}` | `{hub_user_id}` or 404 |
-| `POST /api/telegram/auth/verify-pin` | Bearer (bot token) | `{hub_user_id, pin}` | `{ok: true}` or 401 |
-| `PUT /api/users/me/telegram-pin` | JWT | `{pin}` (4–8 digits) | 204 |
-| `PUT /api/users/me/telegram-user-id` | JWT | `{telegram_user_id}` | 204 |
+| `POST /api/telegram/auth/check-sender` | `get_current_user` (bot's `phub_…` API token) | `{telegram_user_id}` | `{hub_user_id}` or 404 |
+| `POST /api/telegram/auth/verify-pin` | `get_current_user` (bot's `phub_…` API token) | `{pin}` | `{ok: true}` / 401 / 429 (locked out) |
+| `PUT /api/users/me/telegram-pin` | `get_current_user` (JWT session) | `{pin}` (4–8 digits) | 204 |
+| `PUT /api/users/me/telegram-user-id` | `get_current_user` (JWT session) | `{telegram_user_id}` | 204 |
 
 ### Progress-event parsing
 
