@@ -26,6 +26,8 @@ def make_user(user_id: int = 1, role: UserRole = UserRole.member) -> User:
     u.must_change_password = False
     u.is_blocked = False
     u.theme = "dark"
+    # User.timezone is NOT NULL (default UTC) as of Phase 1, Task 1.
+    u.timezone = "UTC"
     u.last_login_at = None
     u.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
     return u
@@ -193,6 +195,27 @@ async def test_import_profile_parses_text_via_llm():
     assert result.summary == "Senior Python developer"
     assert result.raw_import == "My resume text here..."
     mock_llm.generate.assert_awaited_once()
+
+
+# ---------------------------------------------------------------------------
+# User.timezone field (Phase 1, Task 1)
+# ---------------------------------------------------------------------------
+
+
+def test_user_fixture_has_timezone():
+    """Sanity check: make_user provides the new NOT NULL timezone column."""
+    user = make_user()
+    assert user.timezone == "UTC"
+
+
+def test_profile_response_schema_exposes_timezone():
+    """ProfileResponse (GET /api/auth/profile) surfaces User.timezone."""
+    from app.schemas.auth import ProfileResponse
+
+    user = make_user()
+    user.timezone = "America/Denver"
+    resp = ProfileResponse.model_validate(user)
+    assert resp.timezone == "America/Denver"
 
 
 @pytest.mark.asyncio

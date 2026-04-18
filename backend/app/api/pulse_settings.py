@@ -14,15 +14,19 @@ from app.services.telegram_notifications import verify_bot_connection
 router = APIRouter(prefix="/api/pulse/settings", tags=["pulse-settings"])
 
 
-def _to_response(settings) -> dict:
-    """Convert PulseSettings model to response dict with bot_token_set computed."""
+def _to_response(settings, user: User) -> dict:
+    """Convert PulseSettings model to response dict with bot_token_set computed.
+
+    The ``timezone`` field is sourced from the User record (single source of
+    truth since Phase 1); PulseSettings no longer carries a timezone column.
+    """
     return {
         "id": settings.id,
         "user_id": settings.user_id,
         "polling_interval_minutes": settings.polling_interval_minutes,
         "digest_schedule": settings.digest_schedule,
         "digest_time": settings.digest_time,
-        "timezone": settings.timezone,
+        "timezone": user.timezone,
         "digest_day": settings.digest_day,
         "digest_interval_days": settings.digest_interval_days,
         "message_ttl_days": settings.message_ttl_days,
@@ -56,7 +60,7 @@ async def get_settings(
     current_user: User = Depends(get_current_user),
 ):
     settings = await settings_service.get_settings(db, current_user.id)
-    return _to_response(settings)
+    return _to_response(settings, current_user)
 
 
 @router.put("/", response_model=PulseSettingsResponse)
@@ -69,6 +73,12 @@ async def update_settings(
     raw_bot_token = data.bot_token
     if data.bot_token is not None:
         data.bot_token = encrypt_value(data.bot_token)
+    # Capture whether the client asked to change timezone so we can sync
+    # ``current_user`` after the service call (the service writes through the
+    # same AsyncSession, but in tests with mocked sessions ``current_user``
+    # may be a detached instance).
+    new_timezone = data.timezone
+
     settings = await settings_service.update_settings(db, current_user.id, data)
     await db.commit()
 
@@ -76,7 +86,13 @@ async def update_settings(
     if raw_bot_token and app_settings.BACKEND_URL:
         await setup_reminder_webhook(raw_bot_token, app_settings.BACKEND_URL)
 
-    return _to_response(settings)
+    # Mirror the new timezone onto the in-memory user so the response picks
+    # up the updated value. In a real session the identity map already
+    # handles this, but explicit assignment is cheap and test-friendly.
+    if new_timezone is not None:
+        current_user.timezone = new_timezone
+
+    return _to_response(settings, current_user)
 
 
 @router.post("/test-bot")

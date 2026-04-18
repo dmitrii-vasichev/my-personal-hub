@@ -22,6 +22,7 @@ from app.services.auth import (
     generate_token,
     update_last_login,
 )
+from app.services.timezone import apply_user_timezone_change
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -118,6 +119,16 @@ async def update_profile(
         user.display_name = data.display_name
     if data.theme is not None:
         user.theme = data.theme
+    tz_changed = False
+    if data.timezone is not None and data.timezone != user.timezone:
+        # Value already validated as an IANA name in UpdateProfileRequest.
+        user.timezone = data.timezone
+        tz_changed = True
     await db.commit()
     await db.refresh(user)
+    if tz_changed:
+        # Re-register per-user cron jobs (digest, birthday) so they fire
+        # at the new local time immediately — otherwise they keep using
+        # the pre-change timezone until the backend restarts.
+        await apply_user_timezone_change(db, user.id, user.timezone)
     return user

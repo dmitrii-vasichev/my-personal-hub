@@ -16,6 +16,7 @@ from app.schemas.auth import (
     UserResponse,
 )
 from app.services.auth import create_user
+from app.services.timezone import apply_user_timezone_change
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -55,7 +56,13 @@ async def create_user_endpoint(
             status_code=status.HTTP_409_CONFLICT,
             detail="User with this email already exists",
         )
-    user, temp_password = await create_user(db, data.email, data.display_name, data.role)
+    user, temp_password = await create_user(
+        db,
+        data.email,
+        data.display_name,
+        data.role,
+        timezone_name=data.timezone,
+    )
     return RegisterResponse(
         id=user.id,
         email=user.email,
@@ -87,9 +94,19 @@ async def update_user(
             )
     if data.is_blocked is not None:
         user.is_blocked = data.is_blocked
+    tz_changed = False
+    if data.timezone is not None and data.timezone != user.timezone:
+        # Already validated as IANA in UpdateUserRequest.
+        user.timezone = data.timezone
+        tz_changed = True
 
     await db.commit()
     await db.refresh(user)
+    if tz_changed:
+        # Re-register per-user cron jobs (digest, birthday) so they fire
+        # at the new local time immediately — otherwise they keep using
+        # the pre-change timezone until the backend restarts.
+        await apply_user_timezone_change(db, user.id, user.timezone)
     return user
 
 

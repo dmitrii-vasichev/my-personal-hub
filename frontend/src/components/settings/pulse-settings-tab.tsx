@@ -26,18 +26,6 @@ const DIGEST_SCHEDULE_LABELS: Record<string, string> = {
   weekly: "Weekly",
 };
 
-const TIMEZONE_LABELS: Record<string, string> = {
-  "America/Denver": "America/Denver (MT)",
-  "America/New_York": "America/New_York (ET)",
-  "America/Chicago": "America/Chicago (CT)",
-  "America/Los_Angeles": "America/Los_Angeles (PT)",
-  "Europe/Moscow": "Europe/Moscow (MSK)",
-  "Europe/London": "Europe/London (GMT)",
-  "Europe/Berlin": "Europe/Berlin (CET)",
-  "Asia/Tokyo": "Asia/Tokyo (JST)",
-  UTC: "UTC",
-};
-
 const DIGEST_DAY_LABELS: Record<string, string> = {
   "0": "Monday",
   "1": "Tuesday",
@@ -62,7 +50,6 @@ export function PulseSettingsTab() {
   const [digestTime, setDigestTime] = useState("09:00");
   const [digestDay, setDigestDay] = useState("1");
   const [digestIntervalDays, setDigestIntervalDays] = useState("2");
-  const [timezone, setTimezone] = useState("America/Denver");
   const [notifyDigest, setNotifyDigest] = useState(true);
   const [notifyJobs, setNotifyJobs] = useState(true);
   const [botToken, setBotToken] = useState("");
@@ -78,7 +65,6 @@ export function PulseSettingsTab() {
     setTtlDays(String(settings.message_ttl_days));
     setDigestSchedule(settings.digest_schedule);
     setDigestTime(settings.digest_time?.slice(0, 5) || "09:00");
-    setTimezone(settings.timezone || "America/Denver");
     setDigestDay(String(settings.digest_day ?? 1));
     setDigestIntervalDays(String(settings.digest_interval_days ?? 2));
     setNotifyDigest(settings.notify_digest_ready);
@@ -95,7 +81,6 @@ export function PulseSettingsTab() {
         message_ttl_days: parseInt(ttlDays) || 30,
         digest_schedule: digestSchedule,
         digest_time: digestTime + ":00",
-        timezone,
         digest_day: digestSchedule === "weekly" ? parseInt(digestDay) : undefined,
         digest_interval_days:
           digestSchedule === "every_n_days" ? parseInt(digestIntervalDays) : undefined,
@@ -234,34 +219,9 @@ export function PulseSettingsTab() {
             onChange={(e) => setDigestTime(e.target.value)}
             className="text-sm"
           />
-        </div>
-
-        {/* Timezone */}
-        <div className="space-y-1">
-          <Label className="text-xs uppercase text-muted-foreground">
-            Timezone
-          </Label>
-          <SelectRoot
-            value={timezone}
-            onValueChange={setTimezone}
-            labels={TIMEZONE_LABELS}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectPopup>
-              <SelectItem value="America/Denver">America/Denver (MT)</SelectItem>
-              <SelectItem value="America/New_York">America/New_York (ET)</SelectItem>
-              <SelectItem value="America/Chicago">America/Chicago (CT)</SelectItem>
-              <SelectItem value="America/Los_Angeles">America/Los_Angeles (PT)</SelectItem>
-              <SelectItem value="Europe/Moscow">Europe/Moscow (MSK)</SelectItem>
-              <SelectItem value="Europe/London">Europe/London (GMT)</SelectItem>
-              <SelectItem value="Europe/Berlin">Europe/Berlin (CET)</SelectItem>
-              <SelectItem value="Asia/Tokyo">Asia/Tokyo (JST)</SelectItem>
-              <SelectItem value="UTC">UTC</SelectItem>
-            </SelectPopup>
-          </SelectRoot>
-          <p className="text-[11px] text-muted-foreground">Digest time is in this timezone</p>
+          <p className="text-[11px] text-muted-foreground">
+            Interpreted in your account timezone (set in Profile settings)
+          </p>
         </div>
 
         {/* Weekly Day Selector */}

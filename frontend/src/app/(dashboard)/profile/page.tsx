@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
-import { Save, Key, User, Mail, Phone, Linkedin, Globe, MapPin } from "lucide-react";
+import { Save, Key, User, Mail, Phone, Linkedin, Globe, MapPin, Clock } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import {
@@ -14,6 +14,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  SelectRoot,
+  SelectTrigger,
+  SelectValue,
+  SelectPopup,
+  SelectItem,
+} from "@/components/ui/select";
 import { api } from "@/lib/api";
 import { SkillsEditor } from "@/components/profile/skills-editor";
 import { ExperienceEditor } from "@/components/profile/experience-editor";
@@ -53,6 +60,42 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState(user?.display_name ?? "");
   const [nameInitialized, setNameInitialized] = useState(false);
 
+  const [timezone, setTimezone] = useState("UTC");
+  const [timezoneInitialized, setTimezoneInitialized] = useState(false);
+  const [savingTimezone, setSavingTimezone] = useState(false);
+
+  // IANA timezone list from the browser. Fallback to a small hand-picked
+  // list for environments (older runtimes, some test shims) that don't
+  // implement Intl.supportedValuesOf.
+  const timezoneOptions = useMemo<string[]>(() => {
+    const intl = Intl as typeof Intl & {
+      supportedValuesOf?: (key: string) => string[];
+    };
+    if (typeof intl.supportedValuesOf === "function") {
+      try {
+        return intl.supportedValuesOf("timeZone");
+      } catch {
+        // fall through to fallback list
+      }
+    }
+    return [
+      "UTC",
+      "America/New_York",
+      "America/Chicago",
+      "America/Denver",
+      "America/Los_Angeles",
+      "Europe/London",
+      "Europe/Berlin",
+      "Europe/Moscow",
+      "Asia/Tokyo",
+    ];
+  }, []);
+
+  const timezoneLabels = useMemo<Record<string, string>>(
+    () => Object.fromEntries(timezoneOptions.map((tz) => [tz, tz])),
+    [timezoneOptions]
+  );
+
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
   const [changingPwd, setChangingPwd] = useState(false);
@@ -68,6 +111,11 @@ export default function ProfilePage() {
   if (profile && !nameInitialized) {
     setDisplayName(profile.display_name);
     setNameInitialized(true);
+  }
+
+  if (profile && !timezoneInitialized) {
+    setTimezone(profile.timezone || "UTC");
+    setTimezoneInitialized(true);
   }
 
   useEffect(() => {
@@ -117,6 +165,19 @@ export default function ProfilePage() {
       toast.error(err instanceof Error ? err.message : "Failed to change password");
     } finally {
       setChangingPwd(false);
+    }
+  };
+
+  const handleSaveTimezone = async () => {
+    if (!timezone) return;
+    setSavingTimezone(true);
+    try {
+      await updateProfile.mutateAsync({ timezone });
+      toast.success("Timezone updated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update timezone");
+    } finally {
+      setSavingTimezone(false);
     }
   };
 
@@ -225,6 +286,46 @@ export default function ProfilePage() {
           disabled={changingPwd || !currentPwd || !newPwd}
         >
           {changingPwd ? "Changing…" : "Change password"}
+        </Button>
+      </section>
+
+      {/* Timezone */}
+      <section className="space-y-4 rounded-[14px] border border-border p-5">
+        <h2 className="flex items-center gap-2 text-sm font-medium">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          Timezone
+        </h2>
+        <div className="space-y-1">
+          <Label htmlFor="timezone-select" className="text-xs uppercase text-muted-foreground">
+            IANA Timezone
+          </Label>
+          <SelectRoot
+            value={timezone}
+            onValueChange={setTimezone}
+            labels={timezoneLabels}
+          >
+            <SelectTrigger id="timezone-select" aria-label="Timezone">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectPopup>
+              {timezoneOptions.map((tz) => (
+                <SelectItem key={tz} value={tz}>
+                  {tz}
+                </SelectItem>
+              ))}
+            </SelectPopup>
+          </SelectRoot>
+          <p className="text-[11px] text-muted-foreground">
+            Used for Pulse digest scheduling and other time-based features.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          onClick={handleSaveTimezone}
+          disabled={savingTimezone || !timezone || timezone === (profile?.timezone || "UTC")}
+        >
+          <Save className="mr-1.5 h-3.5 w-3.5" />
+          {savingTimezone ? "Saving…" : "Save timezone"}
         </Button>
       </section>
 

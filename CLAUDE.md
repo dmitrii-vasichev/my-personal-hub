@@ -10,5 +10,5 @@
 ## Current Status
 
 - **Mode:** idle
-- **Last shipped:** Fix birthday reminder timezone — per-user cron at 00:05 local (2026-04-16)
-- **Next:** Nothing planned
+- **Last shipped:** Planner ↔ Personal Hub Phase 1 — backend foundation + frontend timezone move (2026-04-17)
+- **Next:** Phase 2 — port `/planner` skill from markdown-to-Drive to HTTP API. Also covers Drive render side-effect (FR-17, deferred from Phase 1).

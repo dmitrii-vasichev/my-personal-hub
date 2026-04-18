@@ -29,6 +29,7 @@ def make_user(user_id: int = 1, role: UserRole = UserRole.member) -> User:
     u.is_blocked = False
     u.must_change_password = False
     u.theme = "dark"
+    u.timezone = "UTC"
     u.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
     return u
 

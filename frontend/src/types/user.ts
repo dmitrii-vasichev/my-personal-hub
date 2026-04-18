@@ -23,6 +23,7 @@ export interface UpdateUserInput {
 export interface UpdateProfileInput {
   display_name?: string;
   theme?: "light" | "dark";
+  timezone?: string;
 }
 
 export interface ResetPasswordResponse {
@@ -44,6 +45,7 @@ export interface ProfileResponse {
   display_name: string;
   role: "admin" | "member" | "demo";
   theme: string;
+  timezone: string;
   is_blocked: boolean;
   must_change_password: boolean;
   last_login_at: string | null;

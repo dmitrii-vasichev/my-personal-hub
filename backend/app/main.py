@@ -30,6 +30,7 @@ from app.api.gmail import router as gmail_router
 from app.api.outreach import batch_router, industry_router, router as outreach_router
 from app.api.birthdays import router as birthdays_router
 from app.api.miniapp import router as miniapp_router
+from app.api.planner import router as planner_router
 from app.api.reminders import router as reminders_router
 from app.api.users import router as users_router
 from app.core.config import settings
@@ -80,12 +81,25 @@ async def lifespan(application: FastAPI):
         from sqlalchemy import delete, select
 
         async with async_session_factory() as db:
+            from app.models.user import User as _User
+
             result = await db.execute(select(PulseSettings))
             all_settings = result.scalars().all()
+            # Build a user_id -> timezone map once so each scheduler
+            # registration can reference the canonical User.timezone.
+            user_ids = [ps.user_id for ps in all_settings]
+            tz_map: dict[int, str] = {}
+            if user_ids:
+                tz_result = await db.execute(
+                    select(_User.id, _User.timezone).where(_User.id.in_(user_ids))
+                )
+                tz_map = {uid: tz for uid, tz in tz_result.all()}
+
             for ps in all_settings:
                 schedule_user_polling(ps.user_id, ps.polling_interval_minutes)
                 hour = ps.digest_time.hour if ps.digest_time else 9
                 minute = ps.digest_time.minute if ps.digest_time else 0
+                user_tz = tz_map.get(ps.user_id) or "UTC"
                 schedule_user_digest(
                     ps.user_id,
                     schedule=ps.digest_schedule,
@@ -93,11 +107,9 @@ async def lifespan(application: FastAPI):
                     minute=minute,
                     day_of_week=ps.digest_day,
                     interval_days=ps.digest_interval_days,
-                    timezone=ps.timezone or "America/Denver",
+                    timezone=user_tz,
                 )
-                schedule_user_birthday_check(
-                    ps.user_id, ps.timezone or "America/Denver"
-                )
+                schedule_user_birthday_check(ps.user_id, user_tz)
             if all_settings:
                 logger.info(
                     "Restored polling + digest + birthday jobs for %d users",
@@ -283,6 +295,7 @@ app.include_router(batch_router)
 app.include_router(miniapp_router)
 app.include_router(reminders_router)
 app.include_router(birthdays_router)
+app.include_router(planner_router)
 
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(

@@ -28,6 +28,7 @@ async def create_user(
     email: str,
     display_name: str,
     role: str = "member",
+    timezone_name: str = "UTC",
 ) -> tuple[User, str]:
     temp_password = secrets.token_urlsafe(12)
     user = User(
@@ -36,6 +37,7 @@ async def create_user(
         display_name=display_name,
         role=UserRole(role),
         must_change_password=True,
+        timezone=timezone_name,
     )
     db.add(user)
     await db.commit()

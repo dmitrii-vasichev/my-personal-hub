@@ -7,6 +7,7 @@ from sqlalchemy import select, and_
 
 from app.models.reminder import Reminder, ReminderStatus
 from app.models.telegram import PulseSettings
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,10 @@ async def fire_single_reminder(reminder_id: int) -> None:
                 return
 
             token = decrypt_value(ps.bot_token)
-            tz_name = ps.timezone or "UTC"
+            tz_result = await db.execute(
+                select(User.timezone).where(User.id == reminder.user_id)
+            )
+            tz_name = tz_result.scalar() or "UTC"
 
             display_dt = reminder.snoozed_until or reminder.remind_at
             try:
@@ -123,7 +127,10 @@ async def run_reminder_check() -> None:
                 max_notifications = ps.reminder_repeat_count
                 repeat_interval = ps.reminder_repeat_interval
                 snooze_limit = ps.reminder_snooze_limit
-                tz_name = ps.timezone or "UTC"
+                tz_result = await db.execute(
+                    select(User.timezone).where(User.id == user_id)
+                )
+                tz_name = tz_result.scalar() or "UTC"
 
                 sent_count = 0
                 for reminder in user_reminders:

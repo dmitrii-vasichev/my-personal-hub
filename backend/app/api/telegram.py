@@ -195,7 +195,7 @@ async def handle_reminder_callback(
             if result:
                 confirm = f"\u2705 {result.title}\nDone"
                 if result.recurrence_rule:
-                    next_str = _format_time(result.remind_at, ps.timezone)
+                    next_str = _format_time(result.remind_at, user.timezone)
                     confirm = f"\u2705 {result.title}\nDone \u2014 next: {next_str}"
                 await _edit_callback_message(token, chat_id, message_id, confirm)
 
@@ -208,7 +208,7 @@ async def handle_reminder_callback(
             answer_text = f"Snoozed {minutes} min" if result else "Reminder not found"
             await _answer_callback(token, callback_id, answer_text)
             if result:
-                next_str = _format_time(result.remind_at, ps.timezone)
+                next_str = _format_time(result.remind_at, user.timezone)
                 confirm = f"\u23f1 {result.title}\nSnoozed {minutes} min \u2014 next: {next_str}"
                 await _edit_callback_message(token, chat_id, message_id, confirm)
 

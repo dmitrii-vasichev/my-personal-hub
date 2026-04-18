@@ -1,7 +1,9 @@
 from datetime import datetime, time
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.schemas.auth import _validate_tz
 
 
 class PulseSettingsResponse(BaseModel):
@@ -57,3 +59,10 @@ class PulseSettingsUpdate(BaseModel):
     digest_reminders_interval_hours: Optional[int] = Field(None, ge=1, le=24)
     digest_reminders_start_hour: Optional[int] = Field(None, ge=0, le=23)
     digest_reminders_end_hour: Optional[int] = Field(None, ge=0, le=23)
+
+    @field_validator("timezone")
+    @classmethod
+    def _check_timezone(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        return _validate_tz(v)

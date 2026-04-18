@@ -13,7 +13,7 @@ from sqlalchemy import and_, select
 
 from app.models.birthday import Birthday
 from app.models.reminder import Reminder, ReminderStatus
-from app.models.telegram import PulseSettings
+from app.models.user import User
 from app.services.birthdays import BIRTHDAY_TITLE_PREFIX, next_birthday_date
 
 logger = logging.getLogger(__name__)
@@ -25,11 +25,10 @@ async def run_user_birthday_check(user_id: int) -> None:
 
     async with async_session_factory() as db:
         try:
-            ps_result = await db.execute(
-                select(PulseSettings).where(PulseSettings.user_id == user_id)
+            tz_result = await db.execute(
+                select(User.timezone).where(User.id == user_id)
             )
-            ps = ps_result.scalar_one_or_none()
-            tz_name = ps.timezone if ps else "UTC"
+            tz_name = tz_result.scalar() or "UTC"
             try:
                 tz = ZoneInfo(tz_name)
             except Exception:

@@ -39,6 +39,7 @@ def make_user(
     u.must_change_password = False
     u.is_blocked = is_blocked
     u.theme = "dark"
+    u.timezone = "UTC"
     u.last_login_at = None
     u.created_at = datetime(2026, 1, 1, tzinfo=timezone.utc)
     return u

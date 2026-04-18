@@ -25,6 +25,9 @@ def make_user(user_id: int = 1) -> User:
     u.role = UserRole.admin
     u.email = f"user{user_id}@example.com"
     u.display_name = f"User {user_id}"
+    # User.timezone is the post-Phase-1 source of truth; default to UTC
+    # so pulse settings response serialization works without a real DB.
+    u.timezone = "UTC"
     return u
 
 
@@ -35,7 +38,6 @@ def make_pulse_settings(user_id: int = 1) -> PulseSettings:
     s.polling_interval_minutes = 60
     s.digest_schedule = "daily"
     s.digest_time = time(9, 0)
-    s.timezone = "America/Denver"
     s.digest_day = None
     s.digest_interval_days = None
     s.message_ttl_days = 30
@@ -162,14 +164,17 @@ class TestPulseSettingsAPI:
     @patch("app.services.pulse_settings.schedule_user_digest")
     @patch("app.services.pulse_settings.schedule_user_polling")
     async def test_update_digest_time_passes_timezone(self, mock_poll, mock_digest):
-        """Updating digest_time should pass timezone to scheduler."""
+        """Updating digest_time should pass the User.timezone to the scheduler."""
         from app.services.pulse_settings import update_settings
 
         existing = make_pulse_settings()
-        existing.timezone = "Europe/Moscow"
         db = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = existing
+        # Timezone is now resolved via a separate ``select(User.timezone)``
+        # query; route ``.scalar()`` to Europe/Moscow so the scheduler call
+        # asserts against the new source of truth.
+        mock_result.scalar.return_value = "Europe/Moscow"
         db.execute = AsyncMock(return_value=mock_result)
 
         data = PulseSettingsUpdate(digest_time=time(10, 30))
