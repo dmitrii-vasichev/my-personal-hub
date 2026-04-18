@@ -15,5 +15,6 @@
 - **Plan:** docs/plans/2026-04-17-planner-hub-phase2.md
 - **Stage A (backend):** ✅ ApiToken model, migration, service, hybrid JWT/token auth, REST endpoints, /plans/today shortcuts, integration tests
 - **Stage B (frontend):** ✅ react-query hooks, ApiTokensTab component, Settings page integration (visible to admin/regular/demo)
+- **Token created:** ✅ stored at `~/.claude/skills/planner/.auth` (chmod 600)
 - **Deploy status:** pushed to origin/main; Vercel + Railway should auto-deploy
-- **Next:** Stage C — port `/planner` skill to HTTP (lives in `~/.claude/skills/planner/`, not this repo). Generate a real API token via Settings UI, save to `~/.claude/skills/planner/.auth`, then rewrite sub-prompts per plan.md Stage C tasks C1-C8.
+- **Next:** Stage C in a fresh session — port `/planner` skill to HTTP. Files live in `~/.claude/skills/planner/` (outside this repo). 8 tasks (C1-C8) in `docs/plans/2026-04-17-planner-hub-phase2.md`. First step: smoke-test token against Railway (`curl -H "Authorization: Bearer $(cat ~/.claude/skills/planner/.auth)" https://my-personal-hub-backend.up.railway.app/api/auth/me` → expect 200). Then C1: add `api:` section to `~/.claude/skills/planner/config.yaml`.
