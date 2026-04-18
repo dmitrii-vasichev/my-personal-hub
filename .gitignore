@@ -63,6 +63,9 @@ docs/prd-login-page-redesign.md
 docs/prd-pulse-widget-structured-preview.md
 docs/prd-pulse-widget-chip-layout.md
 
+# Telegram bot local state (bot's own .env, .venv, __pycache__ are covered globally)
+telegram_bot/.state.json
+
 # Misc
 *.log
 .workflow-state.json

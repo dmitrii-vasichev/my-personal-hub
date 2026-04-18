@@ -9,13 +9,13 @@
 
 ## Current Status
 
-- **Mode:** Phase 2 fully shipped — Stage A+B on main (commit `af9a094`), Stage C applied in-place to `~/.claude/skills/planner/` (not tracked in this repo)
-- **Feature:** Planner ↔ Personal Hub Phase 2 — skill port + API tokens
-- **PRD:** docs/prd-planner-hub-phase2.md
-- **Plan:** docs/plans/2026-04-17-planner-hub-phase2.md
-- **Stage A (backend):** ✅ ApiToken model, migration, service, hybrid JWT/token auth, REST endpoints, /plans/today shortcuts, integration tests
-- **Stage B (frontend):** ✅ react-query hooks, ApiTokensTab component, Settings page integration (visible to admin/regular/demo)
-- **Stage C (skill port):** ✅ C1 api section in `config.yaml` · C2 `_api-helpers.md` · C3 `plan-day.md` · C4 `replan.md` (POST+PATCH restores done state after full-replace) · C5 `complete-task.md` · C6 `show-status.md` (today/history/week) · C7 dead Drive-filesystem code removed from `SKILL.md` + orphan `drive_root`/`daily_plans_subdir` dropped from `config.yaml`. Skill edits in `~/.claude/skills/planner/` (no git tracking there).
-- **Backend URL:** `https://backend-api-production-1967.up.railway.app` (real Railway domain; earlier PRD/plan placeholder `my-personal-hub-backend.up.railway.app` corrected in this branch)
-- **Token:** stored at `~/.claude/skills/planner/.auth` (chmod 600); smoke-verified against `/api/auth/me` = 200
-- **Next:** smoke-test the ported skill end-to-end in a fresh Claude session (`/planner plan 4h`, complete, replan, status, history, week) when convenient. No further code work planned for Phase 2.
+- **Mode:** Phase 1 of Telegram→CC bridge code-complete on `feature/telegram-bridge-phase1`; pending live end-to-end smoke before squash-merge to `main`.
+- **Feature:** Telegram to Claude Code bridge (Phase 1 — foundation).
+- **PRD:** `docs/prd-telegram-claude-bridge.md` (clarified in `002e2fa` that `--session-id` requires UUID; logical names like `"tg-default"` live only in logs).
+- **Plan:** `docs/plans/2026-04-17-telegram-claude-bridge-phase1.md` (local only, `docs/plans/` is gitignored).
+- **Branch:** `feature/telegram-bridge-phase1` — 9 task commits (`f4277aa` → `f43258c`) plus the PRD clarification.
+- **Phase 1 scope shipped:** `telegram_bot/` package with pydantic-settings config, rotating file logger at `~/Library/Logs/com.my-personal-hub.telegram-bot.log`, async `python-telegram-bot` v21 handler, env-based whitelist (`WHITELIST_TG_USER_ID`), `claude -p --session-id <uuid>` subprocess (UUID5 of `"tg-default"` for continuity across restarts), spinner status message (2s cadence), 4000-char chunker with paragraph/code-fence boundaries (3 pytest cases green), CC error/timeout/spawn-failure relay. Manual run via `python main.py`; no launchd, no Hub endpoints, no PIN, no voice, no queue.
+- **Full feature phasing:** Phase 1 Foundation ✓ → Phase 2 Auth+PIN+profiles (4 Hub endpoints, Settings UI, `/unlock`, `/new` with UUID4 in `.state.json`, `locked`/`unlocked` `settings.json` profiles) → Phase 3 Voice+Queue+Progress → Phase 4 Productionise (launchd LaunchAgent, setup guide).
+- **Key agreed decisions:** subscription-based `claude -p` (no Anthropic API); `Notes/Personal/**` denied in both locked/unlocked profiles; unlock state in-memory only; bot single-tenant; bot hosts on Mac, Hub stays on Railway.
+- **Previous initiative (closed):** Planner↔Hub Phase 2 fully shipped on `main` (`af9a094` + follow-ups). Backend URL: `https://backend-api-production-1967.up.railway.app`.
+- **Next:** live end-to-end smoke (6-bullet checklist in `telegram_bot/README.md` Run section). On pass → squash-merge Phase 1 to `main`. Then `/dev plan` for Phase 2.

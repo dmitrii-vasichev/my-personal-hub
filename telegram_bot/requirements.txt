@@ -1,0 +1,3 @@
+python-telegram-bot==21.10
+pydantic==2.10.4
+pydantic-settings==2.7.1
