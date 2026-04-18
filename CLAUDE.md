@@ -9,12 +9,13 @@
 
 ## Current Status
 
-- **Mode:** Phase 2 Stage A+B shipped on main (commit `af9a094`)
+- **Mode:** Phase 2 fully shipped — Stage A+B on main (commit `af9a094`), Stage C applied in-place to `~/.claude/skills/planner/` (not tracked in this repo)
 - **Feature:** Planner ↔ Personal Hub Phase 2 — skill port + API tokens
 - **PRD:** docs/prd-planner-hub-phase2.md
 - **Plan:** docs/plans/2026-04-17-planner-hub-phase2.md
 - **Stage A (backend):** ✅ ApiToken model, migration, service, hybrid JWT/token auth, REST endpoints, /plans/today shortcuts, integration tests
 - **Stage B (frontend):** ✅ react-query hooks, ApiTokensTab component, Settings page integration (visible to admin/regular/demo)
-- **Token created:** ✅ stored at `~/.claude/skills/planner/.auth` (chmod 600)
-- **Deploy status:** pushed to origin/main; Vercel + Railway should auto-deploy
-- **Next:** Stage C in a fresh session — port `/planner` skill to HTTP. Files live in `~/.claude/skills/planner/` (outside this repo). 8 tasks (C1-C8) in `docs/plans/2026-04-17-planner-hub-phase2.md`. First step: smoke-test token against Railway (`curl -H "Authorization: Bearer $(cat ~/.claude/skills/planner/.auth)" https://my-personal-hub-backend.up.railway.app/api/auth/me` → expect 200). Then C1: add `api:` section to `~/.claude/skills/planner/config.yaml`.
+- **Stage C (skill port):** ✅ C1 api section in `config.yaml` · C2 `_api-helpers.md` · C3 `plan-day.md` · C4 `replan.md` (POST+PATCH restores done state after full-replace) · C5 `complete-task.md` · C6 `show-status.md` (today/history/week) · C7 dead Drive-filesystem code removed from `SKILL.md` + orphan `drive_root`/`daily_plans_subdir` dropped from `config.yaml`. Skill edits in `~/.claude/skills/planner/` (no git tracking there).
+- **Backend URL:** `https://backend-api-production-1967.up.railway.app` (real Railway domain; earlier PRD/plan placeholder `my-personal-hub-backend.up.railway.app` corrected in this branch)
+- **Token:** stored at `~/.claude/skills/planner/.auth` (chmod 600); smoke-verified against `/api/auth/me` = 200
+- **Next:** smoke-test the ported skill end-to-end in a fresh Claude session (`/planner plan 4h`, complete, replan, status, history, week) when convenient. No further code work planned for Phase 2.

@@ -67,7 +67,7 @@ Phase 2 closes the loop: the skill becomes an HTTP client of the Planner API, th
 - [ ] **FR-13:** `config.yaml` gains new section:
   ```yaml
   api:
-    base_url: "https://my-personal-hub-backend.up.railway.app"
+    base_url: "https://backend-api-production-1967.up.railway.app"
     token_file: "~/.claude/skills/planner/.auth"
     timeout_seconds: 30
   ```
