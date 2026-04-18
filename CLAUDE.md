@@ -9,10 +9,11 @@
 
 ## Current Status
 
-- **Mode:** plan → ready for build
+- **Mode:** Phase 2 Stage A+B shipped on main (commit `af9a094`)
 - **Feature:** Planner ↔ Personal Hub Phase 2 — skill port + API tokens
-- **Branch:** feature/planner-phase2-backend
 - **PRD:** docs/prd-planner-hub-phase2.md
 - **Plan:** docs/plans/2026-04-17-planner-hub-phase2.md
-- **Phase:** Stage A (backend) — 8 tasks
-- **Next:** /dev build — Task A1 (ApiToken model + schemas)
+- **Stage A (backend):** ✅ ApiToken model, migration, service, hybrid JWT/token auth, REST endpoints, /plans/today shortcuts, integration tests
+- **Stage B (frontend):** ✅ react-query hooks, ApiTokensTab component, Settings page integration (visible to admin/regular/demo)
+- **Deploy status:** pushed to origin/main; Vercel + Railway should auto-deploy
+- **Next:** Stage C — port `/planner` skill to HTTP (lives in `~/.claude/skills/planner/`, not this repo). Generate a real API token via Settings UI, save to `~/.claude/skills/planner/.auth`, then rewrite sub-prompts per plan.md Stage C tasks C1-C8.
