@@ -77,8 +77,9 @@ campaign. This package avoids those signals:
 - No timer-driven spinner. The `🤔 thinking…` status is edited exactly once
   per invocation, at the end.
 - Chunked replies are paced (~0.7s between `sendMessage` calls).
-- `drop_pending_updates=True` is not passed on startup (no `deleteWebhook`
-  churn on every restart).
+- `drop_pending_updates=True` is not passed on startup. PTB still issues a
+  single `deleteWebhook` per start to switch into polling mode — that is
+  expected and not a signal; we just don't layer extra flags on top.
 
 When creating a new bot via `@BotFather`, let it sit a few minutes before
 sending any traffic. Prefer neutral usernames (avoid `_cc_`, `_claude_`,
