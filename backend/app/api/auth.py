@@ -17,6 +17,7 @@ from app.schemas.auth import (
     RegisterResponse,
     UpdateProfileRequest,
     UserResponse,
+    user_to_response,
 )
 from app.services import api_token as api_token_service
 from app.services.auth import (
@@ -90,7 +91,9 @@ async def register(
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(user: User = Depends(get_current_user)):
-    return user
+    # Use the explicit shim so ``telegram_pin_configured`` is computed
+    # from the bcrypt hash without ever serialising the hash itself.
+    return user_to_response(user)
 
 
 @router.post("/change-password")

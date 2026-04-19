@@ -37,26 +37,31 @@ async def run_cc(
     workdir: str,
     session_id: str,
     timeout: int,
+    settings_path: str | None = None,
 ) -> RunResult:
     resume = _session_file(workdir, session_id).is_file()
     log.info(
-        "cc_run session=%s prompt_len=%d mode=%s",
+        "cc_run session=%s prompt_len=%d mode=%s settings=%s",
         session_id,
         len(prompt),
         "resume" if resume else "new",
+        settings_path or "-",
     )
     # claude -p --session-id <uuid> creates a fresh session and rejects
     # UUIDs already on disk ("Session ID X is already in use"); --resume
     # picks up the existing conversation. Pick the flag by probing the
     # on-disk file so the bot continues the same conversation across restarts.
     session_flag = "--resume" if resume else "--session-id"
+    # Inject deny-list profile via --settings <path> before -p so the Task 0
+    # spike's proven argv order is preserved. Keep Phase 1 behaviour intact
+    # when no profile is supplied.
+    args: list[str] = [binary_path]
+    if settings_path:
+        args += ["--settings", settings_path]
+    args += ["-p", session_flag, session_id, prompt]
     try:
         proc = await asyncio.create_subprocess_exec(
-            binary_path,
-            "-p",
-            session_flag,
-            session_id,
-            prompt,
+            *args,
             cwd=workdir,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,

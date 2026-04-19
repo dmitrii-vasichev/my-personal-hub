@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git push*)",
+      "Bash(rm -rf*)",
+      "Bash(rm*)",
+      "Bash(sudo*)",
+      "Bash(curl*)",
+      "Bash(wget*)",
+      "Read(/Users/dmitry.vasichev/Documents/Notes/Personal/**)",
+      "Edit(/Users/dmitry.vasichev/Documents/Notes/Personal/**)",
+      "Write(/Users/dmitry.vasichev/Documents/Notes/Personal/**)",
+      "Glob(/Users/dmitry.vasichev/Documents/Notes/Personal/**)",
+      "Grep(/Users/dmitry.vasichev/Documents/Notes/Personal/**)"
+    ]
+  }
+}

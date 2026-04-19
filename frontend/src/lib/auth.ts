@@ -11,6 +11,11 @@ export interface User {
   is_blocked: boolean;
   theme: string;
   last_login_at: string | null;
+  // Telegram→CC bridge (Phase 2): populated by /api/auth/me via
+  // user_to_response(); telegram_pin_hash is never exposed — only the
+  // derived boolean is.
+  telegram_user_id: number | null;
+  telegram_pin_configured: boolean;
 }
 
 export interface AuthContextType {

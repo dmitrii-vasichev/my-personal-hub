@@ -56,8 +56,37 @@ class UserResponse(BaseModel):
     theme: str
     timezone: str
     last_login_at: Optional[datetime] = None
+    # Telegram→CC bridge (Phase 2): exposes whether the owner has wired up
+    # their Telegram account / PIN. The bcrypt hash itself is never
+    # serialised — endpoints that return ``UserResponse`` must derive the
+    # boolean via ``user_to_response`` so the hash never leaks.
+    telegram_user_id: Optional[int] = None
+    telegram_pin_configured: bool = False
 
     model_config = {"from_attributes": True}
+
+
+def user_to_response(user) -> "UserResponse":
+    """Build a ``UserResponse`` from an ORM ``User`` without leaking the PIN hash.
+
+    Centralises the ``bool(telegram_pin_hash)`` projection so every
+    endpoint that returns a user (e.g. ``/api/auth/me``) produces the
+    same payload shape. ``user`` is typed as ``Any`` here to avoid a
+    circular import with ``app.models.user``.
+    """
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        display_name=user.display_name,
+        role=user.role.value if hasattr(user.role, "value") else user.role,
+        must_change_password=user.must_change_password,
+        is_blocked=user.is_blocked,
+        theme=user.theme,
+        timezone=user.timezone,
+        last_login_at=user.last_login_at,
+        telegram_user_id=user.telegram_user_id,
+        telegram_pin_configured=bool(user.telegram_pin_hash),
+    )
 
 
 # --- User CRUD schemas (Task 1) ---

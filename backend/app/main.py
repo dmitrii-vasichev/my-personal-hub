@@ -17,6 +17,7 @@ from app.api.garmin import dashboard_router as vitals_dashboard_router
 from app.api.garmin import router as garmin_router
 from app.api.pulse_sources import router as pulse_sources_router
 from app.api.telegram import router as telegram_router
+from app.api.telegram_bridge import router as telegram_bridge_router
 from app.api.calendar import router as calendar_router
 from app.api.health import router as health_router
 from app.api.auth import router as auth_router
@@ -283,6 +284,7 @@ app.include_router(knowledge_base_router)
 app.include_router(notes_router)
 app.include_router(tags_router)
 app.include_router(telegram_router)
+app.include_router(telegram_bridge_router)
 app.include_router(pulse_sources_router)
 app.include_router(pulse_settings_router)
 app.include_router(pulse_digests_router)
