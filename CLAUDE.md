@@ -9,11 +9,19 @@
 
 ## Current Status
 
-- **Mode:** Telegram→CC bridge Phase 3 **shipped and live-smoke-verified on `main`** (squash `c4f9805`, 2026-04-19) + post-ship `/cancel` rendering fix (`cbd2ad5`, 2026-04-19). No blocking code work.
-- **Feature (closed):** Telegram to Claude Code bridge — Phase 3 (voice input via faster-whisper, per-chat request queue with backpressure, stream-json progress parsing behind `TELEGRAM_PROGRESS_ENABLED`, `/help` / `/status` / `/cancel` commands).
-- **Branch:** `main` (feature branch `feature/telegram-bridge-phase3` deleted after merge).
-- **PRD:** `docs/prd-telegram-claude-bridge.md` (patched 2026-04-19 — removed spinner fallback, always-on voice-preview policy, `/cancel` half-state caveat, grace-flag gating on progress edits).
-- **Plan:** `docs/plans/2026-04-19-telegram-claude-bridge-phase3.md` (local only).
+- **Mode:** Telegram→CC bridge **Phase 4 shipped and live-smoke-verified on `main`** (squash `94316f7`, 2026-04-19). Bot now runs under `launchd` — survives reboot/logout/crash. No blocking code work.
+- **Feature (closed):** Telegram bridge — Phase 4 (launchd LaunchAgent with `RunAtLoad` + `KeepAlive{SuccessfulExit:false}` + `ThrottleInterval=60`; `install.sh` / `uninstall.sh` wrappers around `launchctl bootstrap` / `bootout`; `log_setup.py` TTY-guarded StreamHandler so the launchd stderr-capture file stays crash-only; README Auto-start section).
+- **Branch:** `main` (feature branch `chore/telegram-bridge-phase4-launchd` deleted after squash).
+- **PRD:** no PRD (chore-scope; ~2h work).
+- **Plan:** `docs/plans/2026-04-19-telegram-claude-bridge-phase4.md` (local only).
+- **Phase 4 outcome summary:**
+  - New: `telegram_bot/launchd/com.my-personal-hub.telegram-bot.plist` + `install.sh` + `uninstall.sh`. Hardcoded absolute paths per owner Mac (single-tenant per key constraints). `install.sh` runs `plutil -lint` → copies plist to `~/Library/LaunchAgents/` → `launchctl bootstrap gui/$UID` with fallback to legacy `load`. `uninstall.sh` runs `bootout` with fallback to `unload`, removes plist, and polls up to 5s for the service to actually disappear (macOS `bootout` is async).
+  - Log story: primary `~/Library/Logs/com.my-personal-hub.telegram-bot.log` is still rotated in-process by `RotatingFileHandler(5MB × 5)`. Secondary `~/Library/Logs/com.my-personal-hub.telegram-bot.launchd.log` captures launchd stdout/stderr for pre-logger-init tracebacks only — kept crash-only by the `log_setup.py` TTY-guard (StreamHandler attached only when `sys.stderr.isatty()`).
+  - Scope addition during build: `log_setup.py` + `tests/test_log_setup.py` were NOT in the original plan ("no Python changes") — added mid-build after smoke showed `.launchd.log` receiving every INFO line (shadow-copy of primary). Owner approved the 1-line TTY-guard fix. Tests 114 → 118.
+  - Crash semantics: `KeepAlive={SuccessfulExit:false}` + `ThrottleInterval=60`. Auto-restart on non-zero exit; stable processes (>60s uptime) respawn in ~1s on SIGKILL, unstable ones throttle to 1/minute. Logs confirmed with `kill -9` smoke (PID 18266 → 20210 in 1s).
+  - Dev-loop tradeoff: LaunchAgent and a shell-run `python main.py` can't both poll the token. Operator flow documented in `telegram_bot/README.md` — use `./launchd/uninstall.sh` to stop, or `launchctl bootout …` to unload temporarily without removing the plist.
+  - Live smoke (2026-04-19): functional (TG text → `🤔 thinking…` → `✅ done` → CC reply) ✅; KeepAlive (kill -9 → new PID in ~1s) ✅; post-respawn functional (context preserved across respawn) ✅; `.launchd.log` empty during steady-state after TTY-guard ✅; uninstall+reinstall idempotent ✅.
+  - Tests: bot **118 passed** (Phase 3 baseline 114 + 4 new in `tests/test_log_setup.py` — file handler always attached, StreamHandler present under TTY, absent under launchd, log level propagation). Backend / frontend untouched.
 - **Phase 3 outcome summary:**
   - Bot: new modules `request_queue.py`, `progress.py`, `voice.py`. Extended `cc_runner.py` with `run_cc_streaming` (streaming variant for opt-in progress) + `on_spawn` callback on `run_cc` (for `/cancel` to stash the subprocess handle). `main.py` rewritten so every message goes through the per-chat queue; `handle_text` and `handle_voice` share `_run_cc_with_optional_progress` and `_render_result`. `unlock.py` gains `unlock_expires_at` for `/status`.
   - Queue semantics: `MAX_INFLIGHT = 5` counts active + waiting. Msg 1 runs, msgs 2–5 reply `⏳ in queue (pos 1..4)`, msg 6+ replies `⛔ queue full, try later` and is dropped. Plan's original qsize-only math was corrected during Task 1.
@@ -27,9 +35,10 @@
 - **Anti-abuse guard rails (still load-bearing after the 2026-04-18 freeze):** no spinner fallback ever; ≥10s hard-coded minimum between status edits; `TELEGRAM_PROGRESS_ENABLED` default `false` so default behaviour matches Phase 2's single-edit pattern; `stdin=DEVNULL` on the streaming subprocess; progress parser auto-disables on first `JSONDecodeError`.
 - **Key constraints (still in force):** subscription-based `claude -p` only (no Anthropic API); `Notes/Personal/**` denied in both profiles; unlock state in-memory only (restart → re-unlock); CC CLI requires UUID for `--session-id` and rejects in-use UUIDs — `cc_runner._session_file()` probes `~/.claude/projects/<encoded-workdir>/<uuid>.jsonl` and switches to `--resume`; bot on Mac, Hub on Railway; single-tenant. Phase 2 path-syntax quirk stays in effect: `--settings` only matches `Read/Edit/Write/Glob/Grep(~/…)` or `(//abs/…)`, never single-leading-slash absolute paths.
 - **Previous phases (closed):**
+  - **Phase 3** — `feat c4f9805` + post-ship `/cancel` rendering fix `cbd2ad5` (2026-04-19). Voice input (faster-whisper CPU int8), per-chat request queue with backpressure, `/help` / `/status` / `/cancel`, opt-in stream-json progress parsing behind `TELEGRAM_PROGRESS_ENABLED`. 114 bot tests at close.
   - **Phase 2** — `feat 378c854` + path-syntax fix `c5a613f` (2026-04-19). Hub-backed `check-sender` whitelist, PIN-gated `/unlock`, locked/unlocked `settings.json` profiles, per-chat `/new` session reset. Backend 822 / 9 / 47 bot tests at close. All AC scenarios (AC-3/4/6/7/9) passed on live bot + deployed Hub.
   - **Phase 1** — `feat f3bc297` + follow-ups. Scaffold, text handler, deterministic `uuid5("tg-default")` session, env-only whitelist.
-- **Deferred to later phases:** launchd LaunchAgent auto-start + log rotation + setup guide (Phase 4). Metal acceleration for faster-whisper (follow-up issue if CPU int8 proves slow). Progress flag smoke test — owner will run after ≥48h of clean traffic on the bot token.
+- **Deferred (still open):** Metal acceleration for faster-whisper (follow-up issue if CPU int8 proves slow). Progress flag smoke test — owner will run after ≥48h of clean traffic on the bot token (ticking from 2026-04-19 Phase 3 ship).
 - **Telegram account context (tangential):** owner's original RU-number TG account was session-cascade-terminated during the 2026-04-18 anti-abuse incident and has not yet been recovered (US location + RU SIM makes SMS/voice verification hard). Development continues on a different TG account; `.env` already holds the matching bot token.
-- **Next:** owner ready to plan Phase 4 (launchd auto-start) whenever they want. No blocking code work.
-- **Previous initiatives (closed):** Planner↔Hub Phase 2 (`af9a094` + follow-ups); Telegram→CC bridge Phase 1+2+3 (above).
+- **Next:** no blocking code work. Open candidates when owner wants: progress-flag flip smoke (after ~48h), Metal acceleration for Whisper (if CPU feels slow in real use), or a new initiative entirely.
+- **Previous initiatives (closed):** Planner↔Hub Phase 2 (`af9a094` + follow-ups); Telegram→CC bridge Phase 1+2+3+4 (above).
