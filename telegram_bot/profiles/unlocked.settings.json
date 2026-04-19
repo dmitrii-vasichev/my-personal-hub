@@ -5,11 +5,11 @@
       "Bash(sudo*)",
       "Bash(curl*)",
       "Bash(wget*)",
-      "Read(/Users/dmitry.vasichev/Documents/Notes/Personal/**)",
-      "Edit(/Users/dmitry.vasichev/Documents/Notes/Personal/**)",
-      "Write(/Users/dmitry.vasichev/Documents/Notes/Personal/**)",
-      "Glob(/Users/dmitry.vasichev/Documents/Notes/Personal/**)",
-      "Grep(/Users/dmitry.vasichev/Documents/Notes/Personal/**)"
+      "Read(~/Documents/Notes/Personal/**)",
+      "Edit(~/Documents/Notes/Personal/**)",
+      "Write(~/Documents/Notes/Personal/**)",
+      "Glob(~/Documents/Notes/Personal/**)",
+      "Grep(~/Documents/Notes/Personal/**)"
     ]
   }
 }

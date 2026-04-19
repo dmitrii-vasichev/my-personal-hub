@@ -113,14 +113,16 @@ chat's unlock state.
   - Denies `Bash(git push*)`, `Bash(rm -rf*)`, `Bash(rm*)`, `Bash(sudo*)`,
     `Bash(curl*)`, `Bash(wget*)`.
   - Denies `Read`, `Edit`, `Write`, `Glob`, `Grep` on
-    `/Users/dmitry.vasichev/Documents/Notes/Personal/**`.
+    `~/Documents/Notes/Personal/**` (the tilde form is required — absolute
+    paths with a single leading `/` are silently ignored by `claude -p`).
 - **`unlocked.settings.json`** (active for 10 minutes after `/unlock <pin>`
   succeeds):
   - Allows `git push` and `rm` (without `-rf`).
   - Still denies `rm -rf`, `sudo`, `curl`, `wget`, and Personal/**.
 
 `Notes/Personal/**` is **never** accessible via this bot, in any mode. That
-deny-list entry is hardcoded in both profile JSONs with an absolute path.
+deny-list entry is hardcoded in both profile JSONs with the tilde form
+`~/Documents/Notes/Personal/**`.
 
 Unlock state is **in-memory only**, keyed by `chat_id`. Restarting the bot
 clears all unlocks; every chat must re-run `/unlock <pin>` to restore
