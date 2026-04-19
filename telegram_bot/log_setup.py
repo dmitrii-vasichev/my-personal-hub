@@ -1,4 +1,5 @@
 import logging
+import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
@@ -16,9 +17,17 @@ def setup_logging(level: str) -> None:
     )
     file_handler.setFormatter(formatter)
 
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(formatter)
+    handlers: list[logging.Handler] = [file_handler]
+
+    # Only attach the stderr stream handler when running interactively.
+    # Under launchd, stderr is a plain file and duplicating every INFO
+    # line into it would turn the crash-only *.launchd.log into an
+    # unrotated shadow copy of the primary RotatingFileHandler output.
+    if sys.stderr.isatty():
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        handlers.append(stream_handler)
 
     root = logging.getLogger()
     root.setLevel(level.upper())
-    root.handlers = [file_handler, stream_handler]
+    root.handlers = handlers

@@ -11,12 +11,17 @@ session management via `/new`.
 Phase 3 (shipped) adds voice input (faster-whisper, CPU int8), a per-chat
 request queue with backpressure, `/help` / `/status` / `/cancel` commands,
 and opt-in stream-json progress parsing behind `TELEGRAM_PROGRESS_ENABLED`.
-Launchd auto-start is deferred to Phase 4.
+
+Phase 4 (shipped) adds `launchd` auto-start on the owner's Mac, crash-
+resilient via `KeepAlive` with a 60-second throttle, and a two-file log
+split (Python-rotated primary log + launchd-captured crash log). See
+[Auto-start (launchd)](#auto-start-launchd) for the operator flow.
 
 Source PRD: `docs/prd-telegram-claude-bridge.md`.
 Phase 1 plan: `docs/plans/2026-04-17-telegram-claude-bridge-phase1.md` (local only).
 Phase 2 plan: `docs/plans/2026-04-18-telegram-claude-bridge-phase2.md`.
 Phase 3 plan: `docs/plans/2026-04-19-telegram-claude-bridge-phase3.md` (local only).
+Phase 4 plan: `docs/plans/2026-04-19-telegram-claude-bridge-phase4.md` (local only).
 
 ## Prerequisites
 
@@ -99,6 +104,109 @@ Send any text from the whitelisted Telegram account. Expected flow:
    `CC_TIMEOUT` was exceeded.
 
 Stop with `Ctrl-C`.
+
+## Auto-start (launchd)
+
+For day-to-day use on the owner's Mac, the bot runs under a `launchd`
+LaunchAgent so it comes up on login and restarts itself if it crashes.
+Only one instance can poll the Telegram token at a time, so the
+LaunchAgent and a shell-launched `python main.py` are mutually exclusive
+— pick one.
+
+### Install
+
+Stop any shell-launched instance first (`Ctrl-C` or
+`pkill -f 'telegram_bot/main.py'`), then:
+
+```bash
+./telegram_bot/launchd/install.sh
+```
+
+The script lints the plist with `plutil`, copies it to
+`~/Library/LaunchAgents/`, loads it with `launchctl bootstrap`
+(falling back to `launchctl load` on older macOS), and reports the
+registration. A successful install ends with `OK  com.my-personal-hub.telegram-bot is registered`.
+
+### Verify
+
+```bash
+launchctl print gui/$(id -u)/com.my-personal-hub.telegram-bot | grep -E '(state|pid|program)'
+```
+
+Expect `state = running` and a live PID. Then tail the Python log to
+confirm the process actually came up:
+
+```bash
+tail -f ~/Library/Logs/com.my-personal-hub.telegram-bot.log
+```
+
+You should see the familiar `starting bot polling` line and a
+successful `hub_client.init` against `HUB_API_URL`, same as a
+shell-launched run.
+
+### Logs
+
+There are two log files now:
+
+- **`~/Library/Logs/com.my-personal-hub.telegram-bot.log`** — primary
+  Python log, everything `logger.info/warn/error` writes. Rotated
+  automatically at 5 MB with 5 backups (25 MB cap). Read this first.
+- **`~/Library/Logs/com.my-personal-hub.telegram-bot.launchd.log`** —
+  captures whatever the Python process prints to stdout/stderr before
+  the logger is configured (i.e. import-time crashes, `ValidationError`
+  from pydantic on startup). Not rotated, but in practice stays tiny
+  because a running bot does not print to stderr. Read only when the
+  primary log is empty or the bot fails to start.
+
+If `.launchd.log` ever grows (should not happen under normal use),
+truncate it in place:
+
+```bash
+: > ~/Library/Logs/com.my-personal-hub.telegram-bot.launchd.log
+```
+
+### Restart
+
+After editing `.env` or pulling new code into `telegram_bot/`:
+
+```bash
+launchctl kickstart -k gui/$(id -u)/com.my-personal-hub.telegram-bot
+```
+
+The `-k` flag stops the current process first (SIGTERM, then SIGKILL
+after a few seconds), then relaunches — no unload/load cycle needed.
+
+### Stop for development
+
+To reclaim the Telegram token for a shell-launched `python main.py`:
+
+```bash
+# Fully remove the LaunchAgent:
+./telegram_bot/launchd/uninstall.sh
+
+# Or just unload it temporarily (plist stays in ~/Library/LaunchAgents/):
+launchctl bootout gui/$(id -u)/com.my-personal-hub.telegram-bot
+```
+
+If you picked the second form, re-enable with
+`launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.my-personal-hub.telegram-bot.plist`.
+
+### Crash behaviour
+
+The plist sets `KeepAlive={ SuccessfulExit: false }` and
+`ThrottleInterval=60`. Any non-zero exit triggers a restart after ~60 s;
+consecutive crashes are throttled to at most one restart per minute to
+avoid respawn storms. If the bot stays crashed, check `.launchd.log`
+first, then the primary log.
+
+### Path assumptions
+
+The shipped plist hardcodes absolute paths to this repo's location on
+the owner's Mac (`/Users/dmitry.vasichev/Documents/my_projects/my-personal-hub/…`).
+If you ever move the repo or clone it on a different user / machine,
+edit `telegram_bot/launchd/com.my-personal-hub.telegram-bot.plist` by
+hand — the four places that reference the repo root are flagged by
+search for `/Users/dmitry.vasichev/`.
 
 ## Commands
 
@@ -300,9 +408,14 @@ for every other API client.
   per-chat request queue with backpressure, `/help` / `/status` / `/cancel`
   commands, opt-in `--output-format stream-json` progress parsing behind
   `TELEGRAM_PROGRESS_ENABLED`.
-- **Phase 4 (deferred):** launchd LaunchAgent for auto-start on Mac boot,
-  log rotation, setup guide. Metal acceleration for faster-whisper is a
-  follow-up candidate if CPU int8 proves slow.
+- **Phase 4 (shipped):** `launchd` LaunchAgent for auto-start on owner
+  login, crash-resilient via `KeepAlive` with a 60-second restart
+  throttle, split stdout/stderr to a separate `*.launchd.log` so the
+  Python `RotatingFileHandler` stays authoritative on the primary log,
+  `install.sh` / `uninstall.sh` wrappers around `launchctl bootstrap` /
+  `bootout`. See [Auto-start (launchd)](#auto-start-launchd) above.
+  Metal acceleration for faster-whisper is a follow-up candidate if CPU
+  int8 proves slow.
 
 ## Tests
 
