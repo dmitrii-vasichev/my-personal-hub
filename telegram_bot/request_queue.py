@@ -33,6 +33,11 @@ class ChatQueueState:
     # Empty string when idle; also used as the "is there an active job?"
     # signal for backpressure math.
     active_label: str = ""
+    # Set by ``/cancel`` right after SIGINT so the job's renderer can skip
+    # the CC CLI's interrupted-run stdout ("Execution error") and show a
+    # cancelled state instead of a misleading ✅ done. Reset in the worker
+    # finally alongside active_proc / active_label.
+    cancelled: bool = False
 
 
 class QueueFull(Exception):
@@ -91,12 +96,30 @@ async def _run_worker(chat_id: int) -> None:
         finally:
             s.active_proc = None
             s.active_label = ""
+            s.cancelled = False
             s.queue.task_done()
 
 
 def active_proc(chat_id: int) -> Optional[asyncio.subprocess.Process]:
     s = _state.get(chat_id)
     return s.active_proc if s is not None else None
+
+
+def mark_cancelled(chat_id: int) -> None:
+    """Flag the chat's active job as user-cancelled.
+
+    Called by ``/cancel`` right after SIGINT so the job's renderer can
+    distinguish "CC exited cleanly" from "CC was interrupted mid-run". The
+    flag is reset in the worker's finally block.
+    """
+    s = _state.get(chat_id)
+    if s is not None:
+        s.cancelled = True
+
+
+def is_cancelled(chat_id: int) -> bool:
+    s = _state.get(chat_id)
+    return s.cancelled if s is not None else False
 
 
 def queue_depth(chat_id: int) -> int:

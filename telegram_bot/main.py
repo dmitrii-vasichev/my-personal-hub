@@ -100,12 +100,20 @@ async def _is_whitelisted(
     return ok
 
 
-async def _render_result(update, status, result, settings) -> None:
+async def _render_result(update, status, result, settings, chat_id: int) -> None:
     """Turn a ``RunResult`` into user-visible messages.
 
     Factored out of ``handle_text`` so the voice handler (Phase 3 Task 3)
     can reuse the same terminal-state rendering verbatim.
     """
+    # When /cancel fired mid-run, claude -p typically exits rc=0 with stdout
+    # "Execution error". Without this guard we'd edit status to ✅ done and
+    # forward that string as if it were the model's reply, on top of the
+    # "🛑 stopped…" that handle_cancel already sent.
+    if request_queue.is_cancelled(chat_id):
+        await status.edit_text("🛑 cancelled")
+        return
+
     if result.timed_out:
         await status.edit_text("⏱ timed out")
         await update.message.reply_text(
@@ -210,7 +218,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         result = await _run_cc_with_optional_progress(
             state, prompt, settings=settings, status=status, chat_id=chat_id
         )
-        await _render_result(update, status, result, settings)
+        await _render_result(update, status, result, settings, chat_id)
 
     try:
         position = await request_queue.enqueue(
@@ -279,6 +287,10 @@ async def handle_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     except ProcessLookupError:
         await update.message.reply_text("🟢 nothing to cancel")
         return
+    # Tell _render_result the terminal state is user-cancel, not a clean
+    # exit — otherwise it would forward CC CLI's "Execution error" stdout
+    # as a fake model reply on top of the message below.
+    request_queue.mark_cancelled(chat_id)
     # PRD decision Q5: accept the half-state risk on cancel and surface the
     # caveat verbatim to the user so partial writes are not a surprise.
     await update.message.reply_text(
@@ -377,7 +389,7 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         result = await _run_cc_with_optional_progress(
             state, transcript, settings=settings, status=status, chat_id=chat_id
         )
-        await _render_result(update, status, result, settings)
+        await _render_result(update, status, result, settings, chat_id)
 
     try:
         position = await request_queue.enqueue(chat_id, _job, label="voice")

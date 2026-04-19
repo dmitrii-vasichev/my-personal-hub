@@ -317,6 +317,9 @@ def test_cancel_sends_sigint_to_active_proc(_bypass_whitelist):
     asyncio.run(main.handle_cancel(update, context))
 
     assert captured_signals == [signal.SIGINT]
+    # The cancelled flag is what _render_result reads to suppress the
+    # "Execution error" stdout that claude -p emits on SIGINT (rc=0).
+    assert request_queue.is_cancelled(9)
     body = update.message.reply_text.await_args.args[0]
     assert "stopped" in body.lower()
     assert "may have already" in body
@@ -706,3 +709,39 @@ def test_progress_on_line_swallows_telegram_edit_failure(_bypass_whitelist, monk
 
     # If we get here without an exception, the test passes.
     asyncio.run(scenario())
+
+
+# --- _render_result cancel path ------------------------------------------
+
+
+def test_render_result_when_cancelled_skips_stdout_and_edits_to_cancelled(
+    _bypass_whitelist,
+):
+    """Regression for the 2026-04-19 ``Execution error`` ghost reply.
+
+    claude -p exits rc=0 with stdout ``"Execution error"`` when SIGINT'd
+    mid-generation. Without the cancel guard, _render_result would edit
+    status to ✅ done and forward that string as if it were the model's
+    answer, on top of the ``🛑 stopped…`` that handle_cancel already sent.
+    """
+    chat_id = 999
+    # Create state the way the enqueue path would, then flip the flag the
+    # way handle_cancel does.
+    request_queue._state_for(chat_id)
+    request_queue.mark_cancelled(chat_id)
+    assert request_queue.is_cancelled(chat_id)
+
+    update = _make_handler_update(chat_id=chat_id)
+    status = SimpleNamespace(edit_text=AsyncMock())
+    result = _ok_run_result(stdout="Execution error")
+    settings = _settings_stub()
+
+    asyncio.run(
+        main._render_result(update, status, result, settings, chat_id)
+    )
+
+    status.edit_text.assert_awaited_once()
+    edit_arg = status.edit_text.await_args.args[0]
+    assert "cancel" in edit_arg.lower()
+    # The user must NOT see CC's interrupted-run stdout as a model reply.
+    update.message.reply_text.assert_not_called()
