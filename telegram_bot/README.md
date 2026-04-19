@@ -6,12 +6,17 @@ text messages from the bot owner's Telegram account, forwards the prompt to
 
 Phase 2 (shipped) adds Hub-backed sender whitelisting, PIN-gated `/unlock` for
 destructive operations, locked/unlocked `settings.json` profiles, and per-chat
-session management via `/new`. Voice, a request queue, progress parsing, and
-launchd auto-start remain deferred to Phases 3–4.
+session management via `/new`.
+
+Phase 3 (shipped) adds voice input (faster-whisper, CPU int8), a per-chat
+request queue with backpressure, `/help` / `/status` / `/cancel` commands,
+and opt-in stream-json progress parsing behind `TELEGRAM_PROGRESS_ENABLED`.
+Launchd auto-start is deferred to Phase 4.
 
 Source PRD: `docs/prd-telegram-claude-bridge.md`.
 Phase 1 plan: `docs/plans/2026-04-17-telegram-claude-bridge-phase1.md` (local only).
 Phase 2 plan: `docs/plans/2026-04-18-telegram-claude-bridge-phase2.md`.
+Phase 3 plan: `docs/plans/2026-04-19-telegram-claude-bridge-phase3.md` (local only).
 
 ## Prerequisites
 
@@ -53,6 +58,14 @@ Phase 2 plan: `docs/plans/2026-04-18-telegram-claude-bridge-phase2.md`.
      uses the Hub's `users.telegram_user_id` column (set in step 4); this env
      var is consulted only if the Hub is unreachable on startup. Safe to leave
      empty once the Hub is healthy.
+   - `TELEGRAM_PROGRESS_ENABLED` — **default `false`**. Grace-period kill-switch
+     for intermediate status-message edits during CC runs (see
+     [Progress parsing](#progress-parsing-opt-in)).
+   - `WHISPER_MODEL_SIZE` — default `small` (~460 MB). Options: `tiny`, `base`,
+     `small`, `medium`, `large-v3`. Only affects voice transcription quality /
+     memory footprint.
+   - `WHISPER_COMPUTE_TYPE` — default `int8` (CPU-friendly). Other options
+     (`int8_float16`, `float16`, `float32`) are GPU-oriented and untested on CPU.
 6. **Install deps**:
    ```bash
    cd telegram_bot
@@ -101,6 +114,79 @@ Stop with `Ctrl-C`.
   - `⛔ too many attempts. Retry in ~N min.` when the backend has rate-limited
     you (5 failures / 10 min → 15-minute lockout). See
     [Unlock flow](#unlock-flow) for what unlocking changes.
+- `/help` — list all bot commands.
+- `/status` — show the current CC session UUID, the active job label (or
+  `idle`), queue depth, and unlock expiry time (in the bot host's local
+  timezone).
+- `/cancel` — SIGINT the currently running CC subprocess. The reply notes
+  the half-state caveat: migrations already run, commits already made, and
+  other side effects are **not** rolled back. Bot replies:
+  - `🟢 nothing to cancel` when no CC is running.
+  - `🛑 stopped. Some actions may have already executed — check state manually.`
+    on successful SIGINT.
+
+## Voice input
+
+Voice messages sent to the bot are transcribed locally with
+[faster-whisper](https://github.com/SYSTRAN/faster-whisper) and then
+treated exactly like a text prompt.
+
+- First voice message downloads the `small` model (~460 MB) from Hugging
+  Face to `~/.cache/huggingface/hub/`. Expect ~60 s of dead time on that
+  first message; subsequent messages use the cached weights instantly.
+- CPU inference is the default (`WHISPER_COMPUTE_TYPE=int8`). Metal
+  acceleration is deferred — revisit if real-time factor exceeds ~3× on
+  30-second notes.
+- Language is auto-detected (`ru` / `en`). No forced language.
+- The full transcript is **always** echoed back as `🎙 transcribed: …`
+  before CC is invoked — regardless of transcript length. Short commands
+  with misrecognitions are the dangerous case; you always see what CC
+  will actually act on. Edit the transcript manually? Not yet — re-record
+  or switch to text for now.
+- Empty or silent recordings reply `⚠️ transcription produced empty text`.
+- Whisper failures reply `⚠️ transcription failed`; the bot stays alive.
+
+Knobs: `WHISPER_MODEL_SIZE`, `WHISPER_COMPUTE_TYPE` in `.env`.
+
+## Queue and backpressure
+
+Every text or voice message now dispatches through a per-chat async queue
+so overlapping messages never spawn parallel `claude -p` processes racing
+on the same session file.
+
+- Capacity: 5 jobs in flight per chat (1 active + up to 4 waiting).
+- Messages arriving while the queue has room reply with
+  `⏳ in queue (pos N)` where `N` is the number of jobs ahead.
+- Messages arriving at full capacity reply `⛔ queue full, try later` and
+  are dropped (no retry, no auto-queue).
+- `/cancel` drains the current job only — waiting jobs continue in order.
+
+## Progress parsing (opt-in)
+
+**Disabled by default. Do not enable until the bot has run ≥ 48 h of
+clean traffic on the current bot token.**
+
+When `TELEGRAM_PROGRESS_ENABLED=true`, the bot runs CC with
+`--output-format stream-json --verbose` and edits the `🤔 thinking…`
+status message on every `tool_use` event the CLI emits, throttled to a
+minimum of 10 seconds between edits. Typical status lines:
+
+- `📖 reading <filename>`
+- `✏️ writing <filename>`
+- `🔧 running: <command>` (truncated to 60 chars)
+- `🔍 searching files` (Grep / Glob)
+- `🧩 using skill: <subagent_type>`
+
+If stream-json is malformed for a given invocation, the parser disables
+itself silently and the status stays at `🤔 thinking…` until the final
+transition. There is no spinner fallback — the PRD forbids it, because
+timer-driven status edits are the anti-abuse signature that froze our
+first bot on 2026-04-18.
+
+Why opt-in: fresh Telegram bot tokens are watched closely by the
+anti-abuse classifier. Frequent `editMessageText` on a fresh token is
+one of the strongest signals. Let the token age on low-churn Phase 2
+behaviour (single edit per invocation) before you flip the flag.
 
 ## Unlock flow
 
@@ -210,9 +296,13 @@ for every other API client.
 - **Phase 2 (shipped):** Hub-backed whitelist via `check-sender`, PIN-gated
   `/unlock`, locked/unlocked `settings.json` profiles, per-chat `/new`
   session reset.
-- **Phase 3 (deferred):** voice input (Whisper), request queue for bursts,
-  `--output-format stream-json` progress parsing.
-- **Phase 4 (deferred):** launchd LaunchAgent for auto-start on Mac boot.
+- **Phase 3 (shipped):** voice input (faster-whisper, CPU int8, lazy-loaded),
+  per-chat request queue with backpressure, `/help` / `/status` / `/cancel`
+  commands, opt-in `--output-format stream-json` progress parsing behind
+  `TELEGRAM_PROGRESS_ENABLED`.
+- **Phase 4 (deferred):** launchd LaunchAgent for auto-start on Mac boot,
+  log rotation, setup guide. Metal acceleration for faster-whisper is a
+  follow-up candidate if CPU int8 proves slow.
 
 ## Tests
 
@@ -222,5 +312,11 @@ source .venv/bin/activate
 pytest tests/ -v
 ```
 
-47 bot tests must pass (hub_client, state, state-hardening, unlock,
-cc_runner, main whitelist gate, chunker).
+112 bot tests must pass: hub_client, state, state-hardening, unlock,
+cc_runner (both non-streaming and streaming variants), request_queue,
+progress, voice, chunker, main (whitelist gate + queue routing +
+/help, /status, /cancel + voice handler + progress-flag routing).
+
+The `voice_real` marker gates an optional integration test that actually
+loads the Whisper model and transcribes a short clip — not part of the
+default suite. Run manually during smoke with `pytest -m voice_real`.

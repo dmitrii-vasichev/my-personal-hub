@@ -208,7 +208,21 @@ Phase 2 reuses four pieces already shipped in prior phases — no fresh build-ou
 - `Grep` / `Glob` → `searching files`
 - Skill / Task invocations → `using skill: <name>`
 
-If `stream-json` output is malformed or empty for a given invocation, the fallback is an animated spinner on the status message (dot cycling).
+**Fallback (malformed / empty stream-json).** The bot does **not** fall back to a spinner — animated status edits are the exact pattern that triggered the 2026-04-18 anti-abuse freeze. Instead, when stream-json output is malformed or empty for an invocation, the status message is left at the initial "🤔 thinking…" until the final state transition ("✅ done" / "❌ failed" / "⏱ timed out"). Two edits total per request, worst case.
+
+**First-run grace period.** A feature flag `TELEGRAM_PROGRESS_ENABLED` (default: `false`) gates all intermediate progress edits. The owner is expected to leave it off for ~48 hours after the first bot start to let Telegram's anti-abuse classifier build a non-spam baseline on the token, then flip it on manually. When disabled, the bot behaves exactly like Phase 2 — one "🤔 thinking…" at start, one terminal edit at the end.
+
+### Voice transcript preview
+
+`/voice` messages are always echoed back as "🎙 transcribed: `<full transcript>`" **regardless of length**, before the transcript is forwarded to CC. Rationale: `faster-whisper` misrecognitions on short commands (3–5 words) are the most dangerous — a single wrong verb can flip intent (e.g., "don't push" → "push", "keep" → "kill"). Showing the transcript always lets the owner catch the error before CC acts on it. Cost: one extra sendMessage per voice note; paced by the existing chunk-send interval (≥0.5 s).
+
+### `/cancel` semantics
+
+`/cancel` sends `SIGINT` to the active `claude -p` subprocess for the chat. This stops CC from starting the next tool call, but **does not roll back work CC has already completed** — if CC already applied a migration or made a commit before the cancel, those changes persist. The bot's cancel reply explicitly warns the owner:
+
+> 🛑 stopped. Some actions may have already executed — check state manually.
+
+This trade-off is accepted for MVP; richer semantics (require double-confirm, or refuse cancel once any write tool has run) are deferred.
 
 ## Implementation Phases
 
@@ -229,11 +243,11 @@ Goal: prove the wire-up works end-to-end.
 - Session management: `/new`, `.state.json`, per-chat `current_session_id` (FR-13, FR-14).
 
 ### Phase 3 — Voice, queue, progress parsing
-- Voice handler with faster-whisper lazy-loaded `small` (FR-22, FR-23, FR-24).
+- Voice handler with faster-whisper lazy-loaded `small` (FR-22, FR-23, FR-24). CPU-only inference for MVP; Metal acceleration deferred to follow-up issue.
 - Per-chat `asyncio.Queue` with depth 5 (FR-20, FR-21).
-- Progress parsing from `stream-json` (FR-17).
-- Chunked long-reply splitting (FR-18).
-- `/status`, `/cancel`, `/help` (FR-25, FR-26, FR-27).
+- Progress parsing from `stream-json` (FR-17), gated by `TELEGRAM_PROGRESS_ENABLED` feature flag (see "Progress-event parsing" section for grace-period rationale).
+- `/status`, `/cancel`, `/help` (FR-25, FR-26, FR-27). `/cancel` semantics documented under "Technical Architecture".
+- ~~Chunked long-reply splitting (FR-18)~~ — **shipped in Phase 2** (`telegram_bot/chunker.py` + `main.py`). Not re-done here.
 
 ### Phase 4 — Productionise
 - launchd LaunchAgent plist + install script + plist generator (FR-3, FR-28).

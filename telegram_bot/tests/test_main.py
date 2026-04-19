@@ -3,14 +3,22 @@
 The helper is the single choke-point Task 7 uses to gate all three handlers,
 so it's covered here in isolation. Handler-level integration (non-whitelisted
 user sends /new → no side effect) overlaps with Task 10's E2E and is skipped.
+
+Phase 3 adds queue-backed dispatch for ``handle_text`` and the new
+``/help`` / ``/status`` / ``/cancel`` handlers; those are covered under the
+"Handlers" section at the bottom.
 """
 import asyncio
+import signal
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 import hub_client
 import main
+import request_queue
 
 
 def _make_update(user_id: int | None = 12345) -> SimpleNamespace:
@@ -162,3 +170,539 @@ def test_none_effective_user_returns_false_without_call(monkeypatch):
     check.assert_not_awaited()
     # No cache write — the chat_data dict stays empty.
     assert context.chat_data == {}
+
+
+# ==========================================================================
+# Phase 3 — handlers through the request queue
+# ==========================================================================
+
+
+@pytest.fixture(autouse=True)
+def _reset_queue_between_tests():
+    request_queue._reset_for_tests()
+    yield
+    request_queue._reset_for_tests()
+
+
+@pytest.fixture
+def _bypass_whitelist(monkeypatch):
+    """Let handler tests skip the Hub check-sender path."""
+
+    async def _allow(update, context, settings):
+        return True
+
+    monkeypatch.setattr(main, "_is_whitelisted", _allow)
+
+
+def _settings_stub(progress_enabled: bool = False):
+    return SimpleNamespace(
+        cc_binary_path="/fake/claude",
+        cc_workdir="/tmp/fake",
+        cc_timeout=30,
+        whitelist_tg_user_id=None,
+        progress_enabled=progress_enabled,
+        whisper_model_size="small",
+        whisper_compute_type="int8",
+    )
+
+
+def _make_handler_update(chat_id: int = 100, text: str = "hello"):
+    """Build a minimal Update stand-in that the handler code consumes."""
+    reply = AsyncMock(return_value=SimpleNamespace(edit_text=AsyncMock()))
+    message = SimpleNamespace(text=text, reply_text=reply, voice=None)
+    return SimpleNamespace(
+        effective_chat=SimpleNamespace(id=chat_id),
+        effective_user=SimpleNamespace(id=42),
+        message=message,
+    )
+
+
+def _make_handler_context(settings=None):
+    app = SimpleNamespace(bot_data={"settings": settings or _settings_stub()})
+    return SimpleNamespace(application=app, chat_data={}, args=[])
+
+
+def _ok_run_result(stdout: str = "ok"):
+    return SimpleNamespace(
+        stdout=stdout, stderr="", returncode=0, timed_out=False
+    )
+
+
+# --- /help ----------------------------------------------------------------
+
+
+def test_help_lists_all_commands(_bypass_whitelist):
+    update = _make_handler_update()
+    context = _make_handler_context()
+
+    asyncio.run(main.handle_help(update, context))
+
+    body = update.message.reply_text.await_args.args[0]
+    for token in ("/new", "/unlock", "/status", "/cancel", "/help"):
+        assert token in body
+
+
+# --- /status --------------------------------------------------------------
+
+
+def test_status_reports_idle_and_locked(_bypass_whitelist, monkeypatch, tmp_path):
+    # Force the session-state file under tmp so the test doesn't mutate the
+    # developer's real .state.json.
+    monkeypatch.setattr(main, "get_session", lambda chat_id: "fake-session-id")
+
+    update = _make_handler_update(chat_id=777)
+    context = _make_handler_context()
+
+    asyncio.run(main.handle_status(update, context))
+
+    body = update.message.reply_text.await_args.args[0]
+    assert "fake-session-id" in body
+    assert "idle" in body
+    assert "0 waiting" in body
+    assert "locked" in body
+
+
+def test_status_reports_queue_and_unlock(_bypass_whitelist, monkeypatch):
+    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    # Seed queue state: active job + 2 waiting.
+    s = request_queue._state_for(1)
+    s.active_label = "text: hello world"
+    s.queue.put_nowait(("j1", "l1"))
+    s.queue.put_nowait(("j2", "l2"))
+    # Mark chat unlocked.
+    import unlock as unlock_mod
+    unlock_mod.unlock_chat(1)
+
+    update = _make_handler_update(chat_id=1)
+    context = _make_handler_context()
+
+    asyncio.run(main.handle_status(update, context))
+
+    body = update.message.reply_text.await_args.args[0]
+    assert "text: hello world" in body
+    assert "2 waiting" in body
+    assert "unlocked until" in body
+
+    # Cleanup: drain put items so the teardown fixture clears cleanly.
+    unlock_mod._reset_for_tests()
+
+
+# --- /cancel --------------------------------------------------------------
+
+
+def test_cancel_with_no_active_proc(_bypass_whitelist):
+    update = _make_handler_update(chat_id=5)
+    context = _make_handler_context()
+
+    asyncio.run(main.handle_cancel(update, context))
+
+    body = update.message.reply_text.await_args.args[0]
+    assert "nothing to cancel" in body
+
+
+def test_cancel_sends_sigint_to_active_proc(_bypass_whitelist):
+    captured_signals: list[int] = []
+
+    class FakeProc:
+        returncode = None  # still running
+
+        def send_signal(self, sig):
+            captured_signals.append(sig)
+
+    request_queue._state_for(9).active_proc = FakeProc()
+
+    update = _make_handler_update(chat_id=9)
+    context = _make_handler_context()
+
+    asyncio.run(main.handle_cancel(update, context))
+
+    assert captured_signals == [signal.SIGINT]
+    body = update.message.reply_text.await_args.args[0]
+    assert "stopped" in body.lower()
+    assert "may have already" in body
+
+
+def test_cancel_after_cc_finished_replies_nothing_to_cancel(_bypass_whitelist):
+    """Regression for the live-smoke bug on 2026-04-19.
+
+    After run_cc returns, the worker is still streaming chunks through
+    _render_result — its finally block (which clears active_proc) hasn't
+    run yet. The subprocess is dead, but active_proc still points at it.
+    handle_cancel must detect this via ``proc.returncode is not None``
+    and reply "nothing to cancel" instead of SIGINTing a reaped PID.
+    """
+    captured_signals: list[int] = []
+
+    class FinishedProc:
+        returncode = 0  # exited successfully
+
+        def send_signal(self, sig):
+            captured_signals.append(sig)
+
+    request_queue._state_for(10).active_proc = FinishedProc()
+
+    update = _make_handler_update(chat_id=10)
+    context = _make_handler_context()
+
+    asyncio.run(main.handle_cancel(update, context))
+
+    assert captured_signals == [], "must not signal an already-finished PID"
+    body = update.message.reply_text.await_args.args[0]
+    assert "nothing to cancel" in body
+
+
+def test_cancel_process_lookup_error_treated_as_nothing_to_cancel(_bypass_whitelist):
+    class GoneProc:
+        returncode = None  # claims still running, but PID was reaped
+
+        def send_signal(self, sig):
+            raise ProcessLookupError("already exited")
+
+    request_queue._state_for(11).active_proc = GoneProc()
+
+    update = _make_handler_update(chat_id=11)
+    context = _make_handler_context()
+
+    asyncio.run(main.handle_cancel(update, context))
+
+    body = update.message.reply_text.await_args.args[0]
+    assert "nothing to cancel" in body
+
+
+# --- handle_text through the queue ---------------------------------------
+
+
+def test_handle_text_dispatches_through_queue(_bypass_whitelist, monkeypatch):
+    """A single message goes through the queue without a 'pos N' reply."""
+    run_cc_mock = AsyncMock(
+        return_value=SimpleNamespace(
+            stdout="ok", stderr="", returncode=0, timed_out=False
+        )
+    )
+    monkeypatch.setattr(main, "run_cc", run_cc_mock)
+    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+
+    update = _make_handler_update(chat_id=42, text="ping")
+    context = _make_handler_context()
+
+    async def scenario():
+        await main.handle_text(update, context)
+        worker = request_queue._state_for(42).worker
+        if worker is not None:
+            await worker
+
+    asyncio.run(scenario())
+
+    run_cc_mock.assert_awaited_once()
+    # First reply is the "🤔 thinking…" status, then "✅ done" edit,
+    # then the final stdout. No "⏳ in queue" message since position == 0.
+    replies = [c.args[0] for c in update.message.reply_text.await_args_list]
+    assert any("thinking" in r for r in replies)
+    assert not any("in queue" in r for r in replies)
+
+
+def test_handle_text_shows_position_when_behind_active(_bypass_whitelist, monkeypatch):
+    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+
+    # Fill one active + one waiting so the handler's enqueue lands at pos 2.
+    s = request_queue._state_for(88)
+    s.active_label = "text: busy"
+    s.queue.put_nowait(("j", "l"))
+    # Avoid the real worker draining the fake items — leave worker None.
+
+    # run_cc is patched but should not actually be awaited: the test's
+    # message sits at pos 2 behind two fake non-executing jobs.
+    monkeypatch.setattr(main, "run_cc", AsyncMock())
+
+    update = _make_handler_update(chat_id=88, text="ping")
+    context = _make_handler_context()
+
+    asyncio.run(main.handle_text(update, context))
+
+    replies = [c.args[0] for c in update.message.reply_text.await_args_list]
+    assert any("in queue (pos 2)" in r for r in replies)
+
+
+def test_handle_text_queue_full_replies_and_drops(_bypass_whitelist, monkeypatch):
+    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    run_cc_mock = AsyncMock()
+    monkeypatch.setattr(main, "run_cc", run_cc_mock)
+
+    # Saturate: 1 active + 4 waiting = MAX_INFLIGHT. No worker so nothing drains.
+    s = request_queue._state_for(55)
+    s.active_label = "text: active"
+    for _ in range(request_queue.MAX_INFLIGHT - 1):
+        s.queue.put_nowait(("j", "l"))
+
+    update = _make_handler_update(chat_id=55, text="ping")
+    context = _make_handler_context()
+
+    asyncio.run(main.handle_text(update, context))
+
+    replies = [c.args[0] for c in update.message.reply_text.await_args_list]
+    assert any("queue full" in r for r in replies)
+    run_cc_mock.assert_not_awaited()
+
+
+# --- progress-flag routing -----------------------------------------------
+
+
+def test_handle_text_progress_disabled_uses_run_cc(_bypass_whitelist, monkeypatch):
+    """Default (grace period) → non-streaming run_cc, no stream-json argv."""
+    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    run_cc_mock = AsyncMock(return_value=_ok_run_result())
+    run_cc_streaming_mock = AsyncMock(return_value=_ok_run_result())
+    monkeypatch.setattr(main, "run_cc", run_cc_mock)
+    monkeypatch.setattr(main, "run_cc_streaming", run_cc_streaming_mock)
+
+    update = _make_handler_update(chat_id=200, text="ping")
+    context = _make_handler_context(_settings_stub(progress_enabled=False))
+
+    async def scenario():
+        await main.handle_text(update, context)
+        worker = request_queue._state_for(200).worker
+        if worker is not None:
+            await worker
+
+    asyncio.run(scenario())
+
+    run_cc_mock.assert_awaited_once()
+    run_cc_streaming_mock.assert_not_awaited()
+
+
+def test_handle_text_progress_enabled_uses_streaming(_bypass_whitelist, monkeypatch):
+    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    run_cc_mock = AsyncMock(return_value=_ok_run_result())
+    run_cc_streaming_mock = AsyncMock(return_value=_ok_run_result("from stream"))
+    monkeypatch.setattr(main, "run_cc", run_cc_mock)
+    monkeypatch.setattr(main, "run_cc_streaming", run_cc_streaming_mock)
+
+    update = _make_handler_update(chat_id=201, text="ping")
+    context = _make_handler_context(_settings_stub(progress_enabled=True))
+
+    async def scenario():
+        await main.handle_text(update, context)
+        worker = request_queue._state_for(201).worker
+        if worker is not None:
+            await worker
+
+    asyncio.run(scenario())
+
+    run_cc_mock.assert_not_awaited()
+    run_cc_streaming_mock.assert_awaited_once()
+    # Kwargs must include an on_event_line closure so progress edits reach us.
+    kwargs = run_cc_streaming_mock.await_args.kwargs
+    assert "on_event_line" in kwargs and kwargs["on_event_line"] is not None
+
+
+def test_progress_on_line_throttles_edits_under_10s(_bypass_whitelist, monkeypatch):
+    """Two tool_use events within 10s → exactly one status.edit_text call."""
+    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+
+    # Capture the on_event_line callback that handle_text wires up.
+    captured_on_line: list = []
+
+    async def fake_streaming(prompt, **kwargs):
+        captured_on_line.append(kwargs["on_event_line"])
+        return _ok_run_result()
+
+    monkeypatch.setattr(main, "run_cc_streaming", fake_streaming)
+
+    # Pin time.monotonic so the throttle test is deterministic.
+    now_val = [1000.0]
+    monkeypatch.setattr(main.time, "monotonic", lambda: now_val[0])
+
+    update = _make_handler_update(chat_id=301, text="ping")
+    context = _make_handler_context(_settings_stub(progress_enabled=True))
+
+    async def scenario():
+        await main.handle_text(update, context)
+        worker = request_queue._state_for(301).worker
+        if worker is not None:
+            await worker
+
+        on_line = captured_on_line[0]
+        status_obj = update.message.reply_text.return_value
+
+        # First tool_use — current throttle is 0, allowed.
+        await on_line(
+            '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"file_path":"/a.md"}}]}}'
+        )
+        # 5 seconds later — blocked by throttle.
+        now_val[0] = 1005.0
+        await on_line(
+            '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"ls"}}]}}'
+        )
+        # 11 seconds after the first — allowed again.
+        now_val[0] = 1011.01
+        await on_line(
+            '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"pwd"}}]}}'
+        )
+        return status_obj
+
+    status_obj = asyncio.run(scenario())
+
+    # Two allowed edits (first + third), middle one blocked by throttle.
+    edits = [c.args[0] for c in status_obj.edit_text.await_args_list]
+    # First is the "✅ done" from _render_result; filter those out to count
+    # progress edits only.
+    progress_edits = [e for e in edits if "done" not in e and "failed" not in e and "timed out" not in e]
+    assert len(progress_edits) == 2
+    assert progress_edits[0].startswith("📖 reading")
+    assert progress_edits[1].startswith("🔧 running")
+
+
+# --- voice handler -------------------------------------------------------
+
+
+def _make_voice_update(chat_id: int = 400):
+    """Build an Update with a non-None `voice` attached to message."""
+    reply = AsyncMock(return_value=SimpleNamespace(edit_text=AsyncMock()))
+    voice_obj = SimpleNamespace(file_id="file-abc", duration=3)
+    message = SimpleNamespace(text=None, voice=voice_obj, reply_text=reply)
+    return SimpleNamespace(
+        effective_chat=SimpleNamespace(id=chat_id),
+        effective_user=SimpleNamespace(id=42),
+        message=message,
+    )
+
+
+def _make_voice_context(settings=None):
+    """Extend the handler context with a `bot.get_file` AsyncMock."""
+    downloaded = AsyncMock(return_value=bytearray(b"\x00\x01\x02 fake ogg"))
+    file_obj = SimpleNamespace(download_as_bytearray=downloaded)
+    bot = SimpleNamespace(get_file=AsyncMock(return_value=file_obj))
+    app = SimpleNamespace(bot_data={"settings": settings or _settings_stub()})
+    return SimpleNamespace(application=app, chat_data={}, args=[], bot=bot)
+
+
+def test_voice_handler_echoes_transcript_then_dispatches_cc(_bypass_whitelist, monkeypatch):
+    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    transcribe = AsyncMock(return_value="привет мир")
+    monkeypatch.setattr(main.voice, "transcribe_bytes", transcribe)
+    run_cc_mock = AsyncMock(return_value=_ok_run_result("done"))
+    monkeypatch.setattr(main, "run_cc", run_cc_mock)
+
+    update = _make_voice_update(chat_id=400)
+    context = _make_voice_context()
+
+    async def scenario():
+        await main.handle_voice(update, context)
+        worker = request_queue._state_for(400).worker
+        if worker is not None:
+            await worker
+
+    asyncio.run(scenario())
+
+    # Transcript must be echoed verbatim (PRD Q4 "always on preview").
+    replies = [c.args[0] for c in update.message.reply_text.await_args_list]
+    assert any("🎙 transcribed: привет мир" in r for r in replies)
+
+    # CC dispatched with the transcript as the prompt.
+    run_cc_mock.assert_awaited_once()
+    assert run_cc_mock.await_args.args[0] == "привет мир"
+
+
+def test_voice_handler_transcription_failure_replies_warning_no_dispatch(_bypass_whitelist, monkeypatch):
+    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(
+        main.voice,
+        "transcribe_bytes",
+        AsyncMock(side_effect=RuntimeError("whisper died")),
+    )
+    run_cc_mock = AsyncMock()
+    monkeypatch.setattr(main, "run_cc", run_cc_mock)
+
+    update = _make_voice_update(chat_id=401)
+    context = _make_voice_context()
+
+    async def scenario():
+        await main.handle_voice(update, context)
+        worker = request_queue._state_for(401).worker
+        if worker is not None:
+            await worker
+
+    asyncio.run(scenario())
+
+    replies = [c.args[0] for c in update.message.reply_text.await_args_list]
+    assert any("transcription failed" in r for r in replies)
+    run_cc_mock.assert_not_awaited()
+
+
+def test_voice_handler_empty_transcript_replies_warning_no_dispatch(_bypass_whitelist, monkeypatch):
+    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(main.voice, "transcribe_bytes", AsyncMock(return_value=""))
+    run_cc_mock = AsyncMock()
+    monkeypatch.setattr(main, "run_cc", run_cc_mock)
+
+    update = _make_voice_update(chat_id=402)
+    context = _make_voice_context()
+
+    async def scenario():
+        await main.handle_voice(update, context)
+        worker = request_queue._state_for(402).worker
+        if worker is not None:
+            await worker
+
+    asyncio.run(scenario())
+
+    replies = [c.args[0] for c in update.message.reply_text.await_args_list]
+    assert any("empty text" in r for r in replies)
+    run_cc_mock.assert_not_awaited()
+
+
+def test_voice_handler_queue_full_replies_and_skips_transcription(_bypass_whitelist, monkeypatch):
+    """When capacity is saturated, don't even download+transcribe — reject."""
+    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    transcribe = AsyncMock()
+    monkeypatch.setattr(main.voice, "transcribe_bytes", transcribe)
+
+    s = request_queue._state_for(403)
+    s.active_label = "text: active"
+    for _ in range(request_queue.MAX_INFLIGHT - 1):
+        s.queue.put_nowait(("j", "l"))
+
+    update = _make_voice_update(chat_id=403)
+    context = _make_voice_context()
+
+    asyncio.run(main.handle_voice(update, context))
+
+    replies = [c.args[0] for c in update.message.reply_text.await_args_list]
+    assert any("queue full" in r for r in replies)
+    transcribe.assert_not_awaited()
+    # The Telegram file-download API must not have been invoked either —
+    # enqueue runs before the job body.
+    context.bot.get_file.assert_not_awaited()
+
+
+def test_progress_on_line_swallows_telegram_edit_failure(_bypass_whitelist, monkeypatch):
+    """A 400 from editMessageText must not abort the CC run."""
+    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+
+    captured_on_line: list = []
+
+    async def fake_streaming(prompt, **kwargs):
+        captured_on_line.append(kwargs["on_event_line"])
+        return _ok_run_result()
+
+    monkeypatch.setattr(main, "run_cc_streaming", fake_streaming)
+    monkeypatch.setattr(main.time, "monotonic", lambda: 1000.0)
+
+    update = _make_handler_update(chat_id=302, text="ping")
+    status = update.message.reply_text.return_value
+    status.edit_text = AsyncMock(side_effect=RuntimeError("telegram 400"))
+    context = _make_handler_context(_settings_stub(progress_enabled=True))
+
+    async def scenario():
+        await main.handle_text(update, context)
+        worker = request_queue._state_for(302).worker
+        if worker is not None:
+            await worker
+        on_line = captured_on_line[0]
+        # Must not raise even though status.edit_text explodes.
+        await on_line(
+            '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"file_path":"/a.md"}}]}}'
+        )
+
+    # If we get here without an exception, the test passes.
+    asyncio.run(scenario())

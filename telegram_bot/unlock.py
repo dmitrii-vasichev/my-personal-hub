@@ -41,6 +41,22 @@ def is_unlocked(chat_id: int) -> bool:
     return True
 
 
+def unlock_expires_at(chat_id: int) -> datetime | None:
+    """Return the UTC expiry for the chat's active unlock window, or None.
+
+    ``/status`` uses this to render the remaining window as a wall-clock
+    time. Expired entries are evicted inline, so callers never see a stale
+    timestamp.
+    """
+    until = _unlock_until.get(chat_id)
+    if until is None:
+        return None
+    if until <= datetime.now(timezone.utc):
+        _unlock_until.pop(chat_id, None)
+        return None
+    return until
+
+
 def _reset_for_tests() -> None:
     """Test-only helper to clear module state between tests."""
     _unlock_until.clear()

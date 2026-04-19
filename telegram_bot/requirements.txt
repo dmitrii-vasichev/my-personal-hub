@@ -2,3 +2,8 @@ python-telegram-bot==21.10
 pydantic==2.10.4
 pydantic-settings==2.7.1
 httpx==0.28.1
+faster-whisper==1.1.1
+# faster-whisper 1.1.1 uses `requests` in its utils but does not declare
+# it as a runtime dep — pin it here so fresh venvs don't trip over the
+# ModuleNotFoundError on first voice message.
+requests==2.33.1
