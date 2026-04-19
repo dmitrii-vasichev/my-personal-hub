@@ -316,11 +316,44 @@ chat's unlock state.
 
 `Notes/Personal/**` is **never** accessible via this bot, in any mode. That
 deny-list entry is hardcoded in both profile JSONs with the tilde form
-`~/Documents/Notes/Personal/**`.
+`~/Documents/Notes/Personal/**`, and a Bash-level hook (see below) closes
+the `cat`/`head`/`awk` bypass that a tool-deny alone cannot cover.
 
 Unlock state is **in-memory only**, keyed by `chat_id`. Restarting the bot
 clears all unlocks; every chat must re-run `/unlock <pin>` to restore
 destructive privileges.
+
+### Three-tier personal-data model
+
+The bot distinguishes three tiers of personal data, each with a different
+reachability rule:
+
+| Tier | Location | Bot access | Examples |
+|------|----------|------------|----------|
+| 1 — sensitive | `~/Documents/Notes/Personal/` | Never (both profiles deny file tools + Bash hook blocks the bypass) | SSN, bank account numbers, passport scans, tax data |
+| 2 — mobile | `~/Documents/Notes/Personal-mobile/` | Only after `/unlock` + PIN | Car VIN / plates, insurance policy #, phone plan, medical card # |
+| 3 — project | `~/Documents/my_projects/<project>/` | Always (governed by per-project `CLAUDE.md` and the global safety rails) | Project notes, lease details, move-in paperwork |
+
+The Personal-mobile folder is a deliberately curated subset — anything you
+would be willing to read aloud in a cafe. See
+`~/Documents/Notes/Personal-mobile/README.md` for the full policy.
+
+### Bash bypass closure (PreToolUse hook)
+
+`profiles/hooks/block-paths.py` is a PreToolUse hook attached to the Bash
+tool in both profiles. Before every Bash command, it reads the command
+string from stdin and rejects (exit code 2) any command that references
+`Notes/Personal/` — the `locked` profile additionally rejects references
+to `Notes/Personal-mobile/`. This closes the hole where a skill following
+the global CLAUDE.md rule ("check `Personal/` before asking") would fall
+back from a denied `Read` tool call to a permitted `Bash(cat ...)` call
+and silently exfiltrate data into the chat.
+
+The hook uses a literal substring matcher (`Notes/<name>` with identifier
+boundaries), which is not adversarial-hardened against deliberate
+obfuscation (glob expansion, encoded strings, symlinks) but covers the
+realistic threat model of well-behaved skills issuing literal paths. True
+defense-in-depth would require subprocess sandboxing, out of scope.
 
 ## Anti-abuse hygiene
 

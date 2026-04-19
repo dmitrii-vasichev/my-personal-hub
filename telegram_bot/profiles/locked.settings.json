@@ -11,7 +11,25 @@
       "Edit(~/Documents/Notes/Personal/**)",
       "Write(~/Documents/Notes/Personal/**)",
       "Glob(~/Documents/Notes/Personal/**)",
-      "Grep(~/Documents/Notes/Personal/**)"
+      "Grep(~/Documents/Notes/Personal/**)",
+      "Read(~/Documents/Notes/Personal-mobile/**)",
+      "Edit(~/Documents/Notes/Personal-mobile/**)",
+      "Write(~/Documents/Notes/Personal-mobile/**)",
+      "Glob(~/Documents/Notes/Personal-mobile/**)",
+      "Grep(~/Documents/Notes/Personal-mobile/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/dmitry.vasichev/Documents/my_projects/my-personal-hub/telegram_bot/profiles/hooks/block-paths.py Personal Personal-mobile"
+          }
+        ]
+      }
     ]
   }
 }

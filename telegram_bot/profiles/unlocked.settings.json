@@ -11,5 +11,18 @@
       "Glob(~/Documents/Notes/Personal/**)",
       "Grep(~/Documents/Notes/Personal/**)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/dmitry.vasichev/Documents/my_projects/my-personal-hub/telegram_bot/profiles/hooks/block-paths.py Personal"
+          }
+        ]
+      }
+    ]
   }
 }
