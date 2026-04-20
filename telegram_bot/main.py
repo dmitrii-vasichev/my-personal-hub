@@ -5,10 +5,11 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     Application,
     ApplicationBuilder,
+    CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
     MessageHandler,
@@ -17,6 +18,7 @@ from telegram.ext import (
 
 import hub_client
 import progress
+import projects as projects_mod
 import request_queue
 import unlock
 import voice
@@ -25,7 +27,14 @@ from chunker import chunk_reply
 from config import load_settings
 from hub_client import PinLockedOut
 from log_setup import setup_logging
-from state import TG_DEFAULT_UUID, get_session, new_session
+import state
+from state import (
+    TG_DEFAULT_UUID,
+    get_active_project,
+    get_session,
+    new_session,
+    set_active_project,
+)
 from unlock import unlock_chat
 
 log = logging.getLogger(__name__)
@@ -47,7 +56,14 @@ PROFILES_DIR = Path(__file__).parent / "profiles"
 LOCKED_PROFILE = str(PROFILES_DIR / "locked.settings.json")
 UNLOCKED_PROFILE = str(PROFILES_DIR / "unlocked.settings.json")
 
+# Populated by main() after project discovery. Helpers read from here instead
+# of threading ``context.application.bot_data["projects"]`` through every
+# signature. Tests override with ``monkeypatch.setattr(main._projects_ref,
+# "known", [...])``.
+_projects_ref: dict = {"known": []}
+
 HELP_TEXT = (
+    "/project — pick which project CC works against\n"
     "/new — start a fresh CC session for this chat\n"
     "/unlock <pin> — unlock destructive ops for 10 min\n"
     "/status — current session, queue depth, unlock state\n"
@@ -59,6 +75,33 @@ HELP_TEXT = (
 def _profile_for(chat_id: int) -> str:
     """Pick the CC settings profile based on the per-chat unlock state."""
     return UNLOCKED_PROFILE if unlock.is_unlocked(chat_id) else LOCKED_PROFILE
+
+
+def _active_project(settings, chat_id: int) -> tuple[str, str]:
+    """Resolve ``(project_name, absolute_workdir)`` for this chat.
+
+    Falls back to the default project when the chat's stored active project
+    is no longer discoverable (deleted, renamed, or hidden via PROJECT_DENY
+    since the last restart). The fallback does NOT rewrite state — the user
+    sees the fallback name in ``/status`` and re-picks via ``/project``.
+    """
+    name = get_active_project(chat_id, settings.default_project)
+    known: list[projects_mod.Project] = _projects_ref["known"]
+    for p in known:
+        if p.name == name:
+            return name, p.path
+    if name != settings.default_project:
+        log.warning(
+            "active project %s no longer discoverable, falling back to %s",
+            name,
+            settings.default_project,
+        )
+    for p in known:
+        if p.name == settings.default_project:
+            return p.name, p.path
+    # Extreme fallback: discovery found nothing. Use the raw cc_workdir so
+    # the bot keeps working as in Phase 4.
+    return settings.default_project, settings.cc_workdir
 
 
 async def _is_whitelisted(
@@ -160,12 +203,15 @@ async def _run_cc_with_optional_progress(
     """
     on_spawn = lambda p: setattr(state, "active_proc", p)  # noqa: E731
 
+    project, workdir = _active_project(settings, chat_id)
+    session_id = get_session(chat_id, project)
+
     if not settings.progress_enabled:
         return await run_cc(
             prompt,
             binary_path=settings.cc_binary_path,
-            workdir=settings.cc_workdir,
-            session_id=get_session(chat_id),
+            workdir=workdir,
+            session_id=session_id,
             timeout=settings.cc_timeout,
             settings_path=_profile_for(chat_id),
             on_spawn=on_spawn,
@@ -192,8 +238,8 @@ async def _run_cc_with_optional_progress(
     return await run_cc_streaming(
         prompt,
         binary_path=settings.cc_binary_path,
-        workdir=settings.cc_workdir,
-        session_id=get_session(chat_id),
+        workdir=workdir,
+        session_id=session_id,
         timeout=settings.cc_timeout,
         settings_path=_profile_for(chat_id),
         on_spawn=on_spawn,
@@ -247,8 +293,10 @@ async def handle_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         update, context, context.application.bot_data["settings"]
     ):
         return
+    settings = context.application.bot_data["settings"]
     chat_id = update.effective_chat.id
-    session = get_session(chat_id)
+    project, _ = _active_project(settings, chat_id)
+    session = get_session(chat_id, project)
     depth = request_queue.queue_depth(chat_id)
     active = request_queue.active_label(chat_id) or "idle"
     expires = unlock.unlock_expires_at(chat_id)
@@ -259,6 +307,7 @@ async def handle_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     else:
         unlock_line = "locked"
     await update.message.reply_text(
+        f"project: `{project}`\n"
         f"session: `{session}`\n"
         f"active: {active}\n"
         f"queue: {depth} waiting\n"
@@ -299,14 +348,81 @@ async def handle_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
 
 async def handle_new(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not await _is_whitelisted(
-        update, context, context.application.bot_data["settings"]
-    ):
+    settings = context.application.bot_data["settings"]
+    if not await _is_whitelisted(update, context, settings):
         return
     chat_id = update.effective_chat.id
-    new_uuid = new_session(chat_id)
-    log.info("new session chat_id=%s uuid=%s", chat_id, new_uuid)
-    await update.message.reply_text(f"🆕 new session: {new_uuid}")
+    project, _ = _active_project(settings, chat_id)
+    new_uuid = new_session(chat_id, project)
+    log.info("new session chat_id=%s project=%s uuid=%s", chat_id, project, new_uuid)
+    await update.message.reply_text(f"🆕 new session in {project}: {new_uuid}")
+
+
+async def handle_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings = context.application.bot_data["settings"]
+    if not await _is_whitelisted(update, context, settings):
+        return
+    chat_id = update.effective_chat.id
+    known: list[projects_mod.Project] = context.application.bot_data.get("projects", [])
+    if not known:
+        await update.message.reply_text(
+            "⚠️ no projects discovered — add CLAUDE.md to a folder in "
+            f"{settings.project_base_dir} and restart the bot."
+        )
+        return
+    active = get_active_project(chat_id, settings.default_project)
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                text=("✅ " if p.name == active else "") + p.name,
+                callback_data=f"proj:{p.name}",
+            )
+        ]
+        for p in known
+    ]
+    await update.message.reply_text(
+        f"active: {active}\npick a project:",
+        reply_markup=InlineKeyboardMarkup(keyboard),
+    )
+
+
+async def handle_project_callback(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    query = update.callback_query
+    # Acknowledge the tap right away so Telegram's client stops the spinner
+    # even if downstream work takes a moment.
+    await query.answer()
+    user = query.from_user
+    if user is None:
+        return
+    settings = context.application.bot_data["settings"]
+    # Whitelist taps the same way we whitelist every other update — a leaked
+    # callback_data from an older message must not let a stranger switch.
+    try:
+        hub_id = await hub_client.check_sender(user.id)
+        ok = hub_id is not None
+    except Exception:  # noqa: BLE001 — transport failure falls back to env id
+        ok = (
+            settings.whitelist_tg_user_id is not None
+            and user.id == settings.whitelist_tg_user_id
+        )
+    if not ok:
+        log.debug("drop project-callback from non-whitelisted id=%s", user.id)
+        return
+    data = query.data or ""
+    if not data.startswith("proj:"):
+        return
+    picked = data[len("proj:") :]
+    known: list[projects_mod.Project] = context.application.bot_data.get("projects", [])
+    if not any(p.name == picked for p in known):
+        await query.edit_message_text(
+            "⚠️ unknown project — restart the bot if you just added it."
+        )
+        return
+    set_active_project(query.message.chat_id, picked)
+    log.info("switched chat_id=%s to project=%s", query.message.chat_id, picked)
+    await query.edit_message_text(f"✅ switched to {picked}")
 
 
 async def handle_unlock(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -415,6 +531,7 @@ async def _post_shutdown(app: Application) -> None:
 def main() -> None:
     settings = load_settings()
     setup_logging(settings.log_level)
+    state.configure(settings.default_project)
     app = (
         ApplicationBuilder()
         .token(settings.telegram_bot_token)
@@ -423,6 +540,19 @@ def main() -> None:
         .build()
     )
     app.bot_data["settings"] = settings
+    app.bot_data["projects"] = projects_mod.discover(
+        settings.project_base_dir, settings.project_deny_list
+    )
+    _projects_ref["known"] = app.bot_data["projects"]
+    log.info(
+        "discovered %d projects: %s",
+        len(app.bot_data["projects"]),
+        ", ".join(p.name for p in app.bot_data["projects"]) or "(none)",
+    )
+    app.add_handler(CommandHandler("project", handle_project))
+    app.add_handler(
+        CallbackQueryHandler(handle_project_callback, pattern=r"^proj:")
+    )
     app.add_handler(CommandHandler("new", handle_new))
     app.add_handler(CommandHandler("unlock", handle_unlock))
     app.add_handler(CommandHandler("help", handle_help))

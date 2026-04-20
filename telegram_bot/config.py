@@ -34,6 +34,25 @@ class Settings(BaseSettings):
     # is CPU-only.
     whisper_model_size: str = Field(default="small", alias="WHISPER_MODEL_SIZE")
     whisper_compute_type: str = Field(default="int8", alias="WHISPER_COMPUTE_TYPE")
+    # Phase 5: comma-separated list of sibling-project names to hide from the
+    # /project inline keyboard. Empty by default. Applied by projects.discover
+    # after the CLAUDE.md filter. Restart the LaunchAgent to re-read.
+    project_deny: str = Field(default="", alias="PROJECT_DENY")
+
+    @property
+    def project_base_dir(self) -> str:
+        """Sibling-projects root, derived from ``cc_workdir``."""
+        return str(Path(self.cc_workdir).parent)
+
+    @property
+    def default_project(self) -> str:
+        """Basename of the default project, derived from ``cc_workdir``."""
+        return Path(self.cc_workdir).name
+
+    @property
+    def project_deny_list(self) -> list[str]:
+        """``PROJECT_DENY`` split on comma, stripped, empties dropped."""
+        return [n.strip() for n in self.project_deny.split(",") if n.strip()]
 
 
 def load_settings() -> Settings:

@@ -17,11 +17,19 @@ resilient via `KeepAlive` with a 60-second throttle, and a two-file log
 split (Python-rotated primary log + launchd-captured crash log). See
 [Auto-start (launchd)](#auto-start-launchd) for the operator flow.
 
+Phase 5 (shipped) adds per-chat project switching via `/project`. The bot
+auto-discovers sibling projects under `CC_WORKDIR`'s parent (any folder
+with a root `CLAUDE.md`), shows an inline keyboard, and routes each CC
+invocation through the picked project's working directory and a
+project-scoped session UUID. See [Project switching](#project-switching)
+for the operator flow.
+
 Source PRD: `docs/prd-telegram-claude-bridge.md`.
 Phase 1 plan: `docs/plans/2026-04-17-telegram-claude-bridge-phase1.md` (local only).
 Phase 2 plan: `docs/plans/2026-04-18-telegram-claude-bridge-phase2.md`.
 Phase 3 plan: `docs/plans/2026-04-19-telegram-claude-bridge-phase3.md` (local only).
 Phase 4 plan: `docs/plans/2026-04-19-telegram-claude-bridge-phase4.md` (local only).
+Phase 5 plan: `docs/plans/2026-04-19-telegram-claude-bridge-phase5.md` (local only).
 
 ## Prerequisites
 
@@ -71,6 +79,9 @@ Phase 4 plan: `docs/plans/2026-04-19-telegram-claude-bridge-phase4.md` (local on
      memory footprint.
    - `WHISPER_COMPUTE_TYPE` — default `int8` (CPU-friendly). Other options
      (`int8_float16`, `float16`, `float32`) are GPU-oriented and untested on CPU.
+   - `PROJECT_DENY` — **optional** comma-separated list of sibling-project
+     names to hide from `/project` even if they have a `CLAUDE.md`. Empty
+     by default. See [Project switching](#project-switching).
 6. **Install deps**:
    ```bash
    cd telegram_bot
@@ -210,10 +221,13 @@ search for `/Users/dmitry.vasichev/`.
 
 ## Commands
 
-- `/new` — reset the bot's conversation session for the current chat. The
-  next message starts a fresh Claude Code session UUID; the previous
-  `.jsonl` remains on disk but isn't resumed. Use when you want Claude to
-  forget context.
+- `/project` — pick which project CC should work against. See
+  [Project switching](#project-switching) for the full flow.
+- `/new` — reset the bot's conversation session for the **currently active
+  project** in this chat. Other projects' sessions are left untouched, so
+  switching back to them still resumes where you left off. The next message
+  in the active project starts a fresh Claude Code session UUID; the
+  previous `.jsonl` remains on disk but isn't resumed.
 - `/unlock <pin>` — unlock destructive operations for 10 minutes in the
   current chat. Bot replies:
   - `🔓 unlocked for 10 min` on success.
@@ -223,15 +237,87 @@ search for `/Users/dmitry.vasichev/`.
     you (5 failures / 10 min → 15-minute lockout). See
     [Unlock flow](#unlock-flow) for what unlocking changes.
 - `/help` — list all bot commands.
-- `/status` — show the current CC session UUID, the active job label (or
-  `idle`), queue depth, and unlock expiry time (in the bot host's local
-  timezone).
+- `/status` — show the currently active project, the CC session UUID for
+  that project in this chat, the active job label (or `idle`), queue depth,
+  and unlock expiry time (in the bot host's local timezone).
 - `/cancel` — SIGINT the currently running CC subprocess. The reply notes
   the half-state caveat: migrations already run, commits already made, and
   other side effects are **not** rolled back. Bot replies:
   - `🟢 nothing to cancel` when no CC is running.
   - `🛑 stopped. Some actions may have already executed — check state manually.`
     on successful SIGINT.
+
+## Project switching
+
+Every chat has an **active project** — the working directory `claude -p`
+runs in, and the key under which that chat's session UUID is stored. The
+default active project is the one at `CC_WORKDIR` (usually
+`my-personal-hub`). Pick a different one with `/project`.
+
+### Discovery
+
+On startup the bot scans the parent of `CC_WORKDIR`
+(e.g. `~/Documents/my_projects/`) and picks up every immediate
+subdirectory that has a root-level `CLAUDE.md` file. Folders listed in
+`PROJECT_DENY` (`.env`) are skipped. The result is logged once per start:
+
+```
+discovered 6 projects: barber-booking, market-pulse-dashboard, mestnie, moving, my-personal-hub, portfolio-site
+```
+
+To make a folder visible to `/project`, add a minimal root `CLAUDE.md`
+(even a one-liner is enough) and restart the bot:
+
+```bash
+launchctl kickstart -k gui/$(id -u)/com.my-personal-hub.telegram-bot
+```
+
+Discovery only runs at startup — adding or removing a project during a
+run requires a restart.
+
+### Switching
+
+Send `/project` in the chat. The bot replies with an inline keyboard of
+all discovered projects; the currently active one is marked with `✅`.
+Tap a row to switch — the original message is edited in place to
+`✅ switched to <name>` (no new chat-line noise). The next text or voice
+message runs in the picked project.
+
+### Per-chat, per-project sessions
+
+The active project is **per-chat** — two different Telegram accounts
+talking to the same bot have independent active projects. Within one
+chat, each project has its own CC session UUID; switching between
+projects preserves every project's conversation, so you can bounce
+between `moving` and `my-personal-hub` without losing context on either.
+
+`/new` resets only the active project's session. Other projects in the
+same chat keep their state.
+
+Stale state (e.g. you picked a project that was later renamed or denied)
+falls back to the default project for the current message and logs a
+warning. State is **not** silently rewritten — `/status` will show the
+default project while internal state still points at the stale name, so
+the user can re-pick explicitly via `/project`.
+
+### Hiding a project
+
+Add the project name to `PROJECT_DENY` in `.env`:
+
+```
+PROJECT_DENY=denver-urban-pulse,some-other-folder
+```
+
+Restart the bot. The listed names are removed from the keyboard even if
+they still have `CLAUDE.md`.
+
+### Security
+
+Project switching does **not** relax any safety rails. Locked/unlocked
+profiles are global (all projects share them), `Notes/Personal/**` stays
+denied everywhere, and the PreToolUse hook (see
+[Bash bypass closure](#bash-bypass-closure-pretooluse-hook)) runs for
+every project.
 
 ## Voice input
 
@@ -377,13 +463,31 @@ sending any traffic. Prefer neutral usernames (avoid `_cc_`, `_claude_`,
 ## Session model
 
 `--session-id` on the Claude CLI requires a valid UUID, so the bot stores a
-per-chat UUID in `telegram_bot/.state.json` and passes it to `claude -p`. If
-the session's `.jsonl` file already exists under
+per-(chat, project) UUID in `telegram_bot/.state.json` and passes it to
+`claude -p`. If the session's `.jsonl` file already exists under
 `~/.claude/projects/<encoded-workdir>/<uuid>.jsonl`, the bot switches to
 `--resume` automatically (CC rejects `--session-id` for in-use UUIDs).
 
-`/new` rotates the UUID for the current chat; the previous `.jsonl` is left
-on disk untouched but is no longer referenced.
+`.state.json` schema::
+
+    {
+        "chats": {
+            "<chat_id>": {
+                "active_project": "my-personal-hub",
+                "sessions": {
+                    "my-personal-hub": "<uuid>",
+                    "market-pulse-dashboard": "<uuid>"
+                }
+            }
+        }
+    }
+
+Phase 2–4 state files (`{"sessions": {<chat_id>: <uuid>}}`) auto-migrate
+in place on the first read after upgrade — no manual steps required.
+
+`/new` rotates the UUID for the **active project** in the current chat;
+other projects keep their UUIDs. The previous `.jsonl` is left on disk
+untouched but is no longer referenced.
 
 ## Architecture — bot ↔ Hub handshake
 
@@ -449,6 +553,12 @@ for every other API client.
   `bootout`. See [Auto-start (launchd)](#auto-start-launchd) above.
   Metal acceleration for faster-whisper is a follow-up candidate if CPU
   int8 proves slow.
+- **Phase 5 (shipped):** per-chat project switching via `/project`.
+  Auto-discovery of sibling projects (`CC_WORKDIR`'s parent, filtered to
+  folders with a root `CLAUDE.md` and minus `PROJECT_DENY`), inline
+  keyboard picker, per-(chat, project) session UUIDs with automatic
+  migration from the Phase 2–4 state format. See
+  [Project switching](#project-switching) above.
 
 ## Tests
 
@@ -458,10 +568,12 @@ source .venv/bin/activate
 pytest tests/ -v
 ```
 
-112 bot tests must pass: hub_client, state, state-hardening, unlock,
-cc_runner (both non-streaming and streaming variants), request_queue,
-progress, voice, chunker, main (whitelist gate + queue routing +
-/help, /status, /cancel + voice handler + progress-flag routing).
+163 bot tests must pass: hub_client, state (per-(chat, project) + legacy
+migration), state-hardening, unlock, cc_runner (both non-streaming and
+streaming variants), request_queue, progress, voice, chunker, projects
+(discovery + deny-list), main (whitelist gate + queue routing + /help,
+/status, /cancel, /project + voice handler + progress-flag routing +
+active-project routing).
 
 The `voice_real` marker gates an optional integration test that actually
 loads the Whisper model and transcribes a short clip — not part of the

@@ -203,6 +203,8 @@ def _settings_stub(progress_enabled: bool = False):
         progress_enabled=progress_enabled,
         whisper_model_size="small",
         whisper_compute_type="int8",
+        default_project="my-personal-hub",
+        project_base_dir="/tmp",
     )
 
 
@@ -248,7 +250,7 @@ def test_help_lists_all_commands(_bypass_whitelist):
 def test_status_reports_idle_and_locked(_bypass_whitelist, monkeypatch, tmp_path):
     # Force the session-state file under tmp so the test doesn't mutate the
     # developer's real .state.json.
-    monkeypatch.setattr(main, "get_session", lambda chat_id: "fake-session-id")
+    monkeypatch.setattr(main, "get_session", lambda chat_id, project: "fake-session-id")
 
     update = _make_handler_update(chat_id=777)
     context = _make_handler_context()
@@ -263,7 +265,7 @@ def test_status_reports_idle_and_locked(_bypass_whitelist, monkeypatch, tmp_path
 
 
 def test_status_reports_queue_and_unlock(_bypass_whitelist, monkeypatch):
-    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(main, "get_session", lambda chat_id, project: "s")
     # Seed queue state: active job + 2 waiting.
     s = request_queue._state_for(1)
     s.active_label = "text: hello world"
@@ -383,7 +385,7 @@ def test_handle_text_dispatches_through_queue(_bypass_whitelist, monkeypatch):
         )
     )
     monkeypatch.setattr(main, "run_cc", run_cc_mock)
-    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(main, "get_session", lambda chat_id, project: "s")
 
     update = _make_handler_update(chat_id=42, text="ping")
     context = _make_handler_context()
@@ -405,7 +407,7 @@ def test_handle_text_dispatches_through_queue(_bypass_whitelist, monkeypatch):
 
 
 def test_handle_text_shows_position_when_behind_active(_bypass_whitelist, monkeypatch):
-    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(main, "get_session", lambda chat_id, project: "s")
 
     # Fill one active + one waiting so the handler's enqueue lands at pos 2.
     s = request_queue._state_for(88)
@@ -427,7 +429,7 @@ def test_handle_text_shows_position_when_behind_active(_bypass_whitelist, monkey
 
 
 def test_handle_text_queue_full_replies_and_drops(_bypass_whitelist, monkeypatch):
-    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(main, "get_session", lambda chat_id, project: "s")
     run_cc_mock = AsyncMock()
     monkeypatch.setattr(main, "run_cc", run_cc_mock)
 
@@ -452,7 +454,7 @@ def test_handle_text_queue_full_replies_and_drops(_bypass_whitelist, monkeypatch
 
 def test_handle_text_progress_disabled_uses_run_cc(_bypass_whitelist, monkeypatch):
     """Default (grace period) → non-streaming run_cc, no stream-json argv."""
-    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(main, "get_session", lambda chat_id, project: "s")
     run_cc_mock = AsyncMock(return_value=_ok_run_result())
     run_cc_streaming_mock = AsyncMock(return_value=_ok_run_result())
     monkeypatch.setattr(main, "run_cc", run_cc_mock)
@@ -474,7 +476,7 @@ def test_handle_text_progress_disabled_uses_run_cc(_bypass_whitelist, monkeypatc
 
 
 def test_handle_text_progress_enabled_uses_streaming(_bypass_whitelist, monkeypatch):
-    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(main, "get_session", lambda chat_id, project: "s")
     run_cc_mock = AsyncMock(return_value=_ok_run_result())
     run_cc_streaming_mock = AsyncMock(return_value=_ok_run_result("from stream"))
     monkeypatch.setattr(main, "run_cc", run_cc_mock)
@@ -500,7 +502,7 @@ def test_handle_text_progress_enabled_uses_streaming(_bypass_whitelist, monkeypa
 
 def test_progress_on_line_throttles_edits_under_10s(_bypass_whitelist, monkeypatch):
     """Two tool_use events within 10s → exactly one status.edit_text call."""
-    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(main, "get_session", lambda chat_id, project: "s")
 
     # Capture the on_event_line callback that handle_text wires up.
     captured_on_line: list = []
@@ -580,7 +582,7 @@ def _make_voice_context(settings=None):
 
 
 def test_voice_handler_echoes_transcript_then_dispatches_cc(_bypass_whitelist, monkeypatch):
-    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(main, "get_session", lambda chat_id, project: "s")
     transcribe = AsyncMock(return_value="привет мир")
     monkeypatch.setattr(main.voice, "transcribe_bytes", transcribe)
     run_cc_mock = AsyncMock(return_value=_ok_run_result("done"))
@@ -607,7 +609,7 @@ def test_voice_handler_echoes_transcript_then_dispatches_cc(_bypass_whitelist, m
 
 
 def test_voice_handler_transcription_failure_replies_warning_no_dispatch(_bypass_whitelist, monkeypatch):
-    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(main, "get_session", lambda chat_id, project: "s")
     monkeypatch.setattr(
         main.voice,
         "transcribe_bytes",
@@ -633,7 +635,7 @@ def test_voice_handler_transcription_failure_replies_warning_no_dispatch(_bypass
 
 
 def test_voice_handler_empty_transcript_replies_warning_no_dispatch(_bypass_whitelist, monkeypatch):
-    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(main, "get_session", lambda chat_id, project: "s")
     monkeypatch.setattr(main.voice, "transcribe_bytes", AsyncMock(return_value=""))
     run_cc_mock = AsyncMock()
     monkeypatch.setattr(main, "run_cc", run_cc_mock)
@@ -656,7 +658,7 @@ def test_voice_handler_empty_transcript_replies_warning_no_dispatch(_bypass_whit
 
 def test_voice_handler_queue_full_replies_and_skips_transcription(_bypass_whitelist, monkeypatch):
     """When capacity is saturated, don't even download+transcribe — reject."""
-    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(main, "get_session", lambda chat_id, project: "s")
     transcribe = AsyncMock()
     monkeypatch.setattr(main.voice, "transcribe_bytes", transcribe)
 
@@ -680,7 +682,7 @@ def test_voice_handler_queue_full_replies_and_skips_transcription(_bypass_whitel
 
 def test_progress_on_line_swallows_telegram_edit_failure(_bypass_whitelist, monkeypatch):
     """A 400 from editMessageText must not abort the CC run."""
-    monkeypatch.setattr(main, "get_session", lambda chat_id: "s")
+    monkeypatch.setattr(main, "get_session", lambda chat_id, project: "s")
 
     captured_on_line: list = []
 
@@ -745,3 +747,285 @@ def test_render_result_when_cancelled_skips_stdout_and_edits_to_cancelled(
     assert "cancel" in edit_arg.lower()
     # The user must NOT see CC's interrupted-run stdout as a model reply.
     update.message.reply_text.assert_not_called()
+
+
+# --- /project -------------------------------------------------------------
+
+
+import projects as projects_mod  # noqa: E402 — imported here so earlier tests
+# don't have to care about this module's existence.
+import state as state_mod  # noqa: E402
+
+
+@pytest.fixture
+def _isolated_state_file(tmp_path, monkeypatch):
+    """Keep /project callback tests from mutating the real .state.json."""
+    monkeypatch.setattr(state_mod, "STATE_FILE", tmp_path / ".state.json")
+    monkeypatch.setattr(state_mod, "_default_project", None)
+    state_mod.configure("my-personal-hub")
+    yield tmp_path / ".state.json"
+
+
+def _project_handler_context(projects=None, settings=None):
+    app = SimpleNamespace(
+        bot_data={
+            "settings": settings or _settings_stub(),
+            "projects": projects
+            if projects is not None
+            else [
+                projects_mod.Project(name="my-personal-hub", path="/tmp/my-personal-hub"),
+                projects_mod.Project(name="moving", path="/tmp/moving"),
+            ],
+        }
+    )
+    return SimpleNamespace(application=app, chat_data={}, args=[])
+
+
+def test_project_command_renders_keyboard_with_active_marker(
+    _bypass_whitelist, _isolated_state_file
+):
+    update = _make_handler_update(chat_id=777)
+    context = _project_handler_context()
+
+    asyncio.run(main.handle_project(update, context))
+
+    call = update.message.reply_text.await_args
+    body = call.args[0]
+    # Default active project is my-personal-hub — keyboard must mark it.
+    assert "active: my-personal-hub" in body
+    markup = call.kwargs["reply_markup"]
+    labels = [row[0].text for row in markup.inline_keyboard]
+    assert "✅ my-personal-hub" in labels
+    assert "moving" in labels  # no tick, not active
+    datas = [row[0].callback_data for row in markup.inline_keyboard]
+    assert set(datas) == {"proj:my-personal-hub", "proj:moving"}
+
+
+def test_project_command_with_no_projects_shows_hint(
+    _bypass_whitelist, _isolated_state_file
+):
+    update = _make_handler_update(chat_id=1)
+    context = _project_handler_context(projects=[])
+
+    asyncio.run(main.handle_project(update, context))
+
+    body = update.message.reply_text.await_args.args[0]
+    assert "no projects" in body.lower()
+
+
+def _make_callback_update(user_id: int = 42, data: str = "proj:moving", chat_id: int = 777):
+    query = SimpleNamespace(
+        answer=AsyncMock(),
+        from_user=SimpleNamespace(id=user_id),
+        data=data,
+        message=SimpleNamespace(chat_id=chat_id),
+        edit_message_text=AsyncMock(),
+    )
+    return SimpleNamespace(callback_query=query)
+
+
+def test_project_callback_updates_active_project(
+    monkeypatch, _isolated_state_file
+):
+    monkeypatch.setattr(hub_client, "check_sender", AsyncMock(return_value=99))
+
+    update = _make_callback_update(data="proj:moving", chat_id=555)
+    context = _project_handler_context()
+
+    asyncio.run(main.handle_project_callback(update, context))
+
+    update.callback_query.answer.assert_awaited_once()
+    update.callback_query.edit_message_text.assert_awaited_once()
+    edit_body = update.callback_query.edit_message_text.await_args.args[0]
+    assert "switched to moving" in edit_body
+    assert state_mod.get_active_project(555, "my-personal-hub") == "moving"
+
+
+def test_project_callback_ignores_unknown_project_name(
+    monkeypatch, _isolated_state_file
+):
+    monkeypatch.setattr(hub_client, "check_sender", AsyncMock(return_value=99))
+
+    update = _make_callback_update(data="proj:doesnotexist", chat_id=555)
+    context = _project_handler_context()
+
+    asyncio.run(main.handle_project_callback(update, context))
+
+    edit_body = update.callback_query.edit_message_text.await_args.args[0]
+    assert "unknown project" in edit_body.lower()
+    # State must not flip — chat still on the default.
+    assert (
+        state_mod.get_active_project(555, "my-personal-hub")
+        == "my-personal-hub"
+    )
+
+
+def test_project_callback_drops_non_whitelisted_taps(
+    monkeypatch, _isolated_state_file
+):
+    # Hub returns None (not whitelisted) AND env whitelist doesn't match.
+    monkeypatch.setattr(hub_client, "check_sender", AsyncMock(return_value=None))
+
+    update = _make_callback_update(user_id=9999, data="proj:moving", chat_id=555)
+    context = _project_handler_context()
+
+    asyncio.run(main.handle_project_callback(update, context))
+
+    update.callback_query.answer.assert_awaited_once()
+    # Must not edit the message and must not flip state.
+    update.callback_query.edit_message_text.assert_not_called()
+    assert (
+        state_mod.get_active_project(555, "my-personal-hub")
+        == "my-personal-hub"
+    )
+
+
+def test_project_callback_env_fallback_on_hub_error(
+    monkeypatch, _isolated_state_file
+):
+    monkeypatch.setattr(
+        hub_client, "check_sender", AsyncMock(side_effect=RuntimeError("boom"))
+    )
+    settings = _settings_stub()
+    settings.whitelist_tg_user_id = 42
+
+    update = _make_callback_update(user_id=42, data="proj:moving", chat_id=555)
+    context = _project_handler_context(settings=settings)
+
+    asyncio.run(main.handle_project_callback(update, context))
+
+    update.callback_query.edit_message_text.assert_awaited_once()
+    assert state_mod.get_active_project(555, "my-personal-hub") == "moving"
+
+
+def test_help_includes_project_command(_bypass_whitelist):
+    update = _make_handler_update()
+    context = _make_handler_context()
+    asyncio.run(main.handle_help(update, context))
+    body = update.message.reply_text.await_args.args[0]
+    assert "/project" in body
+
+
+# --- Active-project routing (Task 4) -------------------------------------
+
+
+@pytest.fixture
+def _known_projects(monkeypatch):
+    """Register a known-project set in the module-level ref."""
+    known = [
+        projects_mod.Project(name="my-personal-hub", path="/p/hub"),
+        projects_mod.Project(name="moving", path="/p/moving"),
+    ]
+    monkeypatch.setitem(main._projects_ref, "known", known)
+    yield known
+
+
+def test_active_project_default_when_chat_never_picked(_isolated_state_file, _known_projects):
+    settings = _settings_stub()
+    name, workdir = main._active_project(settings, chat_id=111)
+    assert name == "my-personal-hub"
+    assert workdir == "/p/hub"
+
+
+def test_active_project_uses_picked_name_and_its_path(_isolated_state_file, _known_projects):
+    state_mod.set_active_project(222, "moving")
+    settings = _settings_stub()
+    name, workdir = main._active_project(settings, chat_id=222)
+    assert name == "moving"
+    assert workdir == "/p/moving"
+
+
+def test_active_project_stale_falls_back_to_default_and_warns(
+    _isolated_state_file, _known_projects, caplog
+):
+    # Chat picked "ghost" earlier; since then discovery dropped it.
+    state_mod.set_active_project(333, "ghost")
+    settings = _settings_stub()
+    with caplog.at_level("WARNING"):
+        name, workdir = main._active_project(settings, chat_id=333)
+    assert name == "my-personal-hub"
+    assert workdir == "/p/hub"
+    assert any("ghost" in rec.message for rec in caplog.records)
+    # State must NOT be rewritten — the chat still points at "ghost" so the
+    # user sees the fallback in /status and can re-pick explicitly.
+    assert state_mod.get_active_project(333, "my-personal-hub") == "ghost"
+
+
+def test_active_project_extreme_fallback_when_discovery_empty(
+    _isolated_state_file, monkeypatch
+):
+    monkeypatch.setitem(main._projects_ref, "known", [])
+    settings = _settings_stub()
+    name, workdir = main._active_project(settings, chat_id=444)
+    assert name == "my-personal-hub"
+    # No discovered projects → fall through to the raw cc_workdir so the bot
+    # still works (Phase 4 behaviour preserved).
+    assert workdir == settings.cc_workdir
+
+
+def test_handle_text_routes_workdir_to_active_project(
+    _bypass_whitelist, _isolated_state_file, _known_projects, monkeypatch
+):
+    captured: dict = {}
+
+    async def fake_run_cc(prompt, **kwargs):
+        captured.update(kwargs)
+        return _ok_run_result()
+
+    monkeypatch.setattr(main, "run_cc", fake_run_cc)
+    state_mod.set_active_project(777, "moving")
+
+    update = _make_handler_update(chat_id=777, text="ping")
+    context = _make_handler_context()
+
+    async def scenario():
+        await main.handle_text(update, context)
+        worker = request_queue._state_for(777).worker
+        if worker is not None:
+            await worker
+
+    asyncio.run(scenario())
+
+    assert captured["workdir"] == "/p/moving"
+    # session_id must be the UUID persisted for (777, "moving"), not the
+    # default TG_DEFAULT_UUID.
+    expected = state_mod.get_session(777, "moving")
+    assert captured["session_id"] == expected
+    assert captured["session_id"] != state_mod.TG_DEFAULT_UUID
+
+
+def test_handle_new_resets_only_the_active_projects_session(
+    _bypass_whitelist, _isolated_state_file, _known_projects
+):
+    # Seed: chat 888 has "my-personal-hub" session A and "moving" session B.
+    state_mod.new_session(888, "my-personal-hub")
+    u_hub_before = state_mod.get_session(888, "my-personal-hub")
+    state_mod.new_session(888, "moving")
+    u_moving_before = state_mod.get_session(888, "moving")
+    # Switch active to "moving", then /new.
+    state_mod.set_active_project(888, "moving")
+
+    update = _make_handler_update(chat_id=888)
+    context = _make_handler_context()
+    asyncio.run(main.handle_new(update, context))
+
+    # "moving" got a fresh UUID; "my-personal-hub" untouched.
+    u_moving_after = state_mod.get_session(888, "moving")
+    u_hub_after = state_mod.get_session(888, "my-personal-hub")
+    assert u_moving_after != u_moving_before
+    assert u_hub_after == u_hub_before
+    body = update.message.reply_text.await_args.args[0]
+    assert "moving" in body
+
+
+def test_status_shows_active_project_on_top(
+    _bypass_whitelist, _isolated_state_file, _known_projects
+):
+    state_mod.set_active_project(999, "moving")
+    update = _make_handler_update(chat_id=999)
+    context = _make_handler_context()
+
+    asyncio.run(main.handle_status(update, context))
+
+    body = update.message.reply_text.await_args.args[0]
+    assert "project: `moving`" in body
