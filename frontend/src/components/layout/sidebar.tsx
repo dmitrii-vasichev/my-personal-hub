@@ -1,39 +1,51 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
-import {
-  LayoutDashboard,
-  CheckSquare,
-  Bell,
-  Briefcase,
-  Calendar,
-  FileText,
-  Radio,
-  Heart,
-  Settings,
-  User,
-  PanelLeftClose,
-  Megaphone,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 
-const navItems = [
-  { label: "Dashboard", href: "/", icon: LayoutDashboard },
-  { label: "Tasks", href: "/tasks", icon: CheckSquare },
-  { label: "Reminders", href: "/reminders", icon: Bell },
-  { label: "Meetings", href: "/calendar", icon: Calendar },
-  { label: "Job Hunt", href: "/jobs", icon: Briefcase },
-  { label: "Outreach", href: "/outreach", icon: Megaphone, hideForDemo: true },
-  { label: "Notes", href: "/notes", icon: FileText },
-  { label: "Pulse", href: "/pulse", icon: Radio },
-  { label: "Vitals", href: "/vitals", icon: Heart },
-  { label: "Settings", href: "/settings", icon: Settings },
-  { label: "Profile", href: "/profile", icon: User },
+type NavItem = {
+  label: string;
+  href: string;
+  glyph: string;
+  hideForDemo?: boolean;
+};
+
+type NavSection = {
+  title: string;
+  items: NavItem[];
+};
+
+const navSections: NavSection[] = [
+  {
+    title: "Daily",
+    items: [
+      { label: "Today", href: "/", glyph: "◉" },
+      { label: "Tasks", href: "/tasks", glyph: "▦" },
+      { label: "Reminders", href: "/reminders", glyph: "◷" },
+      { label: "Meetings", href: "/calendar", glyph: "◧" },
+    ],
+  },
+  {
+    title: "Projects",
+    items: [
+      { label: "Job Hunt", href: "/jobs", glyph: "▤" },
+      { label: "Outreach", href: "/outreach", glyph: "◈", hideForDemo: true },
+      { label: "Notes", href: "/notes", glyph: "▨" },
+    ],
+  },
+  {
+    title: "Signals",
+    items: [{ label: "Pulse", href: "/pulse", glyph: "◐" }],
+  },
+  {
+    title: "Account",
+    items: [
+      { label: "Settings", href: "/settings", glyph: "◇" },
+      { label: "Profile", href: "/profile", glyph: "▢" },
+    ],
+  },
 ];
 
 interface SidebarProps {
@@ -44,102 +56,113 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle, onNavClick }: SidebarProps) {
   const pathname = usePathname();
-  const { user, isDemo } = useAuth();
-  const { resolvedTheme } = useTheme();
-
-  const logoSrc = resolvedTheme === "light" ? "/logo-light.svg" : "/logo-dark.svg";
-
-  const initials = user?.display_name
-    ? user.display_name.slice(0, 1).toUpperCase()
-    : "U";
+  const { isDemo } = useAuth();
 
   return (
     <aside
       className={cn(
-        "flex h-screen flex-col border-r border-border-subtle bg-surface transition-all duration-200 animate-[fadeIn_0.4s_ease_both]",
+        "flex h-screen flex-col bg-[color:var(--bg)] border-r border-[color:var(--line)] transition-[width] duration-150",
         collapsed ? "w-12" : "w-[220px]"
       )}
     >
-      {/* Logo */}
-      <div className={cn(
-        "flex items-center border-b border-border-subtle h-12",
-        collapsed ? "justify-center" : "justify-between px-3"
-      )}>
-        {collapsed ? (
-          <button onClick={onToggle} className="flex items-center justify-center cursor-pointer" title="Expand sidebar">
-            <Image src={logoSrc} alt="Personal Hub" width={24} height={24} />
-          </button>
-        ) : (
-          <>
-            <div className="flex items-center gap-2">
-              <Image src={logoSrc} alt="Personal Hub" width={24} height={24} className="shrink-0" />
-              <span className="text-[15px] font-semibold tracking-tight text-foreground">Personal Hub</span>
-            </div>
-            <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground" onClick={onToggle}>
-              <PanelLeftClose className="h-4 w-4" />
-            </Button>
-          </>
+      {/* Brand */}
+      <div
+        className={cn(
+          "flex items-center border-b border-[color:var(--line)] h-12 shrink-0",
+          collapsed ? "justify-center" : "justify-between px-[18px]"
         )}
+      >
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex items-center gap-2 cursor-pointer"
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <span
+            className="inline-block w-[14px] h-[14px] bg-[color:var(--accent)]"
+            aria-hidden
+          />
+          {!collapsed && (
+            <b className="font-[family-name:var(--font-space-grotesk)] font-bold text-[22px] tracking-[-0.8px] text-[color:var(--ink)]">
+              HUB_
+            </b>
+          )}
+        </button>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 space-y-0.5 px-2 py-3">
-        {!collapsed && (
-          <span className="mb-1.5 block px-[10px] pt-3.5 pb-1.5 font-mono text-[9px] font-medium uppercase tracking-[1.5px] text-tertiary">
-            Modules
-          </span>
-        )}
-        {navItems.filter((item) => !("hideForDemo" in item && item.hideForDemo && isDemo)).map((item) => {
-          const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+      <nav className="flex-1 overflow-y-auto py-2">
+        {navSections.map((section) => {
+          const visibleItems = section.items.filter(
+            (item) => !(item.hideForDemo && isDemo)
+          );
+          if (visibleItems.length === 0) return null;
+
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavClick}
-              className={cn(
-                "relative flex items-center gap-[10px] rounded-lg px-[10px] py-[8px] text-[14px] transition-all duration-150",
-                isActive
-                  ? "bg-surface-hover text-foreground font-medium"
-                  : "text-muted-foreground hover:bg-surface-hover hover:text-foreground",
-                collapsed && "justify-center px-0"
+            <div key={section.title}>
+              {!collapsed && (
+                <div className="px-[18px] pt-[14px] pb-[6px] text-[9.5px] font-medium uppercase tracking-[2.5px] text-[color:var(--ink-3)]">
+                  {section.title}
+                </div>
               )}
-              title={collapsed ? item.label : undefined}
-            >
-              <item.icon className={cn("h-[17px] w-[17px] shrink-0", isActive ? "opacity-100" : "opacity-60")} />
-              {!collapsed && <span>{item.label}</span>}
-              {/* Vertical accent indicator */}
-              {isActive && (
-                <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-[16px] bg-primary rounded-[2px]" />
+              {collapsed && (
+                <div className="h-[1px] bg-[color:var(--line)] my-2 mx-2" aria-hidden />
               )}
-            </Link>
+              {visibleItems.map((item) => {
+                const isActive =
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onNavClick}
+                    title={collapsed ? item.label : undefined}
+                    className={cn(
+                      "flex items-center gap-[10px] py-[8px] text-[12px] tracking-[0.2px] transition-colors border-l-[3px]",
+                      collapsed ? "justify-center px-0" : "px-[18px]",
+                      isActive
+                        ? "bg-[color:var(--bg-2)] text-[color:var(--ink)] font-semibold border-[color:var(--accent)]"
+                        : "text-[color:var(--ink-2)] border-transparent hover:bg-[color:var(--bg-2)] hover:text-[color:var(--ink)]"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "w-4 text-center text-[12px] shrink-0",
+                        isActive
+                          ? "text-[color:var(--accent)]"
+                          : "text-[color:var(--ink-3)]"
+                      )}
+                      aria-hidden
+                    >
+                      {item.glyph}
+                    </span>
+                    {!collapsed && <span className="truncate">{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
       </nav>
 
-      {/* Bottom user section */}
-      <div className="border-t border-border-subtle px-2 py-3">
-        <div className={cn(
-          "flex items-center gap-[10px] px-[10px] py-[8px] rounded-lg",
-          collapsed && "justify-center px-0"
-        )}>
-          {/* Gradient avatar badge */}
-          <div
-            className="w-[30px] h-[30px] rounded-lg flex items-center justify-center text-white text-[12px] font-semibold shrink-0"
-            style={{ background: "linear-gradient(135deg, #4f8fea, #7c5ce0)" }}
-          >
-            {initials}
-          </div>
-          {!collapsed && (
-            <div className="min-w-0">
-              <div className="text-[13px] font-medium text-foreground truncate">
-                {user?.display_name ?? "User"}
-              </div>
-              <div className="text-[11px] text-tertiary truncate">
-                {user?.email ?? ""}
-              </div>
-            </div>
-          )}
-        </div>
+      {/* Footer */}
+      <div
+        className={cn(
+          "border-t border-[color:var(--line)] py-[12px] text-[10px] tracking-[0.5px] text-[color:var(--ink-3)] shrink-0",
+          collapsed ? "px-2 flex justify-center" : "px-[18px] flex justify-between items-center"
+        )}
+      >
+        <span className="flex items-center gap-[6px]">
+          <span
+            className="inline-block w-[6px] h-[6px] rounded-full bg-[color:var(--accent)]"
+            style={{ boxShadow: "0 0 6px var(--accent)" }}
+            aria-hidden
+          />
+          {!collapsed && <span>synced</span>}
+        </span>
+        {!collapsed && <span>v0.1.0</span>}
       </div>
     </aside>
   );

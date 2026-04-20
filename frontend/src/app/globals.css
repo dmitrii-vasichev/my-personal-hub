@@ -8,8 +8,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-onest);
-  --font-heading: var(--font-onest);
+  --font-sans: var(--font-jetbrains-mono);
+  --font-heading: var(--font-space-grotesk);
   --font-mono: var(--font-jetbrains-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -30,9 +30,9 @@
   --color-border-subtle: var(--border-subtle);
   --color-destructive: var(--destructive);
   --color-destructive-muted: var(--destructive-muted);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-accent-muted: var(--accent-muted);
+  --color-accent: var(--shadcn-accent);
+  --color-accent-foreground: var(--shadcn-accent-foreground);
+  --color-accent-muted: var(--shadcn-accent-muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -55,120 +55,129 @@
   --color-accent-amber: var(--accent-amber);
   --color-accent-amber-muted: var(--accent-amber-muted);
   --color-tertiary: var(--tertiary);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-3xl: 0;
+  --radius-4xl: 0;
 }
 
-/* Light theme */
+/* ============================================================
+   BRUTALIST TOKENS — dark is default (:root), .light overrides.
+   See handoff/TOKENS.md. Shadcn-named tokens below are aliased
+   to the brutalist palette so existing shadcn components keep
+   working without per-component edits.
+   ============================================================ */
 :root {
-  --background: #fafbfc;
-  --foreground: #1a1c23;
-  --surface: #f3f4f7;
-  --surface-hover: #ecedf1;
-  --card: #ffffff;
-  --card-hover: #f8f9fb;
-  --card-foreground: #1a1c23;
-  --popover: #ffffff;
-  --popover-foreground: #1a1c23;
-  --primary: #4f8fea;
-  --primary-foreground: #ffffff;
-  --secondary: #ecedf1;
-  --secondary-foreground: #1a1c23;
-  --muted: #f3f4f7;
-  --muted-foreground: #6b7084;
-  --accent: rgba(79, 143, 234, 0.08);
-  --accent-foreground: #4f8fea;
-  --accent-muted: rgba(79, 143, 234, 0.10);
-  --accent-teal: #2aba76;
-  --accent-teal-muted: rgba(42, 186, 118, 0.10);
-  --accent-violet: #7c3aed;
-  --accent-violet-muted: rgba(124, 58, 237, 0.10);
-  --accent-amber: #d9a23b;
-  --accent-amber-muted: rgba(217, 162, 59, 0.10);
-  --destructive: #dc5454;
-  --destructive-muted: rgba(220, 84, 84, 0.10);
-  --border: #e2e4ea;
-  --border-subtle: #ecedf1;
-  --tertiary: #9196a8;
-  --input: #e2e4ea;
-  --ring: #4f8fea;
-  --warning: #d9a23b;
-  --success: #2aba76;
-  --chart-1: #4f8fea;
-  --chart-2: #2aba76;
-  --chart-3: #d9a23b;
-  --chart-4: #dc5454;
-  --chart-5: #7c3aed;
-  --radius: 0.5rem;
-  --sidebar: #f3f4f7;
-  --sidebar-foreground: #6b7084;
-  --sidebar-primary: #4f8fea;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: rgba(79, 143, 234, 0.08);
-  --sidebar-accent-foreground: #4f8fea;
-  --sidebar-border: #e2e4ea;
-  --sidebar-ring: #4f8fea;
-  --text-primary: #1a1c23;
-  --text-secondary: #6b7280;
-  --text-tertiary: #4b5563;
-}
+  /* ─── Brutalist base ─── */
+  --bg:       #0e0e0c;
+  --bg-2:     #141412;
+  --line:     #2a2a26;
+  --line-2:   #3c3c36;
+  --ink:      #f1efe6;
+  --ink-2:    #b3b0a4;
+  --ink-3:    #74716a;
+  --ink-4:    #4d4b46;
+  --accent:   #d9ff3d;   /* acid lime — primary CTA / active */
+  --accent-2: #ff6b35;   /* orange — P1, warnings */
+  --accent-3: #00e0c6;   /* teal — success, replies */
+  --danger:   #ff4b4b;
 
-/* Dark theme (default) */
-.dark {
-  --background: #0c0e14;
-  --foreground: #e8eaf0;
-  --surface: #13161f;
-  --surface-hover: #1a1d28;
-  --card: #171a24;
-  --card-hover: #1c2030;
-  --card-foreground: #e8eaf0;
-  --popover: #171a24;
-  --popover-foreground: #e8eaf0;
-  --primary: #4f8fea;
-  --primary-foreground: #FFFFFF;
-  --secondary: #1a1d28;
-  --secondary-foreground: #e8eaf0;
-  --muted: #171a24;
-  --muted-foreground: #8b8fa4;
-  --accent: rgba(79, 143, 234, 0.12);
-  --accent-foreground: #4f8fea;
-  --accent-muted: rgba(79, 143, 234, 0.12);
-  --accent-teal: #3dd68c;
-  --accent-teal-muted: rgba(61, 214, 140, 0.12);
+  /* ─── Shadcn surface aliases ─── */
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --surface: var(--bg-2);
+  --surface-hover: var(--bg-2);
+  --card: var(--bg-2);
+  --card-hover: var(--bg-2);
+  --card-foreground: var(--ink);
+  --popover: var(--bg-2);
+  --popover-foreground: var(--ink);
+  --muted: var(--bg-2);
+  --muted-foreground: var(--ink-3);
+  --tertiary: var(--ink-3);
+
+  /* ─── Shadcn primary/secondary ─── */
+  --primary: var(--accent);
+  --primary-foreground: #0e0e0c;
+  --secondary: var(--bg-2);
+  --secondary-foreground: var(--ink);
+
+  /* ─── Shadcn `accent` (subtle hover surface) — namespaced to
+         avoid collision with brutalist --accent (acid lime) ─── */
+  --shadcn-accent: var(--bg-2);
+  --shadcn-accent-foreground: var(--ink);
+  --shadcn-accent-muted: var(--bg-2);
+
+  /* ─── Extended accent family (legacy components) ─── */
+  --accent-teal: var(--accent-3);
+  --accent-teal-muted: rgba(0, 224, 198, 0.12);
   --accent-violet: #a78bfa;
   --accent-violet-muted: rgba(167, 139, 250, 0.12);
-  --accent-amber: #f0b849;
-  --accent-amber-muted: rgba(240, 184, 73, 0.12);
-  --destructive: #ef6464;
-  --destructive-muted: rgba(239, 100, 100, 0.12);
-  --border: #23273a;
-  --border-subtle: #1c2033;
-  --tertiary: #565a6e;
-  --input: #1c2033;
-  --ring: #4f8fea;
-  --warning: #f0b849;
-  --success: #3dd68c;
-  --chart-1: #4f8fea;
-  --chart-2: #3dd68c;
-  --chart-3: #f0b849;
-  --chart-4: #ef6464;
+  --accent-amber: var(--accent-2);
+  --accent-amber-muted: rgba(255, 107, 53, 0.12);
+
+  /* ─── State / semantic ─── */
+  --destructive: var(--danger);
+  --destructive-muted: rgba(255, 75, 75, 0.12);
+  --warning: var(--accent-2);
+  --success: var(--accent-3);
+
+  /* ─── Borders / input / ring ─── */
+  --border: var(--line);
+  --border-subtle: var(--line);
+  --input: var(--line);
+  --ring: var(--accent);
+
+  /* ─── Charts ─── */
+  --chart-1: var(--accent);
+  --chart-2: var(--accent-3);
+  --chart-3: var(--accent-2);
+  --chart-4: var(--danger);
   --chart-5: #a78bfa;
-  --sidebar: #13161f;
-  --sidebar-foreground: #8b8fa4;
-  --sidebar-primary: #4f8fea;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: rgba(79, 143, 234, 0.12);
-  --sidebar-accent-foreground: #4f8fea;
-  --sidebar-border: #1c2033;
-  --sidebar-ring: #4f8fea;
-  --text-primary: #e8eaf0;
-  --text-secondary: #6b7280;
-  --text-tertiary: #4b5563;
+
+  /* ─── Sidebar ─── */
+  --sidebar: var(--bg);
+  --sidebar-foreground: var(--ink-2);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: #0e0e0c;
+  --sidebar-accent: var(--bg-2);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--accent);
+
+  /* ─── Text scale aliases (legacy) ─── */
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-2);
+  --text-tertiary: var(--ink-3);
+
+  /* ─── Radius — brutalist has no radius ─── */
+  --radius: 0;
+}
+
+/* ─── LIGHT theme — warm paper ─── */
+html.light {
+  --bg:       #f3f2ec;
+  --bg-2:     #e7e5db;
+  --line:     #1a1a17;
+  --line-2:   #b8b5a8;
+  --ink:      #0e0e0c;
+  --ink-2:    #2a2a26;
+  --ink-3:    #67645a;
+  --ink-4:    #8f8c82;
+  --accent:   #0e0e0c;   /* black — acid lime unreadable on paper */
+  --accent-2: #b23a0e;   /* rust */
+  --accent-3: #1d5c54;   /* forest */
+  --danger:   #b23a0e;
+
+  --primary-foreground: #f3f2ec;
+  --sidebar-primary-foreground: #f3f2ec;
+
+  --accent-teal-muted: rgba(29, 92, 84, 0.12);
+  --accent-amber-muted: rgba(178, 58, 14, 0.12);
+  --destructive-muted: rgba(178, 58, 14, 0.12);
 }
 
 @keyframes fadeSlideUp {
@@ -195,7 +204,7 @@
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 3px;
+  border-radius: 0;
 }
 
 .login-left-panel {
@@ -208,13 +217,15 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-onest), ui-sans-serif, system-ui, sans-serif;
-    line-height: 1.5;
+    font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-onest), ui-sans-serif, system-ui, sans-serif;
-    line-height: 1.3;
-    letter-spacing: -0.3px;
+    font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+    line-height: 1.1;
+    letter-spacing: -0.6px;
   }
   button,
   [role="button"],
