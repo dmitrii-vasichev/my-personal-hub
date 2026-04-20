@@ -1,5 +1,14 @@
 "use client";
 
+import { usePlanToday } from "@/hooks/use-plan-today";
+import { useVisibilityRefetch } from "@/hooks/use-visibility-refetch";
+import { PlanBar } from "@/components/today/plan-bar";
+import { FocusQueue } from "@/components/today/focus-queue";
+import { FixedSchedule } from "@/components/today/fixed-schedule";
+import { NoPlanStrip } from "@/components/today/no-plan-strip";
+import { PlanAdherenceCell } from "@/components/today/plan-adherence-cell";
+import { TodaySkeleton } from "@/components/today/today-skeleton";
+
 import { HeroPriority } from "@/components/today/hero-priority";
 import { HeroCells } from "@/components/today/hero-cells";
 import { DayTimeline } from "@/components/today/day-timeline";
@@ -35,11 +44,50 @@ function Hdline({
   );
 }
 
+const REFETCH_KEYS: readonly unknown[][] = [
+  ["planner", "plans", "today"],
+  ["planner", "context"],
+  ["planner", "analytics", "7d"],
+  ["planner", "analytics", "7d-prior"],
+];
+
 export default function TodayPage() {
+  const { plan, hasPlan, isLoading } = usePlanToday();
+
+  useVisibilityRefetch(REFETCH_KEYS);
+
+  if (isLoading) return <TodaySkeleton />;
+
+  if (hasPlan && plan) {
+    return (
+      <div>
+        <PlanBar plan={plan} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-[18px] mt-[18px]">
+          <div className="flex flex-col gap-[18px]">
+            <FocusQueue plan={plan} />
+            <FixedSchedule />
+          </div>
+          <div className="flex flex-col gap-[18px]">
+            <div className="border-[1.5px] border-[color:var(--line)]">
+              <HeroCells />
+            </div>
+            <StatsGrid replaceTasksDoneWith={<PlanAdherenceCell />} />
+            <RemindersToday />
+          </div>
+        </div>
+
+        <Hdline title="Signals · Background" />
+        <SignalsFeed />
+      </div>
+    );
+  }
+
   return (
     <div>
-      {/* Hero — Priority + Cells */}
-      <div className="border-[1.5px] border-[color:var(--line)] grid grid-cols-1 md:grid-cols-[1.5fr_1fr]">
+      <NoPlanStrip />
+
+      <div className="border-[1.5px] border-[color:var(--line)] grid grid-cols-1 md:grid-cols-[1.5fr_1fr] mt-[18px]">
         <div className="border-b-[1.5px] md:border-b-0 md:border-r-[1.5px] border-[color:var(--line)]">
           <HeroPriority />
         </div>
@@ -50,7 +98,7 @@ export default function TodayPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-[18px]">
         <DayTimeline />
         <div className="flex flex-col gap-[18px]">
-          <StatsGrid />
+          <StatsGrid replaceTasksDoneWith={<PlanAdherenceCell />} />
           <div>
             <Hdline title="Reminders · Today" />
             <RemindersToday />

@@ -1,3 +1,11 @@
+import type {
+  DailyPlan,
+  PlanItem,
+  PatchPlanItemBody,
+  PlannerContext,
+  AnalyticsResponse,
+} from "@/types/plan";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 class ApiClient {
@@ -113,3 +121,20 @@ class ApiClient {
 }
 
 export const api = new ApiClient();
+
+export const plannerApi = {
+  getPlansToday: () => api.get<DailyPlan>("/api/planner/plans/today"),
+
+  patchTodayItem: (itemId: number, body: PatchPlanItemBody) =>
+    api.patch<PlanItem>(`/api/planner/plans/today/items/${itemId}`, body),
+
+  getContext: (date: string) =>
+    api.get<PlannerContext>(
+      `/api/planner/context?date=${encodeURIComponent(date)}`,
+    ),
+
+  getAnalytics: (from: string, to: string) =>
+    api.get<AnalyticsResponse>(
+      `/api/planner/analytics?from=${from}&to=${to}`,
+    ),
+};

@@ -15,7 +15,9 @@ type Cell = {
   alert?: boolean;
 };
 
-export function StatsGrid() {
+export function StatsGrid({
+  replaceTasksDoneWith,
+}: { replaceTasksDoneWith?: React.ReactNode } = {}) {
   const { data: tasks = [] } = useTasks();
   const { data: jobs = [] } = useJobs();
   const { data: notes = [] } = useNotes();
@@ -71,39 +73,49 @@ export function StatsGrid() {
 
   return (
     <div className="grid grid-cols-2 grid-rows-2 border-[1.5px] border-[color:var(--line)]">
-      {cells.map((c, i) => (
-        <div
-          key={c.lab}
-          className={`p-[14px] flex flex-col gap-1 min-h-[80px] justify-between border-[color:var(--line)] ${i < 2 ? "border-b-[1.5px]" : ""} ${i % 2 === 0 ? "border-r-[1.5px]" : ""}`}
-        >
-          <div className="text-[9.5px] tracking-[2px] uppercase text-[color:var(--ink-3)]">
-            {c.lab}
-          </div>
-          <div
-            className={`font-[family-name:var(--font-space-grotesk)] font-bold text-[30px] leading-[1] tracking-[-1px] ${c.alert ? "text-[color:var(--accent-2)]" : "text-[color:var(--ink)]"}`}
-          >
-            {c.val}
-            {c.unit && (
-              <span className="text-[11px] text-[color:var(--ink-3)] ml-1 font-medium">
-                {c.unit}
-              </span>
+      {cells.map((c, i) => {
+        const borderCls = `${i < 2 ? "border-b-[1.5px]" : ""} ${i % 2 === 0 ? "border-r-[1.5px]" : ""}`;
+        const tileCls = `p-[14px] flex flex-col gap-1 min-h-[80px] justify-between border-[color:var(--line)] ${borderCls}`;
+
+        if (c.lab === "Tasks done · today" && replaceTasksDoneWith) {
+          return (
+            <div key={c.lab} className={tileCls}>
+              {replaceTasksDoneWith}
+            </div>
+          );
+        }
+
+        return (
+          <div key={c.lab} className={tileCls}>
+            <div className="text-[9.5px] tracking-[2px] uppercase text-[color:var(--ink-3)]">
+              {c.lab}
+            </div>
+            <div
+              className={`font-[family-name:var(--font-space-grotesk)] font-bold text-[30px] leading-[1] tracking-[-1px] ${c.alert ? "text-[color:var(--accent-2)]" : "text-[color:var(--ink)]"}`}
+            >
+              {c.val}
+              {c.unit && (
+                <span className="text-[11px] text-[color:var(--ink-3)] ml-1 font-medium">
+                  {c.unit}
+                </span>
+              )}
+            </div>
+            {c.delta && (
+              <div className="text-[10px] text-[color:var(--ink-3)]">
+                {c.delta}
+              </div>
+            )}
+            {c.bar !== undefined && c.bar !== null && (
+              <div className="h-1.5 bg-[color:var(--bg-2)] border border-[color:var(--line)] relative mt-0.5">
+                <div
+                  className={`absolute left-0 top-0 bottom-0 ${c.alert ? "bg-[color:var(--accent-2)]" : "bg-[color:var(--accent)]"}`}
+                  style={{ width: `${Math.min(100, c.bar)}%` }}
+                />
+              </div>
             )}
           </div>
-          {c.delta && (
-            <div className="text-[10px] text-[color:var(--ink-3)]">
-              {c.delta}
-            </div>
-          )}
-          {c.bar !== undefined && c.bar !== null && (
-            <div className="h-1.5 bg-[color:var(--bg-2)] border border-[color:var(--line)] relative mt-0.5">
-              <div
-                className={`absolute left-0 top-0 bottom-0 ${c.alert ? "bg-[color:var(--accent-2)]" : "bg-[color:var(--accent)]"}`}
-                style={{ width: `${Math.min(100, c.bar)}%` }}
-              />
-            </div>
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
