@@ -57,6 +57,8 @@ export function useCompleteItemMutation() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: PLAN_TODAY_KEY });
+      qc.invalidateQueries({ queryKey: ["planner", "analytics", "7d"] });
+      qc.invalidateQueries({ queryKey: ["planner", "analytics", "7d-prior"] });
     },
   });
 }

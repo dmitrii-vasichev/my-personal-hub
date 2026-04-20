@@ -73,4 +73,40 @@ describe("useCompleteItemMutation", () => {
       "Не удалось отметить — попробуй ещё раз",
     );
   });
+
+  it("invalidates plan + analytics query keys on success", async () => {
+    (plannerApi.patchTodayItem as ReturnType<typeof vi.fn>).mockResolvedValue({
+      id: 1,
+      status: "done",
+      minutes_actual: 30,
+    });
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const spy = vi.spyOn(qc, "invalidateQueries");
+    const wrap = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useCompleteItemMutation(), {
+      wrapper: wrap,
+    });
+    await act(async () => {
+      await result.current.mutateAsync({
+        id: 1,
+        body: { status: "done", minutes_actual: 30 },
+      });
+    });
+
+    const invalidatedKeys = spy.mock.calls.map(
+      (c) => (c[0] as { queryKey: unknown[] }).queryKey,
+    );
+    expect(invalidatedKeys).toEqual(
+      expect.arrayContaining([
+        ["planner", "plans", "today"],
+        ["planner", "analytics", "7d"],
+        ["planner", "analytics", "7d-prior"],
+      ]),
+    );
+  });
 });
