@@ -22,6 +22,8 @@
 > 4. Audit Procedure — 10-min drift check
 > 5. Then: User Scenarios → Functional Requirements → AC → Phasing.
 
+> ✅ **Post-Audit Status (2026-04-20).** PC-1…PC-5 + PC-7 all ticked on first pass (main @ `86e7c38`, 12 today/ components, tests 315/330 after re-run, job.py fields L68/74/76 verified, lint 0/38, build green). PC-6 (dev-server live smoke) deferred to post-ship per Stage 2a precedent. Audit Procedure produced **GO after one doc-patch commit** covering three rename/signature drift items: (a) Tasks has no existing tabs and the mockup's tab bar adds no functional value → FR-T2 / IC-T8 / FR-T7 / FR-P2 rewritten to re-skin the existing `TasksViewToggle` + top-right Analytics link, no new tab bar; (b) `KanbanCard` lacks salary fields → FR-J5 footer reworded, Non-Goal + Risk #7 clarified to use existing `location` + `match_score`; (c) Jobs tab labels kept as `Jobs` / `Search` / `Analytics` (no rename to `PIPELINE`) so existing URL query-params keep working. Reminder done-check code sketches in the implementation plan use `r.status === "done"` (not `r.done` — plan-local drift, no PRD change needed).
+
 ## Problem Statement
 
 Stage 1 (squash `9be267f`) installed the brutalist token system (acid-lime accent on `#0e0e0c` dark, warm-paper light) and the new shell (sidebar + header). Stages 2 + 2a (squashes `a74c16f`, `e481587`, post-ship fixes `0274652` / `49d6a7f` / `3c657b2`) re-skinned the Today page and overlaid the planner UI. Today now visually matches `handoff/mockups/hub-brutalist-v2.html`.
@@ -106,7 +108,7 @@ Stage 3 imports and composes components from Stages 1/2/2a AND modifies the exis
 | IC-T5 | `TasksTable` | `frontend/src/components/tasks/tasks-table.tsx` | Shadcn-styled `<Table>` with sortable headers. | Minimal re-skin: swap card/border tokens to brutalist vars. Keep columns, keep interactions. |
 | IC-T6 | `TaskFiltersBar` | `frontend/src/components/tasks/task-filters.tsx` | Dropdown-style tag filters + `extraButtons` slot. | Token-swap only (border + text colors). Do NOT replace dropdowns with tab-pills — breaks bulk actions + multi-select tag UX. |
 | IC-T7 | Task enums | `frontend/src/types/task.ts` | `TASK_STATUS_ORDER` = `["backlog", "new", "in_progress", "review", "done", "cancelled"]`; `TASK_STATUS_LABELS`, `PRIORITY_BORDER_CSS_VARS`, `DEFAULT_HIDDEN_COLUMNS=["review","cancelled"]`. | UNCHANGED. Stage 3 reads these. |
-| IC-T8 | Tasks tabs | Not present — Tasks has NO tab bar currently. It has a `TasksViewToggle` (kanban / table). | Add a brutalist `.tabs` row inline: `KANBAN · TABLE · ANALYTICS`. `ANALYTICS` replaces the current `<Link href="/tasks/analytics">` button. `BACKLOG` (from mockup) is NOT added — `backlog` is a status column in the Kanban, not a separate view. |
+| IC-T8 | Tasks tabs | Not present — Tasks has NO tab bar currently. It has a `TasksViewToggle` (kanban / table) in the filter row, plus a top-right `<Link href="/tasks/analytics">` button. | Keep the existing two-element layout (pills + top-right Analytics link). Token-swap to brutalist — no new tab bar. Post-audit decision on 2026-04-20: the mockup's 3-tab row is visual fidelity only, adds no functional value, and contradicts the minimum-re-skin scope. |
 
 ### From current Reminders code
 
@@ -155,11 +157,12 @@ Stage 3 imports and composes components from Stages 1/2/2a AND modifies the exis
   - H1: `TASKS_` (font `var(--display)`, size ~28px, `color var(--ink)`)
   - Subline: dynamic — `<open_count> open · <due_today_count> due today` (derived client-side from `useTasks()` via the same filter logic as `HeroCells.openTasks` + `HeroCells.tasksDueToday`)
   - Right-aligned action buttons: `⌕ FILTER` (stubs to no-op or opens existing filter UI if needed), `↓ SORT · DUE` (same), `+ NEW TASK` (acid-lime accent, wires to the existing `setCreateDialogStatus("new")` handler). The filter/sort buttons are visual fill from the mockup; current filtering is handled by `TaskFiltersBar` below and need not move.
-- [ ] **FR-T2:** Add a brutalist `.tabs` row directly below the header, above `TaskFiltersBar`:
-  - Buttons: `KANBAN` (active by default) · `TABLE` · `ANALYTICS` (navigates to `/tasks/analytics`, replacing the current top-right Analytics button).
-  - Active state: bold + `border-bottom: 3px solid var(--accent)`.
-  - `KANBAN`/`TABLE` tabs control `viewMode` state (today's `TasksViewToggle` becomes the tab bar; remove the separate `TasksViewToggle` component from the page render to avoid duplicating the control).
-  - Counts next to tab labels (e.g. `KANBAN 7`) are OUT of scope — optional nice-to-have if trivial, but not required.
+- [ ] **FR-T2:** Re-skin the existing `TasksViewToggle` (`Kanban` / `Table` pills) with brutalist tokens. Do NOT introduce a new top-level tab bar — the mockup's `.tabs` row is visual fidelity only and adds no functional value. Spec:
+  - Pills: 1.5px border `var(--line)`, no radius, `font-mono` uppercase, `text-[11px]`, `tracking-[1.5px]`.
+  - Active pill: `border-[color:var(--accent)]` + `text-[color:var(--ink)]` + bold.
+  - Inactive: `border-[color:var(--line)]` + `text-[color:var(--ink-3)]`, hover → `text-[color:var(--ink)]`.
+  - Keep the toggle's existing position in the filter row (`page.tsx:275`). Do NOT move it into a separate tab row.
+  - Keep the top-right `Analytics` link button (`page.tsx:242-247`) as-is structurally — token-swap only: brutalist border + uppercase font + no radius. It remains a `<Link href="/tasks/analytics">`, not an inline tab.
 - [ ] **FR-T3:** Re-skin `KanbanColumn` (`frontend/src/components/tasks/kanban-column.tsx`):
   - Column header row: replace the `h-2 w-2 rounded-full` status dot with a **square** marker (`h-2 w-2` no radius), color from the existing `STATUS_ACCENT` map (keep that dict — remap colors to brutalist tokens: `backlog` → `var(--accent-2)` orange, `new` → `var(--ink-3)`, `in_progress` → `var(--accent)` acid, `review` → `var(--accent-2)` orange, `done` → `var(--accent-3)` teal, `cancelled` → `var(--ink-4)` dim).
   - Label: uppercase + `font-[family-name:var(--mono)]` + `tracking-wider`. Keep existing `TASK_STATUS_LABELS[status]`.
@@ -181,7 +184,7 @@ Stage 3 imports and composes components from Stages 1/2/2a AND modifies the exis
   - Token swap only: `bg-card` → `bg-[color:var(--bg-2)]`; header row text → uppercase 11px `var(--ink-3)`; row border → `border-[color:var(--line)]`; row hover → `bg-[color:var(--bg-2)]` alpha variant.
   - Column layout, sort behavior, row actions — UNCHANGED.
 - [ ] **FR-T6:** `TaskFiltersBar` — token-swap only. Keep dropdown-based tag selection (bulk actions depend on it; replacing with pill tabs breaks multi-select).
-- [ ] **FR-T7:** Remove the old top-right `Analytics` button from `page.tsx:242-247` (replaced by the `ANALYTICS` tab in FR-T2). Keep the `+ NEW TASK` button in FR-T1's right action group.
+- [ ] **FR-T7:** _(Removed post-audit — no standalone action required.)_ The Analytics link stays in place; FR-T2 now covers its token swap. The `+ NEW TASK` button in FR-T1's right action group remains untouched.
 
 #### Reminders page — `/reminders`
 
@@ -269,16 +272,16 @@ Stage 3 imports and composes components from Stages 1/2/2a AND modifies the exis
     const label = dsince === null ? "—" : `${formatAppliedDate(card.applied_date)} · ${dsince}D`;
     ```
     If `applied_date` is null → label renders `—`. (Per DATA-MAP — don't fabricate an applied date we don't have.)
-    The salary / score / location text currently in the footer is preserved as a second line below the date, tokens-only-swapped.
+    The second footer line uses whatever `KanbanCard` already exposes today — `location` and/or `match_score` (no salary fields; `KanbanCard` is a lightweight view type that doesn't include `salary_min/max/currency/period`). Tokens-only-swapped, no new fields fetched.
   - "Hot" variant (full orange border): when `card.next_action_date` is non-null AND within 3 calendar days AND `card.status` is in `["screening", "technical_interview", "final_interview"]` → override outer border to `border-[1.5px] border-[color:var(--accent-2)]`.
   - "Offer" variant (full teal border): when `card.status === "offer"` → override outer border to `border-[1.5px] border-[color:var(--accent-3)]`.
   - Archived/closed variant (terminal statuses): `opacity-60` + `var(--ink-3)` company color (matches mockup's closed column).
   - Click → existing `router.push(/jobs/${card.id})` preserved.
-- [ ] **FR-J6:** Switch `viewMode` default in `JobsPage` (`page.tsx:28`) from `"table"` to `"kanban"` so the PIPELINE tab (default) lands on the Kanban view. Verified to work in PC-6.
+- [ ] **FR-J6:** Switch `viewMode` default in `JobsPage` (`page.tsx:28`) from `"table"` to `"kanban"` so the default Jobs tab lands on the Kanban view. Verified to work in PC-6.
 - [ ] **FR-J7:** Re-skin the existing tab bar (3 tabs: Jobs / Search / Analytics) at `page.tsx:77-113`:
   - Container: `border-b-[1.5px] border-[color:var(--line)]`.
   - Each tab: `border-b-[3px]` (active: `var(--accent)`, inactive: transparent), uppercase mono, `var(--ink-3)` inactive / `var(--ink)` active.
-  - Rename tab label `Jobs` → `PIPELINE` (matches mockup). `Search` → `SEARCH`, `Analytics` → `ANALYTICS`. (The `TABLE` pill in the mockup's Jobs section is NOT a tab — it's the ViewToggle; that toggle stays where it is in the toolbar row.)
+  - Keep tab labels as-is (`Jobs`, `Search`, `Analytics`) — just uppercase via CSS. Do NOT rename `Jobs` → `PIPELINE`. Post-audit (2026-04-20): mockup's `PIPELINE` label refers to the internal view-toggle inside the Jobs tab, not a top-level tab rename. Keeping labels preserves URL query-param values (`?tab=search`, `?tab=analytics`) that link from other pages.
 - [ ] **FR-J8:** Re-skin `JobsViewToggle`: brutalist button group (`border-[1.5px] border-[color:var(--line)]`, active = `bg-[color:var(--accent)] text-[color:var(--bg)]`, inactive = transparent). No logic change.
 - [ ] **FR-J9:** Re-skin `JobsTable` — token swap only (same pattern as FR-T5 for TasksTable).
 
@@ -296,7 +299,7 @@ Stage 3 imports and composes components from Stages 1/2/2a AND modifies the exis
 ### P1 (Should Have)
 
 - [ ] **FR-P1:** Jobs Hero subline "pipeline_qualitative" phrasing in FR-J1 could branch further (e.g. `needs apps.` if live = 0). Keep to the 2-branch version unless trivial.
-- [ ] **FR-P2:** Task Kanban column counts in the tab bar (e.g. `KANBAN 7 · TABLE · ANALYTICS`). Trivially computable from `board`, but visual-only, skip if time-tight.
+- [ ] **FR-P2:** _(Dropped post-audit — no new tab bar to hang counts on.)_ Any column-count visual flourish stays on the Kanban column headers themselves (already in FR-T3). Skip.
 
 ### P2 (Nice to Have — deferred)
 
@@ -320,7 +323,7 @@ Stage 3 imports and composes components from Stages 1/2/2a AND modifies the exis
 - **No new test coverage targets.** Add smoke tests for new components (FR-V4). Do not rewrite existing tests unless they break from a required token change.
 - **No regression test changes** — the 15 pre-existing flakes (`telegram-tab`, `job-detail-tracking`, `prompt-editor`) stay flaky at exactly the same counts.
 - **No Reminders quick-add NL parser.** Visual-only dashed-border re-skin of the existing multi-field form.
-- **No Job card salary/match-score rewrites.** If present today, they stay — just token-swapped.
+- **No Job card salary display.** `ApplicationCard` receives `KanbanCard` (a lightweight view type at `types/job.ts:92-104`) which does NOT include salary fields — so there's nothing to re-skin or rewrite. `match_score` and `location`, if present on `KanbanCard`, stay visible (token-swapped only). Full salary display lives on `JobsTable` / `JobDialog` and is out of Stage 3 scope beyond token swap.
 - **No removal of the `/tasks/analytics` or `/reminders/birthdays` subroutes.** Both continue to work; Stage 3 only changes the entry points (tab label / compact preview).
 
 ## Acceptance Criteria
@@ -369,7 +372,7 @@ Stage 3 ships as a single squash PR on `feat/redesign-stage-3-tasks-reminders-jo
 4. **`JobsViewToggle` on mobile currently has a separate collapse panel** (`showMobileFilters` in `page.tsx`). Re-skinning this without touching the behavior is fine; just token-swap. No other mobile risk since Stage 5 owns responsive.
 5. **Test baseline (315/330) may drift** between PRD write and branch open if Stage 2a follow-up fixes continue landing. Always re-lock the baseline in the Audit Procedure step 6 before start.
 6. **`TaskFiltersBar` dropdown vs mockup pill tabs** (IC-T6, FR-T6): the mockup shows `ALL / #WORK / #JOB / #ADMIN` pill tabs in the Tasks tab row. Keeping the dropdown preserves multi-select + bulk-action wiring, at a small visual cost. Accepted per "Scope locked #7 (no shared primitives, inline per-page) + DATA-MAP integrity". If the owner later prioritizes the pill visual, it's a separate stage.
-7. **Jobs card "salary" and "match_score" footer fields** — currently `ApplicationCard` shows these after the applied-date line. Stage 3 keeps them as a second footer line but re-skinned; if they're absent (null), render a dash or omit silently (existing behavior). Do not add new fields.
+7. **Jobs card footer content** — `ApplicationCard` consumes `KanbanCard`, not the full `Job`. `KanbanCard` has no `salary_*` fields (verified at `types/job.ts:92-104`). The existing footer renders `location` + `match_score` where present. Stage 3 keeps those two fields as the second footer line (token-swapped only); if both are null, that line is omitted. Do not add salary or new fetches.
 
 ## Next Step
 
