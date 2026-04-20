@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { LogOut, Menu } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { CommandPaletteTrigger } from "@/components/command-palette-trigger";
 import { Avatar } from "@/components/ui/avatar";
 import { Tooltip } from "@/components/ui/tooltip";
 
@@ -105,6 +106,7 @@ export function Header({ onMenuToggle, showMenuButton }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
+        <CommandPaletteTrigger />
         <ThemeToggle />
         {user && (
           <>

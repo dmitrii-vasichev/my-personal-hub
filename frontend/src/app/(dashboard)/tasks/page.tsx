@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { BarChart2 } from "lucide-react";
 import { KanbanBoard } from "@/components/tasks/kanban-board";
 import { TasksTable } from "@/components/tasks/tasks-table";
@@ -49,6 +49,7 @@ const EMPTY_BOARD: KanbanBoardType = {
 export default function TasksPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const pathname = usePathname();
 
   const [filters, setFilters] = useState<TaskFilters>(() => {
     // 1. Try URL params first
@@ -85,6 +86,16 @@ export default function TasksPage() {
   const handleClearSelection = useCallback(() => {
     setSelectedTaskIds(new Set());
   }, []);
+
+  // Open create dialog when arriving via ?new=1 (from the Command Palette).
+  useEffect(() => {
+    if (searchParams.get("new") !== "1") return;
+    setCreateDialogStatus("new");
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("new");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [searchParams, pathname, router]);
 
   // Sync tag filter to URL + sessionStorage
   useEffect(() => {

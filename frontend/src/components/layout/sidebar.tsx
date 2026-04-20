@@ -5,19 +5,19 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
 
-type NavItem = {
+export type NavItem = {
   label: string;
   href: string;
   glyph: string;
   hideForDemo?: boolean;
 };
 
-type NavSection = {
+export type NavSection = {
   title: string;
   items: NavItem[];
 };
 
-const navSections: NavSection[] = [
+export const navSections: NavSection[] = [
   {
     title: "Daily",
     items: [

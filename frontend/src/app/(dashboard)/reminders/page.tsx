@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { RemindersTabs } from "@/components/reminders/reminders-tabs";
 import { QuickAddForm } from "@/components/reminders/quick-add-form";
 import { ReminderList } from "@/components/reminders/reminder-list";
@@ -42,9 +43,29 @@ export default function RemindersPage() {
   const [completedOpen, setCompletedOpen] = useState(false);
   const quickAddRef = useRef<HTMLDivElement>(null);
 
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const scrollToQuickAdd = () => {
     quickAddRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
+
+  // Scroll to + focus the quick-add form when arriving via ?new=1 (from the
+  // Command Palette). The palette routes to /reminders?new=1; this effect
+  // completes the quick-action flow and scrubs the param.
+  useEffect(() => {
+    if (searchParams.get("new") !== "1") return;
+    scrollToQuickAdd();
+    requestAnimationFrame(() => {
+      const input = document.getElementById("reminder-title") as HTMLInputElement | null;
+      input?.focus();
+    });
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("new");
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [searchParams, pathname, router]);
 
   // Subline counts — derived from hook data.
   const { todayCount, floatingThisWeek, birthdaysSoon } = useMemo(() => {

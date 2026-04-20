@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
-import { Toaster } from "sonner";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { ThemeAwareToaster } from "@/components/theme-aware-toaster";
 import { AuthProvider } from "@/components/auth-provider";
 import { QueryProvider } from "@/lib/query-provider";
 import "./globals.css";
@@ -45,13 +45,13 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
       <body className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+        <ThemeProvider attribute="class" storageKey="hub-theme" defaultTheme="system" enableSystem>
           <QueryProvider>
             <AuthProvider>
               {children}
             </AuthProvider>
           </QueryProvider>
-          <Toaster theme="dark" position="bottom-right" />
+          <ThemeAwareToaster />
         </ThemeProvider>
         <Script id="sw-register" strategy="afterInteractive">
           {`if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js')}`}
