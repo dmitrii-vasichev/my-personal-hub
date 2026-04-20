@@ -5,7 +5,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     Application,
     ApplicationBuilder,
@@ -61,6 +61,18 @@ UNLOCKED_PROFILE = str(PROFILES_DIR / "unlocked.settings.json")
 # signature. Tests override with ``monkeypatch.setattr(main._projects_ref,
 # "known", [...])``.
 _projects_ref: dict = {"known": []}
+
+# Registered with Telegram via setMyCommands at startup so the client
+# renders a "/" menu beside the text input. Descriptions must be ≤256 chars
+# each; keep them one-liners. HELP_TEXT below carries the longer prose.
+BOT_COMMANDS: list[tuple[str, str]] = [
+    ("project", "pick a project"),
+    ("new", "start a fresh CC session in the active project"),
+    ("status", "current project, session, queue, unlock state"),
+    ("cancel", "stop the current CC run"),
+    ("unlock", "unlock destructive ops for 10 min (usage: /unlock <pin>)"),
+    ("help", "list all commands"),
+]
 
 HELP_TEXT = (
     "/project — pick which project CC works against\n"
@@ -521,6 +533,10 @@ async def _post_init(app: Application) -> None:
     settings = app.bot_data["settings"]
     hub_client.init(settings.hub_api_url, settings.hub_api_token)
     log.info("hub_client initialised base_url=%s", settings.hub_api_url)
+    await app.bot.set_my_commands(
+        [BotCommand(name, desc) for name, desc in BOT_COMMANDS]
+    )
+    log.info("set_my_commands registered %d entries", len(BOT_COMMANDS))
 
 
 async def _post_shutdown(app: Application) -> None:
