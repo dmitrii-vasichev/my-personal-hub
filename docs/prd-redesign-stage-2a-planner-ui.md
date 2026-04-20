@@ -21,6 +21,8 @@
 > 4. Audit Procedure — 10-min drift check
 > 5. Then: User Scenarios → Functional Requirements → Technical Design → AC → Phasing.
 
+> ✅ **Post-Audit Status (2026-04-19).** Pre-Implementation Checklist PC-1…PC-5 all ticked. Audit Procedure produced **GO after one doc-patch commit**. Drift found: all Stage 2 components shipped under `frontend/src/components/today/` (not `components/dashboard/` as handoff implied); `StatsGrid` is zero-prop with hardcoded cells (not composable); cell labels differ (`Tasks done · today` instead of `Focus · today`, etc.); top-bar lives under `components/layout/header.tsx`. Classified as rename + signature drift per PRD's "Rules for adaptation" — no structural divergence. This PRD + the implementation plan were patched on `main` in one commit before `feature/redesign-stage-2a-planner` was opened.
+
 ## Problem Statement
 
 Phase 2 of the planner-hub integration (`prd-planner-hub-phase2.md`, shipped at `main@af9a094`) wired the write path: the `/planner` skill POSTs today's plan to the hub API. The read path is missing — plans live in Postgres but the user has no way to see them on the portal. Today the only way to see today's plan is to ask the skill in chat (`/planner status`).
@@ -75,7 +77,7 @@ No backend changes, no schema changes, no skill changes — the overlay is a pur
 - [ ] **FR-5:** New component `<FocusQueue />`. Renders the plan's `items[]` in `order`, below the Plan-bar.
 - [ ] **FR-6:** Each row shows:
   - Checkbox reflecting `status` (`pending` / `in_progress` / `rescheduled` → unchecked; `done` → checked; `skipped` → dashed/muted glyph)
-  - `title` — if `linked_task_id` is set and task exists, hover-tooltip shows linked task's `priority` / `due_datetime`. The title text itself remains `plan_item.title` (skill's wording), not `task.title`.
+  - `title` — if `linked_task_id` is set and task exists, hover-tooltip shows the linked task's `priority` / `deadline`. The title text itself remains `plan_item.title` (skill's wording), not `task.title`. Implementation note: `PlanItemResponse.task_title` is already derived server-side, so no extra query is needed for the task title. For `priority` / `deadline`, reuse the already-fetched `useTasks()` data via React Query — no additional network call (TanStack Query deduplicates against the task list queried by Stage 2 components).
   - Duration chip `<minutes_planned>m`
   - Category tag `LANG` / `CAREER` / `HOME` / `LIFE` — mapped from `plan_item.category` via hardcoded label dict; unknown categories fall back to the raw key uppercased
   - Linked-task chip `#<id>` when `linked_task_id` is set. Clicking navigates to `/tasks/<id>` via Next.js `<Link>`.
@@ -87,7 +89,7 @@ No backend changes, no schema changes, no skill changes — the overlay is a pur
 #### Fixed schedule (read-only anchors)
 
 - [ ] **FR-11:** New component `<FixedSchedule />`. Renders **only** when a plan exists AND `/api/planner/context.calendar_events` returns at least one event for today. When plan exists but no calendar events today, the component renders nothing (no empty placeholder).
-- [ ] **FR-12:** Shows today's calendar events sorted by `start_time`. Each row: `HH:MM · <title> · <duration>` with a `MEET` / `INTERVIEW` tag depending on event metadata.
+- [ ] **FR-12:** Shows today's calendar events sorted by `start` (the backend's `ContextEvent` schema uses `start` / `end`, not `start_time` / `end_time`). Each row: `HH:MM · <title> · <duration>` where duration is computed client-side as `(end - start)` in minutes. The backend payload carries no meeting-type discriminator, so all rows render the `MEET` tag (matches Stage 2 `DayTimeline`). An `INTERVIEW` variant is deferred until a backend field supports it.
 - [ ] **FR-13:** When plan exists, `<FixedSchedule />` does **not** show reminders — the skill already injected today's due reminders into plan items (`urgent=true`, earliest slot), so they live in `<FocusQueue />`.
 - [ ] **FR-14:** When plan does NOT exist, the handoff-Today fallback owns the timeline (the existing `<DayTimeline />` spec includes meetings + reminders). `<FixedSchedule />` is not rendered in fallback mode.
 
@@ -100,8 +102,8 @@ No backend changes, no schema changes, no skill changes — the overlay is a pur
 
 #### Stats Grid integration
 
-- [ ] **FR-17:** In the handoff Stats Grid (2×2, 4 cells), replace `Focus · today` with `Plan adherence · 7d`. The other three cells (`Notes · 30d`, `Overdue tasks`, `Response rate · 30d`) are untouched.
-- [ ] **FR-18:** The new cell fetches `GET /api/planner/analytics?from=<today-6d>&to=<today>` and renders `avg(adherence_pct)` rounded to integer % plus a delta arrow vs. the prior 7-day window. When the prior window has no plans, show no delta (no arrow, no number). When the current window has no plans, show `—` as the value.
+- [ ] **FR-17:** In the Stage 2 Stats Grid (2×2, 4 cells), replace the `Tasks done · today` cell with `Plan adherence · 7d`. The other three cells (`Overdue tasks`, `Notes · 30d`, `Response rate · 30d`) are untouched. (Handoff's original cell set included `Focus · today`; Stage 2 shipped `Tasks done · today` in its place due to the absent `focus_sessions` backend. 2a targets the actually-shipped cell.) Implementation: extend `today/stats-grid.tsx` with an optional `replaceTasksDoneWith?: ReactNode` prop (default `undefined` → current behavior) so Stage 2 callers remain unchanged.
+- [ ] **FR-18:** The new cell fetches `GET /api/planner/analytics?from=<today-6d>&to=<today>` and renders `avg_adherence` (the server-computed mean of `adherence_pct` across the window) rounded to integer % plus a delta arrow vs. the prior 7-day window (`from=<today-13d>&to=<today-7d>`). When the prior window has no plans (`avg_adherence == null`), show no delta (no arrow, no number). When the current window has no plans, show `—` as the value.
 - [ ] **FR-19:** This cell renders regardless of whether today's plan exists — past-week adherence is meaningful even on a no-plan morning.
 
 #### Live refresh
@@ -143,49 +145,82 @@ Unchanged from the redesigned Hub:
 
 ### Chosen Approach
 
-**One page component, conditional render by plan existence.**
+**One page component, conditional render by plan existence.** Imports follow Stage 2's actual paths (`@/components/today/...`). `StatsGrid` is extended with an optional `replaceTasksDoneWith?: ReactNode` prop to swap the `Tasks done · today` cell in plan-mode without refactoring its cells array.
 
 `frontend/src/app/(dashboard)/page.tsx` becomes:
 
 ```tsx
-const { data: plan, isLoading, error } = useQuery({
-  queryKey: ["planner", "plans", "today"],
-  queryFn: () => plannerApi.getPlansToday(),
-  retry: (n, err) => err.status !== 404 && n < 2,
-});
+"use client";
 
-if (isLoading) return <TodaySkeleton />;
+import { usePlanToday } from "@/hooks/use-plan-today";
+import { useVisibilityRefetch } from "@/hooks/use-visibility-refetch";
+import { PlanBar } from "@/components/today/plan-bar";
+import { FocusQueue } from "@/components/today/focus-queue";
+import { FixedSchedule } from "@/components/today/fixed-schedule";
+import { NoPlanStrip } from "@/components/today/no-plan-strip";
+import { PlanAdherenceCell } from "@/components/today/plan-adherence-cell";
+import { TodaySkeleton } from "@/components/today/today-skeleton";
 
-const hasPlan = plan && !error;
+// Stage 2 handoff components — paths validated by audit IC-1…IC-7.
+import { HeroPriority } from "@/components/today/hero-priority";
+import { HeroCells } from "@/components/today/hero-cells";
+import { DayTimeline } from "@/components/today/day-timeline";
+import { StatsGrid } from "@/components/today/stats-grid";
+import { RemindersToday } from "@/components/today/reminders-today";
+import { SignalsFeed } from "@/components/today/signals-feed";
 
-return (
-  <>
-    {hasPlan
-      ? <PlanBar plan={plan} />
-      : <NoPlanStrip />}
+export default function DashboardPage() {
+  const { plan, hasPlan, isLoading } = usePlanToday();
 
-    <div className="grid cols-[1.4fr_1fr]">
-      {hasPlan ? null : <HeroPriority />}
-      <HeroCells />
+  useVisibilityRefetch([
+    ["planner", "plans", "today"],
+    ["planner", "context"],
+    ["planner", "analytics", "7d"],
+    ["planner", "analytics", "7d-prior"],
+  ]);
+
+  if (isLoading) return <TodaySkeleton />;
+
+  return (
+    <div>
+      {hasPlan && plan ? <PlanBar plan={plan} /> : <NoPlanStrip />}
+
+      <div className="grid grid-cols-1 md:grid-cols-[1.5fr_1fr] border-[1.5px] border-[color:var(--line)]">
+        {!hasPlan && <HeroPriority />}
+        <HeroCells />
+      </div>
+
+      {hasPlan && plan ? <FocusQueue plan={plan} /> : <DayTimeline />}
+      {hasPlan && <FixedSchedule />}
+
+      <StatsGrid replaceTasksDoneWith={<PlanAdherenceCell />} />
+
+      <RemindersToday />
+      <SignalsFeed />
     </div>
-
-    {hasPlan ? <FocusQueue plan={plan} /> : <DayTimeline />}
-    {hasPlan && <FixedSchedule />}
-
-    <StatsGrid>
-      <PlanAdherenceCell />
-      <NotesCell />
-      <OverdueCell />
-      <ResponseRateCell />
-    </StatsGrid>
-
-    <RemindersToday />
-    <SignalsFeed />
-  </>
-);
+  );
+}
 ```
 
-No feature flag, no A/B toggle — 404 on `/plans/today` is the natural switch between modes.
+No feature flag, no A/B toggle — an error (404 or any other non-200) on `/plans/today` is the natural switch into fallback mode. The `usePlanToday` hook treats all errors as "no plan" (`hasPlan=false`) and surfaces the error object only for the optional error-strip (FR-16).
+
+**StatsGrid extension (IC-4 signature drift fix):** The shipped `today/stats-grid.tsx` builds its 4 cells inside the component and has no props. 2a adds one optional prop without touching defaults:
+
+```tsx
+// today/stats-grid.tsx — diff
+export function StatsGrid({
+  replaceTasksDoneWith,
+}: { replaceTasksDoneWith?: React.ReactNode } = {}) {
+  // ...existing hooks + cells[] array...
+  const renderCell = (c: Cell) =>
+    c.lab === "Tasks done · today" && replaceTasksDoneWith
+      ? replaceTasksDoneWith
+      : <DefaultCellTile cell={c} />;
+  // ...render the 2×2 grid using renderCell(c)
+}
+```
+
+Stage 2 callers (`<StatsGrid />` with no props) keep identical output. Plan-mode callers pass `<PlanAdherenceCell />` as the replacement. The `PlanAdherenceCell` fetches `/api/planner/analytics` via `usePlanAnalytics` and renders inside the same border/padding skeleton so the grid stays visually consistent.
 
 ### API Design
 
@@ -210,22 +245,28 @@ No changes. The skill's Phase 2 schema is sufficient:
 
 ### File Layout
 
+All new 2a components live under `frontend/src/components/today/` — the same directory Stage 2 uses — to keep the Today page's co-located structure intact.
+
 ```
 frontend/src/
 ├── app/(dashboard)/
-│   └── page.tsx                          # MODIFIED — conditional render by hasPlan
-├── components/dashboard/
+│   ├── page.tsx                          # MODIFIED — conditional render by hasPlan
+│   └── __tests__/
+│       └── page-plan-mode.test.tsx       # NEW — integration test for plan/no-plan switch
+├── components/today/
+│   ├── stats-grid.tsx                    # MODIFIED — add replaceTasksDoneWith?: ReactNode prop
 │   ├── plan-bar.tsx                      # NEW
 │   ├── focus-queue.tsx                   # NEW
 │   ├── fixed-schedule.tsx                # NEW
 │   ├── no-plan-strip.tsx                 # NEW
-│   ├── plan-adherence-cell.tsx           # NEW (replaces focus-today cell)
+│   ├── plan-adherence-cell.tsx           # NEW (plan-mode replacement cell)
 │   ├── today-skeleton.tsx                # NEW (loading state)
 │   └── __tests__/
 │       ├── plan-bar.test.tsx             # NEW
 │       ├── focus-queue.test.tsx          # NEW
 │       ├── fixed-schedule.test.tsx       # NEW
-│       └── plan-adherence-cell.test.tsx  # NEW
+│       ├── plan-adherence-cell.test.tsx  # NEW
+│       └── stats-grid.test.tsx           # NEW — covers the replaceTasksDoneWith branch
 ├── lib/
 │   └── api.ts                            # MODIFIED — add plannerApi methods
 ├── hooks/
@@ -241,7 +282,7 @@ No backend files touched. No skill files touched.
 
 ### Category Label Map (FR-6)
 
-Hardcoded in `frontend/src/components/dashboard/focus-queue.tsx`:
+Hardcoded in `frontend/src/components/today/focus-queue.tsx` (or lifted into `frontend/src/types/plan.ts` and re-exported — either is fine):
 
 ```ts
 const CATEGORY_LABEL: Record<string, string> = {
@@ -337,16 +378,18 @@ Stage 2a imports and composes components produced by Stage 2. The table below is
 
 | # | Stage 2 artifact | Expected path | Expected signature / behavior | Used by 2a for |
 |---|---|---|---|---|
-| IC-1 | `HeroPriority` component | `frontend/src/components/dashboard/hero-priority.tsx` | Self-fetching (no required props) — internally picks the Priority_01 task per handoff DATA-MAP §Hero. Renders nothing or a fallback block when no candidate exists. | FR-15 fallback when no plan |
-| IC-2 | `HeroCells` component | `frontend/src/components/dashboard/hero-cells.tsx` | Self-fetching 2×2 cells (`Open tasks` / `Interviews wk` / `Apps live` / `Pulse unread`). Renders in both plan-mode and fallback. | Unchanged by 2a — rendered in both branches |
-| IC-3 | `DayTimeline` component | `frontend/src/components/dashboard/day-timeline.tsx` | Self-fetching union view (tasks + meetings + reminders + focus). | FR-15 fallback only (plan-mode replaces it with `<FocusQueue />`) |
-| IC-4 | `StatsGrid` component | `frontend/src/components/dashboard/stats-grid.tsx` | Composable — accepts 4 children slots OR accepts a `cells={[...]}` array. Either pattern is fine; 2a adapts. 4 cells total, 2×2 layout. | 2a swaps one cell (`FocusTodayCell` → `PlanAdherenceCell`) |
-| IC-5 | `FocusTodayCell` component (the Focus · today cell Stage 2 will ship mocked per DATA-MAP) | `frontend/src/components/dashboard/focus-today-cell.tsx` OR inlined inside `stats-grid.tsx` | Either a standalone component (easier to replace) or inlined JSX in StatsGrid (harder to replace). | 2a replaces it with `<PlanAdherenceCell />` |
-| IC-6 | `RemindersToday` component | `frontend/src/components/dashboard/reminders-today.tsx` | Self-fetching reminders-for-today slice. | Rendered in both plan-mode and fallback (unchanged by 2a) |
-| IC-7 | `SignalsFeed` component | `frontend/src/components/dashboard/signals-feed.tsx` | 4-column AI digest per handoff §4.6. | Rendered in both branches (unchanged by 2a) |
-| IC-8 | Design tokens | CSS variables on `:root` per handoff `TOKENS.md`, with `html.light` overrides | `--bg`, `--bg-2`, `--line`, `--line-2`, `--ink`, `--ink-2`, `--ink-3`, `--accent`, `--accent-2`, `--accent-3`, `--danger`, `--mono`, `--display` all available. | All new 2a components use only these tokens — zero hardcoded colors |
-| IC-9 | Top-bar component | `frontend/src/components/dashboard/top-bar.tsx` or similar | Already in Stage 1 shell. 2a does NOT modify it. | Not used directly; only verify it exists |
-| IC-10 | Page composition | `frontend/src/app/(dashboard)/page.tsx` renders components as direct children or inside a grid wrapper | Must allow 2a to wrap the existing render in a `hasPlan` conditional without rewriting the whole file. If Stage 2 deeply composes into a sub-component tree that's hard to branch, flag in audit. | 2a modifies this file to conditional-render plan-mode vs fallback |
+**Post-audit (2026-04-19): rows updated to reflect actual Stage 2 ship. Original handoff-spec expectations kept in parentheses for history.**
+
+| IC-1 | `HeroPriority` component | `frontend/src/components/today/hero-priority.tsx` *(handoff expected `components/dashboard/`)* | Self-fetching (no required props) — picks the Priority_01 target per a client-side `selectPriority` (urgent-today → any-today → next meeting → empty). Renders an empty-state block when no candidate exists. | FR-15 fallback when no plan |
+| IC-2 | `HeroCells` component | `frontend/src/components/today/hero-cells.tsx` *(handoff expected `components/dashboard/`)* | Self-fetching 2×2 cells. Shipped cells: `Open tasks` / `Tasks due today` / `Apps live` / `Meetings today` (handoff's `Interviews wk` / `Pulse unread` replaced per the scope adjustments logged in `CLAUDE.md` — backend gaps). Renders in both modes. | Unchanged by 2a |
+| IC-3 | `DayTimeline` component | `frontend/src/components/today/day-timeline.tsx` *(handoff expected `components/dashboard/`)* | Self-fetching union view (tasks + meetings + reminders). Focus rows omitted — no `focus_sessions` backend. | FR-15 fallback only |
+| IC-4 | `StatsGrid` component | `frontend/src/components/today/stats-grid.tsx` *(handoff expected `components/dashboard/`; shipped as zero-prop with 4 cells hardcoded in an internal `Cell[]` array)* | **Not composable as handoff implied.** No `cells=` prop, no children slot. Cells rendered: `Overdue tasks` / `Notes · 30d` / `Response rate · 30d` / `Tasks done · today`. **2a strategy:** modify `today/stats-grid.tsx` directly — add an optional `replaceTasksDoneWith?: ReactNode` prop (default `undefined` → current behavior). When set, the `Tasks done · today` cell body is replaced with that node; Stage 2 callers remain unchanged. | 2a swaps one cell (`Tasks done · today` → `PlanAdherenceCell`) |
+| IC-5 | Focus-cell (formerly `FocusTodayCell`) | Inlined in `today/stats-grid.tsx` as the `Tasks done · today` cell; **no standalone file** | Shipped as inlined JSX (the handoff's "Focus · today" cell was replaced with `Tasks done · today` due to backend gap — see `CLAUDE.md` scope adjustments). | 2a swaps via IC-4's `replaceTasksDoneWith` prop |
+| IC-6 | `RemindersToday` component | `frontend/src/components/today/reminders-today.tsx` *(handoff expected `components/dashboard/`)* | Self-fetching reminders-for-today slice. | Unchanged by 2a |
+| IC-7 | `SignalsFeed` component | `frontend/src/components/today/signals-feed.tsx` *(handoff expected `components/dashboard/`)* | 4-column AI digest per handoff §4.6. | Unchanged by 2a |
+| IC-8 | Design tokens | CSS variables on `:root` per handoff `TOKENS.md`, with `html.light` overrides | All handoff tokens present in `frontend/src/app/globals.css`: `--bg`, `--bg-2`, `--line`, `--line-2`, `--ink`, `--ink-2`, `--ink-3`, `--ink-4`, `--accent`, `--accent-2`, `--accent-3`, `--mono`, `--display`. Shadcn aliases (`--shadcn-accent` etc.) also present; do NOT use directly in 2a — use brutalist tokens only. | All new 2a components use only these tokens — zero hardcoded colors |
+| IC-9 | Top-bar / header | `frontend/src/components/layout/header.tsx` *(handoff expected `components/dashboard/top-bar.tsx`)* | Already in Stage 1 shell. 2a does NOT modify it. | Not used directly; only verify it exists |
+| IC-10 | Page composition | `frontend/src/app/(dashboard)/page.tsx` renders `HeroPriority`, `HeroCells`, `DayTimeline`, `StatsGrid`, `RemindersToday`, `SignalsFeed` as direct children, with a local `Hdline` helper drawing section separators (`Timeline · Today`, `Reminders · Today`, `Signals · Background`). Layout: Hero row (Priority+Cells) → 2-col (Timeline left, Stats+Reminders right) → Signals feed. | 2a wraps the existing render in a `hasPlan` conditional. Section headings may change in plan-mode (e.g. `Focus queue · Today` instead of `Timeline · Today`). Structure is composable. |
 
 **Rules for adaptation when audit finds drift:**
 - **Rename only** (e.g. `HeroPriority` → `PriorityHero`): update this PRD's FR references in a single commit (`docs: align stage-2a PRD with stage-2 component names`) before starting build.
