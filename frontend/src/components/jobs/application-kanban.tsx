@@ -135,7 +135,7 @@ export function ApplicationKanban() {
         </div>
 
         <div className="mt-6">
-          <p className="mb-3 text-[11px] font-medium uppercase tracking-wider text-tertiary px-1">
+          <p className="mb-3 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)] px-1">
             Completed
           </p>
           <div className="flex gap-4 overflow-x-auto pb-4">

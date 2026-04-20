@@ -2,21 +2,37 @@
 
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Calendar, ChevronRight, GripVertical } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { KanbanCard } from "@/types/job";
-import { APPLICATION_STATUS_COLORS } from "@/types/job";
+import { daysSince } from "@/lib/utils/days-since";
+import { formatAppliedDate } from "@/lib/utils/format-applied-date";
 
 interface ApplicationCardProps {
   card: KanbanCard;
   isDragging?: boolean;
 }
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+const HOT_STATUSES = new Set<string>([
+  "screening",
+  "technical_interview",
+  "final_interview",
+]);
+
+const TERMINAL_STATUSES_SET = new Set<string>([
+  "accepted",
+  "rejected",
+  "ghosted",
+  "withdrawn",
+]);
+
+function isHotCard(card: KanbanCard): boolean {
+  if (!card.next_action_date) return false;
+  if (!HOT_STATUSES.has(card.status)) return false;
+  const d = daysSince(card.next_action_date);
+  if (d === null) return false;
+  // next_action_date 0..3 days away in the future → daysSince returns -3..0
+  return d >= -3 && d <= 0;
 }
 
 export function ApplicationCard({ card, isDragging = false }: ApplicationCardProps) {
@@ -30,7 +46,16 @@ export function ApplicationCard({ card, isDragging = false }: ApplicationCardPro
     ? { transform: CSS.Translate.toString(transform) }
     : undefined;
 
-  const accentColor = APPLICATION_STATUS_COLORS[card.status];
+  const hot = isHotCard(card);
+  const isOffer = card.status === "offer";
+  const isTerminal = TERMINAL_STATUSES_SET.has(card.status);
+
+  // Border + background variant (compose via clsx-like string join)
+  const variantBorder = hot
+    ? "border-[color:var(--accent-2)]"
+    : isOffer
+      ? "border-[color:var(--accent-3)]"
+      : "border-[color:var(--line)] hover:border-[color:var(--line-2)]";
 
   const handleClick = (e: React.MouseEvent) => {
     if (transform) return;
@@ -38,99 +63,88 @@ export function ApplicationCard({ card, isDragging = false }: ApplicationCardPro
     router.push(`/jobs/${card.id}`);
   };
 
+  const appliedDaysSince = daysSince(card.applied_date);
+  const appliedLabel = formatAppliedDate(card.applied_date);
+  const hasFooterA = Boolean(card.applied_date) || appliedLabel === "—";
+  // Line B (location + score): omit if both missing
+  const hasLocation = Boolean(card.location);
+  const hasScore = card.match_score != null;
+  const hasFooterB = hasLocation || hasScore;
+
+  const appliedFooterText =
+    card.applied_date && appliedDaysSince !== null
+      ? `${appliedLabel} · ${appliedDaysSince}D`
+      : "—";
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       onClick={handleClick}
+      data-testid={`application-card-${card.id}`}
       className={`
-        group relative rounded-lg border bg-card cursor-pointer transition-shadow
-        ${
-          isDragging
-            ? "shadow-lg opacity-50 border-border"
-            : "border-border-subtle hover:border-border"
-        }
+        group relative border-[1.5px] bg-[color:var(--bg-2)] cursor-pointer transition-colors
+        ${variantBorder}
+        ${isDragging ? "opacity-50 cursor-grabbing" : ""}
+        ${isTerminal ? "opacity-60" : ""}
       `}
     >
-      <div
-        className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full"
-        style={{ backgroundColor: accentColor }}
-      />
-
       <div
         {...listeners}
         {...attributes}
         onClick={(e) => e.stopPropagation()}
-        className="absolute right-1.5 top-1/2 -translate-y-1/2 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity text-tertiary active:cursor-grabbing"
+        className="absolute right-1.5 top-1/2 -translate-y-1/2 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity text-[color:var(--ink-3)] active:cursor-grabbing"
       >
         <GripVertical className="h-3.5 w-3.5" />
       </div>
 
-      <div className="px-3 py-2.5 pl-4 pr-7">
-        <p className="text-sm font-medium text-foreground leading-snug line-clamp-2 mb-0.5">
+      <div className="px-3 py-2.5 pr-7 flex flex-col gap-1">
+        {/* Line 1: company name */}
+        <p
+          className={`text-[13px] font-bold leading-snug line-clamp-1 ${
+            isTerminal
+              ? "text-[color:var(--ink-3)]"
+              : "text-[color:var(--ink)]"
+          }`}
+        >
+          {card.company || "—"}
+        </p>
+
+        {/* Line 2: role title */}
+        <p className="text-[12px] text-[color:var(--ink-2)] line-clamp-2">
           {card.title ?? "Untitled Position"}
         </p>
 
-        <div className="flex items-center gap-2 mb-2">
-          {card.company && (
-            <p className="text-xs text-muted-foreground truncate">{card.company}</p>
-          )}
-          {card.match_score != null && (
-            <span
-              className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono font-medium ${
-                card.match_score >= 80
-                  ? "bg-accent-teal-muted text-accent-teal"
-                  : card.match_score >= 60
-                  ? "bg-accent-amber-muted text-accent-amber"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {card.match_score}%
-            </span>
-          )}
-        </div>
+        {/* Line 3 (footer A): applied date + days-since */}
+        {hasFooterA && (
+          <p className="mt-1 text-[10.5px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
+            {appliedFooterText}
+          </p>
+        )}
 
-        <div className="flex flex-col gap-1">
-          {card.applied_date && (
-            <div className="flex items-center gap-1 text-[11px] text-tertiary">
-              <Calendar className="h-3 w-3 flex-shrink-0" />
-              <span>Applied {formatDate(card.applied_date)}</span>
-            </div>
-          )}
-
-          {card.next_action && (
-            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-              <ChevronRight className="h-3 w-3 flex-shrink-0 text-tertiary" />
-              <span className="truncate">{card.next_action}</span>
-              {card.next_action_date && (
-                <span className="flex-shrink-0 text-tertiary">
-                  · {formatDate(card.next_action_date)}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
+        {/* Line 4 (footer B, optional): location + match_score */}
+        {hasFooterB && (
+          <p className="text-[10.5px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
+            {hasLocation && <span>{card.location}</span>}
+            {hasLocation && hasScore && <span> · </span>}
+            {hasScore && <span>SCORE {card.match_score}</span>}
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
 export function ApplicationCardOverlay({ card }: { card: KanbanCard }) {
-  const accentColor = APPLICATION_STATUS_COLORS[card.status];
-
   return (
-    <div className="relative rounded-lg border border-primary bg-card shadow-xl cursor-grabbing">
-      <div
-        className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full"
-        style={{ backgroundColor: accentColor }}
-      />
-      <div className="px-3 py-2.5 pl-4">
-        <p className="text-sm font-medium text-foreground line-clamp-2">
+    <div className="border-[1.5px] border-[color:var(--accent)] bg-[color:var(--bg-2)] shadow-xl cursor-grabbing">
+      <div className="px-3 py-2.5">
+        <p className="text-[13px] font-bold text-[color:var(--ink)] line-clamp-1">
+          {card.company || "—"}
+        </p>
+        <p className="text-[12px] text-[color:var(--ink-2)] mt-0.5 line-clamp-2">
           {card.title ?? "Untitled Position"}
         </p>
-        {card.company && (
-          <p className="text-xs text-muted-foreground mt-0.5">{card.company}</p>
-        )}
       </div>
     </div>
   );

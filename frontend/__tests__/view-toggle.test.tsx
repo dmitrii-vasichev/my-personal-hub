@@ -15,12 +15,13 @@ describe("ViewToggle", () => {
     expect(screen.getByText("Kanban")).toBeInTheDocument();
   });
 
-  it("defaults to table when no localStorage preference", () => {
+  it("defaults to kanban when no localStorage preference", () => {
     const onChange = vi.fn();
     render(<ViewToggle onChange={onChange} />);
 
-    // Should call onChange with "table" on mount
-    expect(onChange).toHaveBeenCalledWith("table");
+    // Initial internal state is "kanban"; no onChange fires when no stored value.
+    const kanbanButton = screen.getByText("Kanban").closest("button");
+    expect(kanbanButton?.getAttribute("aria-selected")).toBe("true");
   });
 
   it("restores kanban preference from localStorage", () => {
@@ -57,8 +58,9 @@ describe("ViewToggle", () => {
   it("accepts controlled value prop", () => {
     render(<ViewToggle value="kanban" onChange={() => {}} />);
 
-    // The kanban button should have the active style (white text, accent bg)
+    // The kanban button should have the active style (accent bg)
     const kanbanButton = screen.getByText("Kanban").closest("button");
-    expect(kanbanButton?.className).toContain("bg-[var(--accent)]");
+    expect(kanbanButton?.className).toContain("bg-[color:var(--accent)]");
+    expect(kanbanButton?.getAttribute("aria-selected")).toBe("true");
   });
 });

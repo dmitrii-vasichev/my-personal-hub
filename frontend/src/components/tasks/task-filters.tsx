@@ -140,7 +140,7 @@ export function TaskFiltersBar({ filters, onFiltersChange, extraButtons }: TaskF
     <div className="flex items-center gap-2 flex-wrap">
       {/* Search */}
       <div className="relative flex-1 min-w-48 max-w-72">
-        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none" />
+        <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[color:var(--ink-3)] pointer-events-none" />
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -175,37 +175,39 @@ export function TaskFiltersBar({ filters, onFiltersChange, extraButtons }: TaskF
           <button
             type="button"
             onClick={() => setTagDropdownOpen(!tagDropdownOpen)}
-            className={`flex items-center gap-1.5 rounded-md border px-2.5 h-8 text-sm transition-colors cursor-pointer ${
+            className={`flex items-center gap-1.5 border-[1.5px] px-2.5 h-8 text-[11px] uppercase tracking-[1.5px] font-mono transition-colors cursor-pointer ${
               isTagFilterActive
-                ? "border-[var(--accent)] bg-[var(--accent-muted)] text-[var(--text-primary)]"
-                : "border-[var(--border)] bg-[var(--surface)] text-[var(--text-secondary)] hover:border-[var(--border-strong)]"
+                ? "border-[color:var(--accent)] bg-[color:var(--bg-2)] text-[color:var(--ink)]"
+                : "border-[color:var(--line)] bg-[color:var(--bg-2)] text-[color:var(--ink-3)] hover:text-[color:var(--ink)] hover:border-[color:var(--line-2)]"
             }`}
           >
             <Tag className="h-3.5 w-3.5" />
             <span>Tags</span>
             {isTagFilterActive && (
-              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] text-white px-1">
+              <span className="flex h-4 min-w-4 items-center justify-center bg-[color:var(--accent)] text-[10px] text-[color:var(--bg)] px-1 font-bold">
                 {selectedCount}
               </span>
             )}
-            <ChevronDown className={`h-3 w-3 transition-transform ${tagDropdownOpen ? "rotate-180" : ""}`} />
+            <ChevronDown
+              className={`h-3 w-3 transition-transform ${tagDropdownOpen ? "rotate-180" : ""}`}
+            />
           </button>
 
           {tagDropdownOpen && (
-            <div className="absolute left-0 top-full z-50 mt-1 min-w-44 overflow-hidden rounded-lg border border-[var(--border)] bg-[var(--popover)] shadow-md">
+            <div className="absolute left-0 top-full z-50 mt-1 min-w-44 overflow-hidden border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)] shadow-md">
               {/* All tags toggle */}
               <button
                 type="button"
                 onClick={handleToggleAll}
-                className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-[var(--surface-hover)] cursor-pointer ${
-                  allSelected ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]"
+                className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-[color:var(--bg)] cursor-pointer ${
+                  allSelected ? "text-[color:var(--ink)]" : "text-[color:var(--ink-2)]"
                 }`}
               >
                 <span className="flex-1 text-left">All tags</span>
-                {allSelected && <Check className="h-3.5 w-3.5 text-[var(--accent)]" />}
+                {allSelected && <Check className="h-3.5 w-3.5 text-[color:var(--accent)]" />}
               </button>
 
-              <div className="border-t border-[var(--border)]" />
+              <div className="border-t border-[color:var(--line)]" />
 
               {/* Individual tags */}
               {tags.map((tag) => {
@@ -215,33 +217,33 @@ export function TaskFiltersBar({ filters, onFiltersChange, extraButtons }: TaskF
                     key={tag.id}
                     type="button"
                     onClick={() => handleToggleTag(tag.id)}
-                    className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-[var(--surface-hover)] cursor-pointer ${
-                      selected ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]"
+                    className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-[color:var(--bg)] cursor-pointer ${
+                      selected ? "text-[color:var(--ink)]" : "text-[color:var(--ink-2)]"
                     }`}
                   >
                     <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      className="h-2.5 w-2.5 shrink-0"
                       style={{ backgroundColor: tag.color }}
                     />
                     <span className="flex-1 text-left">{tag.name}</span>
-                    {selected && <Check className="h-3.5 w-3.5 text-[var(--accent)]" />}
+                    {selected && <Check className="h-3.5 w-3.5 text-[color:var(--accent)]" />}
                   </button>
                 );
               })}
 
-              <div className="border-t border-[var(--border)]" />
+              <div className="border-t border-[color:var(--line)]" />
 
               {/* No tag (untagged) */}
               <button
                 type="button"
                 onClick={handleToggleUntagged}
-                className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-[var(--surface-hover)] cursor-pointer ${
-                  isUntaggedSelected ? "text-[var(--text-primary)]" : "text-[var(--text-secondary)]"
+                className={`flex w-full items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-[color:var(--bg)] cursor-pointer ${
+                  isUntaggedSelected ? "text-[color:var(--ink)]" : "text-[color:var(--ink-2)]"
                 }`}
               >
-                <CircleOff className="h-2.5 w-2.5 shrink-0 text-[var(--text-tertiary)]" />
+                <CircleOff className="h-2.5 w-2.5 shrink-0 text-[color:var(--ink-3)]" />
                 <span className="flex-1 text-left">No tag</span>
-                {isUntaggedSelected && <Check className="h-3.5 w-3.5 text-[var(--accent)]" />}
+                {isUntaggedSelected && <Check className="h-3.5 w-3.5 text-[color:var(--accent)]" />}
               </button>
             </div>
           )}
@@ -256,7 +258,7 @@ export function TaskFiltersBar({ filters, onFiltersChange, extraButtons }: TaskF
         <Button variant="ghost" size="sm" onClick={clearAll} className="gap-1 h-8">
           <X className="h-3.5 w-3.5" />
           Clear
-          <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent)] text-[10px] text-white">
+          <span className="flex h-4 w-4 items-center justify-center bg-[color:var(--accent)] text-[10px] text-[color:var(--bg)] font-bold">
             {activeCount}
           </span>
         </Button>

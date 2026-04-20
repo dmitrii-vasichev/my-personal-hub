@@ -75,9 +75,12 @@ export function TaskCard({ task, isDragging = false, selected = false, onToggleS
       onClick={handleClick}
       title={`Priority: ${PRIORITY_LABELS[task.priority]}`}
       className={`
-        group relative rounded-lg border border-l-[3px] bg-[var(--surface)] p-3 transition-shadow cursor-pointer
-        ${dragging ? "shadow-lg opacity-50 border-[var(--border-strong)] cursor-grabbing z-10" : "border-[var(--border)] hover:border-[var(--border-strong)]"}
-        ${selected ? "ring-2 ring-[var(--accent)] border-[var(--accent)]" : ""}
+        group relative border-[1.5px] border-l-[3px] bg-[color:var(--bg-2)] p-3 cursor-pointer transition-colors
+        ${dragging
+          ? "opacity-50 cursor-grabbing z-10 border-[color:var(--line-2)]"
+          : selected
+            ? "border-[color:var(--accent)]"
+            : "border-[color:var(--line)] hover:border-[color:var(--line-2)]"}
         active:cursor-grabbing
       `}
     >
@@ -85,14 +88,20 @@ export function TaskCard({ task, isDragging = false, selected = false, onToggleS
       {onToggleSelect && (
         <div
           onClick={handleCheckboxClick}
-          className={`absolute top-2 left-2 z-10 flex h-4 w-4 items-center justify-center rounded border cursor-pointer transition-all ${
+          className={`absolute top-2 left-2 z-10 flex h-4 w-4 items-center justify-center border cursor-pointer transition-all ${
             selected
-              ? "border-[var(--accent)] bg-[var(--accent)]"
-              : "border-[var(--border-strong)] bg-[var(--background)] opacity-0 group-hover:opacity-100"
+              ? "border-[color:var(--accent)] bg-[color:var(--accent)]"
+              : "border-[color:var(--line-2)] bg-[color:var(--bg)] opacity-0 group-hover:opacity-100"
           }`}
         >
           {selected && (
-            <svg className="h-3 w-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+            <svg
+              className="h-3 w-3 text-[color:var(--bg)]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+            >
               <polyline points="20 6 9 17 4 12" />
             </svg>
           )}
@@ -104,15 +113,15 @@ export function TaskCard({ task, isDragging = false, selected = false, onToggleS
         <div className="mb-1.5 flex items-center justify-end gap-1.5">
           <span title={task.visibility === "private" ? "Private" : "Family"}>
             {task.visibility === "private" ? (
-              <Lock className="h-3 w-3 text-[var(--accent-violet)]" />
+              <Lock className="h-3 w-3 text-[color:var(--ink-3)]" />
             ) : (
-              <Eye className="h-3 w-3 text-[var(--accent-teal)]" />
+              <Eye className="h-3 w-3 text-[color:var(--accent-3)]" />
             )}
           </span>
         </div>
 
         {/* Title */}
-        <span className="block text-sm font-medium text-[var(--text-primary)] line-clamp-2 mb-2">
+        <span className="block text-sm font-medium text-[color:var(--ink)] line-clamp-2 mb-2">
           {task.title}
         </span>
 
@@ -124,10 +133,10 @@ export function TaskCard({ task, isDragging = false, selected = false, onToggleS
         )}
 
         {/* Footer: deadline + assignee */}
-        <div className="flex items-center justify-between gap-2 text-[var(--text-tertiary)]">
+        <div className="flex items-center justify-between gap-2 text-[color:var(--ink-3)]">
           {task.deadline ? (
             <div
-              className={`flex items-center gap-1 text-[11px] ${isDeadlineOverdue(task.deadline) ? "text-[var(--danger)]" : ""}`}
+              className={`flex items-center gap-1 text-[10.5px] uppercase tracking-[1.5px] font-mono ${isDeadlineOverdue(task.deadline) ? "text-[color:var(--accent-2)]" : ""}`}
             >
               <Calendar className="h-3 w-3" />
               {formatDeadline(task.deadline)}
@@ -138,12 +147,15 @@ export function TaskCard({ task, isDragging = false, selected = false, onToggleS
 
           <div className="flex items-center gap-2">
             {task.owner_name && (
-              <span className="text-[11px] text-[var(--text-tertiary)]" title={`Owner: ${task.owner_name}`}>
+              <span
+                className="text-[10.5px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]"
+                title={`Owner: ${task.owner_name}`}
+              >
                 {task.owner_name.split(" ")[0]}
               </span>
             )}
             {task.assignee ? (
-              <div className="flex items-center gap-1 text-[11px]">
+              <div className="flex items-center gap-1 text-[10.5px] uppercase tracking-[1.5px] font-mono">
                 <User className="h-3 w-3" />
                 <span>{task.assignee.display_name.split(" ")[0]}</span>
               </div>
@@ -160,18 +172,18 @@ export function TaskCardOverlay({ task }: { task: Task }) {
   return (
     <div
       style={{ borderLeftColor: PRIORITY_BORDER_CSS_VARS[task.priority] }}
-      className="rounded-lg border border-l-[3px] border-[var(--accent)] bg-[var(--surface)] p-3 shadow-xl cursor-grabbing"
+      className="border-[1.5px] border-l-[3px] border-[color:var(--accent)] bg-[color:var(--bg-2)] p-3 shadow-xl cursor-grabbing"
     >
       <div className="mb-1.5 flex items-center justify-end gap-1.5">
         <span>
           {task.visibility === "private" ? (
-            <Lock className="h-3 w-3 text-[var(--accent-violet)]" />
+            <Lock className="h-3 w-3 text-[color:var(--ink-3)]" />
           ) : (
-            <Eye className="h-3 w-3 text-[var(--accent-teal)]" />
+            <Eye className="h-3 w-3 text-[color:var(--accent-3)]" />
           )}
         </span>
       </div>
-      <p className="text-sm font-medium text-[var(--text-primary)] line-clamp-2">
+      <p className="text-sm font-medium text-[color:var(--ink)] line-clamp-2">
         {task.title}
       </p>
       {task.tags && task.tags.length > 0 && (

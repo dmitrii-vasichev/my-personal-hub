@@ -309,14 +309,19 @@ interface BirthdayListProps {
   birthdays: Birthday[];
   isLoading: boolean;
   error: Error | null;
+  /** Optional cap on how many birthdays to render. Undefined = no limit (default). */
+  limit?: number;
 }
 
 export function BirthdayList({
   birthdays,
   isLoading,
   error,
+  limit,
 }: BirthdayListProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const shown =
+    typeof limit === "number" ? birthdays.slice(0, limit) : birthdays;
 
   if (isLoading) {
     return (
@@ -359,7 +364,7 @@ export function BirthdayList({
 
   return (
     <div className="space-y-2">
-      {birthdays.map((b) => (
+      {shown.map((b) => (
         <BirthdayRow
           key={b.id}
           birthday={b}

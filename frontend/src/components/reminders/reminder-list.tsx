@@ -77,12 +77,28 @@ function recurrenceLabel(rule: string): string {
   return labels[rule] ?? rule;
 }
 
-// -- Snooze badge colors based on snooze_count --
+// -- Snooze badge colors based on snooze_count (brutalist border-only chips) --
 
 function snoozeBadgeClass(count: number): string {
-  if (count >= 5) return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400";
-  if (count >= 3) return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
-  return "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
+  if (count >= 5)
+    return "border-[color:var(--accent-2)] text-[color:var(--accent-2)]";
+  if (count >= 3)
+    return "border-[color:var(--accent-2)] text-[color:var(--accent-2)]";
+  return "border-[color:var(--line)] text-[color:var(--ink-3)]";
+}
+
+// -- Relative label for "IN X" countdown (mockup .when subtext) --
+
+function relativeLabel(iso: string | null): string {
+  if (!iso) return "";
+  const diffMs = new Date(iso).getTime() - Date.now();
+  if (diffMs <= 0) return "NOW";
+  const mins = Math.round(diffMs / 60_000);
+  if (mins < 60) return `IN ${mins}M`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `IN ${hours}H`;
+  const days = Math.round(hours / 24);
+  return `IN ${days}D`;
 }
 
 // -- Date grouping --
@@ -453,19 +469,33 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
     });
   };
 
-  /* -- Expanded action panel (click-to-expand) -- */
+  const isDone = reminder.status === "done";
+
+  const handleRowClick = (e: React.MouseEvent) => {
+    // Don't collapse if the click happened on a stop-propagation child (Task link)
+    // or on the checkbox itself.
+    const target = e.target as HTMLElement;
+    if (target.tagName === "INPUT" || target.closest('input[type="checkbox"]')) {
+      return;
+    }
+    onToggle();
+  };
+
+  /* -- Expanded action panel (click-to-expand), brutalist bordered row -- */
   const expandedActions = expanded && (
-    <div className={`grid ${reminder.is_floating ? "grid-cols-3" : "grid-cols-4"} gap-2 border-t border-border bg-muted/30 px-4 py-2.5`}>
+    <div
+      className={`grid ${reminder.is_floating ? "grid-cols-3" : "grid-cols-4"} gap-2 border-t-[1.5px] border-[color:var(--line)] bg-[color:var(--bg)] px-3 py-2`}
+    >
       <button
-        className="flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-medium active:bg-muted"
+        className="flex flex-col items-center gap-1 py-2 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-2)] hover:text-[color:var(--accent)] active:bg-[color:var(--bg-2)]"
         onClick={handleDone}
         disabled={isPending}
       >
-        <Check className="h-5 w-5 text-green-600" />
+        <Check className="h-5 w-5 text-[color:var(--accent-3)]" />
         Done
       </button>
       <button
-        className="flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-medium active:bg-muted"
+        className="flex flex-col items-center gap-1 py-2 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-2)] hover:text-[color:var(--ink)] active:bg-[color:var(--bg-2)]"
         onClick={() => setEditOpen(true)}
         disabled={isPending}
       >
@@ -477,7 +507,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
           <PopoverTrigger
             render={
               <button
-                className="flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-medium active:bg-muted"
+                className="flex flex-col items-center gap-1 py-2 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-2)] hover:text-[color:var(--ink)] active:bg-[color:var(--bg-2)]"
                 disabled={isPending}
               >
                 <Bell className="h-5 w-5" />
@@ -486,20 +516,20 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
             }
           />
           <PopoverContent align="center" className="w-48 p-1">
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(15)}>15 minutes</button>
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(30)}>30 minutes</button>
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(60)}>1 hour</button>
+            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(15)}>15 minutes</button>
+            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(30)}>30 minutes</button>
+            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(60)}>1 hour</button>
             <div className="my-1 h-px bg-border" />
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(10))}>Tomorrow, 10:00</button>
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
+            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(10))}>Tomorrow, 10:00</button>
+            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
+            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
             <div className="my-1 h-px bg-border" />
-            <button className="flex w-full items-center rounded-md px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(false); setEditOpen(true); }}>Other...</button>
+            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(false); setEditOpen(true); }}>Other...</button>
           </PopoverContent>
         </Popover>
       )}
       <button
-        className="flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-medium text-destructive active:bg-muted"
+        className="flex flex-col items-center gap-1 py-2 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--accent-2)] hover:text-[color:var(--accent-2)] active:bg-[color:var(--bg-2)]"
         onClick={() => setConfirmDelete(true)}
         disabled={isPending}
       >
@@ -509,70 +539,106 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
     </div>
   );
 
+  const effectiveIso = effectiveTime;
+  const timeText = reminder.is_floating
+    ? "—"
+    : format(parseISO(effectiveIso), "HH:mm").toUpperCase();
+  const relText = reminder.is_floating ? "FLOATING" : relativeLabel(effectiveIso);
+
   return (
     <>
-      <div className={`group overflow-hidden rounded-lg border border-border bg-card transition-colors hover:bg-muted/50 ${expanded ? "ring-1 ring-primary/20" : ""}`}>
-        {/* Main row — tappable on mobile */}
+      <article
+        data-done={isDone}
+        className={`group border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)] hover:border-[color:var(--line-2)] transition-colors ${
+          isDone ? "opacity-60" : ""
+        } ${expanded ? "border-[color:var(--accent)]" : ""}`}
+      >
+        {/* Main row — chk | when | body | acts */}
         <div
-          className="flex cursor-pointer items-center gap-3 px-4 py-3"
-          onClick={onToggle}
+          className="grid grid-cols-[auto_88px_1fr_auto] items-center gap-3 px-3 py-2 cursor-pointer"
+          onClick={handleRowClick}
         >
-          {/* Icon indicator */}
-          {reminder.is_floating ? (
-            <Pin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          ) : (
-            <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          )}
+          {/* chk */}
+          <input
+            type="checkbox"
+            checked={isDone}
+            onChange={handleDone}
+            onClick={(e) => e.stopPropagation()}
+            disabled={isPending}
+            aria-label={`Mark "${reminder.title}" as done`}
+            className="h-4 w-4 accent-[color:var(--accent)] cursor-pointer"
+          />
 
-          {/* Title + badges */}
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <span className={`${expanded ? "break-words" : "truncate"} text-sm font-medium text-foreground`}>
-              {reminder.title}
+          {/* when */}
+          <div className="flex flex-col gap-0 font-mono leading-tight">
+            <span
+              className={`text-[11px] uppercase tracking-[1.5px] ${
+                reminder.is_urgent
+                  ? "text-[color:var(--accent-2)]"
+                  : "text-[color:var(--ink-2)]"
+              }`}
+            >
+              {reminder.is_floating ? (
+                <Pin className="h-3 w-3 inline" aria-label="floating" />
+              ) : (
+                timeText
+              )}
             </span>
-
-            {reminder.is_urgent && (
-              <span className="inline-flex items-center rounded-md bg-red-100 px-1.5 py-0.5 text-[11px] font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                Urgent
-              </span>
-            )}
-
-            {reminder.snooze_count > 0 && (
-              <span
-                className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[11px] font-medium ${snoozeBadgeClass(reminder.snooze_count)}`}
-              >
-                <Clock className="h-3 w-3" />
-                {reminder.snooze_count}
-              </span>
-            )}
-
-            {reminder.task_id && (
-              <Link href={`/tasks?task=${reminder.task_id}`} onClick={(e) => e.stopPropagation()}>
-                <span className="inline-flex items-center gap-0.5 rounded-md bg-blue-100 px-1.5 py-0.5 text-[11px] font-medium text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50">
-                  <ListTodo className="h-3 w-3" />
-                  Task
-                </span>
-              </Link>
-            )}
-
-            {reminder.recurrence_rule && (
-              <span className="inline-flex items-center gap-0.5 rounded-md bg-violet-100 px-1.5 py-0.5 text-[11px] font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
-                <Repeat className="h-3 w-3" />
-                {recurrenceLabel(reminder.recurrence_rule)}
-              </span>
-            )}
+            <span className="text-[10px] tracking-[1px] text-[color:var(--ink-3)]">
+              {relText}
+            </span>
           </div>
 
-          {/* Time (right-aligned) */}
-          {!reminder.is_floating && (
-            <span className="shrink-0 whitespace-nowrap text-xs font-mono text-muted-foreground">
-              {format(parseISO(effectiveTime), "h:mm a")}
-            </span>
-          )}
+          {/* body */}
+          <div className={`flex min-w-0 flex-col gap-0.5 font-mono ${isDone ? "line-through" : ""}`}>
+            <h4 className={`truncate text-[14px] text-[color:var(--ink)] m-0 font-normal ${expanded ? "whitespace-normal" : ""}`}>
+              {reminder.title}
+            </h4>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {reminder.is_urgent && (
+                <span className="inline-flex items-center bg-transparent border border-[color:var(--accent-2)] text-[color:var(--accent-2)] px-1.5 py-0.5 text-[10px] uppercase tracking-[1.5px] font-mono">
+                  Urgent
+                </span>
+              )}
+              {reminder.snooze_count > 0 && (
+                <span
+                  className={`inline-flex items-center gap-0.5 bg-transparent border px-1.5 py-0.5 text-[10px] uppercase tracking-[1.5px] font-mono ${snoozeBadgeClass(reminder.snooze_count)}`}
+                >
+                  <Clock className="h-3 w-3" />
+                  {reminder.snooze_count}
+                </span>
+              )}
+              {reminder.task_id && (
+                <Link
+                  href={`/tasks?task=${reminder.task_id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-0.5 bg-transparent border border-[color:var(--accent-3)] text-[color:var(--accent-3)] px-1.5 py-0.5 text-[10px] uppercase tracking-[1.5px] font-mono hover:border-[color:var(--accent)]"
+                >
+                  <ListTodo className="h-3 w-3" />
+                  Task
+                </Link>
+              )}
+              {reminder.recurrence_rule && (
+                <span className="inline-flex items-center gap-0.5 bg-transparent border border-[color:var(--ink-3)] text-[color:var(--ink-3)] px-1.5 py-0.5 text-[10px] uppercase tracking-[1.5px] font-mono">
+                  <Repeat className="h-3 w-3" />
+                  {recurrenceLabel(reminder.recurrence_rule)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* acts — chevron indicator only; actions panel opens on expand */}
+          <span
+            aria-hidden
+            className="text-[color:var(--ink-3)] text-[11px] tracking-[1px] font-mono select-none"
+          >
+            {expanded ? "−" : "+"}
+          </span>
         </div>
 
         {/* Expanded action panel */}
         {expandedActions}
-      </div>
+      </article>
 
       <ConfirmDialog
         open={confirmDelete}
@@ -612,7 +678,7 @@ export function ReminderList({ reminders, isLoading, error }: ReminderListProps)
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="h-14 animate-pulse rounded-lg border border-border bg-card"
+            className="h-14 animate-pulse border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)]"
           />
         ))}
       </div>
@@ -621,7 +687,7 @@ export function ReminderList({ reminders, isLoading, error }: ReminderListProps)
 
   if (error) {
     return (
-      <div className="flex flex-1 items-center justify-center text-destructive">
+      <div className="flex flex-1 items-center justify-center text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--accent-2)]">
         Failed to load reminders
       </div>
     );
@@ -630,14 +696,14 @@ export function ReminderList({ reminders, isLoading, error }: ReminderListProps)
   if (reminders.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted border border-border">
-          <Bell className="h-5 w-5 text-muted-foreground" />
+        <div className="flex h-12 w-12 items-center justify-center border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)]">
+          <Bell className="h-5 w-5 text-[color:var(--ink-3)]" />
         </div>
         <div>
-          <p className="text-sm font-medium text-muted-foreground">
+          <p className="text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
             No reminders
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-[10px] font-mono text-[color:var(--ink-3)]">
             Use the form above to create your first reminder
           </p>
         </div>
@@ -646,13 +712,25 @@ export function ReminderList({ reminders, isLoading, error }: ReminderListProps)
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-[18px]">
       {groups.map((group) => (
-        <section key={group.label}>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            {group.label}
-          </h3>
-          <div className="space-y-2">
+        <section key={group.label} className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <span
+              className="text-[color:var(--accent)] text-[14px] leading-none"
+              aria-hidden
+            >
+              ▍
+            </span>
+            <h3 className="font-[family-name:var(--font-space-grotesk)] font-bold text-[13px] tracking-[-0.2px] uppercase m-0 text-[color:var(--ink)]">
+              {group.label}
+            </h3>
+            <span className="border border-[color:var(--line)] bg-[color:var(--bg-2)] px-1.5 py-0.5 text-[10px] text-[color:var(--ink-3)] font-mono">
+              {group.reminders.length}
+            </span>
+            <div className="flex-1 h-px bg-[color:var(--line)]" />
+          </div>
+          <div className="flex flex-col gap-2">
             {group.reminders.map((r) => (
               <ReminderRow
                 key={r.id}

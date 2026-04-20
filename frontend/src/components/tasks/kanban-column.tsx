@@ -18,12 +18,12 @@ interface KanbanColumnProps {
 }
 
 const STATUS_ACCENT: Record<TaskStatus, string> = {
-  backlog: "bg-[var(--accent-violet)]",
-  new: "bg-[var(--text-tertiary)]",
-  in_progress: "bg-[var(--accent)]",
-  review: "bg-yellow-500",
-  done: "bg-[var(--success)]",
-  cancelled: "bg-[var(--danger)]",
+  backlog: "var(--accent-2)",
+  new: "var(--ink-3)",
+  in_progress: "var(--accent)",
+  review: "var(--accent-2)",
+  done: "var(--accent-3)",
+  cancelled: "var(--ink-4)",
 };
 
 const DONE_COLLAPSE_LIMIT = 10;
@@ -41,18 +41,22 @@ export function KanbanColumn({ status, tasks, activeTaskId, onAddTask, selectedT
   return (
     <div className="group/col flex w-72 flex-shrink-0 flex-col gap-2">
       {/* Column header */}
-      <div className="flex items-center gap-2 px-1">
-        <span className={`h-2 w-2 rounded-full ${STATUS_ACCENT[status]}`} />
-        <h3 className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
+      <div className="flex items-center gap-2 px-1 font-mono">
+        <span
+          className="h-2 w-2"
+          style={{ backgroundColor: STATUS_ACCENT[status] }}
+          aria-hidden
+        />
+        <h3 className="text-[10.5px] uppercase tracking-[1.5px] text-[color:var(--ink-2)]">
           {TASK_STATUS_LABELS[status]}
         </h3>
-        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded bg-[var(--surface)] px-1.5 text-[11px] font-medium text-[var(--text-tertiary)]">
+        <span className="ml-auto flex h-5 min-w-5 items-center justify-center border border-[color:var(--line)] bg-[color:var(--bg-2)] px-1.5 text-[10px] text-[color:var(--ink-3)] font-mono">
           {tasks.length}
         </span>
         {onAddTask && (
           <button
             onClick={onAddTask}
-            className="flex h-5 w-5 items-center justify-center rounded text-[var(--text-tertiary)] opacity-0 transition-opacity hover:bg-[var(--surface-hover)] hover:text-[var(--text-secondary)] group-hover/col:opacity-100"
+            className="flex h-5 w-5 items-center justify-center border border-transparent text-[color:var(--ink-3)] opacity-0 transition-opacity hover:border-[color:var(--line)] hover:text-[color:var(--accent)] group-hover/col:opacity-100"
             title={`Add task to ${TASK_STATUS_LABELS[status]}`}
           >
             <Plus className="h-3.5 w-3.5" />
@@ -64,8 +68,8 @@ export function KanbanColumn({ status, tasks, activeTaskId, onAddTask, selectedT
       <div
         ref={setNodeRef}
         className={`
-          flex min-h-24 flex-col gap-2 rounded-lg p-1 transition-colors
-          ${isOver ? "bg-[var(--accent-muted)] ring-1 ring-[var(--accent)]" : ""}
+          flex min-h-24 flex-col gap-2 p-1 transition-colors
+          ${isOver ? "outline outline-2 outline-[color:var(--accent)] outline-offset-[-2px]" : ""}
         `}
       >
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
@@ -81,7 +85,7 @@ export function KanbanColumn({ status, tasks, activeTaskId, onAddTask, selectedT
         </SortableContext>
 
         {tasks.length === 0 && (
-          <div className="flex h-16 items-center justify-center rounded border border-dashed border-[var(--border)] text-xs text-[var(--text-tertiary)]">
+          <div className="flex h-16 items-center justify-center border border-dashed border-[color:var(--line)] text-[11px] uppercase tracking-[1.5px] text-[color:var(--ink-3)] font-mono">
             No tasks
           </div>
         )}
@@ -90,7 +94,7 @@ export function KanbanColumn({ status, tasks, activeTaskId, onAddTask, selectedT
         {shouldCollapse && (
           <button
             onClick={() => setExpanded((prev) => !prev)}
-            className="flex items-center justify-center gap-1 rounded-md py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-hover)] transition-colors"
+            className="flex items-center justify-center gap-1 border border-[color:var(--line)] py-1.5 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)] hover:text-[color:var(--ink)] hover:border-[color:var(--line-2)] transition-colors"
           >
             {expanded ? (
               <>

@@ -2,7 +2,7 @@
 
 import { useDroppable } from "@dnd-kit/core";
 import type { ApplicationStatus, KanbanCard } from "@/types/job";
-import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS } from "@/types/job";
+import { APPLICATION_STATUS_LABELS } from "@/types/job";
 import { ApplicationCard } from "./application-card";
 
 interface ApplicationColumnProps {
@@ -11,23 +11,44 @@ interface ApplicationColumnProps {
   activeCardId: number | null;
 }
 
-export function ApplicationColumn({ status, cards, activeCardId }: ApplicationColumnProps) {
+// Brutalist accent per status (marker + border hints).
+const STATUS_ACCENT: Record<ApplicationStatus, string> = {
+  found: "var(--ink-3)",
+  saved: "var(--ink-3)",
+  resume_generated: "var(--ink-3)",
+  applied: "var(--ink)",
+  screening: "var(--ink)",
+  technical_interview: "var(--accent-2)",
+  final_interview: "var(--accent-2)",
+  offer: "var(--accent-3)",
+  accepted: "var(--accent-3)",
+  rejected: "var(--ink-4)",
+  ghosted: "var(--ink-4)",
+  withdrawn: "var(--ink-4)",
+};
+
+export function ApplicationColumn({
+  status,
+  cards,
+  activeCardId,
+}: ApplicationColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
-  const accentColor = APPLICATION_STATUS_COLORS[status];
+  const accent = STATUS_ACCENT[status];
 
   return (
     <div className="flex w-64 flex-shrink-0 flex-col gap-2">
-      {/* Column header */}
-      <div className="flex items-center gap-2 px-1">
+      {/* Column header · brutalist */}
+      <div className="flex items-center gap-2 px-1 font-mono">
         <span
-          className="h-1.5 w-1.5 rounded-full flex-shrink-0"
-          style={{ backgroundColor: accentColor }}
+          className="h-2 w-2 flex-shrink-0"
+          style={{ backgroundColor: accent }}
+          aria-hidden
         />
-        <h3 className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground truncate">
+        <h3 className="text-[10.5px] uppercase tracking-[1.5px] text-[color:var(--ink-2)] truncate">
           {APPLICATION_STATUS_LABELS[status]}
         </h3>
-        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded bg-surface px-1.5 text-[11px] font-medium text-tertiary">
+        <span className="ml-auto flex h-5 min-w-5 items-center justify-center border border-[color:var(--line)] bg-[color:var(--bg-2)] px-1.5 text-[10px] text-[color:var(--ink-3)] font-mono">
           {cards.length}
         </span>
       </div>
@@ -36,8 +57,8 @@ export function ApplicationColumn({ status, cards, activeCardId }: ApplicationCo
       <div
         ref={setNodeRef}
         className={`
-          flex min-h-20 flex-col gap-2 rounded-lg p-1 transition-colors
-          ${isOver ? "bg-surface-hover ring-1 ring-primary" : ""}
+          flex min-h-20 flex-col gap-2 p-1 transition-colors
+          ${isOver ? "outline outline-2 outline-[color:var(--accent)] outline-offset-[-2px]" : ""}
         `}
       >
         {cards.map((card) => (
@@ -49,8 +70,8 @@ export function ApplicationColumn({ status, cards, activeCardId }: ApplicationCo
         ))}
 
         {cards.length === 0 && (
-          <div className="flex h-14 items-center justify-center rounded border border-dashed border-border-subtle text-xs text-tertiary">
-            Empty
+          <div className="flex h-14 items-center justify-center border border-dashed border-[color:var(--line)] text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
+            No applications
           </div>
         )}
       </div>

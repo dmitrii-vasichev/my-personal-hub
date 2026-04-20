@@ -37,7 +37,7 @@ function StatusBadge({ status }: { status: TaskStatus }) {
   const colors = STATUS_COLORS[status];
   return (
     <span
-      className="inline-flex px-2 py-0.5 rounded-md text-[11px] font-mono font-medium"
+      className="inline-flex px-2 py-0.5 text-[11px] font-mono font-medium uppercase tracking-[1.5px]"
       style={{ color: colors.color, backgroundColor: colors.bg }}
     >
       {TASK_STATUS_LABELS[status]}
@@ -49,7 +49,7 @@ function PriorityBadge({ priority }: { priority: TaskPriority }) {
   const colors = PRIORITY_BADGE_COLORS[priority];
   return (
     <span
-      className="inline-flex px-2 py-0.5 rounded-md text-[11px] font-mono font-medium"
+      className="inline-flex px-2 py-0.5 text-[11px] font-mono font-medium uppercase tracking-[1.5px]"
       style={{ color: colors.color, backgroundColor: colors.bg }}
     >
       {PRIORITY_LABELS[priority]}
@@ -91,11 +91,11 @@ export function TasksTable({ tasks, isLoading, error }: TasksTableProps) {
         header: "Title",
         cell: (info) => (
           <div className="min-w-0">
-            <div className="text-sm font-medium text-[var(--text-primary)] truncate">
+            <div className="text-sm font-medium text-[color:var(--ink)] truncate">
               {info.getValue()}
             </div>
             {info.row.original.owner_name && (
-              <div className="text-xs text-[var(--text-tertiary)] truncate">
+              <div className="text-xs text-[color:var(--ink-3)] truncate">
                 {info.row.original.owner_name}
               </div>
             )}
@@ -123,12 +123,12 @@ export function TasksTable({ tasks, isLoading, error }: TasksTableProps) {
         header: "Deadline",
         cell: (info) => {
           const val = info.getValue();
-          if (!val) return <span className="text-xs text-[var(--text-tertiary)]">—</span>;
+          if (!val) return <span className="text-xs text-[color:var(--ink-3)]">—</span>;
           const overdue = isDeadlineOverdue(val);
           return (
             <span
-              className={`inline-flex items-center gap-1 text-xs font-mono ${
-                overdue ? "text-[var(--danger)]" : "text-[var(--text-secondary)]"
+              className={`inline-flex items-center gap-1 text-xs font-mono uppercase tracking-[1.5px] ${
+                overdue ? "text-[color:var(--accent-2)]" : "text-[color:var(--ink-2)]"
               }`}
             >
               <Calendar className="h-3 w-3" />
@@ -153,19 +153,19 @@ export function TasksTable({ tasks, isLoading, error }: TasksTableProps) {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+      <div className="border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)] overflow-hidden">
         <div className="animate-pulse">
-          <div className="h-10 bg-[var(--surface-hover)]" />
+          <div className="h-10 bg-[color:var(--bg)]" />
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="flex gap-4 px-4 py-3 border-t border-[rgba(255,255,255,0.03)]"
+              className="flex gap-4 px-4 py-3 border-t border-[color:var(--line)]"
             >
-              <div className="h-4 bg-[var(--surface-hover)] rounded w-1/3" />
-              <div className="h-4 bg-[var(--surface-hover)] rounded w-1/6" />
-              <div className="h-4 bg-[var(--surface-hover)] rounded w-1/12" />
-              <div className="h-4 bg-[var(--surface-hover)] rounded w-1/6" />
-              <div className="h-4 bg-[var(--surface-hover)] rounded w-1/6" />
+              <div className="h-4 bg-[color:var(--bg)] w-1/3" />
+              <div className="h-4 bg-[color:var(--bg)] w-1/6" />
+              <div className="h-4 bg-[color:var(--bg)] w-1/12" />
+              <div className="h-4 bg-[color:var(--bg)] w-1/6" />
+              <div className="h-4 bg-[color:var(--bg)] w-1/6" />
             </div>
           ))}
         </div>
@@ -175,7 +175,7 @@ export function TasksTable({ tasks, isLoading, error }: TasksTableProps) {
 
   if (error) {
     return (
-      <div className="flex flex-1 items-center justify-center text-[var(--danger)]">
+      <div className="flex flex-1 items-center justify-center text-[color:var(--accent-2)] font-mono uppercase tracking-[1.5px] text-[11px]">
         Failed to load tasks
       </div>
     );
@@ -184,12 +184,14 @@ export function TasksTable({ tasks, isLoading, error }: TasksTableProps) {
   if (tasks.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--border)]">
-          <ListChecks className="h-5 w-5 text-[var(--text-tertiary)]" />
+        <div className="flex h-12 w-12 items-center justify-center bg-[color:var(--bg-2)] border-[1.5px] border-[color:var(--line)]">
+          <ListChecks className="h-5 w-5 text-[color:var(--ink-3)]" />
         </div>
         <div>
-          <p className="text-sm font-medium text-[var(--text-secondary)]">No tasks found</p>
-          <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+          <p className="text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-2)]">
+            No tasks found
+          </p>
+          <p className="mt-1 text-[11px] text-[color:var(--ink-3)] font-mono">
             Create a task to get started
           </p>
         </div>
@@ -198,16 +200,19 @@ export function TasksTable({ tasks, isLoading, error }: TasksTableProps) {
   }
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+    <div className="border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)] overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="bg-[var(--surface-hover)]">
+              <tr
+                key={headerGroup.id}
+                className="bg-[color:var(--bg)] border-b-[1.5px] border-[color:var(--line)]"
+              >
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-2.5 text-left text-[10.5px] uppercase tracking-[0.5px] font-mono font-medium text-[var(--text-tertiary)] cursor-pointer select-none hover:text-[var(--text-secondary)] transition-colors"
+                    className="px-4 py-2.5 text-left text-[10.5px] uppercase tracking-[1.5px] font-mono font-medium text-[color:var(--ink-3)] cursor-pointer select-none hover:text-[color:var(--ink)] transition-colors"
                     style={{ width: header.getSize() }}
                     onClick={header.column.getToggleSortingHandler()}
                   >
@@ -226,7 +231,7 @@ export function TasksTable({ tasks, isLoading, error }: TasksTableProps) {
             {table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
-                className="border-t border-[rgba(255,255,255,0.03)] hover:bg-[var(--surface-hover)] cursor-pointer transition-colors"
+                className="border-t border-[color:var(--line)] hover:bg-[color:var(--bg)] cursor-pointer transition-colors"
                 onClick={() => router.push(`/tasks/${row.original.id}`)}
               >
                 {row.getVisibleCells().map((cell) => (

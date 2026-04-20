@@ -13,24 +13,29 @@ export function RemindersTabs() {
   const pathname = usePathname();
 
   return (
-    <div className="flex gap-1 rounded-lg border border-border bg-muted/50 p-1">
+    <nav
+      role="tablist"
+      className="flex items-center gap-0 border-b-[1.5px] border-[color:var(--line)]"
+    >
       {TABS.map((tab) => {
         const isActive = pathname === tab.href;
         return (
           <Link
             key={tab.href}
             href={tab.href}
+            role="tab"
+            aria-selected={isActive}
             className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              "px-4 py-2 -mb-[1.5px] border-b-[3px] text-[11px] uppercase tracking-[1.5px] font-mono transition-colors",
               isActive
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "border-[color:var(--accent)] text-[color:var(--ink)] font-bold"
+                : "border-transparent text-[color:var(--ink-3)] hover:text-[color:var(--ink)]",
             )}
           >
             {tab.label}
           </Link>
         );
       })}
-    </div>
+    </nav>
   );
 }

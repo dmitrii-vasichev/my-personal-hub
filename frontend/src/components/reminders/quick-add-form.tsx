@@ -111,19 +111,25 @@ export function QuickAddForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-lg border border-border bg-card p-4"
+      className="border-[1.5px] border-dashed border-[color:var(--line-2)] bg-transparent p-3 font-mono"
     >
       {/* Title row — always visible */}
       <div className="flex items-center gap-2">
         <Input
           id="reminder-title"
-          placeholder="What do you need to remember?"
+          placeholder="Remind me to…"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           onFocus={() => setExpanded(true)}
           autoComplete="off"
-          className="flex-1"
+          className="flex-1 border-0 bg-transparent font-mono text-[13px] italic placeholder:italic placeholder:text-[color:var(--ink-3)] focus-visible:ring-0 focus-visible:border-0 shadow-none rounded-none px-0"
         />
+        <span
+          className="shrink-0 text-[10px] uppercase tracking-[1.5px] text-[color:var(--ink-3)] font-mono"
+          aria-hidden
+        >
+          Natural · ⏎
+        </span>
         {expanded && (
           <Button
             type="button"
@@ -148,7 +154,7 @@ export function QuickAddForm() {
             {/* Date + Time — side by side on mobile */}
             <div className="grid grid-cols-2 gap-3 md:contents">
               <div className="flex flex-col gap-1 md:min-w-[180px]">
-                <label className="text-xs font-medium text-muted-foreground">
+                <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
                   Date
                 </label>
                 <DatePicker
@@ -159,7 +165,7 @@ export function QuickAddForm() {
               </div>
 
               <div className="flex flex-col gap-1 md:min-w-[130px]">
-                <label className="text-xs font-medium text-muted-foreground">
+                <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
                   Time (optional)
                 </label>
                 {time ? (
@@ -192,7 +198,7 @@ export function QuickAddForm() {
             {/* Repeat + Urgent + Add */}
             <div className="flex items-end gap-3 md:contents">
               <div className="flex flex-1 flex-col gap-1 md:min-w-[130px] md:flex-initial">
-                <label className="text-xs font-medium text-muted-foreground">
+                <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
                   Repeat
                 </label>
                 <SelectRoot

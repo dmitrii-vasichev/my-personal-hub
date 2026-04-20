@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Plus, BarChart2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BarChart2 } from "lucide-react";
 import { KanbanBoard } from "@/components/tasks/kanban-board";
 import { TasksTable } from "@/components/tasks/tasks-table";
 import { TasksViewToggle, type TasksViewMode } from "@/components/tasks/view-toggle";
@@ -233,28 +232,57 @@ export default function TasksPage() {
 
   const displayBoard = optimisticBoard ?? board ?? EMPTY_BOARD;
 
+  // Subline counts — mirror HeroCells.openTasks + HeroCells.tasksDueToday semantics.
+  const { openCount, dueTodayCount } = useMemo(() => {
+    const today0 = new Date().setHours(0, 0, 0, 0);
+    const tomorrow0 = today0 + 86_400_000;
+    let open = 0;
+    let dueToday = 0;
+    for (const t of tasksList) {
+      if (t.status === "done" || t.status === "cancelled") continue;
+      open += 1;
+      if (t.deadline) {
+        const ts = new Date(t.deadline).getTime();
+        if (ts >= today0 && ts < tomorrow0) dueToday += 1;
+      }
+    }
+    return { openCount: open, dueTodayCount: dueToday };
+  }, [tasksList]);
+
   return (
     <div className="flex h-full flex-col gap-4">
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-[var(--text-primary)]">Tasks</h1>
-        <div className="flex items-center gap-2">
-          <Link href="/tasks/analytics">
-            <Button variant="ghost" size="sm" className="gap-1.5">
-              <BarChart2 className="h-4 w-4" />
+      {/* Page header · brutalist .ph */}
+      <header className="border-b-[1.5px] border-[color:var(--line)] pb-[14px]">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <div className="text-[11px] uppercase tracking-[1.5px] text-[color:var(--ink-3)] font-mono">
+              Module · Tasks
+            </div>
+            <h1 className="mt-1 font-bold text-[28px] leading-[1.1] tracking-[-0.4px] text-[color:var(--ink)]">
+              TASKS_
+            </h1>
+            <p className="mt-1 text-[12px] text-[color:var(--ink-3)] font-mono">
+              {openCount} open · {dueTodayCount} due today
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/tasks/analytics"
+              className="inline-flex items-center gap-1.5 border-[1.5px] border-[color:var(--line)] px-3 py-1.5 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)] hover:text-[color:var(--ink)] hover:border-[color:var(--line-2)] transition-colors"
+            >
+              <BarChart2 className="h-3.5 w-3.5" />
               Analytics
-            </Button>
-          </Link>
-          <Button
-            size="sm"
-            onClick={() => setCreateDialogStatus("new")}
-            className="gap-1.5"
-          >
-            <Plus className="h-4 w-4" />
-            New Task
-          </Button>
+            </Link>
+            <button
+              type="button"
+              onClick={() => setCreateDialogStatus("new")}
+              className="border-[1.5px] border-[color:var(--accent)] bg-[color:var(--accent)] px-3 py-1.5 text-[11px] uppercase tracking-[1.5px] text-[color:var(--bg)] font-mono font-bold"
+            >
+              + New Task
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
       {/* Filters + view toggle */}
       <div className="flex items-center justify-between gap-4">

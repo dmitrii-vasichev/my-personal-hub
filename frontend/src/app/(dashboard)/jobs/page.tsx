@@ -2,8 +2,7 @@
 
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, Search, BarChart2, Send, SlidersHorizontal, Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Send, SlidersHorizontal } from "lucide-react";
 import { JobSearchInput, JobFilterDropdowns } from "@/components/jobs/job-filters";
 import { JobsTable } from "@/components/jobs/jobs-table";
 import { JobDialog } from "@/components/jobs/job-dialog";
@@ -12,6 +11,7 @@ import { JobSearch } from "@/components/jobs/job-search";
 import { JobAnalytics } from "@/components/jobs/job-analytics";
 import { ViewToggle, type JobsViewMode } from "@/components/jobs/view-toggle";
 import { BulkImportDialog } from "@/components/jobs/bulk-import-dialog";
+import { JobsHero } from "@/components/jobs/jobs-hero";
 import { useJobs } from "@/hooks/use-jobs";
 import type { Job, JobFilters } from "@/types/job";
 
@@ -25,7 +25,7 @@ function JobsPageInner() {
     if (tab === "analytics") return "analytics";
     return "jobs";
   });
-  const [viewMode, setViewMode] = useState<JobsViewMode>("table");
+  const [viewMode, setViewMode] = useState<JobsViewMode>("kanban");
   const [filters, setFilters] = useState<JobFilters>({});
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -46,68 +46,121 @@ function JobsPageInner() {
     }).length;
   }, [jobs]);
 
+  // Subline counts — derived from hook data.
+  const { liveCount, interviewCount, offerCount } = useMemo(() => {
+    const liveSet = new Set<string>([
+      "applied",
+      "screening",
+      "technical_interview",
+      "final_interview",
+    ]);
+    const interviewSet = new Set<string>([
+      "technical_interview",
+      "final_interview",
+    ]);
+    let live = 0;
+    let interview = 0;
+    let offer = 0;
+    for (const j of jobs) {
+      if (!j.status) continue;
+      if (liveSet.has(j.status)) live += 1;
+      if (interviewSet.has(j.status)) interview += 1;
+      if (j.status === "offer") offer += 1;
+    }
+    return { liveCount: live, interviewCount: interview, offerCount: offer };
+  }, [jobs]);
+
+  const sublineEmpty =
+    liveCount === 0 && interviewCount === 0 && offerCount === 0;
+
   return (
     <div className="flex h-full flex-col gap-4">
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-[var(--text-primary)]">Jobs</h1>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setBulkImportOpen(true)}
-            className="gap-1.5"
-          >
-            <Upload className="h-4 w-4" />
-            <span className="hidden sm:inline">Import from LinkedIn</span>
-            <span className="sm:hidden">Import</span>
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => { setEditingJob(undefined); setDialogOpen(true); }}
-            className="gap-1.5"
-          >
-            <Plus className="h-4 w-4" />
-            Add Job
-          </Button>
+      {/* Page header · brutalist .ph */}
+      <header className="border-b-[1.5px] border-[color:var(--line)] pb-[14px]">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <div className="text-[11px] uppercase tracking-[1.5px] text-[color:var(--ink-3)] font-mono">
+              Module · Job Hunt
+            </div>
+            <h1 className="mt-1 font-bold text-[28px] leading-[1.1] tracking-[-0.4px] text-[color:var(--ink)]">
+              JOB_HUNT_
+            </h1>
+            <p className="mt-1 text-[12px] text-[color:var(--ink-3)] font-mono">
+              {sublineEmpty
+                ? "No active applications — start tracking one."
+                : `${liveCount} live · ${interviewCount} in interview · ${offerCount} offer`}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("search")}
+              className="border-[1.5px] border-[color:var(--line)] px-3 py-1.5 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)] hover:text-[color:var(--ink)] hover:border-[color:var(--line-2)] transition-colors"
+            >
+              Search
+            </button>
+            <button
+              type="button"
+              onClick={() => setBulkImportOpen(true)}
+              className="border-[1.5px] border-[color:var(--line)] px-3 py-1.5 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)] hover:text-[color:var(--ink)] hover:border-[color:var(--line-2)] transition-colors"
+            >
+              Import
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEditingJob(undefined);
+                setDialogOpen(true);
+              }}
+              className="border-[1.5px] border-[color:var(--accent)] bg-[color:var(--accent)] px-3 py-1.5 text-[11px] uppercase tracking-[1.5px] text-[color:var(--bg)] font-mono font-bold"
+            >
+              + New App
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      {/* Tab bar */}
-      <div className="flex items-center gap-1 border-b border-[var(--border)]">
+      {/* Stat-cells hero */}
+      <JobsHero jobs={jobs} />
+
+      {/* Tab bar · brutalist */}
+      <div className="flex items-center gap-0 border-b-[1.5px] border-[color:var(--line)]">
         <button
+          type="button"
           onClick={() => setActiveTab("jobs")}
-          className={`px-3 pb-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+          className={`px-4 py-2 text-[11px] uppercase tracking-[1.5px] font-mono transition-colors border-b-[3px] -mb-[1.5px] ${
             activeTab === "jobs"
-              ? "border-[var(--accent)] text-[var(--text-primary)]"
-              : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              ? "border-[color:var(--accent)] text-[color:var(--ink)]"
+              : "border-transparent text-[color:var(--ink-3)] hover:text-[color:var(--ink)]"
           }`}
         >
           Jobs
           {!isLoading && jobs.length > 0 && (
-            <span className="ml-1.5 text-xs text-[var(--text-tertiary)]">({jobs.length})</span>
+            <span className="ml-1.5 text-[10px] text-[color:var(--ink-3)]">
+              ({jobs.length})
+            </span>
           )}
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab("search")}
-          className={`flex items-center gap-1.5 px-3 pb-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+          className={`px-4 py-2 text-[11px] uppercase tracking-[1.5px] font-mono transition-colors border-b-[3px] -mb-[1.5px] ${
             activeTab === "search"
-              ? "border-[var(--accent)] text-[var(--text-primary)]"
-              : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              ? "border-[color:var(--accent)] text-[color:var(--ink)]"
+              : "border-transparent text-[color:var(--ink-3)] hover:text-[color:var(--ink)]"
           }`}
         >
-          <Search className="h-3.5 w-3.5" />
           Search
         </button>
         <button
+          type="button"
           onClick={() => setActiveTab("analytics")}
-          className={`flex items-center gap-1.5 px-3 pb-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+          className={`px-4 py-2 text-[11px] uppercase tracking-[1.5px] font-mono transition-colors border-b-[3px] -mb-[1.5px] ${
             activeTab === "analytics"
-              ? "border-[var(--accent)] text-[var(--text-primary)]"
-              : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              ? "border-[color:var(--accent)] text-[color:var(--ink)]"
+              : "border-transparent text-[color:var(--ink-3)] hover:text-[color:var(--ink)]"
           }`}
         >
-          <BarChart2 className="h-3.5 w-3.5" />
           Analytics
         </button>
       </div>

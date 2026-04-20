@@ -223,19 +223,19 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+      <div className="border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)] overflow-hidden">
         <div className="animate-pulse">
-          <div className="h-10 bg-[var(--surface-hover)]" />
+          <div className="h-10 bg-[color:var(--bg)]" />
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="flex gap-4 px-4 py-3 border-t border-[rgba(255,255,255,0.03)]"
+              className="flex gap-4 px-4 py-3 border-t border-[color:var(--line)]"
             >
-              <div className="h-4 bg-[var(--surface-hover)] rounded w-1/3" />
-              <div className="h-4 bg-[var(--surface-hover)] rounded w-1/6" />
-              <div className="h-4 bg-[var(--surface-hover)] rounded w-1/12" />
-              <div className="h-4 bg-[var(--surface-hover)] rounded w-1/6" />
-              <div className="h-4 bg-[var(--surface-hover)] rounded w-1/6" />
+              <div className="h-4 bg-[color:var(--bg)] w-1/3" />
+              <div className="h-4 bg-[color:var(--bg)] w-1/6" />
+              <div className="h-4 bg-[color:var(--bg)] w-1/12" />
+              <div className="h-4 bg-[color:var(--bg)] w-1/6" />
+              <div className="h-4 bg-[color:var(--bg)] w-1/6" />
             </div>
           ))}
         </div>
@@ -245,7 +245,7 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
 
   if (error) {
     return (
-      <div className="flex flex-1 items-center justify-center text-[var(--destructive)]">
+      <div className="flex flex-1 items-center justify-center text-[color:var(--accent-2)] text-[11px] uppercase tracking-[1.5px] font-mono">
         Failed to load jobs
       </div>
     );
@@ -254,12 +254,14 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
   if (jobs.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--surface)] border border-[var(--border)]">
-          <Briefcase className="h-5 w-5 text-[var(--text-tertiary)]" />
+        <div className="flex h-12 w-12 items-center justify-center border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)]">
+          <Briefcase className="h-5 w-5 text-[color:var(--ink-3)]" />
         </div>
         <div>
-          <p className="text-sm font-medium text-[var(--text-secondary)]">No jobs found</p>
-          <p className="mt-1 text-xs text-[var(--text-tertiary)]">
+          <p className="text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-2)]">
+            No jobs found
+          </p>
+          <p className="mt-1 text-[10.5px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
             Add a job to start tracking your applications
           </p>
         </div>
@@ -275,16 +277,19 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
   );
 
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+    <div className="border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)] overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id} className="bg-[var(--surface-hover)]">
+              <tr
+                key={headerGroup.id}
+                className="border-b-[1.5px] border-[color:var(--line)]"
+              >
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-2.5 text-left text-[10.5px] uppercase tracking-[0.5px] font-mono font-medium text-[var(--text-tertiary)] cursor-pointer select-none hover:text-[var(--text-secondary)] transition-colors"
+                    className="px-4 py-2.5 text-left text-[10.5px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)] cursor-pointer select-none hover:text-[color:var(--ink)] transition-colors"
                     style={{ width: header.getSize() }}
                     onClick={header.column.getToggleSortingHandler()}
                   >
@@ -301,7 +306,7 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
             {table.getRowModel().rows.map((row) => (
               <tr
                 key={row.id}
-                className="border-t border-[rgba(255,255,255,0.03)] hover:bg-[var(--surface-hover)] cursor-pointer transition-colors"
+                className="border-t border-[color:var(--line)] hover:bg-[color:var(--bg)] cursor-pointer transition-colors"
                 onClick={() => router.push(`/jobs/${row.original.id}`)}
               >
                 {row.getVisibleCells().map((cell) => (
@@ -316,7 +321,7 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
       </div>
 
       {/* Pagination footer */}
-      <div className="flex items-center justify-between gap-3 border-t border-[var(--border)] bg-[var(--surface-hover)]/40 px-4 py-2">
+      <div className="flex items-center justify-between gap-3 border-t-[1.5px] border-[color:var(--line)] bg-[color:var(--bg)] px-4 py-2">
         <div className="flex items-center gap-3">
           <SelectRoot
             value={String(pagination.pageSize)}
