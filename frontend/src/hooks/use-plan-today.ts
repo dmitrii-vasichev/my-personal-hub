@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { plannerApi } from "@/lib/api";
 import type { DailyPlan, PatchPlanItemBody, PlanItem } from "@/types/plan";
 
@@ -52,6 +53,7 @@ export function useCompleteItemMutation() {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(PLAN_TODAY_KEY, ctx.prev);
+      toast.error("Не удалось отметить — попробуй ещё раз");
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: PLAN_TODAY_KEY });
