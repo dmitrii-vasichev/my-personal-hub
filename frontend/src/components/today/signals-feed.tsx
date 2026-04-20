@@ -31,7 +31,7 @@ function DigestCell({
     );
   }
 
-  const preview = digest.content.slice(0, 220);
+  const preview = digest.content?.slice(0, 220) ?? "";
   return (
     <div className="p-[12px_14px] border-b md:border-b-0 md:border-r last:border-r-0 border-[color:var(--line)]">
       <div className="text-[9.5px] tracking-[1.5px] uppercase text-[color:var(--accent)] font-semibold mb-2">

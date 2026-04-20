@@ -2,7 +2,7 @@ export interface PulseDigest {
   id: number;
   user_id: number;
   category: string | null;
-  content: string;
+  content: string | null;
   digest_type: string;
   message_count: number;
   items_count: number | null;
