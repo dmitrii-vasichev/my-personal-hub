@@ -30,10 +30,10 @@ function daysUntilLabel(days: number): string {
 
 function daysUntilBadgeClass(days: number): string {
   if (days === 0)
-    return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+    return "bg-[color:var(--accent)] text-[color:var(--bg)]";
   if (days <= 7)
-    return "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400";
-  return "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
+    return "border border-[color:var(--accent-2)] text-[color:var(--accent-2)]";
+  return "border border-[color:var(--line-2)] text-[color:var(--ink-3)]";
 }
 
 // -- Edit form (mounts fresh when dialog opens) --
@@ -221,9 +221,9 @@ function BirthdayRow({
 
   /* -- Expanded action panel (click-to-expand) -- */
   const expandedActions = expanded && (
-    <div className="grid grid-cols-2 gap-2 border-t border-border bg-muted/30 px-4 py-2.5">
+    <div className="grid grid-cols-2 gap-2 border-t border-[color:var(--line)] bg-[color:var(--bg)] px-4 py-2.5">
       <button
-        className="flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-medium active:bg-muted"
+        className="flex flex-col items-center gap-1 py-2 text-xs font-medium text-[color:var(--ink-2)] active:bg-[color:var(--bg-2)]"
         onClick={() => setEditOpen(true)}
         disabled={isPending}
       >
@@ -231,7 +231,7 @@ function BirthdayRow({
         Edit
       </button>
       <button
-        className="flex flex-col items-center gap-1 rounded-lg py-2 text-xs font-medium text-destructive active:bg-muted"
+        className="flex flex-col items-center gap-1 py-2 text-xs font-medium text-[color:var(--danger)] active:bg-[color:var(--bg-2)]"
         onClick={() => setConfirmDelete(true)}
         disabled={isPending}
       >
@@ -244,7 +244,11 @@ function BirthdayRow({
   return (
     <>
       <div
-        className={`group overflow-hidden rounded-lg border border-border bg-card transition-colors hover:bg-muted/50 ${expanded ? "ring-1 ring-primary/20" : ""}`}
+        className={`group overflow-hidden border-[1.5px] bg-[color:var(--bg-2)] transition-colors ${
+          expanded
+            ? "border-[color:var(--accent)]"
+            : "border-[color:var(--line)] hover:border-[color:var(--line-2)]"
+        }`}
       >
         {/* Main row — tappable on mobile */}
         <div
@@ -254,23 +258,23 @@ function BirthdayRow({
           <div className="min-w-0 flex-1">
             {/* Top line: name + days-until badge */}
             <div className="flex items-center gap-2">
-              <span className="truncate text-sm font-medium text-foreground">
+              <span className="truncate text-sm font-medium text-[color:var(--ink)]">
                 {birthday.name}
               </span>
               <span
-                className={`ml-auto shrink-0 inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium ${daysUntilBadgeClass(birthday.days_until)}`}
+                className={`ml-auto shrink-0 inline-flex items-center px-1.5 py-0.5 text-[10.5px] uppercase tracking-[1.5px] font-mono ${daysUntilBadgeClass(birthday.days_until)}`}
               >
                 {daysUntilLabel(birthday.days_until)}
               </span>
             </div>
 
             {/* Bottom line: date + turning age */}
-            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-[color:var(--ink-3)]">
               <span>{formattedDate}</span>
               {birthday.turning_age != null && (
                 <>
                   <span>·</span>
-                  <span className="text-violet-500 dark:text-violet-400">
+                  <span className="text-[color:var(--accent-3)]">
                     turns {birthday.turning_age}
                   </span>
                 </>
@@ -329,7 +333,7 @@ export function BirthdayList({
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="h-14 animate-pulse rounded-lg border border-border bg-card"
+            className="h-14 animate-pulse border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)]"
           />
         ))}
       </div>
@@ -338,7 +342,7 @@ export function BirthdayList({
 
   if (error) {
     return (
-      <div className="flex flex-1 items-center justify-center text-destructive">
+      <div className="flex flex-1 items-center justify-center text-[color:var(--danger)]">
         Failed to load birthdays
       </div>
     );
@@ -347,14 +351,14 @@ export function BirthdayList({
   if (birthdays.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted border border-border">
-          <Cake className="h-5 w-5 text-muted-foreground" />
+        <div className="flex h-12 w-12 items-center justify-center border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)]">
+          <Cake className="h-5 w-5 text-[color:var(--ink-3)]" />
         </div>
         <div>
-          <p className="text-sm font-medium text-muted-foreground">
+          <p className="text-sm font-medium text-[color:var(--ink-2)]">
             No birthdays
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-xs text-[color:var(--ink-3)]">
             Use the form above to add your first birthday
           </p>
         </div>

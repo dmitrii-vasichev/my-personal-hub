@@ -141,6 +141,7 @@ export function TaskReminderEdit({ value, isFloating, onSave }: TaskReminderEdit
                 type="button"
                 variant="ghost"
                 size="icon-sm"
+                className="max-md:size-11"
                 onClick={handleClearTime}
                 disabled={saving}
                 title="Clear time (all-day)"

@@ -30,12 +30,12 @@ function CompletedRow({ reminder }: { reminder: Reminder }) {
   };
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3">
+    <div className="flex items-center gap-3 border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)] px-4 py-3">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">
+        <p className="truncate text-sm font-medium text-[color:var(--ink)]">
           {reminder.title}
         </p>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-[color:var(--ink-3)]">
           {reminder.completed_at
             ? `Completed ${format(parseISO(reminder.completed_at), "MMM d, h:mm a")}`
             : `Done`}
@@ -45,6 +45,7 @@ function CompletedRow({ reminder }: { reminder: Reminder }) {
         <Button
           variant="ghost"
           size="icon-sm"
+          className="max-md:size-11"
           onClick={handleRestore}
           disabled={restore.isPending}
         >
@@ -68,8 +69,8 @@ export function CompletedRemindersSheet({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogBackdrop />
-        <DialogPopup className="fixed !inset-y-0 !right-0 !left-auto !top-0 !translate-x-0 !translate-y-0 !rounded-none !rounded-l-2xl w-full max-w-md h-full flex flex-col border-l border-border transition-all data-[starting-style]:translate-x-full data-[ending-style]:translate-x-full md:max-w-lg">
-          <div className="flex items-center justify-between border-b border-border px-6 py-4">
+        <DialogPopup className="fixed !inset-y-0 !right-0 !left-auto !top-0 !translate-x-0 !translate-y-0 !rounded-none w-full max-w-md h-full flex flex-col border-l-[1.5px] border-[color:var(--line)] bg-[color:var(--bg)] transition-all data-[starting-style]:translate-x-full data-[ending-style]:translate-x-full md:max-w-lg">
+          <div className="flex items-center justify-between border-b border-[color:var(--line)] px-6 py-4">
             <DialogTitle>Completed reminders</DialogTitle>
             <DialogClose />
           </div>
@@ -80,16 +81,16 @@ export function CompletedRemindersSheet({
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div
                     key={i}
-                    className="h-14 animate-pulse rounded-lg border border-border bg-card"
+                    className="h-14 animate-pulse border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)]"
                   />
                 ))}
               </div>
             ) : completed.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted border border-border">
-                  <Archive className="h-5 w-5 text-muted-foreground" />
+                <div className="flex h-12 w-12 items-center justify-center border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)]">
+                  <Archive className="h-5 w-5 text-[color:var(--ink-3)]" />
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-[color:var(--ink-3)]">
                   No completed reminders yet
                 </p>
               </div>

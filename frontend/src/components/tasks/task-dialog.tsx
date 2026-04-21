@@ -209,6 +209,7 @@ export function TaskDialog({ onClose, onSuccess, initialStatus }: TaskDialogProp
                         type="button"
                         variant="ghost"
                         size="icon-sm"
+                        className="max-md:size-11"
                         onClick={() => setReminderTime("")}
                         title="Clear time (all-day)"
                       >

@@ -136,8 +136,16 @@ export function ApplicationCard({ card, isDragging = false }: ApplicationCardPro
 }
 
 export function ApplicationCardOverlay({ card }: { card: KanbanCard }) {
+  const hot = isHotCard(card);
+  const isOffer = card.status === "offer";
+  const variantBorder = hot
+    ? "border-[color:var(--accent-2)]"
+    : isOffer
+      ? "border-[color:var(--accent-3)]"
+      : "border-[color:var(--line-2)]";
+
   return (
-    <div className="border-[1.5px] border-[color:var(--accent)] bg-[color:var(--bg-2)] shadow-xl cursor-grabbing">
+    <div className={`border-[1.5px] ${variantBorder} bg-[color:var(--bg-2)] shadow-xl cursor-grabbing`}>
       <div className="px-3 py-2.5">
         <p className="text-[13px] font-bold text-[color:var(--ink)] line-clamp-1">
           {card.company || "—"}

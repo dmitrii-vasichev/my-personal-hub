@@ -266,7 +266,7 @@ function EditReminderForm({
     <form onSubmit={handleSubmit} className="mt-4 space-y-4">
       <div className="flex items-end gap-2">
         <div className="flex-1 space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">
+          <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
             Title
           </label>
           <Input
@@ -282,7 +282,7 @@ function EditReminderForm({
           onClick={() => setIsUrgent(!isUrgent)}
           className={
             isUrgent
-              ? "border-red-500 bg-red-500/10 text-red-500 hover:bg-red-500/20 hover:text-red-600"
+              ? "border-[color:var(--danger)] bg-transparent text-[color:var(--danger)] hover:bg-[color:var(--bg)] hover:text-[color:var(--danger)]"
               : ""
           }
           title={isUrgent ? "Remove urgent" : "Mark as urgent"}
@@ -292,13 +292,13 @@ function EditReminderForm({
       </div>
       <div className="flex gap-3">
         <div className="flex-1 space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">
+          <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
             Date
           </label>
           <DatePicker value={date} onChange={setDate} placeholder="Pick date" />
         </div>
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">
+          <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
             Time (optional)
           </label>
           {time ? (
@@ -308,6 +308,7 @@ function EditReminderForm({
                 type="button"
                 variant="ghost"
                 size="icon-sm"
+                className="max-md:size-11"
                 onClick={() => setTime("")}
                 title="Clear time"
               >
@@ -328,7 +329,7 @@ function EditReminderForm({
         </div>
       </div>
       <div className="space-y-1.5">
-        <label className="text-xs font-medium text-muted-foreground">
+        <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
           Repeat
         </label>
         <SelectRoot
@@ -357,10 +358,10 @@ function EditReminderForm({
                 key={wd.key}
                 type="button"
                 onClick={() => toggleDay(wd.key)}
-                className={`h-8 w-9 rounded-md border text-xs font-medium transition-colors ${
+                className={`h-8 w-9 border-[1.5px] text-xs font-mono font-medium transition-colors ${
                   customDays.includes(wd.key)
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-input bg-transparent text-muted-foreground hover:bg-muted dark:bg-input/30"
+                    ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[color:var(--bg)]"
+                    : "border-[color:var(--line)] bg-transparent text-[color:var(--ink-3)] hover:border-[color:var(--line-2)] hover:text-[color:var(--ink-2)]"
                 }`}
               >
                 {wd.label}
@@ -516,15 +517,15 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
             }
           />
           <PopoverContent align="center" className="w-48 p-1">
-            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(15)}>15 minutes</button>
-            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(30)}>30 minutes</button>
-            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleSnooze(60)}>1 hour</button>
-            <div className="my-1 h-px bg-border" />
-            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(10))}>Tomorrow, 10:00</button>
-            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
-            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
-            <div className="my-1 h-px bg-border" />
-            <button className="flex w-full items-center px-2 py-1.5 text-sm hover:bg-muted" onClick={() => { setSnoozeOpen(false); setEditOpen(true); }}>Other...</button>
+            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleSnooze(15)}>15 minutes</button>
+            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleSnooze(30)}>30 minutes</button>
+            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleSnooze(60)}>1 hour</button>
+            <div className="my-1 h-px bg-[color:var(--line)]" />
+            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleReschedule(tomorrowAt(10))}>Tomorrow, 10:00</button>
+            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
+            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
+            <div className="my-1 h-px bg-[color:var(--line)]" />
+            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => { setSnoozeOpen(false); setEditOpen(true); }}>Other…</button>
           </PopoverContent>
         </Popover>
       )}

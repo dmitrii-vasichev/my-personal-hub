@@ -70,7 +70,8 @@
    to the brutalist palette so existing shadcn components keep
    working without per-component edits.
    ============================================================ */
-:root {
+:root,
+html.dark {
   /* ─── Brutalist base ─── */
   --bg:       #0e0e0c;
   --bg-2:     #141412;
