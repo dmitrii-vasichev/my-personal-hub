@@ -91,7 +91,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <main className="flex min-h-screen">
       {/* Left panel — showcase */}
       <div className="login-left-panel relative hidden w-1/2 flex-col justify-between overflow-hidden p-10 md:flex lg:p-14">
         {/* Decorative dot grid */}
@@ -305,12 +305,12 @@ export default function LoginPage() {
               onClick={handleDemoLogin}
               disabled={demoLoading}
               className="cursor-pointer text-[13px] transition-colors duration-150"
-              style={{ color: "var(--text-tertiary)" }}
+              style={{ color: "var(--text-secondary)" }}
               onMouseEnter={(e) =>
                 (e.currentTarget.style.color = "var(--accent)")
               }
               onMouseLeave={(e) =>
-                (e.currentTarget.style.color = "var(--text-tertiary)")
+                (e.currentTarget.style.color = "var(--text-secondary)")
               }
               data-testid="demo-try-link"
             >
@@ -321,7 +321,7 @@ export default function LoginPage() {
           {/* Mobile-only: product info */}
           <div
             className="mt-12 text-center md:hidden"
-            style={{ color: "var(--text-tertiary)" }}
+            style={{ color: "var(--text-secondary)" }}
           >
             <p className="text-[12px]">
               Personal Hub — All-in-one productivity dashboard
@@ -329,6 +329,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
