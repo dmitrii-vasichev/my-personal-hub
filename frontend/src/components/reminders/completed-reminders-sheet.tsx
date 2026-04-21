@@ -44,7 +44,7 @@ function CompletedRow({ reminder }: { reminder: Reminder }) {
       <Tooltip content="Restore">
         <Button
           variant="ghost"
-          size="icon-xs"
+          size="icon-sm"
           onClick={handleRestore}
           disabled={restore.isPending}
         >

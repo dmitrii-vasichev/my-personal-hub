@@ -74,13 +74,13 @@ export function Header({ onMenuToggle, showMenuButton }: HeaderProps) {
   const stamp = useLiveStamp();
 
   return (
-    <header className="flex h-11 items-center border-b border-[color:var(--line)] bg-[color:var(--bg)] px-5 gap-4 text-[11px] tracking-[0.5px] text-[color:var(--ink-3)]">
+    <header className="safe-header-pt flex h-11 items-center border-b border-[color:var(--line)] bg-[color:var(--bg)] px-5 gap-4 text-[11px] tracking-[0.5px] text-[color:var(--ink-3)]">
       <div className="flex items-center gap-2">
         {showMenuButton && (
           <button
             type="button"
             onClick={onMenuToggle}
-            className="md:hidden inline-flex items-center justify-center w-7 h-7 border border-[color:var(--line)] text-[color:var(--ink-2)] hover:text-[color:var(--ink)] hover:border-[color:var(--ink)]"
+            className="md:hidden inline-flex items-center justify-center w-7 h-7 max-md:w-11 max-md:h-11 border border-[color:var(--line)] text-[color:var(--ink-2)] hover:text-[color:var(--ink)] hover:border-[color:var(--ink)]"
             aria-label="Toggle menu"
           >
             <Menu className="h-4 w-4" />
@@ -121,7 +121,7 @@ export function Header({ onMenuToggle, showMenuButton }: HeaderProps) {
             <button
               type="button"
               onClick={logout}
-              className="inline-flex items-center justify-center w-7 h-7 border border-[color:var(--line)] text-[color:var(--ink-2)] hover:text-[color:var(--ink)] hover:border-[color:var(--ink)]"
+              className="inline-flex items-center justify-center w-7 h-7 max-md:w-11 max-md:h-11 border border-[color:var(--line)] text-[color:var(--ink-2)] hover:text-[color:var(--ink)] hover:border-[color:var(--ink)]"
               aria-label="Sign out"
             >
               <LogOut className="h-3.5 w-3.5" />

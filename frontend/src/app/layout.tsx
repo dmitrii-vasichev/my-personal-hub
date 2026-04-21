@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/lib/theme-provider";
@@ -23,15 +23,18 @@ export const metadata: Metadata = {
   title: "Personal Hub",
   description: "Centralized personal dashboard and productivity system",
   manifest: "/manifest.json",
-  themeColor: "#0e0e0c",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Hub",
   },
-  other: {
-    "mobile-web-app-capable": "yes",
-  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0e0e0c",
 };
 
 export default function RootLayout({

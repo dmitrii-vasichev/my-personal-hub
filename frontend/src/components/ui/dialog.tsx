@@ -62,7 +62,7 @@ function DialogClose({ className, ...props }: DialogPrimitive.Close.Props & { cl
   return (
     <DialogPrimitive.Close
       className={cn(
-        "absolute right-3 top-3 rounded p-1 text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors",
+        "absolute right-3 top-3 rounded p-2 text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] transition-colors",
         className
       )}
       {...props}

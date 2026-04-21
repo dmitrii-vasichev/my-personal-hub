@@ -13,8 +13,10 @@ import { ColumnVisibilityButton } from "@/components/tasks/column-visibility-but
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { useKanbanTasks, useTasks, useUpdateTask, useReorderTask } from "@/hooks/use-tasks";
 import { useSettings, useUpdateSettings } from "@/hooks/use-settings";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { StatusFilterPills } from "@/components/shared/status-filter-pills";
 import type { KanbanBoard as KanbanBoardType, TaskFilters, TaskStatus } from "@/types/task";
-import { DEFAULT_HIDDEN_COLUMNS } from "@/types/task";
+import { DEFAULT_HIDDEN_COLUMNS, TASK_STATUS_ORDER } from "@/types/task";
 
 function parseTagsParam(param: string): TaskFilters {
   const parts = param.split(",").filter(Boolean);
@@ -243,6 +245,27 @@ export default function TasksPage() {
 
   const displayBoard = optimisticBoard ?? board ?? EMPTY_BOARD;
 
+  // Mobile Kanban single-column filter (Stage 5 · FR-10, FR-12).
+  const isMobileKanban = useMediaQuery("(max-width: 959px)");
+  const [mobileStatusFilter, setMobileStatusFilter] = useState<TaskStatus | null>(null);
+
+  const pillStatuses = useMemo(
+    () =>
+      TASK_STATUS_ORDER.map((s) => ({
+        value: s,
+        label: s.toUpperCase().replace(/_/g, " "),
+        count: (displayBoard[s] ?? []).length,
+      })),
+    [displayBoard],
+  );
+
+  // Merge mobile single-column filter with user's saved hiddenColumns preference.
+  const effectiveHidden = useMemo<TaskStatus[]>(() => {
+    if (!isMobileKanban || mobileStatusFilter === null) return hiddenColumns;
+    const mobileHidden = TASK_STATUS_ORDER.filter((s) => s !== mobileStatusFilter);
+    return Array.from(new Set([...hiddenColumns, ...mobileHidden]));
+  }, [isMobileKanban, mobileStatusFilter, hiddenColumns]);
+
   // Subline counts — mirror HeroCells.openTasks + HeroCells.tasksDueToday semantics.
   const { openCount, dueTodayCount } = useMemo(() => {
     const today0 = new Date().setHours(0, 0, 0, 0);
@@ -330,17 +353,28 @@ export default function TasksPage() {
           Failed to load tasks
         </div>
       ) : (
-        <KanbanBoard
-          board={displayBoard}
-          onStatusChange={handleStatusChange}
-          onReorder={handleReorder}
-          isPending={updateTask.isPending}
-          hiddenColumns={hiddenColumns}
-          onAddTask={setCreateDialogStatus}
-          selectedTaskIds={selectedTaskIds}
-          onToggleSelect={handleToggleSelect}
-          onClearSelection={handleClearSelection}
-        />
+        <>
+          {isMobileKanban && (
+            <StatusFilterPills
+              statuses={pillStatuses}
+              selected={mobileStatusFilter}
+              onSelect={(v) => setMobileStatusFilter(v as TaskStatus | null)}
+              className="mb-3"
+              ariaLabel="Filter tasks by status"
+            />
+          )}
+          <KanbanBoard
+            board={displayBoard}
+            onStatusChange={handleStatusChange}
+            onReorder={handleReorder}
+            isPending={updateTask.isPending}
+            hiddenColumns={effectiveHidden}
+            onAddTask={setCreateDialogStatus}
+            selectedTaskIds={selectedTaskIds}
+            onToggleSelect={handleToggleSelect}
+            onClearSelection={handleClearSelection}
+          />
+        </>
       )}
 
       {/* Bulk action toolbar */}

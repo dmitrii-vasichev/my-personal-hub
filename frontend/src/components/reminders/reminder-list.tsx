@@ -307,7 +307,7 @@ function EditReminderForm({
               <Button
                 type="button"
                 variant="ghost"
-                size="icon-xs"
+                size="icon-sm"
                 onClick={() => setTime("")}
                 title="Clear time"
               >
@@ -559,15 +559,20 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
           onClick={handleRowClick}
         >
           {/* chk */}
-          <input
-            type="checkbox"
-            checked={isDone}
-            onChange={handleDone}
+          <label
+            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer"
             onClick={(e) => e.stopPropagation()}
-            disabled={isPending}
-            aria-label={`Mark "${reminder.title}" as done`}
-            className="h-4 w-4 accent-[color:var(--accent)] cursor-pointer"
-          />
+          >
+            <input
+              type="checkbox"
+              checked={isDone}
+              onChange={handleDone}
+              onClick={(e) => e.stopPropagation()}
+              disabled={isPending}
+              aria-label={`Mark "${reminder.title}" as done`}
+              className="h-4 w-4 accent-[color:var(--accent)] cursor-pointer"
+            />
+          </label>
 
           {/* when */}
           <div className="flex flex-col gap-0 font-mono leading-tight">

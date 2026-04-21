@@ -24,6 +24,10 @@ interface PendingChange {
   newStatus: ApplicationStatus;
 }
 
+interface ApplicationKanbanProps {
+  hiddenColumns?: ApplicationStatus[];
+}
+
 function KanbanSkeleton() {
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
@@ -48,7 +52,7 @@ function KanbanSkeleton() {
   );
 }
 
-export function ApplicationKanban() {
+export function ApplicationKanban({ hiddenColumns = [] }: ApplicationKanbanProps = {}) {
   const { data: kanbanData, isLoading, error } = useJobKanban();
   const [activeCard, setActiveCard] = useState<KanbanCard | null>(null);
   const [pendingChange, setPendingChange] = useState<PendingChange | null>(null);
@@ -116,6 +120,9 @@ export function ApplicationKanban() {
     );
   }
 
+  const visiblePipeline = PIPELINE_COLUMNS.filter((s) => !hiddenColumns.includes(s));
+  const visibleTerminal = TERMINAL_STATUSES.filter((s) => !hiddenColumns.includes(s));
+
   return (
     <>
       <DndContext
@@ -123,23 +130,9 @@ export function ApplicationKanban() {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {PIPELINE_COLUMNS.map((status) => (
-            <ApplicationColumn
-              key={status}
-              status={status}
-              cards={kanbanData[status] ?? []}
-              activeCardId={activeCard?.id ?? null}
-            />
-          ))}
-        </div>
-
-        <div className="mt-6">
-          <p className="mb-3 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)] px-1">
-            Completed
-          </p>
+        {visiblePipeline.length > 0 && (
           <div className="flex gap-4 overflow-x-auto pb-4">
-            {TERMINAL_STATUSES.map((status) => (
+            {visiblePipeline.map((status) => (
               <ApplicationColumn
                 key={status}
                 status={status}
@@ -148,7 +141,25 @@ export function ApplicationKanban() {
               />
             ))}
           </div>
-        </div>
+        )}
+
+        {visibleTerminal.length > 0 && (
+          <div className="mt-6">
+            <p className="mb-3 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)] px-1">
+              Completed
+            </p>
+            <div className="flex gap-4 overflow-x-auto pb-4">
+              {visibleTerminal.map((status) => (
+                <ApplicationColumn
+                  key={status}
+                  status={status}
+                  cards={kanbanData[status] ?? []}
+                  activeCardId={activeCard?.id ?? null}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         <DragOverlay>
           {activeCard ? <ApplicationCardOverlay card={activeCard} /> : null}

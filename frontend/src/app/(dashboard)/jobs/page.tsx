@@ -12,8 +12,11 @@ import { JobAnalytics } from "@/components/jobs/job-analytics";
 import { ViewToggle, type JobsViewMode } from "@/components/jobs/view-toggle";
 import { BulkImportDialog } from "@/components/jobs/bulk-import-dialog";
 import { JobsHero } from "@/components/jobs/jobs-hero";
-import { useJobs } from "@/hooks/use-jobs";
-import type { Job, JobFilters } from "@/types/job";
+import { useJobs, useJobKanban } from "@/hooks/use-jobs";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { StatusFilterPills } from "@/components/shared/status-filter-pills";
+import type { Job, JobFilters, ApplicationStatus } from "@/types/job";
+import { PIPELINE_COLUMNS, TERMINAL_STATUSES } from "@/types/job";
 
 type Tab = "jobs" | "search" | "analytics";
 
@@ -72,6 +75,27 @@ function JobsPageInner() {
 
   const sublineEmpty =
     liveCount === 0 && interviewCount === 0 && offerCount === 0;
+
+  // Mobile Kanban single-column filter (Stage 5 · FR-11). React Query dedupes
+  // this with ApplicationKanban's own useJobKanban() call — one fetch total.
+  const isMobileKanban = useMediaQuery("(max-width: 959px)");
+  const [mobileStatusFilter, setMobileStatusFilter] = useState<ApplicationStatus | null>(null);
+  const { data: kanbanData } = useJobKanban();
+
+  const pillStatuses = useMemo(() => {
+    const allStatuses: ApplicationStatus[] = [...PIPELINE_COLUMNS, ...TERMINAL_STATUSES];
+    return allStatuses.map((s) => ({
+      value: s,
+      label: s.toUpperCase().replace(/_/g, " "),
+      count: (kanbanData?.[s] ?? []).length,
+    }));
+  }, [kanbanData]);
+
+  const effectiveHidden = useMemo<ApplicationStatus[]>(() => {
+    if (!isMobileKanban || mobileStatusFilter === null) return [];
+    const all: ApplicationStatus[] = [...PIPELINE_COLUMNS, ...TERMINAL_STATUSES];
+    return all.filter((s) => s !== mobileStatusFilter);
+  }, [isMobileKanban, mobileStatusFilter]);
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -223,7 +247,18 @@ function JobsPageInner() {
                 error={error as Error | null}
               />
             ) : (
-              <ApplicationKanban />
+              <>
+                {isMobileKanban && (
+                  <StatusFilterPills
+                    statuses={pillStatuses}
+                    selected={mobileStatusFilter}
+                    onSelect={(v) => setMobileStatusFilter(v as ApplicationStatus | null)}
+                    className="mb-3"
+                    ariaLabel="Filter applications by status"
+                  />
+                )}
+                <ApplicationKanban hiddenColumns={effectiveHidden} />
+              </>
             )}
           </div>
         </>

@@ -73,7 +73,7 @@ export function BirthdayAddForm() {
           <Button
             type="button"
             variant="ghost"
-            size="icon-xs"
+            size="icon-sm"
             onClick={collapse}
             title="Cancel"
           >

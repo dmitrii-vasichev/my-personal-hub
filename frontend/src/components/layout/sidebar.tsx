@@ -61,7 +61,7 @@ export function Sidebar({ collapsed, onToggle, onNavClick }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex h-screen flex-col bg-[color:var(--bg)] border-r border-[color:var(--line)] transition-[width] duration-150",
+        "flex h-dvh flex-col bg-[color:var(--bg)] border-r border-[color:var(--line)] transition-[width] duration-150",
         collapsed ? "w-12" : "w-[220px]"
       )}
     >
@@ -120,7 +120,7 @@ export function Sidebar({ collapsed, onToggle, onNavClick }: SidebarProps) {
                     onClick={onNavClick}
                     title={collapsed ? item.label : undefined}
                     className={cn(
-                      "flex items-center gap-[10px] py-[8px] text-[12px] tracking-[0.2px] transition-colors border-l-[3px]",
+                      "flex items-center gap-[10px] py-[8px] max-md:py-[12px] text-[12px] tracking-[0.2px] transition-colors border-l-[3px]",
                       collapsed ? "justify-center px-0" : "px-[18px]",
                       isActive
                         ? "bg-[color:var(--bg-2)] text-[color:var(--ink)] font-semibold border-[color:var(--accent)]"

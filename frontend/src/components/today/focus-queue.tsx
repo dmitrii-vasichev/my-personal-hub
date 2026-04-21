@@ -66,13 +66,15 @@ function Checkbox({
 }) {
   const isDone = item.status === "done";
   return (
-    <input
-      type="checkbox"
-      checked={isDone}
-      onChange={onToggle}
-      aria-label={item.title}
-      className="h-4 w-4 accent-[color:var(--accent)] cursor-pointer"
-    />
+    <label className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer">
+      <input
+        type="checkbox"
+        checked={isDone}
+        onChange={onToggle}
+        aria-label={item.title}
+        className="h-4 w-4 accent-[color:var(--accent)] cursor-pointer"
+      />
+    </label>
   );
 }
 

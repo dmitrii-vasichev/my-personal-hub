@@ -134,7 +134,7 @@ export function QuickAddForm() {
           <Button
             type="button"
             variant="ghost"
-            size="icon-xs"
+            size="icon-sm"
             onClick={collapse}
             title="Cancel"
           >
@@ -174,7 +174,7 @@ export function QuickAddForm() {
                     <Button
                       type="button"
                       variant="ghost"
-                      size="icon-xs"
+                      size="icon-sm"
                       onClick={() => setTime("")}
                       title="Clear time"
                     >
