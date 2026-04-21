@@ -146,7 +146,10 @@ Hub is a **daily-use PWA** on iPhone 14/15 (iOS Safari engine, `display: standal
     - When `!isMobile`: pass `hiddenColumns={hiddenColumns}` as-is to `<KanbanBoard>`.
     - When `isMobile`: render `<StatusFilterPills statuses={...} selected={mobileStatusFilter} onSelect={setMobileStatusFilter} />` above Kanban; compute `const mobileHidden = TASK_STATUS_ORDER.filter(s => mobileStatusFilter !== null && s !== mobileStatusFilter)`; pass merged `hiddenColumns = [...existing, ...mobileHidden]`.
   - When 1 status visible: `KanbanBoard` still uses `flex gap-4 overflow-x-auto`, but with only 1 column the `overflow-x-auto` is harmless.
-- [ ] **FR-11: Jobs Kanban mobile wiring.** Mirror FR-10 in `app/(dashboard)/jobs/page.tsx` (or wherever the ApplicationKanban lives — confirm during audit). Same `useMediaQuery`, same pills, same `hiddenColumns` merge.
+- [ ] **FR-11: Jobs Kanban mobile wiring.** `ApplicationKanban` in `components/jobs/application-kanban.tsx` is currently **stateless (no props interface)** and renders two stacked `flex overflow-x-auto` rows: (1) `PIPELINE_COLUMNS` (8 statuses) as main Kanban, (2) `TERMINAL_STATUSES` (4 statuses) as "Completed" sub-section below. Stage 5 work:
+  - **Refactor `ApplicationKanban`**: add `interface Props { hiddenColumns?: ApplicationStatus[] }`, filter both `PIPELINE_COLUMNS` and `TERMINAL_STATUSES` via `hiddenColumns`, hide the entire "Completed" section when all 4 terminal statuses are hidden (and the main row when all 8 pipeline statuses are hidden).
+  - **Wire mobile in `app/(dashboard)/jobs/page.tsx`**: mirror FR-10 pattern — `useMediaQuery` + `mobileStatusFilter: ApplicationStatus | null` state + `<StatusFilterPills>` above Kanban. Pills source = `[...PIPELINE_COLUMNS, ...TERMINAL_STATUSES]` (12 pills). Compute merged `hiddenColumns` from mobile filter, pass to `<ApplicationKanban hiddenColumns={...} />`.
+  - Counts per pill from `kanbanData[status]?.length ?? 0`.
 - [ ] **FR-12: Pills use actual counts.** `StatusFilterPills` receives `count` per status from the board data — mobile user sees `OPEN (3) · IN_PROGRESS (1) · DONE (12)` etc.
 
 ### P0 — Touch Targets (global audit)
@@ -265,8 +268,8 @@ These are the fragile code boundaries that the audit procedure must verify again
 | IC-2 | `sidebar.tsx:64` contains `flex h-screen flex-col` | Adjust FR-3 |
 | IC-3 | `header.tsx:83` burger button is `w-7 h-7` with `md:hidden` | Adjust FR-14 |
 | IC-4 | `KanbanBoard` accepts prop `hiddenColumns?: TaskStatus[]` | Escalate; rewiring without this prop doubles scope |
-| IC-5 | Jobs Kanban (wherever it lives) accepts equivalent `hiddenColumns` prop | Escalate |
-| IC-6 | `TASK_STATUS_ORDER` exported from `types/task.ts`; Jobs equivalent exported from `types/job.ts` | Adjust FR-10/11 imports |
+| IC-5 | `components/jobs/application-kanban.tsx` has no props interface — stateless; uses `PIPELINE_COLUMNS` + `TERMINAL_STATUSES` imports directly. FR-11 adds `hiddenColumns?: ApplicationStatus[]` prop via refactor (confirmed in audit 2026-04-20) | n/a — FR-11 already accounts for the refactor |
+| IC-6 | `TASK_STATUS_ORDER` exported from `types/task.ts` (6 entries); Jobs exports `PIPELINE_COLUMNS` (8) + `TERMINAL_STATUSES` (4) from `types/job.ts`. No single `APPLICATION_STATUS_ORDER` export. | Adjust FR-10/11 imports accordingly |
 | IC-7 | `public/manifest.json` has `background_color`, `theme_color`, `start_url` keys as top-level strings | Adjust FR-5/6 |
 | IC-8 | `app/layout.tsx` uses `export const metadata` with `themeColor` inline | Next.js 16 may already have moved this to `viewport` — skip FR-1 removal if not present |
 | IC-9 | `ReminderList` checkbox is a native `<input type="checkbox">` (not shadcn `<Checkbox>`) | Adjust FR-14 wrapping strategy |
