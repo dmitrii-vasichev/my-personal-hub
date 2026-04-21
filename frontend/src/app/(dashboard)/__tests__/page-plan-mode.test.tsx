@@ -41,9 +41,22 @@ vi.mock("@/components/today/day-timeline", () => ({
   DayTimeline: () => <div data-testid="day-timeline" />,
 }));
 vi.mock("@/components/today/stats-grid", () => ({
-  StatsGrid: ({ replaceTasksDoneWith }: { replaceTasksDoneWith?: React.ReactNode }) => (
+  StatsGrid: ({
+    replaceTasksDoneWith,
+    replaceResponseRateWith,
+  }: {
+    replaceTasksDoneWith?: React.ReactNode;
+    replaceResponseRateWith?: React.ReactNode;
+  }) => (
     <div data-testid="stats-grid">
-      {replaceTasksDoneWith ?? <span data-testid="default-tasks-done" />}
+      <div data-testid="stats-slot-tasks-done">
+        {replaceTasksDoneWith ?? <span data-testid="default-tasks-done" />}
+      </div>
+      <div data-testid="stats-slot-response-rate">
+        {replaceResponseRateWith ?? (
+          <span data-testid="default-response-rate" />
+        )}
+      </div>
     </div>
   ),
 }));
@@ -55,6 +68,29 @@ vi.mock("@/components/today/signals-feed", () => ({
 }));
 vi.mock("@/components/today/plan-adherence-cell", () => ({
   PlanAdherenceCell: () => <div data-testid="plan-adherence-cell" />,
+}));
+vi.mock("@/components/today/focus-today-cell", () => ({
+  FocusTodayCell: () => <div data-testid="focus-today-cell" />,
+}));
+vi.mock("@/components/today/now-block", () => ({
+  NowBlock: () => <div data-testid="now-block" />,
+}));
+vi.mock("@/components/today/focus-queue", () => ({
+  FocusQueue: () => <div data-testid="focus-queue" />,
+}));
+vi.mock("@/components/today/fixed-schedule", () => ({
+  FixedSchedule: () => <div data-testid="fixed-schedule" />,
+}));
+vi.mock("@/components/today/plan-bar", () => ({
+  PlanBar: ({ plan }: { plan: { date: string } }) => (
+    <div data-testid="plan-bar">PLAN · {plan.date}</div>
+  ),
+}));
+vi.mock("@/components/today/no-plan-strip", () => ({
+  NoPlanStrip: () => <div data-testid="no-plan-strip">No plan for today</div>,
+}));
+vi.mock("@/components/today/today-skeleton", () => ({
+  TodaySkeleton: () => <div data-testid="today-skeleton" />,
 }));
 
 beforeEach(() => {
@@ -102,12 +138,19 @@ describe("Today page · plan mode switching", () => {
     expect(screen.queryByTestId("hero-priority")).toBeNull();
     expect(screen.queryByTestId("day-timeline")).toBeNull();
     expect(screen.getByTestId("hero-cells")).toBeInTheDocument();
+    // PlanAdherenceCell moved to the response-rate slot (D12 wiring); Focus
+    // takes the tasks-done slot.
     expect(screen.getByTestId("plan-adherence-cell")).toBeInTheDocument();
+    expect(screen.getByTestId("focus-today-cell")).toBeInTheDocument();
+    expect(screen.queryByTestId("default-response-rate")).toBeNull();
+    expect(screen.queryByTestId("default-tasks-done")).toBeNull();
   });
 
   it("renders PlanAdherenceCell in no-plan mode too (FR-19)", () => {
     wrap(<TodayPage />);
     expect(screen.getByTestId("plan-adherence-cell")).toBeInTheDocument();
+    expect(screen.getByTestId("focus-today-cell")).toBeInTheDocument();
     expect(screen.queryByTestId("default-tasks-done")).toBeNull();
+    expect(screen.queryByTestId("default-response-rate")).toBeNull();
   });
 });

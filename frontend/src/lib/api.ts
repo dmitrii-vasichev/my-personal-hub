@@ -5,6 +5,11 @@ import type {
   PlannerContext,
   AnalyticsResponse,
 } from "@/types/plan";
+import type {
+  FocusSession,
+  FocusSessionTodayResponse,
+  StartFocusBody,
+} from "@/types/focus-session";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -14,6 +19,12 @@ class ApiClient {
     return localStorage.getItem("access_token");
   }
 
+  /**
+   * Thrown errors carry a `.status` property equal to the HTTP response status
+   * (e.g. 409, 404, 500) so callers can branch on it — cast via
+   * `(err as { status?: number }).status`. `.message` remains the server's
+   * error detail.
+   */
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const token = this.getToken();
     const headers: Record<string, string> = {
@@ -45,7 +56,9 @@ class ApiClient {
         // Pydantic validation errors: extract readable messages
         message = error.detail.map((e: { msg?: string }) => e.msg ?? String(e)).join("; ");
       }
-      throw new Error(message);
+      const err = new Error(message) as Error & { status: number };
+      err.status = response.status;
+      throw err;
     }
 
     if (response.status === 204 || response.headers.get("content-length") === "0") {
@@ -137,4 +150,18 @@ export const plannerApi = {
     api.get<AnalyticsResponse>(
       `/api/planner/analytics?from=${from}&to=${to}`,
     ),
+};
+
+export const focusSessionsApi = {
+  start: (body: StartFocusBody) =>
+    api.post<FocusSession>("/api/focus-sessions/start", body),
+
+  stop: (id: number) =>
+    api.patch<FocusSession>(`/api/focus-sessions/${id}/stop`),
+
+  getActive: () =>
+    api.get<FocusSession | null>("/api/focus-sessions/active"),
+
+  getToday: () =>
+    api.get<FocusSessionTodayResponse>("/api/focus-sessions/today"),
 };

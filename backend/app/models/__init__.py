@@ -32,6 +32,7 @@ from app.models.reminder import Reminder, ReminderStatus
 from app.models.birthday import Birthday
 from app.models.daily_plan import DailyPlan, PlanItem, PlanItemStatus
 from app.models.api_token import ApiToken
+from app.models.focus_session import FocusSession
 
 __all__ = [
     "User",
@@ -83,4 +84,5 @@ __all__ = [
     "PlanItem",
     "PlanItemStatus",
     "ApiToken",
+    "FocusSession",
 ]

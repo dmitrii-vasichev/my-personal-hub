@@ -17,7 +17,11 @@ type Cell = {
 
 export function StatsGrid({
   replaceTasksDoneWith,
-}: { replaceTasksDoneWith?: React.ReactNode } = {}) {
+  replaceResponseRateWith,
+}: {
+  replaceTasksDoneWith?: React.ReactNode;
+  replaceResponseRateWith?: React.ReactNode;
+} = {}) {
   const { data: tasks = [] } = useTasks();
   const { data: jobs = [] } = useJobs();
   const { data: notes = [] } = useNotes();
@@ -81,6 +85,14 @@ export function StatsGrid({
           return (
             <div key={c.lab} className={tileCls}>
               {replaceTasksDoneWith}
+            </div>
+          );
+        }
+
+        if (c.lab === "Response rate · 30d" && replaceResponseRateWith) {
+          return (
+            <div key={c.lab} className={tileCls}>
+              {replaceResponseRateWith}
             </div>
           );
         }

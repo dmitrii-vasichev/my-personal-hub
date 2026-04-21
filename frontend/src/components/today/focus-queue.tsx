@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { DailyPlan, PlanItem } from "@/types/plan";
 import { labelForCategory, UNCHECKED_STATUSES } from "@/types/plan";
 import { useCompleteItemMutation } from "@/hooks/use-plan-today";
+import { StartFocusButton } from "@/components/focus/start-focus-button";
 
 type Mutate = ReturnType<typeof useCompleteItemMutation>["mutate"];
 
@@ -33,6 +34,12 @@ export function FocusQueue({ plan }: { plan: DailyPlan }) {
             </span>
             <Chip>{i.minutes_planned}m</Chip>
             <Chip>{labelForCategory(i.category)}</Chip>
+            {(i.status === "pending" || i.status === "rescheduled") && (
+              <StartFocusButton
+                taskId={i.linked_task_id ?? undefined}
+                planItemId={i.id}
+              />
+            )}
             {i.linked_task_id && (
               <Link
                 href={`/tasks/${i.linked_task_id}`}

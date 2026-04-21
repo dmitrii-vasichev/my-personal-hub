@@ -17,6 +17,7 @@ import { InlineEditText } from "@/components/ui/inline-edit-text";
 import { InlineEditSelect } from "@/components/ui/inline-edit-select";
 import { InlineEditDate } from "@/components/ui/inline-edit-date";
 import { TaskReminderEdit } from "@/components/tasks/task-reminder-edit";
+import { StartFocusButton } from "@/components/focus/start-focus-button";
 import { CollapsibleDescription } from "@/components/ui/collapsible-description";
 import { ChecklistEditor } from "@/components/tasks/checklist-editor";
 import { TaskTimeline } from "@/components/tasks/task-timeline";
@@ -178,8 +179,8 @@ export default function TaskDetailPage() {
         {/* Main content */}
         <div className="flex flex-col gap-6">
           {/* Title */}
-          <div>
-            <h1 className="text-2xl font-semibold text-[var(--text-primary)] leading-tight">
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-2xl font-semibold text-[var(--text-primary)] leading-tight flex-1 min-w-0">
               {canEdit ? (
                 <InlineEditText
                   value={task.title}
@@ -191,6 +192,7 @@ export default function TaskDetailPage() {
                 task.title
               )}
             </h1>
+            <StartFocusButton taskId={task.id} className="shrink-0 mt-1" />
           </div>
 
           {/* Description */}

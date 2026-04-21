@@ -7,6 +7,8 @@ import { FocusQueue } from "@/components/today/focus-queue";
 import { FixedSchedule } from "@/components/today/fixed-schedule";
 import { NoPlanStrip } from "@/components/today/no-plan-strip";
 import { PlanAdherenceCell } from "@/components/today/plan-adherence-cell";
+import { FocusTodayCell } from "@/components/today/focus-today-cell";
+import { NowBlock } from "@/components/today/now-block";
 import { TodaySkeleton } from "@/components/today/today-skeleton";
 
 import { HeroPriority } from "@/components/today/hero-priority";
@@ -65,6 +67,7 @@ export default function TodayPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-[18px] mt-[18px]">
           <div className="flex flex-col gap-[18px]">
+            <NowBlock />
             <FocusQueue plan={plan} />
             <FixedSchedule />
           </div>
@@ -72,7 +75,10 @@ export default function TodayPage() {
             <div className="border-[1.5px] border-[color:var(--line)]">
               <HeroCells />
             </div>
-            <StatsGrid replaceTasksDoneWith={<PlanAdherenceCell />} />
+            <StatsGrid
+              replaceResponseRateWith={<PlanAdherenceCell />}
+              replaceTasksDoneWith={<FocusTodayCell />}
+            />
             <RemindersToday />
           </div>
         </div>
@@ -98,7 +104,10 @@ export default function TodayPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-[18px]">
         <DayTimeline />
         <div className="flex flex-col gap-[18px]">
-          <StatsGrid replaceTasksDoneWith={<PlanAdherenceCell />} />
+          <StatsGrid
+            replaceResponseRateWith={<PlanAdherenceCell />}
+            replaceTasksDoneWith={<FocusTodayCell />}
+          />
           <div>
             <Hdline title="Reminders · Today" />
             <RemindersToday />

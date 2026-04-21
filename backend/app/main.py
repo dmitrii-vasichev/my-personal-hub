@@ -32,6 +32,7 @@ from app.api.outreach import batch_router, industry_router, router as outreach_r
 from app.api.birthdays import router as birthdays_router
 from app.api.miniapp import router as miniapp_router
 from app.api.planner import router as planner_router
+from app.api.focus_sessions import router as focus_sessions_router
 from app.api.reminders import router as reminders_router
 from app.api.users import router as users_router
 from app.core.config import settings
@@ -298,6 +299,7 @@ app.include_router(miniapp_router)
 app.include_router(reminders_router)
 app.include_router(birthdays_router)
 app.include_router(planner_router)
+app.include_router(focus_sessions_router)
 
 _cors_origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(

@@ -41,4 +41,36 @@ describe("StatsGrid", () => {
     expect(screen.getByText(/Notes · 30d/i)).toBeInTheDocument();
     expect(screen.getByText(/Response rate · 30d/i)).toBeInTheDocument();
   });
+
+  it("replaces Response rate cell when replaceResponseRateWith is provided", () => {
+    wrap(
+      <StatsGrid
+        replaceResponseRateWith={
+          <div data-testid="adherence-cell">PLAN ADHERENCE</div>
+        }
+      />,
+    );
+    expect(screen.queryByText(/Response rate · 30d/i)).toBeNull();
+    expect(screen.getByTestId("adherence-cell")).toBeInTheDocument();
+  });
+
+  it("renders both replacements side-by-side while Overdue and Notes keep defaults", () => {
+    wrap(
+      <StatsGrid
+        replaceResponseRateWith={
+          <div data-testid="adherence-cell">PLAN ADHERENCE</div>
+        }
+        replaceTasksDoneWith={
+          <div data-testid="focus-cell">FOCUS TODAY</div>
+        }
+      />,
+    );
+    expect(screen.getByTestId("adherence-cell")).toBeInTheDocument();
+    expect(screen.getByTestId("focus-cell")).toBeInTheDocument();
+    expect(screen.queryByText(/Response rate · 30d/i)).toBeNull();
+    expect(screen.queryByText(/Tasks done · today/i)).toBeNull();
+    // Cells #1 (Overdue) and #2 (Notes) keep defaults.
+    expect(screen.getByText(/Overdue tasks/i)).toBeInTheDocument();
+    expect(screen.getByText(/Notes · 30d/i)).toBeInTheDocument();
+  });
 });

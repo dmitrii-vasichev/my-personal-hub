@@ -6,6 +6,7 @@ import { useCalendarEvents } from "@/hooks/use-calendar";
 import { useReminders } from "@/hooks/use-reminders";
 import type { TaskPriority } from "@/types/task";
 import { formatTime, isSameLocalDay, todayBounds } from "./today-date";
+import { NowBlock } from "./now-block";
 
 type TagCls = "default" | "warn" | "teal" | "acc";
 
@@ -102,14 +103,18 @@ export function DayTimeline() {
 
   if (rows.length === 0) {
     return (
-      <div className="border-[1.5px] border-[color:var(--line)] p-[14px_16px] text-[11.5px] text-[color:var(--ink-3)]">
-        Nothing on today&apos;s timeline.
+      <div className="border-[1.5px] border-[color:var(--line)]">
+        <NowBlock />
+        <div className="p-[14px_16px] text-[11.5px] text-[color:var(--ink-3)]">
+          Nothing on today&apos;s timeline.
+        </div>
       </div>
     );
   }
 
   return (
     <div className="border-[1.5px] border-[color:var(--line)]">
+      <NowBlock />
       {rows.map((r, i) => (
         <div
           key={r.key}
