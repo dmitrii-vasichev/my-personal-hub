@@ -1,0 +1,932 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Hub — Brutalist Hi-Fi</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0e0e0c;
+  --bg-2:#141412;
+  --panel:#17171400;
+  --line:#2a2a26;
+  --line-2:#3c3c36;
+  --ink:#f1efe6;
+  --ink-2:#b3b0a4;
+  --ink-3:#74716a;
+  --ink-4:#4d4b46;
+  --accent:#d9ff3d;        /* acid lime */
+  --accent-2:#ff6b35;      /* orange */
+  --accent-3:#00e0c6;      /* teal */
+  --danger:#ff4b4b;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --display:'Space Grotesk',ui-sans-serif,system-ui,sans-serif;
+}
+html.light{
+  --bg:#f3f2ec;
+  --bg-2:#e7e5db;
+  --line:#1a1a17;
+  --line-2:#b8b5a8;
+  --ink:#0e0e0c;
+  --ink-2:#2a2a26;
+  --ink-3:#67645a;
+  --ink-4:#8f8c82;
+  --accent:#0e0e0c;
+  --accent-2:#b23a0e;
+  --accent-3:#1d5c54;
+}
+/* light-theme overrides: acid-lime button and highlighted em read badly on paper */
+html.light .btn.acc{background:#0e0e0c;color:#f3f2ec;border-color:#0e0e0c}
+html.light .btn.acc:hover{background:#b23a0e;color:#fff;border-color:#b23a0e}
+html.light .hero-head em{background:#0e0e0c;color:#f3f2ec}
+html.light .hero-kicker{color:#b23a0e}
+html.light .hero-kicker .pulse{background:#b23a0e;box-shadow:0 0 8px #b23a0e}
+html.light .tline .row.now .t,html.light .tline .row.now .dot{color:#b23a0e;background:#b23a0e;text-shadow:none;box-shadow:none}
+html.light .tline .row.p1 .dot{background:#b23a0e}
+html.light .tline .row.p1 .t{color:#b23a0e}
+html.light .tag.acc{background:#0e0e0c;color:#f3f2ec;border-color:#0e0e0c}
+html.light .feed .src{color:#0e0e0c}
+html.light .rail button.cur{border-left-color:#b23a0e}
+html.light .rail button.cur .c,html.light .rail button.cur .i{color:#b23a0e;border-color:#b23a0e}
+html.light .rail .cmd{background:#fff}
+html.light .footer .ind{background:#1d5c54;box-shadow:0 0 6px #1d5c54}
+html.light .bar .stat .dot{background:#b23a0e}
+html.light .stat-cell .val .u{color:#67645a}
+html.light .stat-cell .bar-mini .fill{background:#0e0e0c}
+html.light .hero-cell .val{color:#0e0e0c}
+html.light .jh-l h2 em{background:#b23a0e;color:#fff}
+html.light .jcc.hot{border-color:#b23a0e;box-shadow:inset 0 0 0 1px #b23a0e}
+html.light .jcc.hot .co::after,html.light .jcc.hot .ft,html.light .jcc.warn .ft{color:#b23a0e}
+html.light .remrow .chk.on{background:#0e0e0c;border-color:#0e0e0c}
+html.light .cmd-b{border-color:#0e0e0c;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+html.light .cmd-r.hl,html.light .cmd-r:hover{background:#0e0e0c;color:#f3f2ec}
+html.light .cmd-r.hl .ic,html.light .cmd-r:hover .ic,html.light .cmd-r.hl .m,html.light .cmd-r:hover .m{color:#f3f2ec}
+html.light .tw-btn{background:#0e0e0c;color:#f3f2ec}
+html.light .bday-row .av{background:#0e0e0c;color:#f3f2ec}
+html.light .bday-row .av.b{background:#b23a0e;color:#fff}
+html.light .bday-row .av.c{background:#1d5c54;color:#fff}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+button{font-family:inherit;color:inherit}
+
+/* ---------- shell ---------- */
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.rail{border-right:1.5px solid var(--line);padding:14px 0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:2px;background:var(--bg)}
+.rail .brand{padding:2px 18px 18px;display:flex;align-items:center;gap:8px;border-bottom:1.5px solid var(--line);margin-bottom:10px}
+.rail .brand b{font-family:var(--display);font-weight:700;font-size:22px;letter-spacing:-.8px}
+.rail .brand .sq{width:14px;height:14px;background:var(--accent);display:inline-block}
+.rail-sect{padding:14px 18px 6px;font-size:9.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--ink-3)}
+.rail button{background:transparent;border:none;padding:8px 18px;text-align:left;font-size:12px;letter-spacing:.2px;color:var(--ink-2);cursor:pointer;display:flex;align-items:center;gap:10px;border-left:3px solid transparent;transition:all .1s}
+.rail button .i{width:16px;font-size:12px;color:var(--ink-3);text-align:center;flex-shrink:0}
+.rail button:hover{color:var(--ink);background:var(--bg-2)}
+.rail button.cur{color:var(--ink);background:var(--bg-2);border-left-color:var(--accent);font-weight:600}
+.rail button .c{margin-left:auto;font-size:10px;color:var(--ink-3);padding:1px 5px;border:1px solid var(--line);border-radius:2px}
+.rail button.cur .c{color:var(--accent);border-color:var(--accent)}
+.rail .spacer{flex:1}
+.rail .cmd{margin:0 14px 8px;padding:8px 10px;border:1.5px solid var(--line);display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-3);cursor:pointer}
+.rail .cmd:hover{border-color:var(--ink-3);color:var(--ink)}
+.rail .cmd .k{margin-left:auto;padding:1px 4px;border:1px solid var(--line);font-size:9.5px}
+.rail .footer{padding:12px 18px;border-top:1.5px solid var(--line);font-size:10px;color:var(--ink-3);letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center}
+.rail .footer .ind{width:6px;height:6px;background:var(--accent);border-radius:50%;box-shadow:0 0 6px var(--accent)}
+
+/* ---------- main ---------- */
+main{min-width:0}
+.bar{height:44px;border-bottom:1.5px solid var(--line);display:flex;align-items:center;padding:0 20px;gap:14px;font-size:11px;color:var(--ink-3);letter-spacing:.5px;background:var(--bg)}
+.bar .bc{display:flex;gap:8px;align-items:center}
+.bar .bc .sep{color:var(--ink-4)}
+.bar .bc b{color:var(--ink);font-weight:500}
+.bar .spacer{flex:1}
+.bar .stat{display:flex;gap:16px;align-items:center}
+.bar .stat span b{color:var(--ink);font-weight:600}
+.bar .stat .dot{width:5px;height:5px;background:var(--accent);border-radius:50%;display:inline-block;margin-right:5px}
+.bar .tbtn{border:1.5px solid var(--line);background:transparent;padding:3px 8px;font-size:10.5px;letter-spacing:.5px;color:var(--ink-2);cursor:pointer}
+.bar .tbtn:hover{border-color:var(--ink);color:var(--ink)}
+
+.page{display:none;padding:22px 24px 60px}
+.page.on{display:block}
+
+/* ---------- primitives ---------- */
+.hline{height:1.5px;background:var(--line);margin:16px 0}
+.hdline{display:flex;align-items:center;gap:12px;margin:22px 0 12px}
+.hdline::before{content:"▍";color:var(--accent);font-size:14px;line-height:1}
+.hdline h3{margin:0;font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:-.2px;text-transform:uppercase}
+.hdline .n{font-size:11px;color:var(--ink-3)}
+.hdline::after{content:"";flex:1;height:1px;background:var(--line)}
+.hdline .a{font-size:10.5px;letter-spacing:.5px;color:var(--ink-3);cursor:pointer}
+.hdline .a:hover{color:var(--accent)}
+
+.panel{border:1.5px solid var(--line);padding:0}
+.panel-h{padding:10px 14px;border-bottom:1.5px solid var(--line);display:flex;align-items:center;justify-content:space-between;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3);background:var(--bg-2)}
+.panel-b{padding:14px}
+.panel-h b{color:var(--ink);font-weight:600}
+
+.btn{border:1.5px solid var(--line);background:transparent;color:var(--ink);padding:6px 12px;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all .1s;display:inline-flex;align-items:center;gap:6px;font-weight:500}
+.btn:hover{background:var(--ink);color:var(--bg)}
+.btn.acc{background:var(--accent);color:#0e0e0c;border-color:var(--accent);font-weight:700}
+.btn.acc:hover{background:var(--ink);color:var(--accent);border-color:var(--ink)}
+.btn.sm{padding:3px 8px;font-size:9.5px;letter-spacing:1px}
+.tag{display:inline-block;font-size:9.5px;letter-spacing:1px;text-transform:uppercase;padding:2px 6px;border:1px solid var(--line-2);color:var(--ink-2)}
+.tag.acc{background:var(--accent);color:#0e0e0c;border-color:var(--accent);font-weight:700}
+.tag.warn{color:var(--accent-2);border-color:var(--accent-2)}
+.tag.teal{color:var(--accent-3);border-color:var(--accent-3)}
+.tag.danger{color:var(--danger);border-color:var(--danger)}
+.tag.ghost{color:var(--ink-3);border-color:var(--line)}
+
+/* ---------- DASHBOARD ---------- */
+.hero{border:1.5px solid var(--line);display:grid;grid-template-columns:1.5fr 1fr;gap:0}
+.hero-l{padding:22px 24px;border-right:1.5px solid var(--line)}
+.hero-kicker{font-size:10.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:10px;display:flex;gap:10px;align-items:center}
+.hero-kicker .pulse{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero-head{font-family:var(--display);font-weight:700;font-size:42px;line-height:1;letter-spacing:-1.4px;margin:0 0 14px;text-transform:uppercase}
+.hero-head em{font-style:normal;background:var(--accent);color:#0e0e0c;padding:0 6px;font-weight:800}
+.hero-deck{font-size:13px;color:var(--ink-2);line-height:1.5;margin:0 0 18px;max-width:540px}
+.hero-acts{display:flex;gap:8px;flex-wrap:wrap}
+
+.hero-r{display:grid;grid-template-rows:1fr 1fr;grid-template-columns:1fr 1fr}
+.hero-cell{padding:14px 16px;border-bottom:1.5px solid var(--line);border-right:1.5px solid var(--line);display:flex;flex-direction:column;justify-content:space-between;min-height:72px}
+.hero-cell:nth-child(2n){border-right:none}
+.hero-cell:nth-child(n+3){border-bottom:none}
+.hero-cell .lab{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3)}
+.hero-cell .val{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:-.8px;line-height:1}
+.hero-cell .delta{font-size:10px;color:var(--ink-3);margin-top:2px}
+.hero-cell .delta.up{color:var(--accent-3)}
+.hero-cell .delta.down{color:var(--accent-2)}
+
+.cols{display:grid;grid-template-columns:1.6fr 1fr;gap:18px}
+.tline{border:1.5px solid var(--line)}
+.tline .row{display:grid;grid-template-columns:72px 14px 1fr auto;gap:14px;padding:10px 16px;border-bottom:1px solid var(--line);align-items:center}
+.tline .row:last-child{border-bottom:none}
+.tline .row:hover{background:var(--bg-2)}
+.tline .t{font-size:11.5px;font-weight:600;letter-spacing:.5px;color:var(--ink-2)}
+.tline .t.p1{color:var(--accent-2)}
+.tline .t.now{color:var(--accent);text-shadow:0 0 8px var(--accent)}
+.tline .dot{width:8px;height:8px;background:var(--ink-4);border-radius:0}
+.tline .row.p1 .dot{background:var(--accent-2)}
+.tline .row.now .dot{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.tline .row.done .dot{background:transparent;border:1.5px solid var(--ink-4)}
+.tline .body{min-width:0}
+.tline .body .h{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:-.1px;margin:0}
+.tline .body .s{font-size:11.5px;color:var(--ink-3);margin-top:2px;line-height:1.4}
+.tline .body .s .lk{color:var(--accent-3);text-decoration:underline;text-underline-offset:2px}
+.tline .row.done .h{color:var(--ink-3);text-decoration:line-through;font-weight:500}
+.tline .row.done .s{color:var(--ink-4)}
+.tline .m{display:flex;gap:4px}
+
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1.5px solid var(--line)}
+.stat-cell{padding:14px;border-bottom:1.5px solid var(--line);border-right:1.5px solid var(--line);display:flex;flex-direction:column;gap:4px;min-height:80px;justify-content:space-between}
+.stat-cell:nth-child(2n){border-right:none}
+.stat-cell:nth-last-child(-n+2){border-bottom:none}
+.stat-cell .lab{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3)}
+.stat-cell .val{font-family:var(--display);font-weight:700;font-size:30px;letter-spacing:-1px;line-height:1}
+.stat-cell .val .u{font-size:11px;color:var(--ink-3);margin-left:4px;font-weight:500}
+.stat-cell .bar-mini{height:6px;background:var(--bg-2);border:1px solid var(--line);position:relative;margin-top:2px}
+.stat-cell .bar-mini .fill{position:absolute;left:0;top:0;bottom:0;background:var(--accent)}
+.stat-cell.alert .val{color:var(--accent-2)}
+.stat-cell.alert .bar-mini .fill{background:var(--accent-2)}
+
+.feed{border:1.5px solid var(--line)}
+.feed .it{padding:12px 14px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:70px 1fr;gap:14px;align-items:start}
+.feed .it:last-child{border-bottom:none}
+.feed .it:hover{background:var(--bg-2)}
+.feed .src{font-size:9.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);font-weight:600}
+.feed .it .h{font-family:var(--display);font-size:13.5px;font-weight:600;margin:0;line-height:1.3;letter-spacing:-.1px}
+.feed .it .s{font-size:11.5px;color:var(--ink-3);margin-top:3px;line-height:1.4}
+.feed .it .m{margin-top:6px;font-size:10px;letter-spacing:.5px;color:var(--ink-4);display:flex;gap:10px}
+
+.ascii{font-family:var(--mono);font-size:10px;line-height:1.3;color:var(--ink-4);white-space:pre;overflow:hidden}
+
+/* ---------- TASKS ---------- */
+.ph{display:flex;align-items:end;justify-content:space-between;gap:20px;padding-bottom:14px;border-bottom:1.5px solid var(--line);margin-bottom:18px}
+.ph h1{font-family:var(--display);font-weight:700;font-size:36px;letter-spacing:-1.2px;margin:2px 0 0;text-transform:uppercase;line-height:1}
+.ph .k{font-size:10.5px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3)}
+.ph .sub{font-size:12px;color:var(--ink-3);margin:4px 0 0}
+.ph .ra{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+
+.tabs{display:flex;gap:0;margin-bottom:16px;border-bottom:1.5px solid var(--line)}
+.tabs button{background:transparent;border:none;padding:8px 14px;font-size:10.5px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-3);cursor:pointer;position:relative;border-right:1.5px solid var(--line);font-weight:500}
+.tabs button:hover{color:var(--ink)}
+.tabs button.on{color:var(--ink);background:var(--bg-2);font-weight:700}
+.tabs button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1.5px;height:2px;background:var(--accent)}
+.tabs .sp{flex:1;border-right:none}
+.tabs .f{background:transparent;border:none;padding:8px 12px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-3);cursor:pointer;border-left:1.5px solid var(--line)}
+.tabs .f.on{color:var(--accent);font-weight:700}
+
+.kan{display:grid;grid-template-columns:repeat(4,1fr);border:1.5px solid var(--line);border-right:none}
+.kcol{border-right:1.5px solid var(--line);min-height:360px;display:flex;flex-direction:column}
+.kcol-h{padding:10px 12px;border-bottom:1.5px solid var(--line);display:flex;align-items:center;justify-content:space-between;font-size:10.5px;letter-spacing:2px;text-transform:uppercase;background:var(--bg-2)}
+.kcol-h .l{display:flex;align-items:center;gap:8px;font-weight:600}
+.kcol-h .marker{width:8px;height:8px;background:var(--ink-3)}
+.kcol[data-c="1"] .marker{background:var(--accent-2)}
+.kcol[data-c="2"] .marker{background:var(--accent)}
+.kcol[data-c="3"] .marker{background:var(--accent-3)}
+.kcol[data-c="4"] .marker{background:var(--ink-4)}
+.kcol-h .c{color:var(--ink-3);font-weight:500}
+.kcol-b{padding:10px;display:flex;flex-direction:column;gap:8px;flex:1}
+.tc{border:1.5px solid var(--line);padding:10px 12px;background:var(--bg);cursor:grab;transition:all .1s}
+.tc:hover{border-color:var(--ink-2);background:var(--bg-2)}
+.tc .th{font-family:var(--display);font-weight:600;font-size:13.5px;margin:0;line-height:1.25;letter-spacing:-.1px}
+.tc .meta{margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:9.5px;letter-spacing:1px;color:var(--ink-3);text-transform:uppercase}
+.tc .meta .due.over{color:var(--accent-2);font-weight:700}
+.tc.p1{border-left:4px solid var(--accent-2)}
+.tc.p2{border-left:4px solid var(--accent)}
+.tc.p3{border-left:4px solid var(--accent-3)}
+.tc .tags{margin-top:8px;display:flex;gap:4px;flex-wrap:wrap}
+.tc.done{opacity:.55}
+.tc.done .th{text-decoration:line-through}
+
+/* ---------- JOBS ---------- */
+.jobs-hero{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--line);margin-bottom:16px}
+.jh-l{padding:22px 24px;border-right:1.5px solid var(--line)}
+.jh-l .k{font-size:10.5px;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.jh-l h2{font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:-.9px;margin:0 0 10px;line-height:1.1;text-transform:uppercase}
+.jh-l h2 em{font-style:normal;background:var(--accent-2);color:#0e0e0c;padding:0 4px}
+.jh-l p{font-size:12.5px;color:var(--ink-2);line-height:1.5;margin:0;max-width:440px}
+.jh-r{display:grid;grid-template-columns:repeat(4,1fr)}
+.jh-r .c{padding:14px 12px;border-right:1.5px solid var(--line);display:flex;flex-direction:column;justify-content:space-between}
+.jh-r .c:last-child{border-right:none}
+.jh-r .c .lab{font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3)}
+.jh-r .c .val{font-family:var(--display);font-weight:700;font-size:32px;letter-spacing:-1px;line-height:1}
+.jh-r .c.int .val{color:var(--accent-2)}
+.jh-r .c.off .val{color:var(--accent-3)}
+.jh-r .c .bar-mini{height:5px;margin-top:6px}
+
+.jkan{display:grid;grid-template-columns:repeat(5,1fr);border:1.5px solid var(--line);border-right:none}
+.jc{border-right:1.5px solid var(--line);min-height:280px;display:flex;flex-direction:column}
+.jc-h{padding:9px 12px;border-bottom:1.5px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:10px;letter-spacing:2px;text-transform:uppercase;background:var(--bg-2);font-weight:600}
+.jc-h .c{color:var(--ink-3);font-weight:500}
+.jc-b{padding:8px;display:flex;flex-direction:column;gap:6px;flex:1}
+.jcc{border:1.5px solid var(--line);padding:9px 10px;background:var(--bg);transition:all .1s}
+.jcc:hover{border-color:var(--ink-2);background:var(--bg-2)}
+.jcc .co{font-family:var(--display);font-weight:700;font-size:12.5px;letter-spacing:.2px;margin:0;line-height:1.2}
+.jcc .role{font-size:11px;color:var(--ink-3);margin:2px 0 0;line-height:1.3}
+.jcc .ft{margin-top:7px;font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;color:var(--ink-3);display:flex;justify-content:space-between}
+.jcc.hot{border-color:var(--accent-2);box-shadow:inset 0 0 0 1px var(--accent-2)}
+.jcc.hot .co::after{content:" ●";color:var(--accent-2)}
+.jcc.hot .ft{color:var(--accent-2)}
+.jcc.off{border-color:var(--accent-3);box-shadow:inset 0 0 0 1px var(--accent-3)}
+.jcc.off .ft{color:var(--accent-3)}
+.jcc.warn .ft{color:var(--accent-2)}
+
+/* ---------- REMINDERS ---------- */
+.rem-grid{display:grid;grid-template-columns:1.7fr 1fr;gap:20px;align-items:start}
+.rem-qa{border:1.5px dashed var(--line-2);padding:14px 16px;display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--ink-3);margin-bottom:18px;cursor:text}
+.rem-qa:hover{border-color:var(--ink-3);color:var(--ink-2)}
+.rem-qa .i{color:var(--accent);font-size:14px}
+.rem-qa .h{margin-left:auto;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-4)}
+
+.remlist{border:1.5px solid var(--line)}
+.remrow{display:grid;grid-template-columns:18px 100px 1fr auto;gap:14px;padding:12px 16px;border-bottom:1px solid var(--line);align-items:center}
+.remrow:last-child{border-bottom:none}
+.remrow:hover{background:var(--bg-2)}
+.remrow .chk{width:16px;height:16px;border:1.5px solid var(--ink-3);cursor:pointer}
+.remrow .chk.on{background:var(--accent);border-color:var(--accent)}
+.remrow .when{font-size:11px;font-weight:600;letter-spacing:.3px;color:var(--ink-2)}
+.remrow .when .s{display:block;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink-3);margin-top:2px;font-weight:500}
+.remrow .when.urg{color:var(--accent-2)}
+.remrow .body h4{font-family:var(--display);font-weight:600;font-size:13.5px;margin:0;line-height:1.2;letter-spacing:-.1px}
+.remrow .body p{font-size:11.5px;color:var(--ink-3);margin:3px 0 0;line-height:1.35}
+.remrow.done .body h4{color:var(--ink-3);text-decoration:line-through;font-weight:500}
+.remrow .acts{display:flex;gap:4px;opacity:0;transition:opacity .1s}
+.remrow:hover .acts{opacity:1}
+.remrow .acts button{width:24px;height:24px;border:1px solid var(--line);background:transparent;color:var(--ink-3);cursor:pointer;font-size:10px}
+.remrow .acts button:hover{border-color:var(--ink);color:var(--ink)}
+
+.bday{border:1.5px solid var(--line)}
+.bday-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.bday-row:last-child{border-bottom:none}
+.bday-row .av{width:28px;height:28px;background:var(--accent);color:#0e0e0c;display:inline-flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:12px;flex-shrink:0}
+.bday-row .av.b{background:var(--accent-2);color:#fff}
+.bday-row .av.c{background:var(--accent-3);color:#0e0e0c}
+.bday-row .n{font-family:var(--display);font-weight:600;font-size:12.5px}
+.bday-row .a{font-size:10px;color:var(--ink-3);letter-spacing:.5px}
+.bday-row .w{margin-left:auto;font-size:10.5px;color:var(--ink-2);font-weight:600}
+
+/* ---------- cmd ---------- */
+.cmd-m{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:flex-start;justify-content:center;padding-top:100px;z-index:100;backdrop-filter:blur(4px)}
+.cmd-m.open{display:flex}
+.cmd-b{width:620px;max-width:94vw;background:var(--bg);border:2px solid var(--accent);box-shadow:0 0 0 1px var(--bg),0 0 40px rgba(217,255,61,.15)}
+.cmd-i{padding:16px 18px;border-bottom:1.5px solid var(--line);display:flex;align-items:center;gap:10px}
+.cmd-i input{flex:1;background:transparent;border:none;outline:none;font-family:var(--mono);font-size:16px;color:var(--ink)}
+.cmd-i input::placeholder{color:var(--ink-3)}
+.cmd-i .c{color:var(--accent)}
+.cmd-s{padding:10px 18px 4px;font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3);display:flex;justify-content:space-between}
+.cmd-r{padding:8px 18px;display:flex;align-items:center;gap:12px;font-size:13px;cursor:pointer}
+.cmd-r.hl,.cmd-r:hover{background:var(--accent);color:#0e0e0c}
+.cmd-r.hl .m,.cmd-r:hover .m{color:#0e0e0c}
+.cmd-r .ic{width:22px;text-align:center;color:var(--ink-3);font-size:12px}
+.cmd-r.hl .ic,.cmd-r:hover .ic{color:#0e0e0c}
+.cmd-r .m{margin-left:auto;font-size:10px;color:var(--ink-3);letter-spacing:.5px}
+
+/* tweaks */
+.tw-btn{position:fixed;right:16px;bottom:16px;width:42px;height:42px;background:var(--accent);color:#0e0e0c;border:none;font-family:var(--mono);font-size:16px;font-weight:800;cursor:pointer;z-index:90}
+.tw-pan{position:fixed;right:16px;bottom:66px;background:var(--bg);border:1.5px solid var(--line);padding:14px 16px;width:260px;display:none;z-index:90}
+.tw-pan.open{display:block}
+.tw-pan h5{margin:0 0 10px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-3);padding-bottom:6px;border-bottom:1px solid var(--line);font-weight:600}
+.tw-row{display:flex;justify-content:space-between;align-items:center;margin:10px 0;font-size:12px}
+.tw-row select{font-family:var(--mono);font-size:11px;padding:3px 6px;background:var(--bg-2);border:1px solid var(--line);color:var(--ink)}
+
+@media (max-width:960px){
+  .shell{grid-template-columns:1fr}
+  .rail{position:relative;height:auto;flex-direction:row;overflow-x:auto;padding:8px;gap:4px}
+  .rail button{padding:6px 10px;border-left:none;border-bottom:2px solid transparent;flex-shrink:0}
+  .rail button.cur{border-left-color:transparent;border-bottom-color:var(--accent)}
+  .rail .rail-sect,.rail .cmd,.rail .footer,.rail .spacer,.rail .brand{display:none}
+  .cols,.rem-grid,.jobs-hero,.hero{grid-template-columns:1fr}
+  .hero-l,.jh-l{border-right:none;border-bottom:1.5px solid var(--line)}
+  .kan,.jkan{grid-template-columns:1fr 1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ========== RAIL ========== -->
+  <aside class="rail">
+    <div class="brand"><span class="sq"></span><b>HUB_</b></div>
+
+    <div class="rail-sect">Daily</div>
+    <button data-nav="dash" class="cur"><span class="i">◉</span>Today<span class="c">5</span></button>
+    <button data-nav="tasks"><span class="i">▦</span>Tasks<span class="c">7</span></button>
+    <button data-nav="reminders"><span class="i">◷</span>Reminders<span class="c">3</span></button>
+    <button data-nav="stub"><span class="i">◧</span>Meetings</button>
+
+    <div class="rail-sect">Projects</div>
+    <button data-nav="jobs"><span class="i">▤</span>Job Hunt<span class="c">12</span></button>
+    <button data-nav="stub"><span class="i">◈</span>Outreach</button>
+    <button data-nav="stub"><span class="i">▨</span>Notes</button>
+
+    <div class="rail-sect">Signals</div>
+    <button data-nav="stub"><span class="i">◐</span>Pulse<span class="c">47</span></button>
+    <button data-nav="stub"><span class="i">♡</span>Vitals</button>
+
+    <div class="spacer"></div>
+
+    <div class="cmd" id="openCmd">⌕ &nbsp;search<span class="k">⌘K</span></div>
+    <div class="footer">
+      <span><span class="ind"></span>garmin · 3m ago</span>
+      <span>v0.4.2</span>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN ========== -->
+  <main>
+    <div class="bar">
+      <div class="bc">
+        <span>HUB</span><span class="sep">/</span><b id="crumb">Today</b>
+      </div>
+      <div class="spacer"></div>
+      <div class="stat">
+        <span><span class="dot"></span>MON 19 APR 26 · W16 · 10:42</span>
+        <span>SLEPT <b>7:14</b></span>
+        <span>RHR <b>54</b></span>
+        <span>BATT <b style="color:var(--accent)">68</b></span>
+        <button class="tbtn" id="themeBtn" title="Toggle theme">◐ THEME</button>
+      </div>
+    </div>
+
+    <!-- ========= DASHBOARD ========= -->
+    <section class="page on" data-page="dash" data-screen-label="01 Today">
+
+      <!-- HERO -->
+      <div class="hero">
+        <div class="hero-l">
+          <div class="hero-kicker"><span class="pulse"></span>PRIORITY_01 · T-03:18:00</div>
+          <h1 class="hero-head">Ship the <em>Acme</em> letter before 14:00.</h1>
+          <p class="hero-deck">Draft is 80% complete — 12 edits remain. The recruiter confirmed the 14:30 phone screen last night. Bring the product-launch notes.</p>
+          <div class="hero-acts">
+            <button class="btn acc">▶ OPEN TASK</button>
+            <button class="btn">✎ JUMP TO DRAFT</button>
+            <button class="btn">◷ SNOOZE 1H</button>
+          </div>
+        </div>
+        <div class="hero-r">
+          <div class="hero-cell">
+            <div class="lab">Open tasks</div>
+            <div><div class="val">7</div><div class="delta down">2 overdue</div></div>
+          </div>
+          <div class="hero-cell">
+            <div class="lab">Interviews wk</div>
+            <div><div class="val" style="color:var(--accent-2)">3</div><div class="delta">+1 vs last</div></div>
+          </div>
+          <div class="hero-cell">
+            <div class="lab">Apps live</div>
+            <div><div class="val">12</div><div class="delta up">↑ 42% reply rate</div></div>
+          </div>
+          <div class="hero-cell">
+            <div class="lab">Pulse unread</div>
+            <div><div class="val">47</div><div class="delta">4 urgent</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIMELINE + SIDE -->
+      <div class="hdline"><h3>Timeline · today</h3><span class="n">6 entries</span><span class="a">SEE WEEK →</span></div>
+      <div class="cols">
+
+        <div class="tline">
+          <div class="row done">
+            <div class="t">07:15</div>
+            <div class="dot"></div>
+            <div class="body">
+              <p class="h">Morning run · 7.2 km in 42 min</p>
+              <div class="s">RHR 54 · garmin synced</div>
+            </div>
+            <div class="m"><span class="tag ghost">DONE</span></div>
+          </div>
+          <div class="row">
+            <div class="t">09:30</div>
+            <div class="dot"></div>
+            <div class="body">
+              <p class="h">Morning standup</p>
+              <div class="s">25 min · Google Meet · PR #441 shipped yesterday</div>
+            </div>
+            <div class="m"><span class="tag">MEET</span></div>
+          </div>
+          <div class="row now">
+            <div class="t now">NOW</div>
+            <div class="dot"></div>
+            <div class="body">
+              <p class="h">Deep work block · cover letter</p>
+              <div class="s">Focus until 14:00 · notifications muted</div>
+            </div>
+            <div class="m"><span class="tag acc">FOCUS</span></div>
+          </div>
+          <div class="row p1">
+            <div class="t p1">▸ 14:00</div>
+            <div class="dot"></div>
+            <div class="body">
+              <p class="h">Finish cover letter for Acme Corp</p>
+              <div class="s">Draft 80% · <span class="lk">acme-research.md</span> · <span class="lk">jobs/acme</span></div>
+            </div>
+            <div class="m"><span class="tag warn">P1</span></div>
+          </div>
+          <div class="row p1">
+            <div class="t p1">14:30</div>
+            <div class="dot"></div>
+            <div class="body">
+              <p class="h">Acme Corp — phone screen / hiring manager</p>
+              <div class="s">30 min · prep in <span class="lk">notes/acme-interview</span></div>
+            </div>
+            <div class="m"><span class="tag warn">INTERVIEW</span></div>
+          </div>
+          <div class="row">
+            <div class="t">17:00</div>
+            <div class="dot"></div>
+            <div class="body">
+              <p class="h">Stripe — technical screen</p>
+              <div class="s">HackerRank · 30 min · problem set pre-loaded</div>
+            </div>
+            <div class="m"><span class="tag teal">SCREEN</span></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="stats-grid">
+            <div class="stat-cell">
+              <div class="lab">Sleep · 7d avg</div>
+              <div><div class="val">7h02<span class="u">last · 7h14</span></div></div>
+              <div class="bar-mini"><div class="fill" style="width:72%"></div></div>
+            </div>
+            <div class="stat-cell">
+              <div class="lab">Body battery</div>
+              <div><div class="val">68<span class="u">/ 100</span></div></div>
+              <div class="bar-mini"><div class="fill" style="width:68%"></div></div>
+            </div>
+            <div class="stat-cell alert">
+              <div class="lab">Overdue tasks</div>
+              <div><div class="val">2</div></div>
+              <div class="bar-mini"><div class="fill" style="width:28%"></div></div>
+            </div>
+            <div class="stat-cell">
+              <div class="lab">Response rate · 30d</div>
+              <div><div class="val" style="color:var(--accent-3)">42<span class="u">%</span></div></div>
+              <div class="bar-mini"><div class="fill" style="width:42%;background:var(--accent-3)"></div></div>
+            </div>
+          </div>
+
+          <div style="height:14px"></div>
+
+          <div class="panel">
+            <div class="panel-h"><b>Reminders · today</b><span>3</span></div>
+            <div class="panel-b" style="padding:0">
+              <div style="padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;font-size:12.5px"><span style="color:var(--ink-2);font-weight:600;width:48px">10:30</span><span>Take meds</span><span class="tag ghost" style="margin-left:auto">RECUR</span></div>
+              <div style="padding:10px 14px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;font-size:12.5px"><span style="color:var(--ink-2);font-weight:600;width:48px">12:00</span><span>Lunch walk · 15 min</span></div>
+              <div style="padding:10px 14px;display:flex;gap:12px;align-items:center;font-size:12.5px"><span style="color:var(--ink-2);font-weight:600;width:48px">16:00</span><span>Call mum — Friday moved</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FEED -->
+      <div class="hdline"><h3>Signals · background</h3><span class="n">4 updates</span><span class="a">ALL →</span></div>
+      <div class="feed">
+        <div class="it">
+          <span class="src">PULSE</span>
+          <div>
+            <p class="h">Two new senior Python roles posted overnight.</p>
+            <p class="s">Both late-stage startups, salary bands disclosed. One recruiter DM from Friday unanswered.</p>
+            <div class="m"><span>47 unread · 4 urgent</span><span>→ open digest</span></div>
+          </div>
+        </div>
+        <div class="it">
+          <span class="src" style="color:var(--accent-2)">JOBS</span>
+          <div>
+            <p class="h">Notion has been quiet for 9 days.</p>
+            <p class="s">Last activity: HR screen moved to hiring manager. A gentle follow-up is overdue.</p>
+            <div class="m"><span>stage · hiring manager</span><span>→ draft follow-up</span></div>
+          </div>
+        </div>
+        <div class="it">
+          <span class="src" style="color:var(--accent-3)">OUTREACH</span>
+          <div>
+            <p class="h">Three leads crossed into "proposal" this week.</p>
+            <p class="s">Batch proposals from Tuesday ready to send. Two replied asking for variations.</p>
+            <div class="m"><span>28 leads in pipeline</span><span>→ review</span></div>
+          </div>
+        </div>
+        <div class="it">
+          <span class="src">VITALS</span>
+          <div>
+            <p class="h">Sleep average back above 7 hours — steady week.</p>
+            <p class="s">RHR dropped a point to 54. Three runs, one strength session. Battery holding at 68.</p>
+            <div class="m"><span>7-day trend</span><span>→ see trends</span></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========= TASKS ========= -->
+    <section class="page" data-page="tasks" data-screen-label="02 Tasks">
+      <div class="ph">
+        <div>
+          <div class="k">Module · Tasks</div>
+          <h1>TASKS_</h1>
+          <p class="sub">7 open · 2 overdue · focus on P1 before lunch.</p>
+        </div>
+        <div class="ra">
+          <button class="btn">⌕ FILTER</button>
+          <button class="btn">↓ SORT · DUE</button>
+          <button class="btn acc">+ NEW TASK</button>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="on">KANBAN <span style="color:var(--ink-3);margin-left:5px">7</span></button>
+        <button>TABLE</button>
+        <button>BACKLOG <span style="color:var(--ink-3);margin-left:5px">14</span></button>
+        <button>ANALYTICS</button>
+        <span class="sp"></span>
+        <button class="f on">ALL</button>
+        <button class="f">#WORK</button>
+        <button class="f">#JOB</button>
+        <button class="f">#ADMIN</button>
+      </div>
+
+      <div class="kan">
+        <div class="kcol" data-c="1">
+          <div class="kcol-h"><span class="l"><span class="marker"></span>TODAY</span><span class="c">3</span></div>
+          <div class="kcol-b">
+            <div class="tc p1">
+              <p class="th">Finish cover letter for Acme Corp.</p>
+              <div class="meta"><span class="due over">DUE 14:00</span><span>JOBS/ACME</span></div>
+              <div class="tags"><span class="tag">#JOB</span><span class="tag warn">#URGENT</span></div>
+            </div>
+            <div class="tc p1">
+              <p class="th">Reply to Stripe recruiter.</p>
+              <div class="meta"><span class="due">EOD</span><span>JOBS/STRIPE</span></div>
+              <div class="tags"><span class="tag">#JOB</span></div>
+            </div>
+            <div class="tc p2">
+              <p class="th">Review PR #441 comments.</p>
+              <div class="meta"><span class="due">TODAY</span><span>WORK</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="kcol" data-c="2">
+          <div class="kcol-h"><span class="l"><span class="marker"></span>THIS WEEK</span><span class="c">3</span></div>
+          <div class="kcol-b">
+            <div class="tc p2">
+              <p class="th">Draft design spec v2.</p>
+              <div class="meta"><span class="due">WED</span><span>WORK/DESIGN</span></div>
+              <div class="tags"><span class="tag">#WORK</span></div>
+            </div>
+            <div class="tc p2">
+              <p class="th">Follow-up with Notion — 9 days silent.</p>
+              <div class="meta"><span class="due">WED</span><span>JOBS/NOTION</span></div>
+              <div class="tags"><span class="tag">#JOB</span></div>
+            </div>
+            <div class="tc p3">
+              <p class="th">Renew passport.</p>
+              <div class="meta"><span class="due">FRI</span><span>LIFE</span></div>
+              <div class="tags"><span class="tag">#ADMIN</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="kcol" data-c="3">
+          <div class="kcol-h"><span class="l"><span class="marker"></span>LATER</span><span class="c">1</span></div>
+          <div class="kcol-b">
+            <div class="tc p3">
+              <p class="th">Book dentist appointment.</p>
+              <div class="meta"><span class="due">THIS MONTH</span></div>
+              <div class="tags"><span class="tag">#HEALTH</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="kcol" data-c="4">
+          <div class="kcol-h"><span class="l"><span class="marker"></span>DONE</span><span class="c">2</span></div>
+          <div class="kcol-b">
+            <div class="tc done">
+              <p class="th">Morning run — 7.2 km.</p>
+              <div class="meta"><span>07:15 · TODAY</span></div>
+            </div>
+            <div class="tc done">
+              <p class="th">Gmail triage — inbox zero.</p>
+              <div class="meta"><span>YESTERDAY</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========= JOBS ========= -->
+    <section class="page" data-page="jobs" data-screen-label="03 Jobs">
+      <div class="ph">
+        <div>
+          <div class="k">Module · Job Hunt</div>
+          <h1>JOB_HUNT_</h1>
+          <p class="sub">12 live · 3 in interview · 1 offer · expires Friday.</p>
+        </div>
+        <div class="ra">
+          <button class="btn">⌕ SEARCH</button>
+          <button class="btn">↥ IMPORT</button>
+          <button class="btn acc">+ NEW APP</button>
+        </div>
+      </div>
+
+      <div class="jobs-hero">
+        <div class="jh-l">
+          <div class="k">▶ The decisive week</div>
+          <h2>Three interviews stacked <em>Mon → Thu</em>. Vercel offer expires Fri.</h2>
+          <p>Acme 14:30 today, Stripe technical 17:00, Anthropic final Wed. The Vercel counter needs drafting by tomorrow morning.</p>
+        </div>
+        <div class="jh-r">
+          <div class="c"><div class="lab">Applied</div><div class="val">5</div><div class="bar-mini"><div class="fill" style="width:100%"></div></div></div>
+          <div class="c"><div class="lab">Screen</div><div class="val">3</div><div class="bar-mini"><div class="fill" style="width:60%"></div></div></div>
+          <div class="c int"><div class="lab">Interview</div><div class="val">3</div><div class="bar-mini"><div class="fill" style="width:60%;background:var(--accent-2)"></div></div></div>
+          <div class="c off"><div class="lab">Offer</div><div class="val">1</div><div class="bar-mini"><div class="fill" style="width:20%;background:var(--accent-3)"></div></div></div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <button class="on">PIPELINE</button>
+        <button>TABLE</button>
+        <button>SEARCH</button>
+        <button>ANALYTICS</button>
+      </div>
+
+      <div class="jkan">
+        <div class="jc">
+          <div class="jc-h"><span>APPLIED</span><span class="c">5</span></div>
+          <div class="jc-b">
+            <div class="jcc"><p class="co">Acme Corp</p><p class="role">Senior Product Designer</p><div class="ft"><span>12 APR · 7D</span><span>120K</span></div></div>
+            <div class="jcc warn"><p class="co">Notion</p><p class="role">Design Engineer</p><div class="ft"><span>SILENT 9D</span><span>NUDGE</span></div></div>
+            <div class="jcc"><p class="co">Linear</p><p class="role">Senior Designer</p><div class="ft"><span>15 APR</span><span>150K · EU</span></div></div>
+            <div class="jcc"><p class="co">Figma</p><p class="role">Product Designer</p><div class="ft"><span>14 APR</span><span>NY · HYB</span></div></div>
+            <div class="jcc"><p class="co">Raycast</p><p class="role">Design Engineer</p><div class="ft"><span>10 APR</span><span>REMOTE</span></div></div>
+          </div>
+        </div>
+        <div class="jc">
+          <div class="jc-h"><span>SCREEN</span><span class="c">3</span></div>
+          <div class="jc-b">
+            <div class="jcc hot"><p class="co">Stripe</p><p class="role">Sr Product Designer</p><div class="ft"><span>SCREEN 17:00</span><span>TODAY</span></div></div>
+            <div class="jcc"><p class="co">Supabase</p><p class="role">Design Engineer</p><div class="ft"><span>NEXT MON</span><span>REMOTE</span></div></div>
+            <div class="jcc"><p class="co">Arc</p><p class="role">Senior Designer</p><div class="ft"><span>SCHEDULED</span><span>SF</span></div></div>
+          </div>
+        </div>
+        <div class="jc">
+          <div class="jc-h"><span style="color:var(--accent-2)">INTERVIEW</span><span class="c" style="color:var(--accent-2)">3</span></div>
+          <div class="jc-b">
+            <div class="jcc hot"><p class="co">Acme Corp</p><p class="role">Phone · hiring manager</p><div class="ft"><span>14:30 TODAY</span><span>30 MIN</span></div></div>
+            <div class="jcc"><p class="co">Anthropic</p><p class="role">Final round</p><div class="ft"><span>WED</span><span>4 SESS</span></div></div>
+            <div class="jcc"><p class="co">Replicate</p><p class="role">Tech round 2</p><div class="ft"><span>THU</span><span>CODING</span></div></div>
+          </div>
+        </div>
+        <div class="jc">
+          <div class="jc-h"><span style="color:var(--accent-3)">OFFER</span><span class="c" style="color:var(--accent-3)">1</span></div>
+          <div class="jc-b">
+            <div class="jcc off"><p class="co">Vercel</p><p class="role">Sr Product Designer</p><div class="ft"><span>EXPIRES FRI</span><span>COUNTER?</span></div></div>
+          </div>
+        </div>
+        <div class="jc">
+          <div class="jc-h"><span>CLOSED</span><span class="c">—</span></div>
+          <div class="jc-b">
+            <div class="jcc" style="opacity:.55"><p class="co" style="color:var(--ink-3)">Airbnb</p><p class="role">Rejected · 2 Apr</p><div class="ft"><span>ROUND 3</span><span>ARCHIVE</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========= REMINDERS ========= -->
+    <section class="page" data-page="reminders" data-screen-label="04 Reminders">
+      <div class="ph">
+        <div>
+          <div class="k">Module · Reminders</div>
+          <h1>REMINDERS_</h1>
+          <p class="sub">3 for today · 2 floating this week · 3 birthdays coming up.</p>
+        </div>
+        <div class="ra">
+          <button class="btn">HISTORY</button>
+          <button class="btn acc">+ QUICK ADD</button>
+        </div>
+      </div>
+
+      <div class="rem-qa">
+        <span class="i">✎</span>
+        <span>Remind me to call Sasha tomorrow at 3pm…</span>
+        <span class="h">NATURAL · ⏎</span>
+      </div>
+
+      <div class="rem-grid">
+        <div>
+          <div class="hdline"><h3>Today</h3><span class="n">4</span></div>
+          <div class="remlist">
+            <div class="remrow">
+              <span class="chk"></span>
+              <div class="when urg">10:30<span class="s">IN 48M</span></div>
+              <div class="body"><h4>Take meds.</h4><p>Daily at 10:30 · recurring.</p></div>
+              <div class="acts"><button>◷</button><button>✎</button></div>
+            </div>
+            <div class="remrow">
+              <span class="chk"></span>
+              <div class="when">12:00<span class="s">IN 2H 18M</span></div>
+              <div class="body"><h4>Lunch walk · 15 min.</h4><p>Vitals suggests one — no movement since 09:15.</p></div>
+              <div class="acts"><button>◷</button><button>✎</button></div>
+            </div>
+            <div class="remrow">
+              <span class="chk"></span>
+              <div class="when">16:00<span class="s">IN 6H</span></div>
+              <div class="body"><h4>Call mum — Friday moved.</h4><p>Linked: calendar / mum's visit (Fri→Sun).</p></div>
+              <div class="acts"><button>◷</button><button>✎</button></div>
+            </div>
+            <div class="remrow done">
+              <span class="chk on"></span>
+              <div class="when">08:00<span class="s">THIS MORNING</span></div>
+              <div class="body"><h4>Drink water before coffee.</h4></div>
+              <div class="acts"><button>↶</button></div>
+            </div>
+          </div>
+
+          <div class="hdline"><h3>This week</h3><span class="n">2</span></div>
+          <div class="remlist">
+            <div class="remrow">
+              <span class="chk"></span>
+              <div class="when urg">FRI<span class="s">11 DAYS</span></div>
+              <div class="body"><h4>Renew passport — expires 2 May.</h4><p>Snoozed twice. Consider blocking a slot this week.</p></div>
+              <div class="acts"><button>✎</button></div>
+            </div>
+            <div class="remrow">
+              <span class="chk"></span>
+              <div class="when">SAT<span class="s">5 DAYS</span></div>
+              <div class="body"><h4>Buy gift for Sasha's birthday.</h4><p>Related · Sasha · Sat 24.</p></div>
+              <div class="acts"><button>✎</button></div>
+            </div>
+          </div>
+        </div>
+
+        <aside>
+          <div class="hdline"><h3>Birthdays</h3><span class="n">3</span></div>
+          <div class="bday">
+            <div class="bday-row">
+              <span class="av">S</span>
+              <div><div class="n">Sasha Volkov</div><div class="a">TURNING 34</div></div>
+              <span class="w">SAT · 5D</span>
+            </div>
+            <div class="bday-row">
+              <span class="av b">A</span>
+              <div><div class="n">Anna Chen</div><div class="a">TURNING 29</div></div>
+              <span class="w">2 MAY · 13D</span>
+            </div>
+            <div class="bday-row">
+              <span class="av c">P</span>
+              <div><div class="n">Papa</div><div class="a">TURNING 62</div></div>
+              <span class="w">14 MAY · 25D</span>
+            </div>
+          </div>
+
+          <div class="hdline"><h3>Settings</h3></div>
+          <div class="panel">
+            <div class="panel-b" style="padding:0">
+              <div style="padding:10px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--ink-3);letter-spacing:1px;text-transform:uppercase;font-size:10.5px">Channel</span><span style="color:var(--accent);font-weight:600">TELEGRAM</span></div>
+              <div style="padding:10px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--ink-3);letter-spacing:1px;text-transform:uppercase;font-size:10.5px">Quiet hours</span><span style="font-weight:600">22 → 07</span></div>
+              <div style="padding:10px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--ink-3);letter-spacing:1px;text-transform:uppercase;font-size:10.5px">Timezone</span><span style="font-weight:600">BELGRADE</span></div>
+              <div style="padding:10px 14px;display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--ink-3);letter-spacing:1px;text-transform:uppercase;font-size:10.5px">Birthday pulse</span><span style="color:var(--accent-3);font-weight:600">ON</span></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- stub -->
+    <section class="page" data-page="stub">
+      <div class="ph"><div><div class="k">Coming next</div><h1>STUB_</h1><p class="sub">Not drawn in this hi-fi pass.</p></div><div class="ra"><button class="btn acc" onclick="document.querySelector('[data-nav=\u0027dash\u0027]').click()">← BACK TO TODAY</button></div></div>
+      <div style="padding:40px;border:1.5px dashed var(--line-2);text-align:center;color:var(--ink-3);font-size:13px;letter-spacing:1px">▍ PLACEHOLDER · MODULE TBD</div>
+    </section>
+
+  </main>
+</div>
+
+<!-- cmd -->
+<div class="cmd-m" id="cmdM">
+  <div class="cmd-b">
+    <div class="cmd-i">
+      <span class="c">▸</span>
+      <input id="cmdI" placeholder="search or type a command…"/>
+      <span style="font-size:10px;color:var(--ink-3)">ESC</span>
+    </div>
+    <div class="cmd-s"><span>QUICK ACTIONS</span><span>⏎ RUN</span></div>
+    <div class="cmd-r hl"><span class="ic">+</span>New task…<span class="m">⌘N</span></div>
+    <div class="cmd-r"><span class="ic">◷</span>Remind me…<span class="m">⌘R</span></div>
+    <div class="cmd-r"><span class="ic">✎</span>New note…<span class="m">⌘⇧N</span></div>
+    <div class="cmd-s"><span>JUMP TO</span><span></span></div>
+    <div class="cmd-r" data-goto="tasks"><span class="ic">▦</span>Tasks · Kanban<span class="m">G T</span></div>
+    <div class="cmd-r" data-goto="jobs"><span class="ic">▤</span>Job Hunt · Pipeline<span class="m">G J</span></div>
+    <div class="cmd-r" data-goto="reminders"><span class="ic">◷</span>Reminders · Today<span class="m">G R</span></div>
+  </div>
+</div>
+
+<!-- tweaks -->
+<button class="tw-btn" id="twBtn">✎</button>
+<div class="tw-pan" id="twPan">
+  <h5>TWEAKS</h5>
+  <div class="tw-row"><span>Theme</span>
+    <select id="twTheme">
+      <option value="dark">Terminal (dark)</option>
+      <option value="light">Ink on paper (light)</option>
+    </select>
+  </div>
+  <div class="tw-row"><span>Accent</span>
+    <select id="twAccent">
+      <option value="#d9ff3d">Acid lime</option>
+      <option value="#ff6b35">Orange</option>
+      <option value="#00e0c6">Teal</option>
+      <option value="#ff4bd2">Magenta</option>
+      <option value="#f1efe6">Ink only</option>
+    </select>
+  </div>
+  <div class="tw-row"><span>Density</span>
+    <select id="twDen">
+      <option value="normal">Normal</option>
+      <option value="dense">Dense</option>
+      <option value="loose">Loose</option>
+    </select>
+  </div>
+</div>
+
+<script>
+const NAV_KEY='hub-brut-page',THEME_KEY='hub-brut-theme';
+const navBtns=document.querySelectorAll('[data-nav]'),pages=document.querySelectorAll('.page');
+const crumbMap={dash:'Today',tasks:'Tasks',jobs:'Job Hunt',reminders:'Reminders',stub:'—'};
+function setPage(id){
+  pages.forEach(p=>p.classList.toggle('on',p.dataset.page===id));
+  navBtns.forEach(b=>b.classList.toggle('cur',b.dataset.nav===id));
+  document.getElementById('crumb').textContent=crumbMap[id]||id;
+  try{localStorage.setItem(NAV_KEY,id)}catch{}
+  window.scrollTo({top:0,behavior:'instant'});
+}
+navBtns.forEach(b=>b.addEventListener('click',()=>setPage(b.dataset.nav)));
+try{const s=localStorage.getItem(NAV_KEY); if(s) setPage(s);}catch{}
+
+function setTheme(t){document.documentElement.classList.toggle('light',t==='light');try{localStorage.setItem(THEME_KEY,t)}catch{}const s=document.getElementById('twTheme');if(s)s.value=t;}
+document.getElementById('themeBtn').addEventListener('click',()=>{const c=document.documentElement.classList.contains('light')?'light':'dark';setTheme(c==='light'?'dark':'light');});
+try{const t=localStorage.getItem(THEME_KEY); if(t) setTheme(t);}catch{}
+
+const cmdM=document.getElementById('cmdM');
+document.getElementById('openCmd').addEventListener('click',()=>{cmdM.classList.add('open');setTimeout(()=>document.getElementById('cmdI').focus(),50);});
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();cmdM.classList.add('open');setTimeout(()=>document.getElementById('cmdI').focus(),50);}if(e.key==='Escape')cmdM.classList.remove('open');});
+cmdM.addEventListener('click',e=>{if(e.target===cmdM)cmdM.classList.remove('open');});
+document.querySelectorAll('[data-goto]').forEach(r=>r.addEventListener('click',()=>{setPage(r.dataset.goto);cmdM.classList.remove('open');}));
+
+const twBtn=document.getElementById('twBtn'),twPan=document.getElementById('twPan');
+window.addEventListener('message',e=>{const d=e.data;if(!d||!d.type)return;if(d.type==='__activate_edit_mode'){twPan.classList.add('open');twBtn.style.display='none';}if(d.type==='__deactivate_edit_mode'){twPan.classList.remove('open');twBtn.style.display='block';}});
+twBtn.addEventListener('click',()=>twPan.classList.toggle('open'));
+try{window.parent.postMessage({type:'__edit_mode_available'},'*');}catch{}
+document.getElementById('twAccent').addEventListener('change',e=>document.documentElement.style.setProperty('--accent',e.target.value));
+document.getElementById('twTheme').addEventListener('change',e=>setTheme(e.target.value));
+document.getElementById('twDen').addEventListener('change',e=>{
+  const v=e.target.value;
+  const map={normal:'13px',dense:'12px',loose:'14px'};
+  document.body.style.fontSize=map[v];
+});
+</script>
+</body>
+</html>

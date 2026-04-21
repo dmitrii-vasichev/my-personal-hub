@@ -62,6 +62,11 @@ docs/prd-structured-digest-items.md
 docs/prd-login-page-redesign.md
 docs/prd-pulse-widget-structured-preview.md
 docs/prd-pulse-widget-chip-layout.md
+docs/prd-floating-reminders.md
+
+# Stage audits and marketing artifacts (not code)
+docs/stage-5-touch-audit.md
+docs/linkedin-post/
 
 # Telegram bot local state (bot's own .env, .venv, __pycache__ are covered globally)
 telegram_bot/.state.json
