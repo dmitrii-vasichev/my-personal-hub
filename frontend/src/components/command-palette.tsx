@@ -5,8 +5,14 @@ import * as RadixDialog from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
 import { useCommandPalette } from "@/hooks/use-command-palette";
 import { useRouteHistory } from "@/hooks/use-route-history";
+import { useRecentEntities } from "@/hooks/use-recent-entities";
 import { navSections } from "@/components/layout/sidebar";
 import { useAuth } from "@/lib/auth";
+
+const ENTITY_GLYPH: Record<"task" | "job", string> = {
+  task: "▦",
+  job: "▤",
+};
 
 interface QuickAction {
   id: string;
@@ -40,6 +46,7 @@ export function CommandPalette() {
   const { open, setOpen, query, setQuery } = useCommandPalette();
   const router = useRouter();
   const history = useRouteHistory();
+  const entities = useRecentEntities();
   const { isDemo } = useAuth();
 
   const run = (href: string) => {
@@ -108,8 +115,19 @@ export function CommandPalette() {
           ))}
         </Command.Group>
 
-        {history.length > 0 && (
+        {(entities.length > 0 || history.length > 0) && (
           <Command.Group heading="RECENT" className={HEADING_CLASS}>
+            {entities.map((e) => (
+              <Command.Item
+                key={`recent-entity-${e.href}`}
+                value={`recent ${e.label} ${e.href}`}
+                onSelect={() => run(e.href)}
+                className={`group ${ROW_CLASS}`}
+              >
+                <span className={GLYPH_CLASS} aria-hidden>{ENTITY_GLYPH[e.kind]}</span>
+                <span className="truncate">{e.label}</span>
+              </Command.Item>
+            ))}
             {history.map((path) => {
               const meta = ROUTE_META[path];
               if (!meta) return null;

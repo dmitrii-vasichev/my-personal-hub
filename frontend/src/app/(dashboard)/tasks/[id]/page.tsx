@@ -21,6 +21,7 @@ import { CollapsibleDescription } from "@/components/ui/collapsible-description"
 import { ChecklistEditor } from "@/components/tasks/checklist-editor";
 import { TaskTimeline } from "@/components/tasks/task-timeline";
 import { useTask, useUpdateTask, useDeleteTask } from "@/hooks/use-tasks";
+import { useRememberEntity } from "@/hooks/use-recent-entities";
 import { LinkedEvents } from "@/components/tasks/linked-events";
 import { LinkedNotesSection } from "@/components/notes/linked-notes-section";
 import {
@@ -73,6 +74,17 @@ export default function TaskDetailPage() {
   const unlinkNote = useUnlinkNoteFromTask(taskId);
   const [checklistExpanded, setChecklistExpanded] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  useRememberEntity(
+    task
+      ? {
+          kind: "task",
+          id: task.id,
+          label: `#${task.id} · ${task.title}`,
+          href: `/tasks/${task.id}`,
+        }
+      : null,
+  );
 
   const patchTask = useCallback(
     async (data: UpdateTaskInput) => {

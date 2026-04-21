@@ -70,4 +70,50 @@ describe("<CommandPalette />", () => {
     fireEvent.change(input, { target: { value: "zzznothingmatches" } });
     expect(screen.getByText(/no results/i)).toBeInTheDocument();
   });
+
+  it("renders entities from hub-recent-entities in the RECENT section", () => {
+    window.localStorage.setItem(
+      "hub-recent-entities",
+      JSON.stringify([
+        {
+          kind: "job",
+          id: 77,
+          label: "Acme · Senior Engineer",
+          href: "/jobs/77",
+          visitedAt: 200,
+        },
+        {
+          kind: "task",
+          id: 42,
+          label: "#42 · Fix login bug",
+          href: "/tasks/42",
+          visitedAt: 100,
+        },
+      ]),
+    );
+    setup();
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    expect(screen.getByText("RECENT")).toBeInTheDocument();
+    expect(screen.getByText("Acme · Senior Engineer")).toBeInTheDocument();
+    expect(screen.getByText("#42 · Fix login bug")).toBeInTheDocument();
+  });
+
+  it("routes to entity href when a recent entity is clicked", () => {
+    window.localStorage.setItem(
+      "hub-recent-entities",
+      JSON.stringify([
+        {
+          kind: "task",
+          id: 42,
+          label: "#42 · Fix login bug",
+          href: "/tasks/42",
+          visitedAt: 100,
+        },
+      ]),
+    );
+    setup();
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    fireEvent.click(screen.getByText("#42 · Fix login bug"));
+    expect(mockPush).toHaveBeenCalledWith("/tasks/42");
+  });
 });

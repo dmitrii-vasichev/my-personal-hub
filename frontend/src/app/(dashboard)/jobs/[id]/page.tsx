@@ -4,12 +4,24 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { JobDetail } from "@/components/jobs/job-detail";
 import { useJob } from "@/hooks/use-jobs";
+import { useRememberEntity } from "@/hooks/use-recent-entities";
 
 export default function JobDetailPage() {
   const params = useParams();
   const router = useRouter();
   const jobId = Number(params.id);
   const { data: job, isLoading, error } = useJob(jobId);
+
+  useRememberEntity(
+    job
+      ? {
+          kind: "job",
+          id: job.id,
+          label: `${job.company} · ${job.title}`,
+          href: `/jobs/${job.id}`,
+        }
+      : null,
+  );
 
   if (isLoading) {
     return (
