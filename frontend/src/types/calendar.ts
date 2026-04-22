@@ -15,6 +15,7 @@ export interface CalendarEvent {
   source: EventSource;
   visibility: Visibility;
   synced_at: string | null;
+  job_id: number | null;
   notes_count: number;
   owner_name?: string;
   created_at: string;
@@ -58,6 +59,21 @@ export interface CalendarEventUpdate {
   location?: string;
   all_day?: boolean;
   visibility?: Visibility;
+  job_id?: number | null;
+}
+
+// Job-hint response for GET /api/calendar/events/:id/job-hint (D13).
+export interface JobBrief {
+  id: number;
+  title: string;
+  company: string;
+  status: string | null;
+}
+
+export interface JobHintResponse {
+  suggested_job_id: number | null;
+  match_reason: "substring" | null;
+  job: JobBrief | null;
 }
 
 export interface EventNoteCreate {

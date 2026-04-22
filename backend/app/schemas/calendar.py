@@ -4,6 +4,7 @@ from typing import Optional
 from pydantic import BaseModel
 
 from app.models.calendar import EventSource
+from app.models.job import ApplicationStatus
 from app.models.task import Visibility
 
 
@@ -28,6 +29,7 @@ class CalendarEventUpdate(BaseModel):
     location: Optional[str] = None
     all_day: Optional[bool] = None
     visibility: Optional[Visibility] = None
+    job_id: Optional[int] = None
 
 
 class EventNoteBrief(BaseModel):
@@ -53,6 +55,7 @@ class CalendarEventResponse(BaseModel):
     source: EventSource
     visibility: Visibility
     synced_at: Optional[datetime]
+    job_id: Optional[int] = None
     notes_count: int = 0
     owner_name: Optional[str] = None
     created_at: datetime
@@ -73,6 +76,24 @@ class LinkedTaskBrief(BaseModel):
 class CalendarEventDetailResponse(CalendarEventResponse):
     notes: list[EventNoteBrief] = []
     linked_tasks: list[LinkedTaskBrief] = []
+
+
+# ── Job-hint schemas (D13) ────────────────────────────────────────────────────
+
+
+class JobBrief(BaseModel):
+    id: int
+    title: str
+    company: str
+    status: Optional[ApplicationStatus] = None
+
+    model_config = {"from_attributes": True}
+
+
+class JobHintResponse(BaseModel):
+    suggested_job_id: Optional[int] = None
+    match_reason: Optional[str] = None
+    job: Optional[JobBrief] = None
 
 
 # ── Event Note schemas ────────────────────────────────────────────────────────

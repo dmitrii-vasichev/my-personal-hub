@@ -25,6 +25,7 @@ import {
 import { useCreateCalendarEvent, useUpdateCalendarEvent } from "@/hooks/use-calendar";
 import type { CalendarEvent, CalendarEventCreate } from "@/types/calendar";
 import type { Visibility } from "@/types/task";
+import { JobLinkSelector } from "./job-link-selector";
 
 const VISIBILITY_LABELS: Record<string, string> = {
   family: "👨‍👩‍👧 Family",
@@ -67,6 +68,7 @@ export function EventDialog({ open, onClose, prefillDate, event }: EventDialogPr
     event ? event.end_time.slice(0, 16) : toLocalDatetimeValue(endDefault)
   );
   const [visibility, setVisibility] = useState<Visibility>(event?.visibility ?? "family");
+  const [jobId, setJobId] = useState<number | null>(event?.job_id ?? null);
   const [error, setError] = useState("");
 
   const createEvent = useCreateCalendarEvent();
@@ -109,7 +111,10 @@ export function EventDialog({ open, onClose, prefillDate, event }: EventDialogPr
 
     try {
       if (isEditing && event) {
-        await updateEvent.mutateAsync({ id: event.id, data: payload });
+        await updateEvent.mutateAsync({
+          id: event.id,
+          data: { ...payload, job_id: jobId },
+        });
       } else {
         await createEvent.mutateAsync(payload);
       }
@@ -234,6 +239,15 @@ export function EventDialog({ open, onClose, prefillDate, event }: EventDialogPr
                 </SelectPopup>
               </SelectRoot>
             </div>
+
+            {isEditing && event && (
+              <JobLinkSelector
+                eventId={event.id}
+                currentJobId={jobId}
+                onChange={setJobId}
+                disabled={isPending}
+              />
+            )}
 
             {error && <p className="text-sm text-[--danger]">{error}</p>}
 

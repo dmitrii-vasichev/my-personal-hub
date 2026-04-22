@@ -3,7 +3,12 @@
 import { useTasks } from "@/hooks/use-tasks";
 import { useJobs } from "@/hooks/use-jobs";
 import { useCalendarEvents } from "@/hooks/use-calendar";
-import { daysAgo, isSameLocalDay, todayBounds, todayStart } from "./today-date";
+import {
+  daysAgo,
+  thisWeekBounds,
+  todayBounds,
+  todayStart,
+} from "./today-date";
 
 const APPS_LIVE_STATUSES = new Set([
   "applied",
@@ -22,11 +27,18 @@ type Cell = {
 
 export function HeroCells() {
   const { startIso, endIso } = todayBounds();
+  const { startIso: weekStartIso, endIso: weekEndIso } = thisWeekBounds();
   const { data: tasks = [] } = useTasks();
   const { data: jobs = [] } = useJobs();
   const { data: events = [] } = useCalendarEvents({
     start: startIso,
     end: endIso,
+  });
+  // Separate query with week bounds — React Query dedupes by key so
+  // the two calls don't collide, and both stay cache-warm.
+  const { data: weekEvents = [] } = useCalendarEvents({
+    start: weekStartIso,
+    end: weekEndIso,
   });
 
   const today0 = todayStart().getTime();
@@ -42,12 +54,8 @@ export function HeroCells() {
       new Date(t.deadline).getTime() < today0
   ).length;
 
-  const tasksDueToday = tasks.filter(
-    (t) =>
-      t.deadline &&
-      t.status !== "done" &&
-      t.status !== "cancelled" &&
-      isSameLocalDay(t.deadline)
+  const interviewsThisWeek = weekEvents.filter(
+    (e) => e.job_id != null
   ).length;
 
   const appsLive = jobs.filter(
@@ -75,7 +83,7 @@ export function HeroCells() {
       delta: overdue > 0 ? `${overdue} overdue` : null,
       deltaColor: overdue > 0 ? "orange" : undefined,
     },
-    { lab: "Tasks due today", val: tasksDueToday, delta: null },
+    { lab: "Interviews this week", val: interviewsThisWeek, delta: null },
     {
       lab: "Apps live",
       val: appsLive,

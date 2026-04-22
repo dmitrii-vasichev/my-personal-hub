@@ -21,6 +21,7 @@ from app.schemas.calendar import (
     EventNoteUpdate,
     GoogleOAuthConnectResponse,
     GoogleOAuthStatus,
+    JobHintResponse,
     LinkedTaskBrief,
 )
 from app.schemas.note import LinkedNoteBrief
@@ -74,6 +75,22 @@ async def get_event(
     if event is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Event not found")
     return _event_response(event, CalendarEventDetailResponse, notes=event.notes)
+
+
+@router.get("/events/{event_id}/job-hint", response_model=JobHintResponse)
+async def get_event_job_hint(
+    event_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Propose a single job to link this event to based on a
+    case-insensitive substring match between the event title and
+    non-terminal jobs' company names. Returns ``suggested_job_id: null``
+    when 0 or ≥2 jobs match. 404 if event is not owned by caller.
+    """
+    return await calendar_service.suggest_job_for_event(
+        db, event_id, current_user
+    )
 
 
 @router.post("/events/", response_model=CalendarEventResponse, status_code=status.HTTP_201_CREATED)

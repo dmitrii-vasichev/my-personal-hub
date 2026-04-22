@@ -5,6 +5,8 @@ import pytest
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
+from fastapi import HTTPException
+
 from app.models.calendar import CalendarEvent, EventNote, EventSource
 from app.models.task import Visibility
 from app.models.user import User, UserRole
@@ -214,6 +216,99 @@ class TestCalendarEventCRUD:
         end = datetime(2026, 3, 31, tzinfo=timezone.utc)
         result = await calendar_service.list_events(db, user, start=start, end=end)
         assert len(result) == 2
+
+
+# ── job_id link/clear/cross-user (D13) ────────────────────────────────────────
+
+
+def _job_check_result(value):
+    """Scalar result for the pre-loop job-ownership SELECT."""
+    mock = MagicMock()
+    mock.scalar_one_or_none.return_value = value
+    return mock
+
+
+@pytest.mark.asyncio
+class TestUpdateEventJobId:
+    async def test_update_event_links_own_job(self):
+        """PATCH with {"job_id": <own-job>} sets the attribute."""
+        db = AsyncMock()
+        event = make_event(user_id=1, event_id=10)
+        event.job_id = None
+
+        # First execute loads the event; second execute verifies the job.
+        db.execute = AsyncMock(
+            side_effect=[_mock_unique_result(event), _job_check_result(42)]
+        )
+        db.commit = AsyncMock()
+        db.refresh = AsyncMock()
+
+        user = make_user(user_id=1)
+        result = await calendar_service.update_event(
+            db, 10, CalendarEventUpdate(job_id=42), user
+        )
+        assert result is event
+        assert event.job_id == 42
+
+    async def test_update_event_clears_job_id(self):
+        """PATCH with {"job_id": null} after a link clears the column."""
+        db = AsyncMock()
+        event = make_event(user_id=1, event_id=10)
+        event.job_id = 42  # previously linked
+
+        db.execute = AsyncMock(return_value=_mock_unique_result(event))
+        db.commit = AsyncMock()
+        db.refresh = AsyncMock()
+
+        user = make_user(user_id=1)
+        result = await calendar_service.update_event(
+            db, 10, CalendarEventUpdate(job_id=None), user
+        )
+        assert result is event
+        assert event.job_id is None
+        # Only one execute (load event) — no job_check needed for null.
+        assert db.execute.await_count == 1
+
+    async def test_update_event_omitting_job_id_leaves_column_untouched(self):
+        """PATCH with only {"title": ...} does not touch job_id."""
+        db = AsyncMock()
+        event = make_event(user_id=1, event_id=10)
+        event.job_id = 42  # pre-existing link
+
+        db.execute = AsyncMock(return_value=_mock_unique_result(event))
+        db.commit = AsyncMock()
+        db.refresh = AsyncMock()
+
+        user = make_user(user_id=1)
+        result = await calendar_service.update_event(
+            db, 10, CalendarEventUpdate(title="Renamed"), user
+        )
+        assert result is event
+        assert event.title == "Renamed"
+        assert event.job_id == 42
+
+    async def test_update_event_rejects_other_users_job(self):
+        """PATCH with a job_id that belongs to another user raises 404."""
+        db = AsyncMock()
+        event = make_event(user_id=1, event_id=10)
+        event.job_id = None
+
+        # Load event OK; job_check returns None (not owned by user 1).
+        db.execute = AsyncMock(
+            side_effect=[_mock_unique_result(event), _job_check_result(None)]
+        )
+        db.commit = AsyncMock()
+        db.refresh = AsyncMock()
+
+        user = make_user(user_id=1)
+        with pytest.raises(HTTPException) as exc:
+            await calendar_service.update_event(
+                db, 10, CalendarEventUpdate(job_id=77), user
+            )
+        assert exc.value.status_code == 404
+        # Nothing was committed and job_id was not set.
+        db.commit.assert_not_awaited()
+        assert event.job_id is None
 
 
 # ── Event Notes tests ─────────────────────────────────────────────────────────

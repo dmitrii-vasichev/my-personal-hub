@@ -266,7 +266,7 @@ export default function TasksPage() {
     return Array.from(new Set([...hiddenColumns, ...mobileHidden]));
   }, [isMobileKanban, mobileStatusFilter, hiddenColumns]);
 
-  // Subline counts — mirror HeroCells.openTasks + HeroCells.tasksDueToday semantics.
+  // Subline counts — "open" and "due today" for the TASKS_ kicker line.
   const { openCount, dueTodayCount } = useMemo(() => {
     const today0 = new Date().setHours(0, 0, 0, 0);
     const tomorrow0 = today0 + 86_400_000;

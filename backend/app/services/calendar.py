@@ -3,11 +3,13 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
+from fastapi import HTTPException
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
 from app.models.calendar import CalendarEvent, EventNote
+from app.models.job import ApplicationStatus, Job
 from app.models.task import Visibility
 from app.models.user import User, UserRole
 from app.schemas.calendar import (
@@ -15,8 +17,18 @@ from app.schemas.calendar import (
     CalendarEventUpdate,
     EventNoteCreate,
     EventNoteUpdate,
+    JobBrief,
+    JobHintResponse,
 )
 from app.services.task import PermissionDeniedError
+
+
+TERMINAL_JOB_STATUSES = frozenset({
+    ApplicationStatus.accepted,
+    ApplicationStatus.rejected,
+    ApplicationStatus.ghosted,
+    ApplicationStatus.withdrawn,
+})
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -144,7 +156,18 @@ async def update_event(
     if not _can_edit_event(event, user):
         raise PermissionDeniedError("You can only edit your own events")
 
-    for field, value in data.model_dump(exclude_unset=True).items():
+    data_dict = data.model_dump(exclude_unset=True)
+    if "job_id" in data_dict and data_dict["job_id"] is not None:
+        job_check = await db.execute(
+            select(Job.id).where(
+                Job.id == data_dict["job_id"],
+                Job.user_id == user.id,
+            )
+        )
+        if job_check.scalar_one_or_none() is None:
+            raise HTTPException(status_code=404, detail="Job not found")
+
+    for field, value in data_dict.items():
         setattr(event, field, value)
 
     await db.commit()
@@ -168,6 +191,71 @@ async def delete_event(
     await db.delete(event)
     await db.commit()
     return True
+
+
+# ── Job-hint (D13) ────────────────────────────────────────────────────────────
+
+
+async def _find_hint_candidates(
+    db: AsyncSession, event: CalendarEvent, user: User
+) -> list[Job]:
+    """Return non-terminal jobs whose ``company`` (case-insensitive,
+    trimmed) appears as a substring of ``event.title``. Pure read —
+    scoped to ``user.id`` so cross-user jobs can never leak.
+    """
+    title_lc = (event.title or "").lower().strip()
+    if not title_lc:
+        return []
+    result = await db.execute(
+        select(Job).where(
+            Job.user_id == user.id,
+            or_(
+                Job.status.is_(None),
+                Job.status.notin_(TERMINAL_JOB_STATUSES),
+            ),
+        )
+    )
+    jobs = list(result.scalars().all())
+    return [
+        j
+        for j in jobs
+        if j.company
+        and j.company.lower().strip()
+        and j.company.lower().strip() in title_lc
+    ]
+
+
+async def suggest_job_for_event(
+    db: AsyncSession, event_id: int, user: User
+) -> JobHintResponse:
+    """Return the single-candidate hint for ``event_id``. 404 if the
+    event doesn't exist or isn't owned by ``user``. Returns a
+    null-filled response when there are zero or ≥2 candidates —
+    callers that need to distinguish the two should use
+    ``_find_hint_candidates`` directly (the backfill script does this).
+    """
+    result = await db.execute(
+        select(CalendarEvent).where(
+            CalendarEvent.id == event_id,
+            CalendarEvent.user_id == user.id,
+        )
+    )
+    event = result.scalar_one_or_none()
+    if event is None:
+        raise HTTPException(status_code=404, detail="Event not found")
+    candidates = await _find_hint_candidates(db, event, user)
+    if len(candidates) == 1:
+        j = candidates[0]
+        return JobHintResponse(
+            suggested_job_id=j.id,
+            match_reason="substring",
+            job=JobBrief(
+                id=j.id, title=j.title, company=j.company, status=j.status
+            ),
+        )
+    return JobHintResponse(
+        suggested_job_id=None, match_reason=None, job=None
+    )
 
 
 # ── Event Notes ───────────────────────────────────────────────────────────────

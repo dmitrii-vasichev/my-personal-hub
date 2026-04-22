@@ -50,6 +50,12 @@ class CalendarEvent(Base):
     visibility: Mapped[Visibility] = mapped_column(
         Enum(Visibility), default=Visibility.family, nullable=False
     )
+    job_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("jobs.id", ondelete="SET NULL"),
+        nullable=True,
+        default=None,
+    )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

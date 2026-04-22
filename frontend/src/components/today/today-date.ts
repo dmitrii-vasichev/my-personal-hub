@@ -59,3 +59,39 @@ export function todayStart(): Date {
   d.setHours(0, 0, 0, 0);
   return d;
 }
+
+export function thisWeekBounds(now: Date = new Date()): {
+  start: Date;
+  end: Date;
+  startIso: string;
+  endIso: string;
+} {
+  // Monday 00:00 → Sunday 23:59:59.999 in local TZ.
+  // JS getDay(): Sun=0, Mon=1, …, Sat=6. Offset to Monday:
+  //   Sun(0) → 6 days back, Mon(1) → 0, …, Sat(6) → 5.
+  const daysSinceMonday = (now.getDay() + 6) % 7;
+  const start = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() - daysSinceMonday,
+    0,
+    0,
+    0,
+    0
+  );
+  const end = new Date(
+    start.getFullYear(),
+    start.getMonth(),
+    start.getDate() + 6,
+    23,
+    59,
+    59,
+    999
+  );
+  return {
+    start,
+    end,
+    startIso: start.toISOString(),
+    endIso: end.toISOString(),
+  };
+}
