@@ -94,22 +94,40 @@ endpoint returns the brief in its own query).
   breaking existing callers since the field is optional.
 
 ### FR-4. Service layer — update-event path
-`backend/app/services/calendar.py`'s `update_event` (or whatever the
-current name is; verify in audit) accepts `job_id` from
-`CalendarEventUpdate` and:
+`backend/app/services/calendar.py`'s `update_event` (confirmed at
+`backend/app/services/calendar.py:130`) already uses the `exclude_unset=True`
++ `setattr`-loop pattern (line 147): `for field, value in data.model_dump(exclude_unset=True).items(): setattr(event, field, value)`. This means:
 
-1. If the incoming payload's `exclude_unset=True` dict does **not**
-   contain the `job_id` key: leave existing value untouched.
-2. If the payload's dict contains `job_id: None`: clear the link (set
-   column to NULL).
-3. If the payload's dict contains `job_id: <int>`:
-   - Validate the job belongs to `current_user` via
-     `SELECT jobs.id WHERE jobs.id = :job_id AND jobs.user_id =
-     :user_id` — raise `HTTPException(404, "Job not found")` if missing.
-   - Assign `event.job_id = <int>`.
+- Omitted `job_id` key → column untouched (loop skips).
+- `job_id: None` → `setattr(event, "job_id", None)` → column cleared.
+- `job_id: <int>` → `setattr(event, "job_id", <int>)` → column set.
 
-The update endpoint continues to be gated by `restrict_demo` at the
-router level.
+Only addition required is a **pre-loop cross-user validation guard**
+for the non-null case:
+
+```python
+data_dict = data.model_dump(exclude_unset=True)
+if "job_id" in data_dict and data_dict["job_id"] is not None:
+    job_check = await db.execute(
+        select(Job.id).where(
+            Job.id == data_dict["job_id"],
+            Job.user_id == user.id,
+        )
+    )
+    if job_check.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+for field, value in data_dict.items():
+    setattr(event, field, value)
+```
+
+Import `Job` from `app.models.job`.
+
+**Auth note (audit patch 2026-04-22):** `PATCH /api/calendar/events/{id}`
+uses `get_current_user`, **NOT** `restrict_demo` (verified at
+`backend/app/api/calendar.py:99`). D13 does not change this. Demo users
+can set/clear `job_id` on their own events — consistent with how they can
+set/clear `title`, `description`, etc. today.
 
 ### FR-5. Hint endpoint
 `GET /api/calendar/events/{event_id}/job-hint` — new endpoint in
@@ -241,7 +259,6 @@ Mutation path (PATCH with `job_id`) invalidates:
   - PATCH with `job_id: null` → 200, column cleared.
   - PATCH omitting `job_id` key → 200, column unchanged.
   - PATCH with `job_id` pointing to another user's job → 404.
-  - PATCH as demo user → 403 (restrict_demo gate).
 - `backend/tests/test_job_hint_api.py` (new):
   - Event with exact single company match → suggests.
   - Event with no match → suggests null.
@@ -296,8 +313,7 @@ list.
 | AC-13 | Event edit dialog shows `<JobLinkSelector>`; user can link, clear, and switch jobs; form submit persists. |
 | AC-14 | Create dialog does NOT show selector (MVP carveout). |
 | AC-15 | Hint renders in the selector when present; clicking "link" accepts the hint. |
-| AC-16 | Demo user gets 403 on any PATCH attempt (restrict_demo still effective). |
-| AC-17 | Lint 0 errors; build green; all new tests pass; no regressions in existing test count ± baseline flakes. |
+| AC-16 | Lint 0 errors; build green; all new tests pass; no regressions in existing test count ± baseline flakes. |
 
 ---
 
@@ -320,7 +336,7 @@ Checklist. Drift triggers a PRD-patch commit on `main` before branch open.
 | IC-10 | No `linkedin` or unrelated Calendar API paths conflict with `/job-hint` suffix | `backend/app/api/calendar.py` | grep for existing sub-paths |
 | IC-11 | Event edit dialog exists and we know its file path | audit with `grep` | locate file name |
 | IC-12 | `useJobs` hook returns all user jobs (not paginated, not filtered) for selector use | `frontend/src/hooks/use-jobs.ts` | signature + return shape |
-| IC-13 | `restrict_demo` gate wraps `PATCH /events/{id}` at the router level | `backend/app/api/calendar.py:94` | dep inspection |
+| IC-13 | `PATCH /events/{id}` uses `get_current_user` (NOT `restrict_demo`) — D13 preserves this | `backend/app/api/calendar.py:99` | dep inspection (audit-patched 2026-04-22) |
 
 ---
 
@@ -343,7 +359,12 @@ failure → patch PRD first, commit the patch on `main`, then re-run.
   static + 3 dynamic pages).
 - **PC-6.** Each IC row verified against actual code. Drift logged
   below:
-  > _To be filled during audit. Empty = no drift._
+  > **Audit 2026-04-22 findings:** IC-13 drifted — `PATCH /events/{id}`
+  > uses `get_current_user`, not `restrict_demo`. PRD patched in-place:
+  > FR-4 rewritten to reflect existing `exclude_unset=True` loop pattern
+  > and remove false `restrict_demo` claim; FR-14 test #5 removed; AC-16
+  > (demo 403) removed and AC-17 renumbered to AC-16; IC-13 row updated.
+  > No other drift found across IC-1…IC-12.
 
 - **PC-7.** Confirm seed data in local DB supports AC-9 rehearsal:
   at least 3 events with titles containing a company name from
