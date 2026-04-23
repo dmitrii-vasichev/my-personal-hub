@@ -13,8 +13,6 @@
 
 **Post-ship smoke items deferred (not blockers):** AC-12 Hero-cell live render; AC-13 dialog round-trip; AC-14 create-mode has no selector; cross-user attempted link via dev-tools PATCH; PROD backfill rehearsal against a prod snapshot.
 
-**Untracked files pending decision** (pre-existing, carried across sessions — next session should commit / gitignore / delete): `AGENTS.md`, `backend/app/scripts/cleanup_outreach.py`, `backend/app/scripts/seed_outreach.py`, `backend/scripts/local_garmin_login.py`, `docs/linkedin-post/`, `docs/prd-floating-reminders.md`, `docs/stage-5-touch-audit.md`, `frontend/public/logo-dark.jpg`, `handoff/`.
-
 ## Next queued work
 
 All items below require their own PRD / decision before build.
