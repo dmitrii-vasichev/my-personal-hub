@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ViewToggle, type JobsViewMode } from "@/components/jobs/view-toggle";
+import { ViewToggle } from "@/components/jobs/view-toggle";
 
 describe("ViewToggle", () => {
   beforeEach(() => {

@@ -8,7 +8,6 @@ import {
   ChevronUp,
   CheckCircle2,
   XCircle,
-  AlertCircle,
   Lightbulb,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -152,10 +151,8 @@ function GapPanel({ gap }: { gap: GapAnalysisResult }) {
 
 function ResumeCard({
   resume,
-  token,
 }: {
   resume: Resume;
-  token: string | null;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
@@ -243,7 +240,6 @@ export function ResumeSection({ jobId }: { jobId: number }) {
   const { data: resumes = [], isLoading } = useResumes(jobId);
   const generate = useGenerateResume();
   const { isDemo } = useAuth();
-  const token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
   const handleGenerate = async () => {
     try {
@@ -283,7 +279,7 @@ export function ResumeSection({ jobId }: { jobId: number }) {
 
       <div className="space-y-2">
         {resumes.map((r) => (
-          <ResumeCard key={r.id} resume={r} token={token} />
+          <ResumeCard key={r.id} resume={r} />
         ))}
       </div>
     </div>

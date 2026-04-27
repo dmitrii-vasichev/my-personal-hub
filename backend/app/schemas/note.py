@@ -9,7 +9,7 @@ from pydantic import BaseModel
 class NoteResponse(BaseModel):
     id: int
     user_id: int
-    google_file_id: str
+    google_file_id: Optional[str] = None
     title: str
     folder_path: Optional[str] = None
     mime_type: Optional[str] = None
@@ -24,7 +24,7 @@ class LinkedNoteBrief(BaseModel):
     id: int
     title: str
     folder_path: Optional[str] = None
-    google_file_id: str
+    google_file_id: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

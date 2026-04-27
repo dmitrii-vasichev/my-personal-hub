@@ -15,11 +15,20 @@ export interface UserBrief {
   email: string;
 }
 
+export interface LinkedDocumentBrief {
+  id: number;
+  title: string;
+  folder_path: string | null;
+  google_file_id: string | null;
+  file_id: string;
+}
+
 export interface Task {
   id: number;
   user_id: number;
   created_by_id: number;
   assignee_id: number | null;
+  linked_document_id: number | null;
   title: string;
   description: string | null;
   status: TaskStatus;
@@ -37,6 +46,7 @@ export interface Task {
   creator?: UserBrief;
   assignee?: UserBrief;
   owner_name?: string;
+  linked_document?: LinkedDocumentBrief | null;
   tags: import("./tag").TagBrief[];
 }
 
@@ -72,6 +82,7 @@ export interface CreateTaskInput {
   reminder_floating?: boolean;
   checklist?: ChecklistItem[];
   assignee_id?: number;
+  linked_document_id?: number | null;
   visibility?: Visibility;
   tag_ids?: number[];
 }
@@ -86,6 +97,7 @@ export interface UpdateTaskInput {
   reminder_floating?: boolean;
   checklist?: ChecklistItem[];
   assignee_id?: number | null;
+  linked_document_id?: number | null;
   visibility?: Visibility;
   tag_ids?: number[];
 }

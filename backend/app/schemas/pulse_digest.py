@@ -42,6 +42,8 @@ class DigestItemResponse(BaseModel):
     metadata: Optional[dict] = None
     source_names: Optional[list[str]] = None
     status: str = "new"
+    read_at: Optional[datetime] = None
+    is_read: bool = False
     action_type: Optional[str] = None
     action_result_id: Optional[int] = None
     created_at: datetime
@@ -59,6 +61,8 @@ class DigestItemResponse(BaseModel):
             metadata=item.metadata_,
             source_names=item.source_names,
             status=item.status,
+            read_at=item.read_at,
+            is_read=item.read_at is not None,
             action_type=item.action_type,
             action_result_id=item.action_result_id,
             created_at=item.created_at,
@@ -78,6 +82,14 @@ class DigestItemAction(BaseModel):
 class DigestItemBulkAction(BaseModel):
     item_ids: list[int]
     action: Literal["to_task", "to_note", "to_job", "skip"]
+
+
+class DigestItemReadUpdate(BaseModel):
+    read: bool
+
+
+class DigestUnreadCountResponse(BaseModel):
+    unread_count: int
 
 
 class PreviewItem(BaseModel):

@@ -113,6 +113,10 @@ export function HeroPriority() {
       : `/calendar/${target.event.id}`;
   const openLabel =
     target.kind === "task" ? "▶ Open task" : "▶ Open meeting";
+  const draftHref =
+    target.kind === "task" && target.task.linked_document
+      ? `/notes?file=${encodeURIComponent(target.task.linked_document.file_id)}`
+      : null;
 
   const handleSnooze = () => {
     if (target.kind !== "task" || !target.task.deadline) return;
@@ -154,6 +158,14 @@ export function HeroPriority() {
         >
           {openLabel}
         </Link>
+        {draftHref && (
+          <Link
+            href={draftHref}
+            className="inline-flex items-center h-8 px-3 border-[1.5px] border-[color:var(--line-2)] bg-transparent text-[color:var(--ink)] text-[10.5px] tracking-[1.5px] uppercase hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
+          >
+            ✎ Jump to draft
+          </Link>
+        )}
         {target.kind === "task" && (
           <button
             type="button"

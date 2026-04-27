@@ -7,9 +7,45 @@ const mockStartAuth = vi.fn().mockResolvedValue({ ok: true });
 const mockVerifyCode = vi.fn().mockResolvedValue({ connected: true });
 const mockDisconnect = vi.fn().mockResolvedValue(undefined);
 const mockSaveCredentials = vi.fn().mockResolvedValue({ ok: true });
+const mockRefreshUser = vi.fn().mockResolvedValue(undefined);
+const mockSetTelegramUserId = vi.fn().mockResolvedValue(undefined);
+const mockSetTelegramPin = vi.fn().mockResolvedValue(undefined);
 
 const mockUseTelegramConfig = vi.fn();
 const mockUseTelegramStatus = vi.fn();
+
+vi.mock("@/lib/auth", () => ({
+  useAuth: () => ({
+    user: {
+      id: 1,
+      email: "demo@example.com",
+      display_name: "Demo User",
+      role: "admin",
+      must_change_password: false,
+      is_blocked: false,
+      theme: "dark",
+      last_login_at: null,
+      telegram_user_id: null,
+      telegram_pin_configured: false,
+    },
+    isLoading: false,
+    isDemo: false,
+    login: vi.fn(),
+    logout: vi.fn(),
+    refreshUser: mockRefreshUser,
+  }),
+}));
+
+vi.mock("@/hooks/use-telegram-bridge", () => ({
+  useSetTelegramUserId: () => ({
+    mutateAsync: mockSetTelegramUserId,
+    isPending: false,
+  }),
+  useSetTelegramPin: () => ({
+    mutateAsync: mockSetTelegramPin,
+    isPending: false,
+  }),
+}));
 
 vi.mock("@/hooks/use-telegram", () => ({
   useTelegramConfig: (...args: unknown[]) => mockUseTelegramConfig(...args),
@@ -47,6 +83,9 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 describe("TelegramTab", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRefreshUser.mockResolvedValue(undefined);
+    mockSetTelegramUserId.mockResolvedValue(undefined);
+    mockSetTelegramPin.mockResolvedValue(undefined);
     // Default: credentials configured
     mockUseTelegramConfig.mockReturnValue({
       data: { configured: true, api_id: 123456 },
@@ -66,7 +105,7 @@ describe("TelegramTab", () => {
       </Wrapper>
     );
 
-    expect(screen.getByText("Telegram Connection")).toBeInTheDocument();
+    expect(screen.getByText("Telegram Pulse")).toBeInTheDocument();
     expect(screen.getByText("Not connected")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("+7 900 123 4567")).toBeInTheDocument();
     expect(screen.getByText("Connect")).toBeInTheDocument();

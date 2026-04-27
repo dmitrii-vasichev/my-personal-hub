@@ -201,6 +201,7 @@ export function JobsTable({ jobs, isLoading, error }: JobsTableProps) {
     []
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table returns function helpers by design.
   const table = useReactTable({
     data: jobs,
     columns,

@@ -266,14 +266,15 @@ discovered 6 projects: barber-booking, market-pulse-dashboard, mestnie, moving, 
 ```
 
 To make a folder visible to `/project`, add a minimal root `CLAUDE.md`
-(even a one-liner is enough) and restart the bot:
+(even a one-liner is enough) and refresh discovery:
 
-```bash
-launchctl kickstart -k gui/$(id -u)/com.my-personal-hub.telegram-bot
+```
+/refresh
 ```
 
-Discovery only runs at startup — adding or removing a project during a
-run requires a restart.
+`/refresh` re-runs sibling-project discovery, updates the `/project`
+keyboard, and reports added/removed project names. Use a LaunchAgent
+restart only when environment variables or bot code changed.
 
 ### Switching
 
@@ -308,13 +309,17 @@ Add the project name to `PROJECT_DENY` in `.env`:
 PROJECT_DENY=denver-urban-pulse,some-other-folder
 ```
 
-Restart the bot. The listed names are removed from the keyboard even if
-they still have `CLAUDE.md`.
+Restart the bot after editing `.env` so the new environment is loaded.
+After that, `/refresh` updates the keyboard. The listed names are removed
+even if they still have `CLAUDE.md`.
 
 ### Security
 
-Project switching does **not** relax any safety rails. Locked/unlocked
-profiles are global (all projects share them), `Notes/Personal/**` stays
+Project switching does **not** relax any safety rails. Every run starts
+from the global locked/unlocked profile. If the active project has
+`.claude/settings.json`, the bot merges it into a generated runtime
+profile so the project can add local rules. Global deny entries are kept
+and cannot be removed by the project overlay. `Notes/Personal/**` stays
 denied everywhere, and the PreToolUse hook (see
 [Bash bypass closure](#bash-bypass-closure-pretooluse-hook)) runs for
 every project.
@@ -328,9 +333,16 @@ treated exactly like a text prompt.
 - First voice message downloads the `small` model (~460 MB) from Hugging
   Face to `~/.cache/huggingface/hub/`. Expect ~60 s of dead time on that
   first message; subsequent messages use the cached weights instantly.
-- CPU inference is the default (`WHISPER_COMPUTE_TYPE=int8`). Metal
-  acceleration is deferred — revisit if real-time factor exceeds ~3× on
-  30-second notes.
+- CPU inference is the default (`WHISPER_DEVICE=cpu`,
+  `WHISPER_COMPUTE_TYPE=int8`). Live transcription logs include elapsed
+  seconds and real-time factor when Telegram provides the voice duration.
+  Benchmark before switching devices:
+
+  ```bash
+  cd telegram_bot
+  .venv/bin/python benchmark_voice.py sample.ogg --duration 12 --device cpu
+  .venv/bin/python benchmark_voice.py sample.ogg --duration 12 --device auto
+  ```
 - Language is auto-detected (`ru` / `en`). No forced language.
 - The full transcript is **always** echoed back as `🎙 transcribed: …`
   before CC is invoked — regardless of transcript length. Short commands
@@ -340,7 +352,8 @@ treated exactly like a text prompt.
 - Empty or silent recordings reply `⚠️ transcription produced empty text`.
 - Whisper failures reply `⚠️ transcription failed`; the bot stays alive.
 
-Knobs: `WHISPER_MODEL_SIZE`, `WHISPER_COMPUTE_TYPE` in `.env`.
+Knobs: `WHISPER_MODEL_SIZE`, `WHISPER_COMPUTE_TYPE`, `WHISPER_DEVICE`
+in `.env`.
 
 ## Queue and backpressure
 
@@ -386,7 +399,8 @@ behaviour (single edit per invocation) before you flip the flag.
 
 Every CC invocation runs under one of two `settings.json` profiles in
 `telegram_bot/profiles/`. The profile is picked per message based on the
-chat's unlock state.
+chat's unlock state, then optionally merged with the active project's
+`.claude/settings.json`.
 
 - **`locked.settings.json`** (default for every chat on start, and after the
   10-minute window expires or the bot restarts):
@@ -404,6 +418,11 @@ chat's unlock state.
 deny-list entry is hardcoded in both profile JSONs with the tilde form
 `~/Documents/Notes/Personal/**`, and a Bash-level hook (see below) closes
 the `cat`/`head`/`awk` bypass that a tool-deny alone cannot cover.
+
+Generated merged profiles are written under
+`telegram_bot/profiles/generated/` and ignored by git. If a project does
+not have `.claude/settings.json`, the bot passes the base locked/unlocked
+profile path directly to `claude -p`.
 
 Unlock state is **in-memory only**, keyed by `chat_id`. Restarting the bot
 clears all unlocks; every chat must re-run `/unlock <pin>` to restore

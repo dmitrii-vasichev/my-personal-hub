@@ -28,6 +28,8 @@ const mockLearningItem: DigestItem = {
   metadata: null,
   source_names: ["Tech Channel", "Dev News"],
   status: "new",
+  read_at: null,
+  is_read: false,
   action_type: null,
   action_result_id: null,
   created_at: "2026-03-19T12:00:00Z",
@@ -37,6 +39,8 @@ const mockActionedItem: DigestItem = {
   ...mockLearningItem,
   id: 2,
   status: "actioned",
+  read_at: "2026-03-19T12:05:00Z",
+  is_read: true,
   action_type: "to_task",
   action_result_id: 42,
 };
@@ -45,6 +49,8 @@ const mockSkippedItem: DigestItem = {
   ...mockLearningItem,
   id: 3,
   status: "skipped",
+  read_at: "2026-03-19T12:05:00Z",
+  is_read: true,
   action_type: "skip",
 };
 
@@ -62,6 +68,8 @@ const mockJobItem: DigestItem = {
   },
   source_names: ["Job Board"],
   status: "new",
+  read_at: null,
+  is_read: false,
   action_type: null,
   action_result_id: null,
   created_at: "2026-03-19T12:00:00Z",
@@ -71,6 +79,8 @@ const mockJobActionedItem: DigestItem = {
   ...mockJobItem,
   id: 5,
   status: "actioned",
+  read_at: "2026-03-19T12:05:00Z",
+  is_read: true,
   action_type: "to_job",
 };
 
@@ -114,6 +124,23 @@ describe("DigestItemCard", () => {
 
     fireEvent.click(screen.getByTitle("Skip"));
     expect(onAction).toHaveBeenCalledWith("skip");
+  });
+
+  it("calls onReadChange when marking an unread item as read", () => {
+    const onReadChange = vi.fn();
+    render(
+      <DigestItemCard
+        item={mockLearningItem}
+        selected={false}
+        onToggle={vi.fn()}
+        onAction={vi.fn()}
+        isPending={false}
+        onReadChange={onReadChange}
+      />
+    );
+
+    fireEvent.click(screen.getByTitle("Mark read"));
+    expect(onReadChange).toHaveBeenCalledWith(true);
   });
 
   it("calls onToggle when checkbox clicked", () => {
@@ -204,6 +231,23 @@ describe("JobDigestItemCard", () => {
 
     fireEvent.click(screen.getByTitle("Add to Job Hunt"));
     expect(onAction).toHaveBeenCalledWith("to_job");
+  });
+
+  it("calls onReadChange for job items", () => {
+    const onReadChange = vi.fn();
+    render(
+      <JobDigestItemCard
+        item={mockJobItem}
+        selected={false}
+        onToggle={vi.fn()}
+        onAction={vi.fn()}
+        isPending={false}
+        onReadChange={onReadChange}
+      />
+    );
+
+    fireEvent.click(screen.getByTitle("Mark read"));
+    expect(onReadChange).toHaveBeenCalledWith(true);
   });
 
   it("shows actioned item with label and no action buttons", () => {

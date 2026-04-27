@@ -92,7 +92,7 @@ export function useCreateEventNote() {
 export function useUpdateEventNote() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ noteId, eventId, content }: { noteId: number; eventId: number; content: string }) =>
+    mutationFn: ({ noteId, content }: { noteId: number; eventId: number; content: string }) =>
       api.patch<EventNote>(`/api/calendar/notes/${noteId}`, { content }),
     onSuccess: (_data, { eventId }) => {
       qc.invalidateQueries({ queryKey: ["event-notes", eventId] });
@@ -103,7 +103,7 @@ export function useUpdateEventNote() {
 export function useDeleteEventNote() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ noteId, eventId }: { noteId: number; eventId: number }) =>
+    mutationFn: ({ noteId }: { noteId: number; eventId: number }) =>
       api.delete(`/api/calendar/notes/${noteId}`),
     onSuccess: (_data, { eventId }) => {
       qc.invalidateQueries({ queryKey: ["event-notes", eventId] });

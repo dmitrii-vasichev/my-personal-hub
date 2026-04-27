@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 // --- Mocks ---
 
@@ -36,15 +36,19 @@ import LoginPage from "@/app/login/page";
 describe("LoginPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn();
-    global.localStorage = {
+    vi.stubGlobal("fetch", vi.fn());
+    vi.stubGlobal("localStorage", {
       getItem: vi.fn(),
       setItem: vi.fn(),
       removeItem: vi.fn(),
       clear: vi.fn(),
       length: 0,
       key: vi.fn(),
-    };
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("renders split-screen layout elements", () => {

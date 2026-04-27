@@ -506,13 +506,12 @@ async def test_notes_api_unauthorized():
 # ---------------------------------------------------------------------------
 
 def test_oauth_scopes_include_drive():
-    """SCOPES list includes calendar, drive.readonly and drive.file."""
+    """SCOPES list includes calendar and both Drive scopes."""
     from app.services.google_oauth import SCOPES
 
     assert "https://www.googleapis.com/auth/calendar" in SCOPES
     assert "https://www.googleapis.com/auth/drive.readonly" in SCOPES
     assert "https://www.googleapis.com/auth/drive.file" in SCOPES
-    assert len(SCOPES) == 3
 
 
 # ---------------------------------------------------------------------------

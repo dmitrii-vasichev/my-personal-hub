@@ -307,7 +307,7 @@ function ImportCasesDialog({
     try {
       const res = await importCases.mutateAsync({ markdown_content: content });
       setResult({ matched: res.matched_count, updated: res.updated_count });
-    } catch (e) {}
+    } catch {}
   };
 
   const handleClose = () => {

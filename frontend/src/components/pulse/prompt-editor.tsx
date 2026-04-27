@@ -32,14 +32,13 @@ export function PromptEditor({ category }: PromptEditorProps) {
   const { data: defaults } = usePulsePromptDefaults();
   const updateSettings = useUpdatePulseSettings();
 
-  const [subTab, setSubTab] = useState<SubTab>("custom");
-  const [draft, setDraft] = useState<string>("");
-  const [hasUnsaved, setHasUnsaved] = useState(false);
-
   const field = FIELD_MAP[category];
   const savedPrompt = settings?.[field] ?? null;
   const defaultPrompt = defaults?.[category] ?? "";
 
+  const [subTab, setSubTab] = useState<SubTab>("custom");
+  const [draft, setDraft] = useState<string>(() => savedPrompt ?? "");
+  const [hasUnsaved, setHasUnsaved] = useState(false);
   const [prevCategory, setPrevCategory] = useState(category);
   const [prevSavedPrompt, setPrevSavedPrompt] = useState(savedPrompt);
 

@@ -85,7 +85,7 @@ export function usePollStatus() {
   const pollingActive = useRef(false);
   const startTime = useRef<number>(0);
 
-  const query = useQuery<PollStatusResponse>({
+  const { data, refetch } = useQuery<PollStatusResponse>({
     queryKey: [POLL_STATUS_KEY],
     queryFn: () => api.get<PollStatusResponse>("/api/pulse/sources/poll-status"),
     enabled: false,
@@ -99,12 +99,12 @@ export function usePollStatus() {
   const startPolling = useCallback(() => {
     pollingActive.current = true;
     startTime.current = Date.now();
-    query.refetch();
-  }, [query]);
+    refetch();
+  }, [refetch]);
 
   // Handle poll status changes
   useEffect(() => {
-    if (!pollingActive.current || !query.data) return;
+    if (!pollingActive.current || !data) return;
 
     // Safety timeout
     if (Date.now() - startTime.current > POLL_TIMEOUT_MS) {
@@ -113,11 +113,11 @@ export function usePollStatus() {
       return;
     }
 
-    if (query.data.any_polling) {
+    if (data.any_polling) {
       // Still polling — schedule next check
       const timer = setTimeout(() => {
         if (pollingActive.current) {
-          query.refetch();
+          refetch();
         }
       }, POLL_INTERVAL_MS);
       return () => clearTimeout(timer);
@@ -125,7 +125,7 @@ export function usePollStatus() {
 
     // Polling finished — show results
     stopPolling();
-    const sources = query.data.sources;
+    const sources = data.sources;
     const errorSources = sources.filter((s) => s.poll_status === "error");
     const totalMessages = sources.reduce((sum, s) => sum + s.last_poll_message_count, 0);
 
@@ -148,8 +148,8 @@ export function usePollStatus() {
     queryClient.invalidateQueries({ queryKey: [PULSE_SOURCES_KEY] });
     queryClient.invalidateQueries({ queryKey: ["pulse-digests"] });
     queryClient.invalidateQueries({ queryKey: ["pulse-digest-items"] });
-  }, [query.data, queryClient, stopPolling]);
+  }, [data, queryClient, refetch, stopPolling]);
 
   // eslint-disable-next-line react-hooks/refs -- ref read in hook return value is intentional
-  return { startPolling, stopPolling, data: query.data, isPolling: pollingActive.current };
+  return { startPolling, stopPolling, data, isPolling: pollingActive.current };
 }

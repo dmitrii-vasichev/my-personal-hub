@@ -63,7 +63,7 @@ function createWrapper() {
 }
 
 const linkedNotes = [
-  { id: 10, title: "Meeting Notes", folder_path: "Work/Meetings", google_file_id: "gf_10" },
+  { id: 10, title: "Meeting Notes", folder_path: "Work/Meetings", google_file_id: "gf_10", file_id: "gf_10" },
 ];
 
 describe("LinkedNotesSection", () => {
@@ -124,11 +124,6 @@ describe("LinkedNotesSection", () => {
       { wrapper: createWrapper() }
     );
 
-    // Find the X button (unlink)
-    const unlinkButtons = screen.getAllByRole("button");
-    const unlinkButton = unlinkButtons.find((btn) =>
-      btn.closest("[data-state]") === null && btn.querySelector("svg")
-    );
     // The X button is inside the Tooltip, click directly
     const xButton = document.querySelector(
       'button[class*="hover:text-[var(--destructive)]"]'
@@ -211,5 +206,33 @@ describe("LinkedNotesSection", () => {
 
     fireEvent.click(screen.getByText("Meeting Notes"));
     expect(mockPush).toHaveBeenCalledWith("/notes?file=gf_10");
+  });
+
+  it("marks the primary draft note and can set another linked note as primary", () => {
+    const onSetPrimary = vi.fn();
+    render(
+      <LinkedNotesSection
+        notes={[
+          ...linkedNotes,
+          {
+            id: 20,
+            title: "Project Plan",
+            folder_path: "Work/Projects",
+            google_file_id: "gf_20",
+            file_id: "gf_20",
+          },
+        ]}
+        isLoading={false}
+        onLink={vi.fn()}
+        onUnlink={vi.fn()}
+        primaryNoteId={10}
+        onSetPrimary={onSetPrimary}
+      />,
+      { wrapper: createWrapper() }
+    );
+
+    expect(screen.getByText("Draft")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Set as draft"));
+    expect(onSetPrimary).toHaveBeenCalledWith(20);
   });
 });

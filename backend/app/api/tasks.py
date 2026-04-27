@@ -9,6 +9,7 @@ from app.core.deps import get_current_user
 from app.models.user import User
 from app.schemas.task import (
     KanbanBoard,
+    LinkedDocumentBrief,
     LinkedEventBrief,
     TaskCreate,
     TaskReorder,
@@ -33,6 +34,16 @@ def _task_response(task) -> TaskResponse:
     resp = TaskResponse.model_validate(task)
     if hasattr(task, "owner") and task.owner is not None:
         resp.owner_name = task.owner.display_name
+    linked_document = getattr(task, "linked_document_rel", None)
+    if linked_document is not None:
+        file_id = linked_document.google_file_id or str(linked_document.id)
+        resp.linked_document = LinkedDocumentBrief(
+            id=linked_document.id,
+            title=linked_document.title,
+            folder_path=linked_document.folder_path,
+            google_file_id=linked_document.google_file_id,
+            file_id=file_id,
+        )
     return resp
 
 
@@ -42,7 +53,10 @@ async def create_task(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    task = await task_service.create_task(db, data, current_user)
+    try:
+        task = await task_service.create_task(db, data, current_user)
+    except task_service.LinkedDocumentNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     return _task_response(task)
 
 
@@ -150,6 +164,8 @@ async def update_task(
         task = await task_service.update_task(db, task_id, data, current_user)
     except PermissionDeniedError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except task_service.LinkedDocumentNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
     return _task_response(task)

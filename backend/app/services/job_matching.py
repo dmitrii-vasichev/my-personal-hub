@@ -58,6 +58,12 @@ def compute_weighted_score(ratings: dict) -> tuple[int, dict]:
     return max(0, min(100, score)), validated
 
 
+def _clamp_score(value: object, default: int = 50) -> int:
+    if not isinstance(value, (int, float)):
+        return default
+    return max(0, min(100, int(value)))
+
+
 async def match_job(db: AsyncSession, job_id: int, user: User) -> dict:
     """Run AI matching for a job against the user's profile.
 
@@ -121,11 +127,15 @@ async def match_job(db: AsyncSession, job_id: int, user: User) -> dict:
         logger.error("Failed to parse LLM response: %s", raw[:500])
         raise RuntimeError("AI returned invalid response. Please try again.")
 
-    # Compute weighted score from subcategory ratings
+    # Compute weighted score from subcategory ratings. Older prompts returned a
+    # direct score; keep that path so saved/custom prompts do not collapse to 50.
     raw_ratings = match_result.get("ratings", {})
+    has_ratings = isinstance(raw_ratings, dict) and bool(raw_ratings)
     if not isinstance(raw_ratings, dict):
         raw_ratings = {}
     score, ratings = compute_weighted_score(raw_ratings)
+    if not has_ratings:
+        score = _clamp_score(match_result.get("score"), default=score)
 
     score_breakdown = [
         {

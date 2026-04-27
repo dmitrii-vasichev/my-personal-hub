@@ -92,7 +92,7 @@ describe("TaskDetailPage", () => {
   });
 
   it("renders without crashing", () => {
-    const { container } = render(
+    render(
       <QueryClientProvider client={queryClient}>
         <TaskDetailPage />
       </QueryClientProvider>

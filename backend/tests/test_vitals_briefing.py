@@ -679,13 +679,15 @@ class TestBriefingAPI:
 
 class TestAutoGeneration:
     @pytest.mark.asyncio
+    @patch("app.services.vitals_briefing.user_today")
     @patch("app.services.vitals_briefing.generate_vitals_briefing")
     @patch("app.services.vitals_briefing._get_llm_for_user")
-    async def test_auto_generate_first_sync(self, mock_llm, mock_generate):
+    async def test_auto_generate_first_sync(self, mock_llm, mock_generate, mock_today):
         from app.services.vitals_briefing import maybe_auto_generate_briefing
 
         call_count = 0
         metric = make_daily_metric()
+        mock_today.return_value = metric.date
 
         async def mock_execute(query):
             nonlocal call_count

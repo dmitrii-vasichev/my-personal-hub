@@ -8,7 +8,6 @@ import {
   Play,
   XCircle,
   SkipForward,
-  Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +25,7 @@ import {
   usePauseBatch,
   useSendBatch,
 } from "@/hooks/use-leads";
-import type { BatchItemResponse, BatchItemStatus, BatchJobStatus } from "@/types/lead";
+import type { BatchItemStatus, BatchJobStatus } from "@/types/lead";
 
 interface BatchProgressDialogProps {
   open: boolean;

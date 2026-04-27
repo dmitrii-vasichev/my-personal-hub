@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, MapPin, Clock, Calendar, Eye, Globe, Edit, Lock, Trash2, User } from "lucide-react";
+import { ArrowLeft, MapPin, Clock, Eye, Globe, Edit, Lock, Trash2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EventNotes } from "@/components/calendar/event-notes";

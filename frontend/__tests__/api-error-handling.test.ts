@@ -9,6 +9,9 @@ describe("ApiClient error handling", () => {
       getItem: vi.fn().mockReturnValue("fake-token"),
       setItem: vi.fn(),
       removeItem: vi.fn(),
+      clear: vi.fn(),
+      key: vi.fn(),
+      length: 0,
     });
   });
 

@@ -28,6 +28,7 @@ def _make_note(nid=1):
 def _make_task(tid=10):
     t = MagicMock()
     t.id = tid
+    t.user_id = 1
     return t
 
 
@@ -101,11 +102,21 @@ async def test_unlink_note_task_note_not_found():
 @pytest.mark.asyncio
 async def test_unlink_note_task_success():
     note = _make_note()
-    db = _db_returning(note, None)  # note lookup + delete execute
+    task = _make_task()
+    db = _db_returning(note, task, None, None)  # note, task, delete, primary-clear
 
     result = await unlink_note_task(db, note_id=1, task_id=10, user=_make_user())
     assert result is True
     db.commit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_unlink_note_task_task_not_found():
+    note = _make_note()
+    db = _db_returning(note, None)
+    result = await unlink_note_task(db, note_id=1, task_id=99, user=_make_user())
+    assert result is False
+    db.commit.assert_not_awaited()
 
 
 # ── get_note_linked_tasks ────────────────────────────────────────────────────

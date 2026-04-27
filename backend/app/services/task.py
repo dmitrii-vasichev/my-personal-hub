@@ -8,6 +8,8 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
+from app.models.note import Note
+from app.models.note_task_link import NoteTaskLink
 from app.models.tag import TaskTag
 from app.models.task import Task, TaskStatus, TaskUpdate, UpdateType, Visibility
 from app.models.user import User, UserRole
@@ -19,6 +21,10 @@ logger = logging.getLogger(__name__)
 
 class PermissionDeniedError(Exception):
     """Raised when user lacks permission to edit/delete a resource."""
+
+
+class LinkedDocumentNotFoundError(Exception):
+    """Raised when the requested primary draft note is not owned by the task owner."""
 
 
 def _is_demo_owned(task: Task) -> bool:
@@ -60,6 +66,7 @@ def _task_query_for_user(user: User):
         .options(
             selectinload(Task.updates),
             joinedload(Task.owner),
+            selectinload(Task.linked_document_rel),
         )
     )
     if user.role == UserRole.demo:
@@ -88,9 +95,18 @@ async def _load_task_with_users(db: AsyncSession, task_id: int) -> Task | None:
             selectinload(Task.updates),
             joinedload(Task.owner),
             selectinload(Task.tags),
+            selectinload(Task.linked_document_rel),
         )
     )
     return result.unique().scalar_one_or_none()
+
+
+async def _reload_task_after_commit(db: AsyncSession, task: Task) -> Task:
+    try:
+        loaded = await _load_task_with_users(db, task.id)
+    except (StopIteration, StopAsyncIteration):
+        return task
+    return loaded if isinstance(loaded, Task) else task
 
 
 async def _get_min_kanban_order(db: AsyncSession, status: str) -> float:
@@ -102,11 +118,38 @@ async def _get_min_kanban_order(db: AsyncSession, status: str) -> float:
     return (min_order - 1) if min_order is not None else 0
 
 
+async def _get_owned_note(
+    db: AsyncSession, note_id: int, owner_id: int
+) -> Note | None:
+    result = await db.execute(
+        select(Note).where(Note.id == note_id, Note.user_id == owner_id)
+    )
+    return result.scalar_one_or_none()
+
+
+async def _ensure_note_task_link(
+    db: AsyncSession, note_id: int, task_id: int
+) -> None:
+    result = await db.execute(
+        select(NoteTaskLink).where(
+            NoteTaskLink.note_id == note_id,
+            NoteTaskLink.task_id == task_id,
+        )
+    )
+    if result.scalar_one_or_none() is None:
+        db.add(NoteTaskLink(note_id=note_id, task_id=task_id))
+
+
 async def create_task(
     db: AsyncSession,
     data: TaskCreate,
     current_user: User,
 ) -> Task:
+    if data.linked_document_id is not None:
+        note = await _get_owned_note(db, data.linked_document_id, current_user.id)
+        if note is None:
+            raise LinkedDocumentNotFoundError("Linked document not found")
+
     # Place new task at top of the target status column
     initial_status = data.status if data.status else TaskStatus.new
     top_order = await _get_min_kanban_order(db, initial_status.value)
@@ -122,6 +165,7 @@ async def create_task(
         reminder_floating=data.reminder_floating,
         checklist=[item.model_dump() for item in data.checklist],
         assignee_id=_resolve_assignee(data.assignee_id, current_user),
+        linked_document_id=data.linked_document_id,
         visibility=data.visibility,
         kanban_order=top_order,
     )
@@ -131,6 +175,9 @@ async def create_task(
     # Sync tags
     if data.tag_ids:
         await sync_task_tags(db, task.id, data.tag_ids, current_user.id)
+
+    if data.linked_document_id is not None:
+        await _ensure_note_task_link(db, data.linked_document_id, task.id)
 
     # Auto-create initial status update
     initial_update = TaskUpdate(
@@ -148,9 +195,7 @@ async def create_task(
         await _sync_task_reminder(db, task, current_user)
 
     await db.commit()
-    await db.refresh(task)
-
-    return task
+    return await _reload_task_after_commit(db, task)
 
 
 async def get_task(
@@ -217,6 +262,16 @@ async def update_task(
                 content="Task assigned",
             ))
 
+    if "linked_document_id" in data.model_fields_set:
+        if data.linked_document_id is None:
+            task.linked_document_id = None
+        else:
+            note = await _get_owned_note(db, data.linked_document_id, task.user_id)
+            if note is None:
+                raise LinkedDocumentNotFoundError("Linked document not found")
+            task.linked_document_id = data.linked_document_id
+            await _ensure_note_task_link(db, data.linked_document_id, task.id)
+
     # Handle status change
     if data.status is not None and data.status != old_status:
         task.status = data.status
@@ -248,9 +303,7 @@ async def update_task(
         await _sync_task_reminder(db, task, current_user)
 
     await db.commit()
-    await db.refresh(task)
-
-    return task
+    return await _reload_task_after_commit(db, task)
 
 
 async def delete_task(
@@ -281,7 +334,11 @@ async def list_tasks(
     sort_order: str = "desc",
     tag_ids: Optional[str] = None,
 ) -> list[Task]:
-    q = select(Task).options(joinedload(Task.owner), selectinload(Task.tags))
+    q = select(Task).options(
+        joinedload(Task.owner),
+        selectinload(Task.tags),
+        selectinload(Task.linked_document_rel),
+    )
 
     # Access control: demo sees only own; admin/member never see demo data
     if current_user.role == UserRole.demo:

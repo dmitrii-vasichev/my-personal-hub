@@ -20,6 +20,7 @@ import hub_client
 import progress
 import projects as projects_mod
 import request_queue
+import settings_profiles
 import unlock
 import voice
 from cc_runner import run_cc, run_cc_streaming
@@ -67,6 +68,7 @@ _projects_ref: dict = {"known": []}
 # each; keep them one-liners. HELP_TEXT below carries the longer prose.
 BOT_COMMANDS: list[tuple[str, str]] = [
     ("project", "pick a project"),
+    ("refresh", "rediscover projects"),
     ("new", "start a fresh CC session in the active project"),
     ("status", "current project, session, queue, unlock state"),
     ("cancel", "stop the current CC run"),
@@ -76,6 +78,7 @@ BOT_COMMANDS: list[tuple[str, str]] = [
 
 HELP_TEXT = (
     "/project — pick which project CC works against\n"
+    "/refresh — rediscover sibling projects\n"
     "/new — start a fresh CC session for this chat\n"
     "/unlock <pin> — unlock destructive ops for 10 min\n"
     "/status — current session, queue depth, unlock state\n"
@@ -84,9 +87,20 @@ HELP_TEXT = (
 )
 
 
-def _profile_for(chat_id: int) -> str:
-    """Pick the CC settings profile based on the per-chat unlock state."""
-    return UNLOCKED_PROFILE if unlock.is_unlocked(chat_id) else LOCKED_PROFILE
+def _profile_for(
+    chat_id: int,
+    project_name: str | None = None,
+    workdir: str | None = None,
+) -> str:
+    """Pick and optionally merge the CC settings profile for this run."""
+    base = UNLOCKED_PROFILE if unlock.is_unlocked(chat_id) else LOCKED_PROFILE
+    if project_name is None or workdir is None:
+        return base
+    return settings_profiles.resolve_profile(
+        base_profile=base,
+        project_name=project_name,
+        workdir=workdir,
+    )
 
 
 def _active_project(settings, chat_id: int) -> tuple[str, str]:
@@ -114,6 +128,24 @@ def _active_project(settings, chat_id: int) -> tuple[str, str]:
     # Extreme fallback: discovery found nothing. Use the raw cc_workdir so
     # the bot keeps working as in Phase 4.
     return settings.default_project, settings.cc_workdir
+
+
+def _discover_projects(settings) -> list[projects_mod.Project]:
+    """Read the current sibling-project list from disk."""
+    return projects_mod.discover(
+        settings.project_base_dir, settings.project_deny_list
+    )
+
+
+def _replace_projects(context, settings) -> tuple[list[projects_mod.Project], set[str], set[str]]:
+    """Refresh project discovery and return ``(new, added, removed)``."""
+    old: list[projects_mod.Project] = context.application.bot_data.get("projects", [])
+    new = _discover_projects(settings)
+    context.application.bot_data["projects"] = new
+    _projects_ref["known"] = new
+    old_names = {p.name for p in old}
+    new_names = {p.name for p in new}
+    return new, new_names - old_names, old_names - new_names
 
 
 async def _is_whitelisted(
@@ -217,6 +249,7 @@ async def _run_cc_with_optional_progress(
 
     project, workdir = _active_project(settings, chat_id)
     session_id = get_session(chat_id, project)
+    settings_path = _profile_for(chat_id, project, workdir)
 
     if not settings.progress_enabled:
         return await run_cc(
@@ -225,7 +258,7 @@ async def _run_cc_with_optional_progress(
             workdir=workdir,
             session_id=session_id,
             timeout=settings.cc_timeout,
-            settings_path=_profile_for(chat_id),
+            settings_path=settings_path,
             on_spawn=on_spawn,
         )
 
@@ -253,7 +286,7 @@ async def _run_cc_with_optional_progress(
         workdir=workdir,
         session_id=session_id,
         timeout=settings.cc_timeout,
-        settings_path=_profile_for(chat_id),
+        settings_path=settings_path,
         on_spawn=on_spawn,
         on_event_line=on_line,
     )
@@ -379,7 +412,7 @@ async def handle_project(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not known:
         await update.message.reply_text(
             "⚠️ no projects discovered — add CLAUDE.md to a folder in "
-            f"{settings.project_base_dir} and restart the bot."
+            f"{settings.project_base_dir}, then run /refresh."
         )
         return
     active = get_active_project(chat_id, settings.default_project)
@@ -429,12 +462,34 @@ async def handle_project_callback(
     known: list[projects_mod.Project] = context.application.bot_data.get("projects", [])
     if not any(p.name == picked for p in known):
         await query.edit_message_text(
-            "⚠️ unknown project — restart the bot if you just added it."
+            "⚠️ unknown project — run /refresh if you just added it."
         )
         return
     set_active_project(query.message.chat_id, picked)
     log.info("switched chat_id=%s to project=%s", query.message.chat_id, picked)
     await query.edit_message_text(f"✅ switched to {picked}")
+
+
+async def handle_refresh(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    settings = context.application.bot_data["settings"]
+    if not await _is_whitelisted(update, context, settings):
+        return
+
+    projects, added, removed = _replace_projects(context, settings)
+    log.info(
+        "refreshed projects count=%d added=%s removed=%s",
+        len(projects),
+        ",".join(sorted(added)) or "-",
+        ",".join(sorted(removed)) or "-",
+    )
+    lines = [f"🔄 projects refreshed: {len(projects)} found"]
+    if added:
+        lines.append("added: " + ", ".join(sorted(added)))
+    if removed:
+        lines.append("removed: " + ", ".join(sorted(removed)))
+    if projects:
+        lines.append("available: " + ", ".join(p.name for p in projects))
+    await update.message.reply_text("\n".join(lines))
 
 
 async def handle_unlock(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -494,6 +549,8 @@ async def handle_voice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                 audio_bytes,
                 model_size=settings.whisper_model_size,
                 compute_type=settings.whisper_compute_type,
+                device=settings.whisper_device,
+                audio_duration_s=vm.duration,
             )
         except Exception:  # noqa: BLE001 — any whisper failure surfaces to the
             # user as a terse warning; the bot stays alive for the next message.
@@ -556,9 +613,7 @@ def main() -> None:
         .build()
     )
     app.bot_data["settings"] = settings
-    app.bot_data["projects"] = projects_mod.discover(
-        settings.project_base_dir, settings.project_deny_list
-    )
+    app.bot_data["projects"] = _discover_projects(settings)
     _projects_ref["known"] = app.bot_data["projects"]
     log.info(
         "discovered %d projects: %s",
@@ -566,6 +621,7 @@ def main() -> None:
         ", ".join(p.name for p in app.bot_data["projects"]) or "(none)",
     )
     app.add_handler(CommandHandler("project", handle_project))
+    app.add_handler(CommandHandler("refresh", handle_refresh))
     app.add_handler(
         CallbackQueryHandler(handle_project_callback, pattern=r"^proj:")
     )

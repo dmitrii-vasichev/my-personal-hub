@@ -17,6 +17,7 @@ import {
   useDigestItems,
   useDigestItemAction,
   useBulkDigestItemAction,
+  useMarkDigestItemRead,
 } from "@/hooks/use-pulse-digest-items";
 import { DigestItemCard, CLASSIFICATION_STYLES } from "@/components/pulse/digest-item-card";
 import { JobDigestItemCard } from "@/components/pulse/job-digest-item-card";
@@ -36,11 +37,13 @@ export function DigestItemsView({ digestId, category }: DigestItemsViewProps) {
   });
   const itemAction = useDigestItemAction();
   const bulkAction = useBulkDigestItemAction();
+  const markRead = useMarkDigestItemRead();
 
   const items = data?.items ?? [];
   const total = data?.total ?? 0;
   const newCount = items.filter((i) => i.status === "new").length;
   const actionedCount = items.filter((i) => i.status !== "new").length;
+  const unreadCount = items.filter((i) => !i.is_read).length;
   const selectableItems = items.filter((i) => i.status === "new");
   const allSelected = selectableItems.length > 0 && selected.size === selectableItems.length;
   const isJobs = category === "jobs";
@@ -85,6 +88,10 @@ export function DigestItemsView({ digestId, category }: DigestItemsViewProps) {
     );
   };
 
+  const handleReadChange = (itemId: number, read: boolean) => {
+    markRead.mutate({ itemId, read });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20" data-testid="digest-items-loading">
@@ -126,6 +133,7 @@ export function DigestItemsView({ digestId, category }: DigestItemsViewProps) {
           </button>
           <span className="text-xs text-muted-foreground">
             {total} item{total !== 1 ? "s" : ""}
+            {unreadCount > 0 && <> · {unreadCount} unread</>}
             {actionedCount > 0 && (
               <> · {newCount} new · {actionedCount} processed</>
             )}
@@ -234,6 +242,8 @@ export function DigestItemsView({ digestId, category }: DigestItemsViewProps) {
               onToggle={() => toggleItem(item.id)}
               onAction={(action) => handleAction(item.id, action)}
               isPending={itemAction.isPending}
+              onReadChange={(read) => handleReadChange(item.id, read)}
+              isReadPending={markRead.isPending}
             />
           ) : (
             <DigestItemCard
@@ -243,6 +253,8 @@ export function DigestItemsView({ digestId, category }: DigestItemsViewProps) {
               onToggle={() => toggleItem(item.id)}
               onAction={(action) => handleAction(item.id, action)}
               isPending={itemAction.isPending}
+              onReadChange={(read) => handleReadChange(item.id, read)}
+              isReadPending={markRead.isPending}
             />
           )
         )}

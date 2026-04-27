@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SkillsEditor } from "@/components/profile/skills-editor";
@@ -36,7 +36,6 @@ describe("SkillsEditor", () => {
     const skills: SkillEntry[] = [{ name: "Go" }, { name: "Rust" }];
     render(<SkillsEditor skills={skills} onChange={onChange} />);
 
-    const removeButtons = screen.getAllByRole("button", { hidden: true });
     // Find the X button inside the "Go" chip
     const goChip = screen.getByText(/^Go/).closest("span");
     const xButton = goChip?.querySelector("button");
@@ -91,11 +90,6 @@ describe("ExperienceEditor", () => {
     );
 
     // Click the first delete button
-    const deleteButtons = screen.getAllByRole("button").filter((b) => {
-      const svg = b.querySelector("svg");
-      return svg && b.closest("[class*='rounded-lg']");
-    });
-    // Trash icons
     const trashButtons = screen.getByText("Dev")
       .closest("[class*='rounded-lg']")
       ?.querySelectorAll("button");

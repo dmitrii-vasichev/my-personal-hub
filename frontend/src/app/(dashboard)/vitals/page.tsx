@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { RefreshCw, Heart, AlertCircle, Clock, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
@@ -40,9 +40,14 @@ export default function VitalsPage() {
   const syncVitals = useSyncVitals();
 
   // Rate-limit countdown
-  const rateLimitedUntil = connection?.rate_limited_until
-    ? new Date(connection.rate_limited_until)
-    : null;
+  const rateLimitedUntilValue = connection?.rate_limited_until;
+  const rateLimitedUntil = useMemo(
+    () =>
+      rateLimitedUntilValue
+        ? new Date(rateLimitedUntilValue)
+        : null,
+    [rateLimitedUntilValue]
+  );
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {

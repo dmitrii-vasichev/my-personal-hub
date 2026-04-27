@@ -4,7 +4,6 @@ import type { Task, KanbanBoard as KanbanBoardType, TaskStatus } from "@/types/t
 import {
   PRIORITY_BORDER_CSS_VARS,
   DEFAULT_HIDDEN_COLUMNS,
-  TASK_STATUS_ORDER,
 } from "@/types/task";
 
 // Mock dnd-kit
@@ -189,7 +188,7 @@ describe("KanbanBoard — column visibility", () => {
     const { KanbanBoard } = await import("@/components/tasks/kanban-board");
     const board = makeBoard();
 
-    const { container } = render(
+    render(
       <KanbanBoard board={board} onStatusChange={() => {}} onReorder={() => {}} hiddenColumns={[]} />
     );
 

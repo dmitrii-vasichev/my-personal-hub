@@ -3,12 +3,12 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import { HeroCells } from "../hero-cells";
 
 // Hoisted mock state — mutated per test, re-read by mocked hooks.
-const { mockTasks, mockJobs, mockTodayEvents, mockWeekEvents } = vi.hoisted(
+const { mockTasks, mockJobs, mockWeekEvents, mockPulseUnread } = vi.hoisted(
   () => ({
     mockTasks: { data: [] as unknown[] },
     mockJobs: { data: [] as unknown[] },
-    mockTodayEvents: { data: [] as unknown[] },
     mockWeekEvents: { data: [] as unknown[] },
+    mockPulseUnread: { data: { unread_count: 0 } },
   }),
 );
 
@@ -19,27 +19,17 @@ vi.mock("@/hooks/use-jobs", () => ({
   useJobs: () => ({ data: mockJobs.data }),
 }));
 vi.mock("@/hooks/use-calendar", () => ({
-  useCalendarEvents: ({ start }: { start?: string }) => {
-    // The Hero fetches `todayBounds` first, then `thisWeekBounds`. The
-    // today call's start matches today's 00:00; any other start is the
-    // week call. Distinguish by presence of 'T00:00' plus a non-Monday
-    // offset is fiddly — simpler: first call = today, second = week,
-    // tracked via call order.
-    calls.push(start ?? "");
-    return {
-      data: calls.length === 1 ? mockTodayEvents.data : mockWeekEvents.data,
-    };
-  },
+  useCalendarEvents: () => ({ data: mockWeekEvents.data }),
 }));
-
-let calls: string[] = [];
+vi.mock("@/hooks/use-pulse-digest-items", () => ({
+  usePulseUnreadCount: () => ({ data: mockPulseUnread.data }),
+}));
 
 beforeEach(() => {
   mockTasks.data = [];
   mockJobs.data = [];
-  mockTodayEvents.data = [];
   mockWeekEvents.data = [];
-  calls = [];
+  mockPulseUnread.data = { unread_count: 0 };
 });
 
 describe("HeroCells — Interviews this week", () => {
@@ -70,5 +60,17 @@ describe("HeroCells — Interviews this week", () => {
       .getByText("Interviews this week")
       .closest("div")?.parentElement;
     expect(parent?.textContent).toContain("0");
+  });
+
+  it("renders Pulse unread from unread count endpoint", () => {
+    mockPulseUnread.data = { unread_count: 7 };
+
+    render(<HeroCells />);
+
+    expect(screen.getByText("Pulse unread")).toBeInTheDocument();
+    const parent = screen
+      .getByText("Pulse unread")
+      .closest("div")?.parentElement;
+    expect(parent?.textContent).toContain("7");
   });
 });

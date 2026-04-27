@@ -14,7 +14,9 @@ from app.schemas.pulse_digest import (
     DigestItemAction,
     DigestItemBulkAction,
     DigestItemListResponse,
+    DigestItemReadUpdate,
     DigestItemResponse,
+    DigestUnreadCountResponse,
     DigestListResponse,
     DigestResponse,
 )
@@ -247,6 +249,35 @@ async def list_digest_items(
 
 
 # ── Digest item actions ─────────────────────────────────────────────────────
+
+
+@router.get("/items/unread-count", response_model=DigestUnreadCountResponse)
+async def get_unread_item_count(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Count unread structured Pulse digest items for the current user."""
+    from app.services.pulse_digest_items import count_unread_items
+
+    return DigestUnreadCountResponse(
+        unread_count=await count_unread_items(db, current_user)
+    )
+
+
+@router.patch("/items/{item_id}/read", response_model=DigestItemResponse)
+async def mark_digest_item_read(
+    item_id: int,
+    body: DigestItemReadUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Set or clear read state for a structured digest item."""
+    from app.services.pulse_digest_items import mark_item_read
+
+    item = await mark_item_read(db, current_user, item_id, body.read)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Digest item not found")
+    return DigestItemResponse.from_orm_item(item)
 
 
 @router.post("/items/{item_id}/action", status_code=status.HTTP_200_OK)

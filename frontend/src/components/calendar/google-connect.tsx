@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Cloud, RefreshCw, Unlink, CheckCircle, Settings } from "lucide-react";
+import { Cloud, RefreshCw, Unlink, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";

@@ -272,7 +272,6 @@ vi.mock("@/hooks/use-vitals", () => ({
 }));
 
 // Must import after mocks
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { default: VitalsPage } = await import("@/app/(dashboard)/vitals/page");
 
 function VitalsWrapper({ children }: { children: React.ReactNode }) {

@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import type { Note, NoteTreeNode, NoteTreeResponse } from "@/types/note";
+import type { Note, NoteTreeResponse } from "@/types/note";
 
 export const NOTES_TREE_KEY = "notes-tree";
 export const NOTES_KEY = "notes";

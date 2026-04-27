@@ -10,34 +10,40 @@ language. Per PRD decision Q4 the full transcript is echoed back to the
 user regardless of length — short voice commands with misrecognitions are
 the dangerous case, so the user always sees what CC will actually act on.
 
-Metal acceleration is deferred (PRD decision Q3). CPU int8 is the MVP
-default; revisit if real-time factor exceeds 3× on 30-second notes.
+CPU int8 remains the default. ``WHISPER_DEVICE=auto`` is available for
+benchmarking on the target Mac before changing the production env.
 """
 
 import asyncio
 import logging
 import tempfile
+import time
 from pathlib import Path
 from typing import Optional
 
 log = logging.getLogger(__name__)
 
 _model = None
+_model_key = None
 _model_lock = asyncio.Lock()
 
 
-async def _get_model(model_size: str, compute_type: str):
+async def _get_model(model_size: str, compute_type: str, device: str):
     """Return the singleton ``WhisperModel``, constructing it on first call.
 
     The lock prevents two concurrent voice messages from loading the
     weights twice (rare in practice, single-user bot, but cheap to get
     right).
     """
-    global _model
+    global _model, _model_key
+    key = (model_size, compute_type, device)
     async with _model_lock:
-        if _model is None:
+        if _model is None or _model_key != key:
             log.info(
-                "loading faster-whisper model=%s compute=%s", model_size, compute_type
+                "loading faster-whisper model=%s device=%s compute=%s",
+                model_size,
+                device,
+                compute_type,
             )
             # Import deferred so unit tests can monkeypatch _get_model
             # without having to pull the heavy dependency.
@@ -46,9 +52,10 @@ async def _get_model(model_size: str, compute_type: str):
             _model = await asyncio.to_thread(
                 WhisperModel,
                 model_size,
-                device="cpu",
+                device=device,
                 compute_type=compute_type,
             )
+            _model_key = key
             log.info("faster-whisper ready")
     return _model
 
@@ -58,6 +65,8 @@ async def transcribe_bytes(
     *,
     model_size: str = "small",
     compute_type: str = "int8",
+    device: str = "cpu",
+    audio_duration_s: float | None = None,
 ) -> str:
     """Transcribe an Opus ``.ogg`` blob to text.
 
@@ -69,7 +78,8 @@ async def transcribe_bytes(
     whitespace-normalised. Returns an empty string if whisper yields no
     segments (silent recording, noise-only, etc.).
     """
-    model = await _get_model(model_size, compute_type)
+    started = time.perf_counter()
+    model = await _get_model(model_size, compute_type, device)
     tmp_path: Optional[Path] = None
     try:
         with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as f:
@@ -80,7 +90,30 @@ async def transcribe_bytes(
             segments, _info = model.transcribe(str(tmp_path), beam_size=5)
             return " ".join(seg.text.strip() for seg in segments).strip()
 
-        return await asyncio.to_thread(_run)
+        transcript = await asyncio.to_thread(_run)
+        elapsed = time.perf_counter() - started
+        if audio_duration_s and audio_duration_s > 0:
+            rtf = elapsed / audio_duration_s
+            log.info(
+                "voice transcription complete model=%s device=%s compute=%s elapsed=%.2fs audio=%.2fs rtf=%.2f text_len=%d",
+                model_size,
+                device,
+                compute_type,
+                elapsed,
+                audio_duration_s,
+                rtf,
+                len(transcript),
+            )
+        else:
+            log.info(
+                "voice transcription complete model=%s device=%s compute=%s elapsed=%.2fs text_len=%d",
+                model_size,
+                device,
+                compute_type,
+                elapsed,
+                len(transcript),
+            )
+        return transcript
     finally:
         if tmp_path is not None:
             try:
@@ -90,5 +123,6 @@ async def transcribe_bytes(
 
 
 def _reset_for_tests() -> None:
-    global _model
+    global _model, _model_key
     _model = None
+    _model_key = None

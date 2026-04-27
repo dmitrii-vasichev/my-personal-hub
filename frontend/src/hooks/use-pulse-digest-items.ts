@@ -7,9 +7,11 @@ import { PULSE_DIGESTS_KEY } from "@/hooks/use-pulse-digests";
 import type {
   DigestItemAction,
   DigestItemListResponse,
+  PulseUnreadCountResponse,
 } from "@/types/pulse-digest";
 
 export const PULSE_DIGEST_ITEMS_KEY = "pulse-digest-items";
+export const PULSE_UNREAD_COUNT_KEY = "pulse-unread-count";
 
 export function useDigestItems(
   digestId: number | null,
@@ -41,6 +43,16 @@ export function useLatestDigestItems(category: string) {
   });
 }
 
+export function usePulseUnreadCount() {
+  return useQuery<PulseUnreadCountResponse>({
+    queryKey: [PULSE_UNREAD_COUNT_KEY],
+    queryFn: () =>
+      api.get<PulseUnreadCountResponse>(
+        "/api/pulse/digests/items/unread-count"
+      ),
+  });
+}
+
 export function useDigestItemAction() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -49,6 +61,7 @@ export function useDigestItemAction() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: [PULSE_DIGEST_ITEMS_KEY] });
       queryClient.invalidateQueries({ queryKey: [PULSE_DIGESTS_KEY] });
+      queryClient.invalidateQueries({ queryKey: [PULSE_UNREAD_COUNT_KEY] });
       const labels: Record<string, string> = {
         to_task: "Saved as task",
         to_note: "Saved as note",
@@ -59,6 +72,21 @@ export function useDigestItemAction() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Action failed");
+    },
+  });
+}
+
+export function useMarkDigestItemRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, read }: { itemId: number; read: boolean }) =>
+      api.patch(`/api/pulse/digests/items/${itemId}/read`, { read }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PULSE_DIGEST_ITEMS_KEY] });
+      queryClient.invalidateQueries({ queryKey: [PULSE_UNREAD_COUNT_KEY] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Read state update failed");
     },
   });
 }
@@ -74,6 +102,7 @@ export function useBulkDigestItemAction() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: [PULSE_DIGEST_ITEMS_KEY] });
       queryClient.invalidateQueries({ queryKey: [PULSE_DIGESTS_KEY] });
+      queryClient.invalidateQueries({ queryKey: [PULSE_UNREAD_COUNT_KEY] });
       toast.success(`${variables.itemIds.length} items processed`);
     },
     onError: (error: Error) => {

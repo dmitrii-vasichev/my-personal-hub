@@ -156,23 +156,6 @@ function TagRow({
     }
   };
 
-  const handleColorChange = async (hex: string) => {
-    setEditColor(hex);
-    if (!editing) {
-      // Save color immediately when not in name-edit mode
-      try {
-        await updateTag.mutateAsync({
-          tagId: tag.id,
-          data: { color: hex },
-        });
-        toast.success("Tag color updated");
-      } catch {
-        toast.error("Failed to update color");
-        setEditColor(tag.color);
-      }
-    }
-  };
-
   const handleCancel = () => {
     setEditName(tag.name);
     setEditColor(tag.color);

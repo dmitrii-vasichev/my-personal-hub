@@ -190,7 +190,7 @@ export function useCreateActivity() {
 export function useDeleteActivity() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ activityId, leadId }: { activityId: number; leadId: number }) =>
+    mutationFn: ({ activityId }: { activityId: number; leadId: number }) =>
       api.delete(`/api/leads/activities/${activityId}`),
     onSuccess: (_result, { leadId }) => {
       qc.invalidateQueries({ queryKey: [LEADS_KEY, leadId, "activities"] });

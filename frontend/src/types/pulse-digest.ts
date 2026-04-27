@@ -57,6 +57,8 @@ export interface DigestItem {
   metadata: Record<string, string | null> | null;
   source_names: string[] | null;
   status: "new" | "actioned" | "skipped";
+  read_at: string | null;
+  is_read: boolean;
   action_type: string | null;
   action_result_id: number | null;
   created_at: string;
@@ -73,4 +75,8 @@ export type DigestItemAction = "to_task" | "to_note" | "to_job" | "skip";
 export interface DigestItemBulkActionRequest {
   item_ids: number[];
   action: DigestItemAction;
+}
+
+export interface PulseUnreadCountResponse {
+  unread_count: number;
 }

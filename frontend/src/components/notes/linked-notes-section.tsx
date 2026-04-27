@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Link2, Loader2, Plus, X } from "lucide-react";
+import { FileText, Link2, Loader2, Plus, Star, StarOff, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,6 +23,10 @@ interface LinkedNotesSectionProps {
   onLink: (noteId: number) => void;
   onUnlink: (noteId: number) => void;
   isLinking?: boolean;
+  primaryNoteId?: number | null;
+  onSetPrimary?: (noteId: number) => void;
+  onClearPrimary?: () => void;
+  isSettingPrimary?: boolean;
 }
 
 export function LinkedNotesSection({
@@ -31,6 +35,10 @@ export function LinkedNotesSection({
   onLink,
   onUnlink,
   isLinking,
+  primaryNoteId,
+  onSetPrimary,
+  onClearPrimary,
+  isSettingPrimary,
 }: LinkedNotesSectionProps) {
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -51,6 +59,9 @@ export function LinkedNotesSection({
     setDialogOpen(false);
     setSearch("");
   };
+
+  const noteFileId = (note: LinkedNoteBrief) =>
+    note.file_id ?? note.google_file_id ?? String(note.id);
 
   return (
     <div>
@@ -99,7 +110,9 @@ export function LinkedNotesSection({
                 <FileText className="h-3.5 w-3.5 shrink-0 text-[var(--text-tertiary)]" />
                 <button
                   onClick={() =>
-                    router.push(`/notes?file=${note.google_file_id}`)
+                    router.push(
+                      `/notes?file=${encodeURIComponent(noteFileId(note))}`
+                    )
                   }
                   className="text-sm text-[var(--accent-foreground)] hover:text-[var(--accent-hover)] truncate transition-colors cursor-pointer"
                 >
@@ -110,15 +123,46 @@ export function LinkedNotesSection({
                     {note.folder_path}
                   </span>
                 )}
+                {primaryNoteId === note.id && (
+                  <span className="shrink-0 border border-[var(--accent)] px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wide text-[var(--accent)]">
+                    Draft
+                  </span>
+                )}
               </div>
-              <Tooltip content="Unlink note">
-                <button
-                  onClick={() => onUnlink(note.id)}
-                  className="shrink-0 p-1 rounded text-[var(--text-tertiary)] hover:text-[var(--destructive)] hover:bg-[var(--destructive-muted)] transition-colors cursor-pointer"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Tooltip>
+              <div className="flex shrink-0 items-center gap-1">
+                {onSetPrimary && primaryNoteId !== note.id && (
+                  <Tooltip content="Set as draft">
+                    <button
+                      onClick={() => onSetPrimary(note.id)}
+                      disabled={isSettingPrimary}
+                      aria-label="Set as draft"
+                      className="rounded p-1 text-[var(--text-tertiary)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--accent)] disabled:opacity-60"
+                    >
+                      <Star className="h-3 w-3" />
+                    </button>
+                  </Tooltip>
+                )}
+                {onClearPrimary && primaryNoteId === note.id && (
+                  <Tooltip content="Clear draft">
+                    <button
+                      onClick={onClearPrimary}
+                      disabled={isSettingPrimary}
+                      aria-label="Clear draft"
+                      className="rounded p-1 text-[var(--accent)] transition-colors hover:bg-[var(--surface-hover)] hover:text-[var(--text-primary)] disabled:opacity-60"
+                    >
+                      <StarOff className="h-3 w-3" />
+                    </button>
+                  </Tooltip>
+                )}
+                <Tooltip content="Unlink note">
+                  <button
+                    onClick={() => onUnlink(note.id)}
+                    className="shrink-0 p-1 rounded text-[var(--text-tertiary)] hover:text-[var(--destructive)] hover:bg-[var(--destructive-muted)] transition-colors cursor-pointer"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Tooltip>
+              </div>
             </div>
           ))}
         </div>

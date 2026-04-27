@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.job import Job
@@ -99,6 +99,8 @@ async def process_item_action(
 
     item.actioned_at = now
     item.action_type = action
+    if item.read_at is None:
+        item.read_at = now
     if created_id is not None:
         item.action_result_id = created_id
 
@@ -134,6 +136,39 @@ async def bulk_item_action(
             processed += 1
 
     return {"status": "ok", "action": action, "processed": processed}
+
+
+async def mark_item_read(
+    db: AsyncSession,
+    user: User,
+    item_id: int,
+    read: bool,
+) -> PulseDigestItem | None:
+    """Set or clear read state for a structured digest item."""
+    result = await db.execute(
+        select(PulseDigestItem).where(
+            PulseDigestItem.id == item_id,
+            PulseDigestItem.user_id == user.id,
+        )
+    )
+    item = result.scalar_one_or_none()
+    if item is None:
+        return None
+
+    item.read_at = datetime.now(timezone.utc) if read else None
+    await db.commit()
+    return item
+
+
+async def count_unread_items(db: AsyncSession, user: User) -> int:
+    """Count unread structured Pulse items for the current user."""
+    result = await db.execute(
+        select(func.count(PulseDigestItem.id)).where(
+            PulseDigestItem.user_id == user.id,
+            PulseDigestItem.read_at.is_(None),
+        )
+    )
+    return int(result.scalar() or 0)
 
 
 def _parse_salary_range(salary_str: str | None) -> tuple[int | None, int | None]:

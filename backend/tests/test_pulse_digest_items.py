@@ -117,6 +117,7 @@ def make_digest_item(
     i.source_names = ["Learning Channel"]
     i.source_message_ids = [1, 2]
     i.status = status
+    i.read_at = None
     i.actioned_at = None
     i.action_type = None
     i.action_result_id = None
@@ -134,6 +135,7 @@ class TestModels:
         assert item.title == "Test Article"
         assert item.classification == "article"
         assert item.status == "new"
+        assert item.read_at is None
         assert item.source_names == ["Learning Channel"]
 
     def test_pulse_digest_type_field(self):
@@ -181,6 +183,7 @@ class TestSchemas:
         )
         assert r.title == "Test"
         assert r.metadata is None
+        assert r.is_read is False
 
     def test_digest_item_from_orm(self):
         from app.schemas.pulse_digest import DigestItemResponse
@@ -189,6 +192,7 @@ class TestSchemas:
         r = DigestItemResponse.from_orm_item(item)
         assert r.title == "Test Article"
         assert r.metadata == {"company": "Acme"}
+        assert r.is_read is False
 
     def test_digest_item_list_response(self):
         from app.schemas.pulse_digest import DigestItemListResponse
@@ -423,6 +427,7 @@ class TestDigestItemActions:
         assert result["created_id"] == 42
         assert item.status == "actioned"
         assert item.action_type == "to_task"
+        assert item.read_at is not None
 
     @pytest.mark.asyncio
     async def test_action_to_note(self):
@@ -464,6 +469,7 @@ class TestDigestItemActions:
         assert result["created_id"] == 77
         assert item.status == "actioned"
         assert item.action_type == "to_note"
+        assert item.read_at is not None
 
     @pytest.mark.asyncio
     async def test_action_to_note_no_credentials(self):
@@ -525,6 +531,7 @@ class TestDigestItemActions:
         assert result["action"] == "to_job"
         assert result["created_id"] == 99
         assert item.status == "actioned"
+        assert item.read_at is not None
 
         # Verify Job fields
         added_job = mock_db.add.call_args[0][0]
@@ -553,6 +560,7 @@ class TestDigestItemActions:
         assert result is not None
         assert result["action"] == "skip"
         assert item.status == "skipped"
+        assert item.read_at is not None
 
     @pytest.mark.asyncio
     async def test_action_not_found(self):
@@ -606,6 +614,76 @@ class TestDigestItemActions:
         assert result["processed"] == 3
         for item in items:
             assert item.status == "skipped"
+            assert item.read_at is not None
+
+
+class TestDigestItemReadState:
+    @pytest.mark.asyncio
+    async def test_mark_item_read_sets_read_at(self):
+        from app.services.pulse_digest_items import mark_item_read
+
+        user = make_user()
+        item = make_digest_item()
+
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = item
+        mock_db.execute = AsyncMock(return_value=mock_result)
+        mock_db.commit = AsyncMock()
+
+        result = await mark_item_read(mock_db, user, item.id, True)
+
+        assert result is item
+        assert item.read_at is not None
+        mock_db.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_mark_item_unread_clears_read_at(self):
+        from app.services.pulse_digest_items import mark_item_read
+
+        user = make_user()
+        item = make_digest_item()
+        item.read_at = datetime.now(timezone.utc)
+
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = item
+        mock_db.execute = AsyncMock(return_value=mock_result)
+        mock_db.commit = AsyncMock()
+
+        result = await mark_item_read(mock_db, user, item.id, False)
+
+        assert result is item
+        assert item.read_at is None
+        mock_db.commit.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_mark_item_read_not_found(self):
+        from app.services.pulse_digest_items import mark_item_read
+
+        user = make_user()
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute = AsyncMock(return_value=mock_result)
+        mock_db.commit = AsyncMock()
+
+        result = await mark_item_read(mock_db, user, 404, True)
+
+        assert result is None
+        mock_db.commit.assert_not_awaited()
+
+    @pytest.mark.asyncio
+    async def test_count_unread_items(self):
+        from app.services.pulse_digest_items import count_unread_items
+
+        user = make_user()
+        mock_db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar.return_value = 12
+        mock_db.execute = AsyncMock(return_value=mock_result)
+
+        assert await count_unread_items(mock_db, user) == 12
 
 
 # ── 6. Salary parser tests ──────────────────────────────────────────────────

@@ -30,10 +30,11 @@ class Settings(BaseSettings):
     progress_enabled: bool = Field(default=False, alias="TELEGRAM_PROGRESS_ENABLED")
     # faster-whisper knobs. ``small`` is ~460 MB; ``int8`` quantisation gives
     # ~3x speed vs float32 on CPU with negligible WER loss on short voice
-    # notes. Per PRD decision Q3, Metal acceleration is deferred — the MVP
-    # is CPU-only.
+    # notes. CPU remains the default; set WHISPER_DEVICE=auto only after
+    # benchmarking real voice notes on the target Mac.
     whisper_model_size: str = Field(default="small", alias="WHISPER_MODEL_SIZE")
     whisper_compute_type: str = Field(default="int8", alias="WHISPER_COMPUTE_TYPE")
+    whisper_device: str = Field(default="cpu", alias="WHISPER_DEVICE")
     # Phase 5: comma-separated list of sibling-project names to hide from the
     # /project inline keyboard. Empty by default. Applied by projects.discover
     # after the CLAUDE.md filter. Restart the LaunchAgent to re-read.

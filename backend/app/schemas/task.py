@@ -34,6 +34,7 @@ class TaskCreate(BaseModel):
     reminder_floating: bool = False
     checklist: list[ChecklistItem] = []
     assignee_id: Optional[int] = None
+    linked_document_id: Optional[int] = None
     visibility: Visibility = Visibility.family
     tag_ids: list[int] = []
 
@@ -48,6 +49,7 @@ class TaskUpdate(BaseModel):
     reminder_floating: Optional[bool] = None
     checklist: Optional[list[ChecklistItem]] = None
     assignee_id: Optional[int] = None
+    linked_document_id: Optional[int] = None
     visibility: Optional[Visibility] = None
     tag_ids: Optional[list[int]] = None
 
@@ -61,6 +63,14 @@ class LinkedEventBrief(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class LinkedDocumentBrief(BaseModel):
+    id: int
+    title: str
+    folder_path: Optional[str] = None
+    google_file_id: Optional[str] = None
+    file_id: str
+
+
 class TaskReorder(BaseModel):
     task_id: int
     after_task_id: Optional[int] = None
@@ -71,7 +81,8 @@ class TaskResponse(BaseModel):
     id: int
     user_id: int
     created_by_id: int
-    assignee_id: Optional[int]
+    assignee_id: Optional[int] = None
+    linked_document_id: Optional[int] = None
     title: str
     description: Optional[str]
     status: TaskStatus
@@ -81,7 +92,7 @@ class TaskResponse(BaseModel):
     visibility: Visibility
     deadline: Optional[datetime]
     reminder_at: Optional[datetime]
-    reminder_floating: bool
+    reminder_floating: bool = False
     reminder_dismissed: bool
     completed_at: Optional[datetime]
     kanban_order: float = 0
@@ -91,6 +102,7 @@ class TaskResponse(BaseModel):
     creator: Optional[UserBrief] = None
     assignee: Optional[UserBrief] = None
     owner_name: Optional[str] = None
+    linked_document: Optional[LinkedDocumentBrief] = None
     linked_events: list[LinkedEventBrief] = []
     tags: list[TagBrief] = []
 

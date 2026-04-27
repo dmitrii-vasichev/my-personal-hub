@@ -294,13 +294,17 @@ export function JobDetail({ job }: JobDetailProps) {
               )}
             </>
 
-          <div className="mt-2">
-            <ResumeSection jobId={job.id} />
-          </div>
+          {job.status && (
+            <>
+              <div className="mt-2">
+                <ResumeSection jobId={job.id} />
+              </div>
 
-          <div>
-            <CoverLetterSection jobId={job.id} />
-          </div>
+              <div>
+                <CoverLetterSection jobId={job.id} />
+              </div>
+            </>
+          )}
 
           {/* Linked Tasks */}
           <LinkedTasksSection jobId={job.id} />
@@ -335,33 +339,44 @@ export function JobDetail({ job }: JobDetailProps) {
             <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]">
               Tracking
             </span>
-            <div className="flex flex-col gap-2">
-              <span
-                className="inline-flex w-fit items-center rounded-md px-2.5 py-1 text-xs font-medium"
-                style={{
-                  color: APPLICATION_STATUS_COLORS[job.status!],
-                  backgroundColor: APPLICATION_STATUS_BG_COLORS[job.status!],
-                }}
-              >
-                {APPLICATION_STATUS_LABELS[job.status!]}
-              </span>
+            {job.status ? (
+              <div className="flex flex-col gap-2">
+                <span
+                  className="inline-flex w-fit items-center rounded-md px-2.5 py-1 text-xs font-medium"
+                  style={{
+                    color: APPLICATION_STATUS_COLORS[job.status],
+                    backgroundColor: APPLICATION_STATUS_BG_COLORS[job.status],
+                  }}
+                >
+                  {APPLICATION_STATUS_LABELS[job.status]}
+                </span>
 
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setStatusDialogOpen(true)}
+                  className="w-full justify-center text-xs"
+                >
+                  Change Status
+                </Button>
+
+                <button
+                  onClick={() => setTrackingEditOpen(true)}
+                  className="text-xs text-[var(--accent-foreground)] hover:text-[var(--accent-hover)] transition-colors text-center"
+                >
+                  Edit Tracking Info
+                </button>
+              </div>
+            ) : (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setStatusDialogOpen(true)}
+                onClick={() => setTrackingEditOpen(true)}
                 className="w-full justify-center text-xs"
               >
-                Change Status
+                Start Tracking
               </Button>
-
-              <button
-                onClick={() => setTrackingEditOpen(true)}
-                className="text-xs text-[var(--accent-foreground)] hover:text-[var(--accent-hover)] transition-colors text-center"
-              >
-                Edit Tracking Info
-              </button>
-            </div>
+            )}
           </div>
 
           <div className="border-t border-[var(--border)]" />

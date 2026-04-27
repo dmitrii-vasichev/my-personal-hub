@@ -247,6 +247,9 @@ class PulseDigestItem(Base):
     source_names: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     source_message_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="new")
+    read_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     actioned_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

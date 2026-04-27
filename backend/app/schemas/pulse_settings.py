@@ -12,7 +12,7 @@ class PulseSettingsResponse(BaseModel):
     polling_interval_minutes: int
     digest_schedule: str
     digest_time: time
-    timezone: str
+    timezone: str = "UTC"
     digest_day: Optional[int] = None
     digest_interval_days: Optional[int] = None
     message_ttl_days: int
@@ -34,6 +34,26 @@ class PulseSettingsResponse(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+    @field_validator("digest_reminders_enabled", mode="before")
+    @classmethod
+    def _default_digest_reminders_enabled(cls, v: Optional[bool]) -> bool:
+        return True if v is None else v
+
+    @field_validator("digest_reminders_interval_hours", mode="before")
+    @classmethod
+    def _default_digest_reminders_interval_hours(cls, v: Optional[int]) -> int:
+        return 3 if v is None else v
+
+    @field_validator("digest_reminders_start_hour", mode="before")
+    @classmethod
+    def _default_digest_reminders_start_hour(cls, v: Optional[int]) -> int:
+        return 7 if v is None else v
+
+    @field_validator("digest_reminders_end_hour", mode="before")
+    @classmethod
+    def _default_digest_reminders_end_hour(cls, v: Optional[int]) -> int:
+        return 22 if v is None else v
 
 
 class PulseSettingsUpdate(BaseModel):

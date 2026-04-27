@@ -111,8 +111,11 @@ def test_transcribe_forwards_model_size_and_compute(monkeypatch):
 
     asyncio.run(
         voice.transcribe_bytes(
-            b"fake", model_size="tiny", compute_type="int8_float16"
+            b"fake",
+            model_size="tiny",
+            compute_type="int8_float16",
+            device="auto",
         )
     )
 
-    get_model_mock.assert_awaited_once_with("tiny", "int8_float16")
+    get_model_mock.assert_awaited_once_with("tiny", "int8_float16", "auto")

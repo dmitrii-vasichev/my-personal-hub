@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   DndContext,
   DragEndEvent,
-  DragOverEvent,
   DragOverlay,
   DragStartEvent,
   PointerSensor,
@@ -53,7 +52,7 @@ export function KanbanBoard({ board, onStatusChange, onReorder, isPending, hidde
     }
   };
 
-  const handleDragOver = (_event: DragOverEvent) => {
+  const handleDragOver = () => {
     // Could be used for live preview, but we handle everything in onDragEnd
   };
 

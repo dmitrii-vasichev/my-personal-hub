@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import type { CalendarEvent } from "@/types/calendar";
 import { EventPill } from "./event-pill";

@@ -130,6 +130,7 @@ export function LeadsTable({ leads, isLoading, error, onLeadClick }: LeadsTableP
     []
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table returns function helpers by design.
   const table = useReactTable({
     data: leads,
     columns,

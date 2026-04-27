@@ -404,6 +404,25 @@ def test_profile_for_returns_unlocked_after_unlock():
     assert main._profile_for(42) == main.UNLOCKED_PROFILE
 
 
+def test_profile_for_uses_project_overlay(tmp_path, monkeypatch):
+    generated = tmp_path / "generated"
+    monkeypatch.setattr(main.settings_profiles, "GENERATED_DIR", generated)
+    project = tmp_path / "project"
+    project_settings = project / ".claude" / "settings.json"
+    project_settings.parent.mkdir(parents=True)
+    project_settings.write_text(
+        '{"permissions": {"deny": ["Read(./private/**)"]}}',
+        encoding="utf-8",
+    )
+
+    profile = main._profile_for(42, "project", str(project))
+
+    assert profile != main.LOCKED_PROFILE
+    body = Path(profile).read_text(encoding="utf-8")
+    assert "Read(~/Documents/Notes/Personal/**)" in body
+    assert "Read(./private/**)" in body
+
+
 def test_profile_paths_point_to_existing_files():
     # Sanity: the two profile files must exist on disk next to main.py.
     assert Path(main.LOCKED_PROFILE).is_file()

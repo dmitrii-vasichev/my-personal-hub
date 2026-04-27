@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
+    from app.models.note import Note
     from app.models.tag import Tag
     from app.models.user import User
 
@@ -69,6 +70,9 @@ class Task(Base):
     assignee_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    linked_document_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("notes.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -116,6 +120,9 @@ class Task(Base):
     )
     assignee_rel: Mapped[Optional["User"]] = relationship(
         "User", foreign_keys=[assignee_id], lazy="noload"
+    )
+    linked_document_rel: Mapped[Optional["Note"]] = relationship(
+        "Note", foreign_keys=[linked_document_id], lazy="noload"
     )
     updates: Mapped[list["TaskUpdate"]] = relationship(
         "TaskUpdate", back_populates="task", cascade="all, delete-orphan"

@@ -483,6 +483,20 @@ export default function TaskDetailPage() {
               onLink={(noteId) => linkNote.mutate(noteId)}
               onUnlink={(noteId) => unlinkNote.mutate(noteId)}
               isLinking={linkNote.isPending}
+              primaryNoteId={task.linked_document_id}
+              onSetPrimary={(noteId) =>
+                updateTask.mutate({
+                  taskId: task.id,
+                  data: { linked_document_id: noteId },
+                })
+              }
+              onClearPrimary={() =>
+                updateTask.mutate({
+                  taskId: task.id,
+                  data: { linked_document_id: null },
+                })
+              }
+              isSettingPrimary={updateTask.isPending}
             />
           </div>
 

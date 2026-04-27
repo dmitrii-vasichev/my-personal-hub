@@ -142,6 +142,7 @@ export function TasksTable({ tasks, isLoading, error }: TasksTableProps) {
     []
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table returns function helpers by design.
   const table = useReactTable({
     data: tasks,
     columns,

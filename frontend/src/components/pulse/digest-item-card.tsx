@@ -4,6 +4,8 @@ import { useState } from "react";
 import {
   CheckSquare,
   FileText,
+  Mail,
+  MailOpen,
   SkipForward,
   Square,
   ChevronDown,
@@ -47,6 +49,8 @@ interface DigestItemCardProps {
   onToggle: () => void;
   onAction: (action: DigestItemAction) => void;
   isPending: boolean;
+  onReadChange?: (read: boolean) => void;
+  isReadPending?: boolean;
 }
 
 export function DigestItemCard({
@@ -55,6 +59,8 @@ export function DigestItemCard({
   onToggle,
   onAction,
   isPending,
+  onReadChange,
+  isReadPending,
 }: DigestItemCardProps) {
   const [expanded, setExpanded] = useState(false);
   const isActioned = item.status === "actioned";
@@ -67,7 +73,13 @@ export function DigestItemCard({
     <div
       className={cn(
         "group flex gap-3 rounded-lg border border-border p-3 transition-colors",
-        isDone ? "opacity-50" : selected ? "bg-surface-hover" : "hover:bg-surface-hover/50"
+        isDone
+          ? "opacity-50"
+          : !item.is_read
+            ? "border-primary/40 bg-primary/5 hover:bg-primary/10"
+            : selected
+              ? "bg-surface-hover"
+              : "hover:bg-surface-hover/50"
       )}
       data-testid="digest-item-card"
     >
@@ -101,10 +113,28 @@ export function DigestItemCard({
               ))}
             </div>
           )}
-          {isDone && (
-            <span className="ml-auto text-[11px] text-muted-foreground">
-              {ACTION_LABELS[item.action_type || "skip"]}
-            </span>
+          {(isDone || onReadChange) && (
+            <div className="ml-auto flex items-center gap-1.5">
+              {isDone && (
+                <span className="text-[11px] text-muted-foreground">
+                  {ACTION_LABELS[item.action_type || "skip"]}
+                </span>
+              )}
+              {onReadChange && (
+                <button
+                  onClick={() => onReadChange(!item.is_read)}
+                  disabled={isReadPending}
+                  title={item.is_read ? "Mark unread" : "Mark read"}
+                  className="rounded-md p-1 text-muted-foreground hover:bg-surface-hover hover:text-foreground disabled:opacity-60"
+                >
+                  {item.is_read ? (
+                    <MailOpen className="h-3.5 w-3.5" />
+                  ) : (
+                    <Mail className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              )}
+            </div>
           )}
         </div>
 

@@ -97,8 +97,6 @@ export function TelegramTab() {
     }
   };
 
-  const notConfigured = config && !config.configured;
-
   const handleSaveCredentials = async () => {
     const id = parseInt(apiId, 10);
     if (!id || id <= 0 || !apiHash.trim()) return;

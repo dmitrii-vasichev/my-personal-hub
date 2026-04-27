@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { PulseSettingsTab } from "@/components/settings/pulse-settings-tab";
 
@@ -153,11 +153,13 @@ describe("PulseSettingsTab", () => {
     const saveBtn = screen.getByText("Save");
     fireEvent.click(saveBtn);
 
-    expect(mockMutateAsync).toHaveBeenCalledWith(
-      expect.objectContaining({
-        bot_token: "new-token",
-        bot_chat_id: 123456,
-      })
-    );
+    await waitFor(() => {
+      expect(mockMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bot_token: "new-token",
+          bot_chat_id: 123456,
+        })
+      );
+    });
   });
 });

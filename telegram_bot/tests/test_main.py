@@ -203,8 +203,10 @@ def _settings_stub(progress_enabled: bool = False):
         progress_enabled=progress_enabled,
         whisper_model_size="small",
         whisper_compute_type="int8",
+        whisper_device="cpu",
         default_project="my-personal-hub",
         project_base_dir="/tmp",
+        project_deny_list=[],
     )
 
 
@@ -604,6 +606,9 @@ def test_voice_handler_echoes_transcript_then_dispatches_cc(_bypass_whitelist, m
     assert any("🎙 transcribed: привет мир" in r for r in replies)
 
     # CC dispatched with the transcript as the prompt.
+    transcribe.assert_awaited_once()
+    assert transcribe.await_args.kwargs["device"] == "cpu"
+    assert transcribe.await_args.kwargs["audio_duration_s"] == 3
     run_cc_mock.assert_awaited_once()
     assert run_cc_mock.await_args.args[0] == "привет мир"
 
@@ -811,6 +816,47 @@ def test_project_command_with_no_projects_shows_hint(
 
     body = update.message.reply_text.await_args.args[0]
     assert "no projects" in body.lower()
+    assert "/refresh" in body
+
+
+def test_refresh_command_rediscovers_projects(
+    _bypass_whitelist, _isolated_state_file, monkeypatch
+):
+    update = _make_handler_update(chat_id=1)
+    context = _project_handler_context(
+        projects=[
+            projects_mod.Project(name="my-personal-hub", path="/tmp/my-personal-hub")
+        ]
+    )
+    discovered = [
+        projects_mod.Project(name="moving", path="/tmp/moving"),
+        projects_mod.Project(name="my-personal-hub", path="/tmp/my-personal-hub"),
+    ]
+    monkeypatch.setattr(main.projects_mod, "discover", lambda base, deny: discovered)
+
+    asyncio.run(main.handle_refresh(update, context))
+
+    assert context.application.bot_data["projects"] == discovered
+    assert main._projects_ref["known"] == discovered
+    body = update.message.reply_text.await_args.args[0]
+    assert "2 found" in body
+    assert "added: moving" in body
+
+
+def test_refresh_command_reports_removed_projects(
+    _bypass_whitelist, _isolated_state_file, monkeypatch
+):
+    update = _make_handler_update(chat_id=1)
+    context = _project_handler_context()
+    discovered = [
+        projects_mod.Project(name="my-personal-hub", path="/tmp/my-personal-hub"),
+    ]
+    monkeypatch.setattr(main.projects_mod, "discover", lambda base, deny: discovered)
+
+    asyncio.run(main.handle_refresh(update, context))
+
+    body = update.message.reply_text.await_args.args[0]
+    assert "removed: moving" in body
 
 
 def _make_callback_update(user_id: int = 42, data: str = "proj:moving", chat_id: int = 777):
@@ -904,6 +950,7 @@ def test_help_includes_project_command(_bypass_whitelist):
     asyncio.run(main.handle_help(update, context))
     body = update.message.reply_text.await_args.args[0]
     assert "/project" in body
+    assert "/refresh" in body
 
 
 # --- Active-project routing (Task 4) -------------------------------------

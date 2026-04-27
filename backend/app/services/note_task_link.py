@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from sqlalchemy import select, delete
+from sqlalchemy import select, delete, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.note import Note
@@ -56,11 +56,23 @@ async def unlink_note_task(
     note = await _get_note(db, note_id, user)
     if note is None:
         return False
+    task = await _get_task(db, task_id, user)
+    if task is None:
+        return False
 
     await db.execute(
         delete(NoteTaskLink).where(
             NoteTaskLink.note_id == note_id, NoteTaskLink.task_id == task_id
         )
+    )
+    await db.execute(
+        update(Task)
+        .where(
+            Task.id == task_id,
+            Task.user_id == user.id,
+            Task.linked_document_id == note_id,
+        )
+        .values(linked_document_id=None)
     )
     await db.commit()
     return True

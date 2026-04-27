@@ -14,10 +14,10 @@ export interface NoteTreeResponse {
 export interface Note {
   id: number;
   user_id: number;
-  google_file_id: string;
+  google_file_id: string | null;
   title: string;
-  folder_path: string;
-  mime_type: string;
+  folder_path: string | null;
+  mime_type: string | null;
   last_synced_at: string;
   created_at: string;
   updated_at: string;
@@ -27,5 +27,6 @@ export interface LinkedNoteBrief {
   id: number;
   title: string;
   folder_path: string | null;
-  google_file_id: string;
+  google_file_id: string | null;
+  file_id?: string;
 }

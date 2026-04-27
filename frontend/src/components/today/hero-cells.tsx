@@ -3,10 +3,10 @@
 import { useTasks } from "@/hooks/use-tasks";
 import { useJobs } from "@/hooks/use-jobs";
 import { useCalendarEvents } from "@/hooks/use-calendar";
+import { usePulseUnreadCount } from "@/hooks/use-pulse-digest-items";
 import {
   daysAgo,
   thisWeekBounds,
-  todayBounds,
   todayStart,
 } from "./today-date";
 
@@ -26,20 +26,14 @@ type Cell = {
 };
 
 export function HeroCells() {
-  const { startIso, endIso } = todayBounds();
   const { startIso: weekStartIso, endIso: weekEndIso } = thisWeekBounds();
   const { data: tasks = [] } = useTasks();
   const { data: jobs = [] } = useJobs();
-  const { data: events = [] } = useCalendarEvents({
-    start: startIso,
-    end: endIso,
-  });
-  // Separate query with week bounds — React Query dedupes by key so
-  // the two calls don't collide, and both stay cache-warm.
   const { data: weekEvents = [] } = useCalendarEvents({
     start: weekStartIso,
     end: weekEndIso,
   });
+  const { data: pulseUnread } = usePulseUnreadCount();
 
   const today0 = todayStart().getTime();
 
@@ -74,7 +68,7 @@ export function HeroCells() {
       ? Math.round((replied30.length / applied30.length) * 100)
       : null;
 
-  const meetingsToday = events.length;
+  const pulseUnreadCount = pulseUnread?.unread_count ?? 0;
 
   const cells: Cell[] = [
     {
@@ -90,7 +84,7 @@ export function HeroCells() {
       delta: replyRate !== null ? `↑ ${replyRate}% reply rate` : null,
       deltaColor: "teal",
     },
-    { lab: "Meetings today", val: meetingsToday, delta: null },
+    { lab: "Pulse unread", val: pulseUnreadCount, delta: null },
   ];
 
   return (
