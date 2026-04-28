@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import get_current_user, restrict_demo
+from app.core.timezone import user_today
 from app.models.garmin import (
     GarminConnection,
     VitalsActivity,
@@ -121,7 +122,7 @@ async def get_metrics(
     current_user: User = Depends(get_current_user),
 ):
     """Get daily metrics for date range (default: last 7 days)."""
-    today = date.today()
+    today = await user_today(db, current_user.id)
     if end_date is None:
         end_date = today
     if start_date is None:
@@ -147,7 +148,7 @@ async def get_sleep(
     current_user: User = Depends(get_current_user),
 ):
     """Get sleep data for date range (default: last 7 days)."""
-    today = date.today()
+    today = await user_today(db, current_user.id)
     if end_date is None:
         end_date = today
     if start_date is None:
@@ -175,7 +176,7 @@ async def get_activities(
     current_user: User = Depends(get_current_user),
 ):
     """Get activities for date range with pagination."""
-    today = date.today()
+    today = await user_today(db, current_user.id)
     if end_date is None:
         end_date = today
     if start_date is None:
@@ -201,7 +202,7 @@ async def get_today(
     current_user: User = Depends(get_current_user),
 ):
     """Get today's vitals snapshot: metrics + sleep + recent activities."""
-    today = date.today()
+    today = await user_today(db, current_user.id)
 
     metrics_result = await db.execute(
         select(VitalsDailyMetric).where(
@@ -241,7 +242,7 @@ async def get_briefing(
     current_user: User = Depends(get_current_user),
 ):
     """Get cached AI briefing for a date (default: today)."""
-    target = briefing_date or date.today()
+    target = briefing_date or await user_today(db, current_user.id)
     result = await db.execute(
         select(VitalsBriefing).where(
             VitalsBriefing.user_id == current_user.id,
@@ -294,7 +295,7 @@ async def get_vitals_summary(
     current_user: User = Depends(get_current_user),
 ):
     """Get compact vitals data for dashboard widget."""
-    today = date.today()
+    today = await user_today(db, current_user.id)
 
     metrics_result = await db.execute(
         select(VitalsDailyMetric).where(

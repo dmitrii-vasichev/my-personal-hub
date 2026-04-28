@@ -809,7 +809,14 @@ class TestVitalsDataAPI:
         assert data[0]["activity_type"] == "running"
 
     @pytest.mark.asyncio
-    async def test_get_today_endpoint(self):
+    async def test_get_today_endpoint(self, monkeypatch):
+        from app.api import garmin as garmin_api
+
+        async def fake_user_today(db, user_id):
+            return date(2026, 3, 19)
+
+        monkeypatch.setattr(garmin_api, "user_today", fake_user_today)
+
         metric = make_daily_metric()
         sleep = make_sleep()
         activity = make_activity()
@@ -878,6 +885,56 @@ class TestVitalsDataAPI:
         assert data["sleep"] is None
         assert data["recent_activities"] == []
 
+    @pytest.mark.asyncio
+    async def test_get_today_uses_user_timezone_date(self, monkeypatch):
+        """Vitals today should read the same user-local date that sync writes."""
+        from app.api import garmin as garmin_api
+
+        metric = make_daily_metric(metric_date=date(2026, 3, 19))
+        sleep = make_sleep(sleep_date=date(2026, 3, 19))
+        activity = make_activity()
+        user_local_today = date(2026, 3, 19)
+
+        async def fake_user_today(db, user_id):
+            return user_local_today
+
+        monkeypatch.setattr(garmin_api, "user_today", fake_user_today, raising=False)
+
+        async def mock_execute(query):
+            compiled = str(query.compile(compile_kwargs={"literal_binds": True}))
+            result = MagicMock()
+            if "vitals_daily_metrics" in compiled:
+                result.scalar_one_or_none.return_value = (
+                    metric if "'2026-03-19'" in compiled else None
+                )
+            elif "vitals_sleep" in compiled:
+                result.scalar_one_or_none.return_value = (
+                    sleep if "'2026-03-19'" in compiled else None
+                )
+            else:
+                mock_scalars = MagicMock()
+                mock_scalars.all.return_value = [activity]
+                result.scalars.return_value = mock_scalars
+            return result
+
+        from app.core.database import get_db as real_get_db
+
+        mock_db = AsyncMock()
+        mock_db.execute = mock_execute
+        app.dependency_overrides[real_get_db] = lambda: mock_db
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/vitals/today")
+
+        app.dependency_overrides.pop(real_get_db, None)
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["metrics"]["date"] == "2026-03-19"
+        assert data["sleep"]["date"] == "2026-03-19"
+
 
 class TestVitalsDashboardAPI:
     def setup_method(self):
@@ -890,7 +947,14 @@ class TestVitalsDashboardAPI:
         app.dependency_overrides.clear()
 
     @pytest.mark.asyncio
-    async def test_vitals_summary_connected(self):
+    async def test_vitals_summary_connected(self, monkeypatch):
+        from app.api import garmin as garmin_api
+
+        async def fake_user_today(db, user_id):
+            return date(2026, 3, 19)
+
+        monkeypatch.setattr(garmin_api, "user_today", fake_user_today)
+
         metric = make_daily_metric()
         sleep = make_sleep()
         conn = make_garmin_connection()
@@ -958,6 +1022,74 @@ class TestVitalsDashboardAPI:
         assert data["connected"] is False
         assert data["metrics"] is None
         assert data["sleep"] is None
+
+    @pytest.mark.asyncio
+    async def test_vitals_summary_uses_user_timezone_date(self, monkeypatch):
+        """Dashboard vitals should read the user-local date used by Garmin sync."""
+        from app.api import garmin as garmin_api
+
+        metric = make_daily_metric(metric_date=date(2026, 3, 19))
+        sleep = make_sleep(sleep_date=date(2026, 3, 19))
+        conn = make_garmin_connection()
+        conn.last_sync_at = datetime(2026, 3, 19, 12, 0, 0, tzinfo=timezone.utc)
+        user_local_today = date(2026, 3, 19)
+
+        async def fake_user_today(db, user_id):
+            return user_local_today
+
+        monkeypatch.setattr(garmin_api, "user_today", fake_user_today, raising=False)
+
+        async def mock_execute(query):
+            compiled = str(query.compile(compile_kwargs={"literal_binds": True}))
+            result = MagicMock()
+            mock_scalars = MagicMock()
+
+            if "vitals_daily_metrics" in compiled and "ORDER BY" not in compiled:
+                result.scalar_one_or_none.return_value = (
+                    metric if "'2026-03-19'" in compiled else None
+                )
+            elif "vitals_sleep" in compiled and "ORDER BY" not in compiled:
+                result.scalar_one_or_none.return_value = (
+                    sleep if "'2026-03-19'" in compiled else None
+                )
+            elif "garmin_connections" in compiled:
+                result.scalar_one_or_none.return_value = conn
+            elif "vitals_briefings" in compiled:
+                result.scalar_one_or_none.return_value = None
+            elif "vitals_daily_metrics" in compiled:
+                mock_scalars.all.return_value = (
+                    [metric]
+                    if "'2026-03-13'" in compiled and "'2026-03-19'" in compiled
+                    else []
+                )
+                result.scalars.return_value = mock_scalars
+            elif "vitals_sleep" in compiled:
+                mock_scalars.all.return_value = (
+                    [sleep]
+                    if "'2026-03-13'" in compiled and "'2026-03-19'" in compiled
+                    else []
+                )
+                result.scalars.return_value = mock_scalars
+            return result
+
+        from app.core.database import get_db as real_get_db
+
+        mock_db = AsyncMock()
+        mock_db.execute = mock_execute
+        app.dependency_overrides[real_get_db] = lambda: mock_db
+
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.get("/api/dashboard/vitals-summary")
+
+        app.dependency_overrides.pop(real_get_db, None)
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["metrics"]["date"] == "2026-03-19"
+        assert data["sleep"]["date"] == "2026-03-19"
+        assert data["metrics_7d"][0]["date"] == "2026-03-19"
 
 
 class TestDashboardSummarySchema:
