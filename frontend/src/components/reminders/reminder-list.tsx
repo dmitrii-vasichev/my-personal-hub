@@ -473,10 +473,9 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
   const isDone = reminder.status === "done";
 
   const handleRowClick = (e: React.MouseEvent) => {
-    // Don't collapse if the click happened on a stop-propagation child (Task link)
-    // or on the checkbox itself.
+    // Don't collapse if the click happened on a stop-propagation child.
     const target = e.target as HTMLElement;
-    if (target.tagName === "INPUT" || target.closest('input[type="checkbox"]')) {
+    if (target.closest("a, button, input, select, textarea")) {
       return;
     }
     onToggle();
@@ -544,7 +543,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
   const timeText = reminder.is_floating
     ? "—"
     : format(parseISO(effectiveIso), "HH:mm").toUpperCase();
-  const relText = reminder.is_floating ? "FLOATING" : relativeLabel(effectiveIso);
+  const relText = reminder.is_floating ? "FLOAT" : relativeLabel(effectiveIso);
 
   return (
     <>
@@ -554,31 +553,15 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
           isDone ? "opacity-60" : ""
         } ${expanded ? "border-[color:var(--accent)]" : ""}`}
       >
-        {/* Main row — chk | when | body | acts */}
+        {/* Main row — when | body | acts */}
         <div
-          className="grid grid-cols-[auto_88px_1fr_auto] items-center gap-3 px-3 py-2 cursor-pointer"
+          className="grid cursor-pointer grid-cols-[54px_minmax(0,1fr)] items-center gap-2 px-2.5 py-3 sm:grid-cols-[72px_minmax(0,1fr)_auto] sm:gap-3 sm:px-3 sm:py-2"
           onClick={handleRowClick}
         >
-          {/* chk */}
-          <label
-            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] cursor-pointer"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <input
-              type="checkbox"
-              checked={isDone}
-              onChange={handleDone}
-              onClick={(e) => e.stopPropagation()}
-              disabled={isPending}
-              aria-label={`Mark "${reminder.title}" as done`}
-              className="h-4 w-4 accent-[color:var(--accent)] cursor-pointer"
-            />
-          </label>
-
           {/* when */}
-          <div className="flex flex-col gap-0 font-mono leading-tight">
+          <div className="flex min-w-0 flex-col gap-0 font-mono leading-tight">
             <span
-              className={`text-[11px] uppercase tracking-[1.5px] ${
+              className={`truncate text-[11px] uppercase tracking-[1px] sm:tracking-[1.5px] ${
                 reminder.is_urgent
                   ? "text-[color:var(--accent-2)]"
                   : "text-[color:var(--ink-2)]"
@@ -590,25 +573,29 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
                 timeText
               )}
             </span>
-            <span className="text-[10px] tracking-[1px] text-[color:var(--ink-3)]">
+            <span className="truncate text-[10px] tracking-[0.7px] text-[color:var(--ink-3)] sm:tracking-[1px]">
               {relText}
             </span>
           </div>
 
           {/* body */}
-          <div className={`flex min-w-0 flex-col gap-0.5 font-mono ${isDone ? "line-through" : ""}`}>
-            <h4 className={`truncate text-[14px] text-[color:var(--ink)] m-0 font-normal ${expanded ? "whitespace-normal" : ""}`}>
+          <div className={`flex min-w-0 flex-col gap-1 font-mono ${isDone ? "line-through" : ""}`}>
+            <h4
+              className={`m-0 text-[15px] font-normal leading-snug text-[color:var(--ink)] sm:text-[14px] ${
+                expanded ? "whitespace-normal" : "line-clamp-2 sm:truncate"
+              }`}
+            >
               {reminder.title}
             </h4>
-            <div className="flex flex-wrap items-center gap-1.5">
+            <div className="flex min-w-0 flex-wrap items-center gap-1">
               {reminder.is_urgent && (
-                <span className="inline-flex items-center bg-transparent border border-[color:var(--accent-2)] text-[color:var(--accent-2)] px-1.5 py-0.5 text-[10px] uppercase tracking-[1.5px] font-mono">
+                <span className="inline-flex items-center border border-[color:var(--accent-2)] bg-transparent px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-[color:var(--accent-2)] sm:tracking-[1.5px]">
                   Urgent
                 </span>
               )}
               {reminder.snooze_count > 0 && (
                 <span
-                  className={`inline-flex items-center gap-0.5 bg-transparent border px-1.5 py-0.5 text-[10px] uppercase tracking-[1.5px] font-mono ${snoozeBadgeClass(reminder.snooze_count)}`}
+                  className={`inline-flex items-center gap-0.5 bg-transparent border px-1.5 py-0.5 text-[10px] uppercase tracking-[1px] font-mono sm:tracking-[1.5px] ${snoozeBadgeClass(reminder.snooze_count)}`}
                 >
                   <Clock className="h-3 w-3" />
                   {reminder.snooze_count}
@@ -618,16 +605,16 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
                 <Link
                   href={`/tasks?task=${reminder.task_id}`}
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-0.5 bg-transparent border border-[color:var(--accent-3)] text-[color:var(--accent-3)] px-1.5 py-0.5 text-[10px] uppercase tracking-[1.5px] font-mono hover:border-[color:var(--accent)]"
+                  className="inline-flex items-center gap-0.5 border border-[color:var(--accent-3)] bg-transparent px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-[color:var(--accent-3)] hover:border-[color:var(--accent)] sm:tracking-[1.5px]"
                 >
                   <ListTodo className="h-3 w-3" />
                   Task
                 </Link>
               )}
               {reminder.recurrence_rule && (
-                <span className="inline-flex items-center gap-0.5 bg-transparent border border-[color:var(--ink-3)] text-[color:var(--ink-3)] px-1.5 py-0.5 text-[10px] uppercase tracking-[1.5px] font-mono">
+                <span className="inline-flex min-w-0 items-center gap-0.5 border border-[color:var(--ink-3)] bg-transparent px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-[color:var(--ink-3)] sm:tracking-[1.5px]">
                   <Repeat className="h-3 w-3" />
-                  {recurrenceLabel(reminder.recurrence_rule)}
+                  <span className="truncate">{recurrenceLabel(reminder.recurrence_rule)}</span>
                 </span>
               )}
             </div>
@@ -636,7 +623,7 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
           {/* acts — chevron indicator only; actions panel opens on expand */}
           <span
             aria-hidden
-            className="text-[color:var(--ink-3)] text-[11px] tracking-[1px] font-mono select-none"
+            className="hidden select-none font-mono text-[11px] tracking-[1px] text-[color:var(--ink-3)] sm:block"
           >
             {expanded ? "−" : "+"}
           </span>

@@ -111,7 +111,7 @@ export function QuickAddForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-[1.5px] border-dashed border-[color:var(--line-2)] bg-transparent p-3 font-mono"
+      className="border-[1.5px] border-dashed border-[color:var(--line-2)] bg-transparent p-2.5 font-mono sm:p-3"
     >
       {/* Title row — always visible */}
       <div className="flex items-center gap-2">
@@ -122,14 +122,8 @@ export function QuickAddForm() {
           onChange={(e) => setTitle(e.target.value)}
           onFocus={() => setExpanded(true)}
           autoComplete="off"
-          className="flex-1 border-0 bg-transparent font-mono text-[13px] italic placeholder:italic placeholder:text-[color:var(--ink-3)] focus-visible:ring-0 focus-visible:border-0 shadow-none rounded-none px-0"
+          className="min-h-10 flex-1 border-0 bg-transparent px-0 font-mono text-[16px] italic shadow-none rounded-none placeholder:italic placeholder:text-[color:var(--ink-3)] focus-visible:border-0 focus-visible:ring-0 md:text-[13px]"
         />
-        <span
-          className="shrink-0 text-[10px] uppercase tracking-[1.5px] text-[color:var(--ink-3)] font-mono"
-          aria-hidden
-        >
-          Natural · ⏎
-        </span>
         {expanded && (
           <Button
             type="button"

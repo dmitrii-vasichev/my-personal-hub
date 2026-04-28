@@ -74,26 +74,24 @@ export function Header({ onMenuToggle, showMenuButton }: HeaderProps) {
   const stamp = useLiveStamp();
 
   return (
-    <header className="safe-header-pt flex h-11 items-center border-b border-[color:var(--line)] bg-[color:var(--bg)] px-5 gap-4 text-[11px] tracking-[0.5px] text-[color:var(--ink-3)]">
-      <div className="flex items-center gap-2">
+    <header className="flex min-h-[calc(44px+var(--safe-top))] shrink-0 items-center gap-2 border-b border-[color:var(--line)] bg-[color:var(--bg)] pl-[max(12px,var(--safe-left))] pr-[max(12px,var(--safe-right))] pt-[var(--safe-top)] text-[11px] tracking-[0.5px] text-[color:var(--ink-3)] max-md:items-end max-md:pb-2 md:min-h-11 md:gap-4 md:px-5 md:pt-0">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         {showMenuButton && (
           <button
             type="button"
             onClick={onMenuToggle}
-            className="md:hidden inline-flex items-center justify-center w-7 h-7 max-md:w-11 max-md:h-11 border border-[color:var(--line)] text-[color:var(--ink-2)] hover:text-[color:var(--ink)] hover:border-[color:var(--ink)]"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center border border-[color:var(--line)] text-[color:var(--ink-2)] hover:border-[color:var(--ink)] hover:text-[color:var(--ink)] md:hidden"
             aria-label="Toggle menu"
           >
             <Menu className="h-4 w-4" />
           </button>
         )}
-        <div className="flex items-center gap-2 uppercase">
-          <span>HUB</span>
+        <div className="flex min-w-0 items-center gap-2 uppercase">
+          <span className="shrink-0">HUB</span>
           <span className="text-[color:var(--ink-4)]">/</span>
-          <b className="text-[color:var(--ink)] font-medium">{title}</b>
+          <b className="min-w-0 truncate text-[color:var(--ink)] font-medium">{title}</b>
         </div>
       </div>
-
-      <div className="flex-1" />
 
       <div className="hidden sm:flex items-center gap-4">
         <span className="flex items-center gap-[5px] uppercase">
@@ -105,7 +103,7 @@ export function Header({ onMenuToggle, showMenuButton }: HeaderProps) {
         </span>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
         <CommandPaletteTrigger />
         <ThemeToggle />
         {user && (
@@ -121,7 +119,7 @@ export function Header({ onMenuToggle, showMenuButton }: HeaderProps) {
             <button
               type="button"
               onClick={logout}
-              className="inline-flex items-center justify-center w-7 h-7 max-md:w-11 max-md:h-11 border border-[color:var(--line)] text-[color:var(--ink-2)] hover:text-[color:var(--ink)] hover:border-[color:var(--ink)]"
+              className="hidden h-7 w-7 items-center justify-center border border-[color:var(--line)] text-[color:var(--ink-2)] hover:border-[color:var(--ink)] hover:text-[color:var(--ink)] md:inline-flex"
               aria-label="Sign out"
             >
               <LogOut className="h-3.5 w-3.5" />

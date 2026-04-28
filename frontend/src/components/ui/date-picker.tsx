@@ -170,7 +170,7 @@ export function DatePicker({
             onKeyDown={handleInputKeyDown}
             onBlur={handleInputBlur}
             placeholder={monthDayOnly ? "DD.MM" : "DD.MM.YYYY"}
-            className="h-8 text-sm"
+            className="h-8 text-base md:text-sm"
           />
         </div>
         <Calendar

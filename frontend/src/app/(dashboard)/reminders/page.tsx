@@ -47,7 +47,7 @@ export default function RemindersPage() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const scrollToQuickAdd = () => {
+  const focusQuickAdd = () => {
     quickAddRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -56,7 +56,7 @@ export default function RemindersPage() {
   // completes the quick-action flow and scrubs the param.
   useEffect(() => {
     if (searchParams.get("new") !== "1") return;
-    scrollToQuickAdd();
+    focusQuickAdd();
     requestAnimationFrame(() => {
       const input = document.getElementById("reminder-title") as HTMLInputElement | null;
       input?.focus();
@@ -111,32 +111,25 @@ export default function RemindersPage() {
     <div className="flex h-full flex-col gap-4">
       {/* Page header · brutalist .ph */}
       <header className="border-b-[1.5px] border-[color:var(--line)] pb-[14px]">
-        <div className="flex items-end justify-between gap-4">
-          <div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+          <div className="min-w-0">
             <div className="text-[11px] uppercase tracking-[1.5px] text-[color:var(--ink-3)] font-mono">
               Module · Reminders
             </div>
             <h1 className="mt-1 font-bold text-[28px] leading-[1.1] tracking-[-0.4px] text-[color:var(--ink)]">
               REMINDERS_
             </h1>
-            <p className="mt-1 text-[12px] text-[color:var(--ink-3)] font-mono">
+            <p className="mt-1 max-w-[34rem] text-[12px] text-[color:var(--ink-3)] font-mono">
               {sublineParts.join(" · ")}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               onClick={() => setCompletedOpen(true)}
-              className="border-[1.5px] border-[color:var(--line)] px-3 py-1.5 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)] hover:text-[color:var(--ink)] hover:border-[color:var(--line-2)] transition-colors"
+              className="h-9 border-[1.5px] border-[color:var(--line)] px-3 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)] transition-colors hover:border-[color:var(--line-2)] hover:text-[color:var(--ink)]"
             >
               History
-            </button>
-            <button
-              type="button"
-              onClick={scrollToQuickAdd}
-              className="border-[1.5px] border-[color:var(--accent)] bg-[color:var(--accent)] px-3 py-1.5 text-[11px] uppercase tracking-[1.5px] text-[color:var(--bg)] font-mono font-bold"
-            >
-              + Quick Add
             </button>
           </div>
         </div>
