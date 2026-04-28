@@ -10,6 +10,7 @@ from app.core.database import async_session_factory
 from app.core.encryption import encrypt_value
 from app.models.garmin import GarminConnection
 from app.models.user import User
+from app.services.garmin_auth import dump_garmin_tokens
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("garmin_local_login")
@@ -37,7 +38,7 @@ async def main():
         print(f"❌ Login failed: {e}")
         return
 
-    tokens_data = client.garth.dumps()
+    tokens_data = dump_garmin_tokens(client)
     email_enc = encrypt_value(email)
     password_enc = encrypt_value(password)
 

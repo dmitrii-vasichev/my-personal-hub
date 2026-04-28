@@ -29,6 +29,30 @@ class GarminRateLimitError(Exception):
     """Raised when a Garmin API call returns 429 (rate limited)."""
 
 
+def _get_token_store(client, required_method: str):
+    """Return the garminconnect token store across 0.2.x and 0.3.x APIs."""
+    for attr_name in ("garth", "client"):
+        token_store = getattr(client, attr_name, None)
+        method = getattr(token_store, required_method, None)
+        if callable(method):
+            return token_store
+
+    raise RuntimeError(
+        "Garmin token storage is unavailable. "
+        "Rebuild the backend with a supported garminconnect/garth version."
+    )
+
+
+def dump_garmin_tokens(client) -> str:
+    """Serialize Garmin auth tokens across supported garminconnect versions."""
+    return _get_token_store(client, "dumps").dumps()
+
+
+def load_garmin_tokens(client, tokens_data: str) -> None:
+    """Load Garmin auth tokens across supported garminconnect versions."""
+    _get_token_store(client, "loads").loads(tokens_data)
+
+
 async def connect(
     db: AsyncSession, user_id: int, email: str, password: str
 ) -> GarminConnection:
@@ -65,8 +89,7 @@ async def connect(
     try:
         client = Garmin(email, password)
         client.login()
-        # Serialize Garth tokens
-        tokens_data = client.garth.dumps()
+        tokens_data = dump_garmin_tokens(client)
         conn.garth_tokens_encrypted = encrypt_value(tokens_data)
         conn.sync_status = "success"
         conn.connected_at = datetime.now(timezone.utc)
@@ -176,8 +199,8 @@ async def get_status(db: AsyncSession, user_id: int) -> dict:
 async def get_garmin_client(db: AsyncSession, user_id: int):
     """Get an authenticated Garmin client from stored tokens.
 
-    Strategy: load cached Garth tokens and return the client directly.
-    Garth handles automatic token refresh transparently on API calls.
+    Strategy: load cached Garmin tokens and return the client directly.
+    The underlying garminconnect token client handles refresh on API calls.
     No validation call is made — this avoids wasting API quota.
     """
     from garminconnect import Garmin
@@ -194,7 +217,7 @@ async def get_garmin_client(db: AsyncSession, user_id: int):
 
     tokens_data = decrypt_value(conn.garth_tokens_encrypted)
     client = Garmin()
-    client.garth.loads(tokens_data)
+    load_garmin_tokens(client, tokens_data)
 
     return client
 

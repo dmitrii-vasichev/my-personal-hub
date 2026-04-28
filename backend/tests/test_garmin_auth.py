@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import pytest
 from datetime import date, datetime, timedelta, timezone
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from httpx import ASGITransport, AsyncClient
@@ -282,6 +283,26 @@ class TestGarminAuthService:
 
     @pytest.mark.asyncio
     @patch("app.services.garmin_auth.encrypt_value", return_value="encrypted")
+    async def test_connect_success_with_new_client_token_store(self, mock_encrypt):
+        """garminconnect 0.3.x exposes token storage as client.client, not client.garth."""
+        from app.services.garmin_auth import connect
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(return_value=mock_result)
+
+        token_store = SimpleNamespace(dumps=MagicMock(return_value='{"tokens": "data"}'))
+        mock_client = SimpleNamespace(login=MagicMock(), client=token_store)
+
+        with patch("garminconnect.Garmin", return_value=mock_client):
+            conn = await connect(db, 1, "test@garmin.com", "password123")
+
+        assert conn.sync_status == "success"
+        token_store.dumps.assert_called_once()
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_auth.encrypt_value", return_value="encrypted")
     async def test_connect_login_failure(self, mock_encrypt):
         from app.services.garmin_auth import connect
         from fastapi import HTTPException
@@ -506,6 +527,28 @@ class TestGarminAuthService:
         # Should NOT call login() or get_user_profile() — trust Garth tokens
         mock_client.login.assert_not_called()
         mock_client.get_user_profile.assert_not_called()
+        assert client is mock_client
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_auth.decrypt_value", return_value='{"tokens": "data"}')
+    async def test_get_garmin_client_loads_tokens_with_new_client_attr(self, mock_decrypt):
+        """garminconnect 0.3.x should load cached tokens through client.client.loads()."""
+        from app.services.garmin_auth import get_garmin_client
+
+        conn = make_garmin_connection()
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = conn
+        db.execute = AsyncMock(return_value=mock_result)
+
+        token_store = SimpleNamespace(loads=MagicMock())
+        mock_client = SimpleNamespace(login=MagicMock(), client=token_store)
+
+        with patch("garminconnect.Garmin", return_value=mock_client):
+            client = await get_garmin_client(db, 1)
+
+        token_store.loads.assert_called_once_with('{"tokens": "data"}')
+        mock_client.login.assert_not_called()
         assert client is mock_client
 
     @pytest.mark.asyncio

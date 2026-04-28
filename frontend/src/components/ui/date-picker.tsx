@@ -35,10 +35,15 @@ export function DatePicker({
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState("");
+  const [defaultDate, setDefaultDate] = React.useState(() => new Date());
 
   const REFERENCE_YEAR = 2000;
 
-  const date = value ? parse(value, "yyyy-MM-dd", new Date()) : undefined;
+  const date = React.useMemo(
+    () => (value ? parse(value, "yyyy-MM-dd", new Date()) : undefined),
+    [value]
+  );
+  const selectedDate = date ?? defaultDate;
 
   const displayText = date
     ? format(date, monthDayOnly ? "MMM d" : "MMM d, yyyy")
@@ -47,6 +52,7 @@ export function DatePicker({
   // Sync input field when popover opens
   React.useEffect(() => {
     if (open) {
+      setDefaultDate(new Date());
       setInputValue(
         date ? format(date, monthDayOnly ? "dd.MM" : "dd.MM.yyyy") : ""
       );
@@ -175,9 +181,10 @@ export function DatePicker({
         </div>
         <Calendar
           mode="single"
-          selected={date}
+          selected={selectedDate}
           onSelect={handleSelect}
-          defaultMonth={date}
+          defaultMonth={selectedDate}
+          required
         />
       </PopoverContent>
     </Popover>
