@@ -61,7 +61,7 @@ export function Sidebar({ collapsed, onToggle, onNavClick }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "flex h-dvh flex-col bg-[color:var(--bg)] border-r border-[color:var(--line)] transition-[width] duration-150",
+        "flex h-dvh flex-col bg-[color:var(--bg)] border-r border-[color:var(--line)] transition-[width] duration-150 max-md:pt-[var(--safe-top)] max-md:pb-[var(--safe-bottom)] max-md:pl-[var(--safe-left)]",
         collapsed ? "w-12" : "w-[220px]"
       )}
     >
