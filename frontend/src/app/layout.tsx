@@ -23,6 +23,13 @@ export const metadata: Metadata = {
   title: "Personal Hub",
   description: "Centralized personal dashboard and productivity system",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -45,7 +52,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} antialiased`}>
         <ThemeProvider attribute="class" storageKey="hub-theme" defaultTheme="system" enableSystem>
