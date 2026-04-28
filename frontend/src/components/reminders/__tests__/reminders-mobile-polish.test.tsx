@@ -87,11 +87,31 @@ describe("Reminders mobile polish", () => {
     expect(screen.getByRole("button", { name: /history/i })).toBeInTheDocument();
   });
 
+  it("uses a compact mobile page header while preserving desktop details", () => {
+    wrap(<RemindersPage />);
+
+    const eyebrow = screen.getByText("Module · Reminders");
+    const heading = screen.getByRole("heading", { name: "REMINDERS_" });
+    const stats = screen.getByText(/0 for today/i);
+    const history = screen.getByRole("button", { name: /history/i });
+
+    expect(eyebrow.className).toContain("hidden");
+    expect(eyebrow.className).toContain("sm:block");
+    expect(heading.className).toContain("text-[22px]");
+    expect(heading.className).toContain("sm:text-[28px]");
+    expect(stats.className).toContain("hidden");
+    expect(stats.className).toContain("sm:block");
+    expect(history.className).toContain("h-8");
+    expect(history.className).toContain("sm:h-9");
+  });
+
   it("removes Natural hint and keeps quick-add input at iOS-safe mobile size", () => {
     wrap(<QuickAddForm />);
 
     const input = screen.getByPlaceholderText("Remind me to…");
     expect(screen.queryByText(/natural/i)).not.toBeInTheDocument();
+    expect(input.closest("form")?.className).toContain("p-1.5");
+    expect(input.className).toContain("min-h-9");
     expect(input.className).toContain("text-[16px]");
   });
 

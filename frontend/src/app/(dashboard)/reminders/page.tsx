@@ -108,18 +108,18 @@ export default function RemindersPage() {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4">
+    <div className="flex h-full flex-col gap-2.5 sm:gap-4">
       {/* Page header · brutalist .ph */}
-      <header className="border-b-[1.5px] border-[color:var(--line)] pb-[14px]">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+      <header className="border-b-[1.5px] border-[color:var(--line)] pb-2 sm:pb-[14px]">
+        <div className="flex items-center justify-between gap-3 sm:items-end sm:gap-4">
           <div className="min-w-0">
-            <div className="text-[11px] uppercase tracking-[1.5px] text-[color:var(--ink-3)] font-mono">
+            <div className="hidden text-[11px] uppercase tracking-[1.5px] text-[color:var(--ink-3)] font-mono sm:block">
               Module · Reminders
             </div>
-            <h1 className="mt-1 font-bold text-[28px] leading-[1.1] tracking-[-0.4px] text-[color:var(--ink)]">
+            <h1 className="font-bold text-[22px] leading-none tracking-[-0.2px] text-[color:var(--ink)] sm:mt-1 sm:text-[28px] sm:leading-[1.1] sm:tracking-[-0.4px]">
               REMINDERS_
             </h1>
-            <p className="mt-1 max-w-[34rem] text-[12px] text-[color:var(--ink-3)] font-mono">
+            <p className="mt-1 hidden max-w-[34rem] text-[12px] text-[color:var(--ink-3)] font-mono sm:block">
               {sublineParts.join(" · ")}
             </p>
           </div>
@@ -127,7 +127,7 @@ export default function RemindersPage() {
             <button
               type="button"
               onClick={() => setCompletedOpen(true)}
-              className="h-9 border-[1.5px] border-[color:var(--line)] px-3 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)] transition-colors hover:border-[color:var(--line-2)] hover:text-[color:var(--ink)]"
+              className="h-8 border-[1.5px] border-[color:var(--line)] px-2.5 text-[10px] uppercase tracking-[1.2px] font-mono text-[color:var(--ink-3)] transition-colors hover:border-[color:var(--line-2)] hover:text-[color:var(--ink)] sm:h-9 sm:px-3 sm:text-[11px] sm:tracking-[1.5px]"
             >
               History
             </button>
@@ -139,9 +139,9 @@ export default function RemindersPage() {
       <RemindersTabs />
 
       {/* Two-column grid: reminders on left (1.7fr), birthdays aside on right (1fr) */}
-      <div className="grid grid-cols-1 md:grid-cols-[1.7fr_1fr] gap-[18px]">
+      <div className="grid grid-cols-1 gap-[10px] md:grid-cols-[1.7fr_1fr] md:gap-[18px]">
         {/* LEFT — Quick add + reminder list */}
-        <div className="flex flex-col gap-[14px]" ref={quickAddRef}>
+        <div className="flex flex-col gap-2.5 sm:gap-[14px]" ref={quickAddRef}>
           <QuickAddForm />
           <ReminderList
             reminders={reminders}

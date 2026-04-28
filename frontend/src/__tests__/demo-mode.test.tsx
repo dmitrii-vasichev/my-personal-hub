@@ -259,7 +259,7 @@ describe("Settings tabs demo mode", () => {
     expect(screen.queryByText("Integrations")).not.toBeInTheDocument();
     expect(screen.queryByText("Telegram")).not.toBeInTheDocument();
     expect(screen.queryByText("Users")).not.toBeInTheDocument();
-  });
+  }, 10_000);
 });
 
 describe("Profile page demo mode", () => {

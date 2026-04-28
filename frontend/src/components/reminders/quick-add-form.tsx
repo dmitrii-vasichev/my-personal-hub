@@ -111,7 +111,7 @@ export function QuickAddForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="border-[1.5px] border-dashed border-[color:var(--line-2)] bg-transparent p-2.5 font-mono sm:p-3"
+      className="border-[1.5px] border-dashed border-[color:var(--line-2)] bg-transparent p-1.5 font-mono sm:p-3"
     >
       {/* Title row — always visible */}
       <div className="flex items-center gap-2">
@@ -122,14 +122,14 @@ export function QuickAddForm() {
           onChange={(e) => setTitle(e.target.value)}
           onFocus={() => setExpanded(true)}
           autoComplete="off"
-          className="min-h-10 flex-1 border-0 bg-transparent px-0 font-mono text-[16px] italic shadow-none rounded-none placeholder:italic placeholder:text-[color:var(--ink-3)] focus-visible:border-0 focus-visible:ring-0 md:text-[13px]"
+          className="min-h-9 flex-1 border-0 bg-transparent px-0 font-mono text-[16px] italic shadow-none rounded-none placeholder:italic placeholder:text-[color:var(--ink-3)] focus-visible:border-0 focus-visible:ring-0 sm:min-h-10 md:text-[13px]"
         />
         {expanded && (
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="max-md:size-11"
+            className="max-md:size-9"
             onClick={collapse}
             title="Cancel"
           >
@@ -145,9 +145,9 @@ export function QuickAddForm() {
         }`}
       >
         <div className="overflow-hidden">
-          <div className="flex flex-col gap-3 pt-3 md:flex-row md:flex-wrap md:items-end">
+          <div className="flex flex-col gap-2 pt-2 sm:gap-3 sm:pt-3 md:flex-row md:flex-wrap md:items-end">
             {/* Date + Time — side by side on mobile */}
-            <div className="grid grid-cols-2 gap-3 md:contents">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:contents">
               <div className="flex flex-col gap-1 md:min-w-[180px]">
                 <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
                   Date
@@ -192,7 +192,7 @@ export function QuickAddForm() {
             </div>
 
             {/* Repeat + Urgent + Add */}
-            <div className="flex items-end gap-3 md:contents">
+            <div className="flex items-end gap-2 sm:gap-3 md:contents">
               <div className="flex flex-1 flex-col gap-1 md:min-w-[130px] md:flex-initial">
                 <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
                   Repeat
