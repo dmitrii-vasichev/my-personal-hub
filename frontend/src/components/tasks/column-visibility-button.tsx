@@ -46,7 +46,7 @@ export function ColumnVisibilityButton({
             <Columns3 className="h-3.5 w-3.5" />
             Columns
             {hiddenCount > 0 && (
-              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[10px] text-white">
+              <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--accent)] px-1 text-[10px] text-[var(--primary-foreground)]">
                 {hiddenCount}
               </span>
             )}

@@ -97,7 +97,7 @@ function InlineCreateRow({ onDone }: { onDone: () => void }) {
         type="button"
         onClick={handleSubmit}
         disabled={!name.trim() || createTag.isPending}
-        className="rounded bg-[var(--accent)] px-2.5 py-1 text-xs text-white disabled:opacity-50 cursor-pointer"
+        className="rounded bg-[var(--accent)] px-2.5 py-1 text-xs text-[var(--primary-foreground)] disabled:opacity-50 cursor-pointer"
       >
         {createTag.isPending ? "Creating…" : "Create"}
       </button>
@@ -224,7 +224,7 @@ function TagRow({
             type="button"
             onClick={handleSave}
             disabled={updateTag.isPending}
-            className="rounded bg-[var(--accent)] px-2.5 py-1 text-xs text-white disabled:opacity-50 cursor-pointer"
+            className="rounded bg-[var(--accent)] px-2.5 py-1 text-xs text-[var(--primary-foreground)] disabled:opacity-50 cursor-pointer"
           >
             Save
           </button>

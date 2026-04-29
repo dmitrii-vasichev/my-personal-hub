@@ -179,7 +179,7 @@ export default function CalendarPage() {
               onClick={() => setViewMode(mode)}
               className={`px-3 py-1 text-xs font-medium rounded transition-colors capitalize ${
                 viewMode === mode
-                  ? "bg-[--accent] text-white"
+                  ? "bg-[--accent] text-[var(--primary-foreground)]"
                   : "text-[--text-secondary] hover:text-[--text-primary]"
               }`}
             >

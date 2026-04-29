@@ -123,7 +123,7 @@ export function InlineEditSalary({ min, max, currency, period, onSave }: InlineE
               disabled={saving}
               className={`rounded px-2 py-0.5 text-[11px] font-medium transition-colors ${
                 draftPeriod === p
-                  ? "bg-[var(--accent)] text-white"
+                  ? "bg-[var(--accent)] text-[var(--primary-foreground)]"
                   : "bg-[var(--surface-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               }`}
             >

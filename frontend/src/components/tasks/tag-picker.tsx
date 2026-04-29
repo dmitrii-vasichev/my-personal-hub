@@ -163,7 +163,7 @@ export function TagPicker({ selectedTagIds, onChange }: TagPickerProps) {
                     type="button"
                     onClick={handleCreate}
                     disabled={!newName.trim() || createTag.isPending}
-                    className="rounded bg-[var(--accent)] px-2.5 py-1 text-xs text-white disabled:opacity-50 cursor-pointer"
+                    className="rounded bg-[var(--accent)] px-2.5 py-1 text-xs text-[var(--primary-foreground)] disabled:opacity-50 cursor-pointer"
                   >
                     {createTag.isPending ? "Creating…" : "Create"}
                   </button>

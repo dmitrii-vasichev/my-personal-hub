@@ -290,7 +290,7 @@ export function JobDialog({ open, onOpenChange, mode, job, onSuccess }: JobDialo
                       onClick={() => setSalaryPeriod(p)}
                       className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
                         salaryPeriod === p
-                          ? "bg-[var(--accent)] text-white"
+                          ? "bg-[var(--accent)] text-[var(--primary-foreground)]"
                           : "bg-[var(--surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
                       }`}
                     >

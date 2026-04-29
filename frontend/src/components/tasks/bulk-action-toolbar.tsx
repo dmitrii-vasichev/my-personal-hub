@@ -153,7 +153,7 @@ export function BulkActionToolbar({
       <div className="flex items-center gap-3 rounded-xl border border-[var(--border)] bg-[var(--surface)]/95 backdrop-blur-md px-5 py-3 shadow-xl">
         {/* Count */}
         <div className="flex items-center gap-2">
-          <span className="flex h-5 min-w-5 items-center justify-center rounded bg-[var(--accent)] px-1.5 text-xs font-bold text-white">
+          <span className="flex h-5 min-w-5 items-center justify-center rounded bg-[var(--accent)] px-1.5 text-xs font-bold text-[var(--primary-foreground)]">
             {selectedTaskIds.size}
           </span>
           <span className="text-sm text-[var(--text-secondary)] whitespace-nowrap">

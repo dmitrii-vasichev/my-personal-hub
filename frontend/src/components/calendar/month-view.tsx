@@ -84,7 +84,7 @@ export function MonthView({ year, month, events, onDateClick }: MonthViewProps) 
                 <span
                   className={`text-sm w-6 h-6 flex items-center justify-center rounded-full font-medium ${
                     isToday
-                      ? "bg-[--accent] text-white"
+                      ? "bg-[--accent] text-[var(--primary-foreground)]"
                       : "text-[--text-secondary]"
                   }`}
                 >

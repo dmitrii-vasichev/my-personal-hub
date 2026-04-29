@@ -52,7 +52,7 @@ export function OutreachViewToggle({ value, onChange }: ViewToggleProps) {
           onClick={() => handleChange(mode)}
           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
             view === mode
-              ? "bg-[var(--accent)] text-white"
+              ? "bg-[var(--accent)] text-[var(--primary-foreground)]"
               : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-hover)]"
           }`}
         >

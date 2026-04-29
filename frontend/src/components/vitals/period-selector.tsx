@@ -33,7 +33,7 @@ export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
           className={cn(
             "rounded-md px-3 py-1 text-xs font-medium transition-colors cursor-pointer",
             value === p.value
-              ? "bg-primary text-white"
+              ? "bg-primary text-primary-foreground"
               : "text-muted-foreground hover:text-foreground hover:bg-surface-hover"
           )}
         >

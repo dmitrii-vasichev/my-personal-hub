@@ -65,7 +65,7 @@ export function WeekView({ weekStart, events, onSlotClick }: WeekViewProps) {
               </span>
               <div
                 className={`text-sm font-medium mx-auto mt-0.5 w-7 h-7 flex items-center justify-center rounded-full ${
-                  isToday ? "bg-[--accent] text-white" : "text-[--text-primary]"
+                  isToday ? "bg-[--accent] text-[var(--primary-foreground)]" : "text-[--text-primary]"
                 }`}
               >
                 {day.getDate()}
