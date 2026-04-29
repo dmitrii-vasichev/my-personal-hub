@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { ChecklistItem } from "@/types/task";
+import type { ChecklistItem } from "@/types/checklist";
 
 function generateId() {
   return Math.random().toString(36).slice(2, 9);

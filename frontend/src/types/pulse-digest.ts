@@ -70,7 +70,7 @@ export interface DigestItemListResponse {
   is_markdown: boolean;
 }
 
-export type DigestItemAction = "to_task" | "to_note" | "to_job" | "skip";
+export type DigestItemAction = "to_action" | "to_note" | "to_job" | "skip";
 
 export interface DigestItemBulkActionRequest {
   item_ids: number[];

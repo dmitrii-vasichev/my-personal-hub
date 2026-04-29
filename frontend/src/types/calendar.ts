@@ -1,4 +1,4 @@
-import type { Visibility } from "./task";
+import type { Visibility } from "./visibility";
 
 export type EventSource = "local" | "google";
 

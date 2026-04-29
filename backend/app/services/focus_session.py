@@ -28,7 +28,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.daily_plan import DailyPlan, PlanItem
 from app.models.focus_session import FocusSession
 from app.models.reminder import Reminder, ReminderStatus
-from app.models.task import Task
 from app.models.user import User
 from app.schemas.focus_session import (
     FocusSessionResponse,
@@ -127,7 +126,6 @@ def _to_response(session: FocusSession) -> FocusSessionResponse:
     data = {
         "id": session.id,
         "user_id": session.user_id,
-        "task_id": session.task_id,
         "action_id": session.action_id,
         "plan_item_id": session.plan_item_id,
         "started_at": session.started_at,
@@ -135,9 +133,8 @@ def _to_response(session: FocusSession) -> FocusSessionResponse:
         "planned_minutes": session.planned_minutes,
         "auto_closed": session.auto_closed,
         "actual_minutes": _actual_minutes(session),
-        # MVP: titles left as None; frontend resolves via its own task/plan
+        # MVP: titles left as None; frontend resolves via its own action/plan
         # caches. Add a best-effort lookup here later if needed.
-        "task_title": None,
         "action_title": None,
         "plan_item_title": None,
     }
@@ -155,7 +152,6 @@ async def start(
     Reaps stale sessions first so a just-expired timer doesn't falsely
     block the new one. Then:
     - 409 if another active session still remains.
-    - 404 if ``task_id`` is set and doesn't belong to ``user``.
     - 404 if ``plan_item_id`` is set and its plan doesn't belong to
       ``user`` (join with ``daily_plans`` — ``PlanItem.plan`` is
       ``lazy='noload'`` so ``.has(...)`` wouldn't trigger the join).
@@ -173,15 +169,6 @@ async def start(
         raise HTTPException(
             status_code=409, detail="Active focus session already exists"
         )
-
-    if payload.task_id is not None:
-        task_row = await db.execute(
-            select(Task.id).where(
-                Task.id == payload.task_id, Task.user_id == user.id
-            )
-        )
-        if task_row.scalar_one_or_none() is None:
-            raise HTTPException(status_code=404, detail="Task not found")
 
     if payload.action_id is not None:
         action_row = await db.execute(
@@ -210,7 +197,6 @@ async def start(
 
     session = FocusSession(
         user_id=user.id,
-        task_id=payload.task_id,
         action_id=payload.action_id,
         plan_item_id=payload.plan_item_id,
         started_at=_now(),

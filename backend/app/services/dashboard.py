@@ -1,15 +1,13 @@
-"""
-Dashboard summary service — aggregates metrics across all modules.
-"""
+"""Dashboard summary service — aggregates metrics across all modules."""
 import re
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import func, select, and_
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.calendar import CalendarEvent
 from app.models.job import ApplicationStatus, Job
-from app.models.task import Task, TaskStatus
+from app.models.reminder import Reminder, ReminderStatus
 from app.models.telegram import PulseDigest, PulseDigestItem
 from app.models.user import User
 
@@ -28,32 +26,41 @@ _INTERVIEW_STATUSES = {
 
 
 async def get_summary(db: AsyncSession, user: User) -> dict:
-    """Aggregated dashboard metrics across tasks, jobs, and calendar."""
+    """Aggregated dashboard metrics across actions, jobs, and calendar."""
     now = datetime.now(tz=timezone.utc)
+    today = now.date()
 
-    # ── Tasks ──────────────────────────────────────────────────────────────────
-    task_result = await db.execute(
-        select(Task.status, func.count(Task.id).label("count"))
-        .where(Task.user_id == user.id)
-        .group_by(Task.status)
+    # ── Actions ───────────────────────────────────────────────────────────────
+    action_result = await db.execute(
+        select(Reminder.status, func.count(Reminder.id).label("count"))
+        .where(Reminder.user_id == user.id)
+        .group_by(Reminder.status)
     )
-    task_counts: dict[str, int] = {str(r.status.value): r.count for r in task_result.all()}
+    action_counts: dict[str, int] = {
+        r.status.value if hasattr(r.status, "value") else str(r.status): r.count
+        for r in action_result.all()
+    }
 
-    total_tasks = sum(task_counts.values())
-    done_tasks = task_counts.get(TaskStatus.done.value, 0)
-    active_tasks = sum(
-        v for k, v in task_counts.items()
-        if k not in (TaskStatus.done.value, TaskStatus.cancelled.value)
+    total_actions = sum(action_counts.values())
+    done_actions = action_counts.get(ReminderStatus.done.value, 0)
+    active_actions = action_counts.get(ReminderStatus.pending.value, 0)
+    completion_rate = (
+        round(done_actions / total_actions * 100, 1)
+        if total_actions > 0
+        else 0.0
     )
-    completion_rate = round(done_tasks / total_tasks * 100, 1) if total_tasks > 0 else 0.0
 
     overdue_count_result = await db.execute(
-        select(func.count(Task.id))
+        select(func.count(Reminder.id))
         .where(
             and_(
-                Task.user_id == user.id,
-                Task.deadline < now,
-                Task.status.notin_([TaskStatus.done, TaskStatus.cancelled]),
+                Reminder.user_id == user.id,
+                Reminder.status == ReminderStatus.pending,
+                or_(
+                    Reminder.action_date < today,
+                    Reminder.remind_at < now,
+                    Reminder.snoozed_until < now,
+                ),
             )
         )
     )
@@ -96,13 +103,13 @@ async def get_summary(db: AsyncSession, user: User) -> dict:
     ]
 
     return {
-        "tasks": {
-            "total": total_tasks,
-            "active": active_tasks,
-            "done": done_tasks,
+        "actions": {
+            "total": total_actions,
+            "active": active_actions,
+            "done": done_actions,
             "overdue": overdue_count,
             "completion_rate": completion_rate,
-            "by_status": task_counts,
+            "by_status": action_counts,
         },
         "job_hunt": {
             "active_applications": active_applications,

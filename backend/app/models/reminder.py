@@ -16,7 +16,7 @@ from sqlalchemy import (
     Text,
     func,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 
@@ -62,9 +62,6 @@ class Reminder(Base):
     telegram_message_id: Mapped[Optional[int]] = mapped_column(
         BigInteger, nullable=True
     )
-    task_id: Mapped[Optional[int]] = mapped_column(
-        Integer, ForeignKey("tasks.id", ondelete="CASCADE"), nullable=True, unique=True, index=True
-    )
     completed_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -83,8 +80,6 @@ class Reminder(Base):
         onupdate=func.now(),
         nullable=False,
     )
-
-    task = relationship("Task", lazy="noload")
 
     __table_args__ = (
         Index("ix_reminders_user_status", "user_id", "status"),

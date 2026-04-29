@@ -22,13 +22,11 @@ from app.core.database import get_db
 from app.core.deps import get_current_user, restrict_demo
 from app.models.note import Note
 from app.models.user import User, UserRole
+from app.schemas.job import LinkedEventBrief
 from app.schemas.note import LinkedJobBrief, NoteCreate, NoteResponse, NoteTreeResponse
-from app.schemas.task import LinkedEventBrief
-from app.schemas.calendar import LinkedTaskBrief
 from sqlalchemy import select
 
 from app.services import google_drive, google_oauth, note as note_service
-from app.services import note_task_link as ntl_service
 from app.services import note_job_link as njl_service
 from app.services import note_event_link as nel_service
 from app.services.settings import get_or_create_settings
@@ -204,45 +202,6 @@ async def get_note(
             detail="Note not found",
         )
     return note
-
-
-# ── Note-Task links ──────────────────────────────────────────────────────────
-
-
-@router.post("/{note_id:int}/link-task/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def link_note_to_task(
-    note_id: int,
-    task_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    ok = await ntl_service.link_note_task(db, note_id, task_id, current_user)
-    if not ok:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note or task not found")
-
-
-@router.delete("/{note_id:int}/link-task/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def unlink_note_from_task(
-    note_id: int,
-    task_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    ok = await ntl_service.unlink_note_task(db, note_id, task_id, current_user)
-    if not ok:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-
-
-@router.get("/{note_id:int}/linked-tasks", response_model=list[LinkedTaskBrief])
-async def get_note_linked_tasks(
-    note_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    tasks = await ntl_service.get_note_linked_tasks(db, note_id, current_user)
-    if tasks is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Note not found")
-    return tasks
 
 
 # ── Note-Job links ───────────────────────────────────────────────────────────

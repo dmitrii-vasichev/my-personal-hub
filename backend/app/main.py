@@ -9,8 +9,6 @@ from app.api.dashboard import router as dashboard_router
 from app.api.profile import router as profile_router
 from app.api.knowledge_base import router as knowledge_base_router
 from app.api.notes import router as notes_router
-from app.api.tags import router as tags_router
-from app.api.task_analytics import router as task_analytics_router
 from app.api.pulse_settings import router as pulse_settings_router
 from app.api.pulse_digests import router as pulse_digests_router
 from app.api.garmin import dashboard_router as vitals_dashboard_router
@@ -26,7 +24,6 @@ from app.api.jobs import router as jobs_router
 from app.api.resumes import router as resumes_router
 from app.api.search import router as search_router
 from app.api.settings import router as settings_router
-from app.api.tasks import router as tasks_router
 from app.api.actions import router as actions_router
 from app.api.gmail import router as gmail_router
 from app.api.outreach import batch_router, industry_router, router as outreach_router
@@ -272,20 +269,17 @@ app = FastAPI(title="Personal Hub API", version="0.1.0", lifespan=lifespan)
 app.include_router(health_router)
 app.include_router(auth_router)
 app.include_router(users_router)
-app.include_router(tasks_router)
 app.include_router(jobs_router)
 app.include_router(settings_router)
 app.include_router(search_router)
 app.include_router(resumes_router)
 app.include_router(cover_letters_router)
 app.include_router(analytics_router)
-app.include_router(task_analytics_router)
 app.include_router(calendar_router)
 app.include_router(dashboard_router)
 app.include_router(profile_router)
 app.include_router(knowledge_base_router)
 app.include_router(notes_router)
-app.include_router(tags_router)
 app.include_router(telegram_router)
 app.include_router(telegram_bridge_router)
 app.include_router(pulse_sources_router)

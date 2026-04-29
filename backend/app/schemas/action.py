@@ -18,7 +18,6 @@ class ActionCreate(BaseModel):
     details: Optional[str] = None
     checklist: list[dict] = Field(default_factory=list)
     recurrence_rule: Optional[str] = None
-    task_id: Optional[int] = None
     is_urgent: bool = False
 
     @model_validator(mode="after")
@@ -62,12 +61,10 @@ class ActionResponse(BaseModel):
     recurrence_rule: Optional[str]
     snooze_count: int
     notification_sent_count: int
-    task_id: Optional[int]
     completed_at: Optional[datetime]
     is_floating: bool
     is_urgent: bool
     created_at: datetime
     updated_at: datetime
-    task_title: Optional[str] = None
 
     model_config = {"from_attributes": True}

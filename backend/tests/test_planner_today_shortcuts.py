@@ -72,8 +72,6 @@ def _make_plan_item(
     minutes_planned: int = 30,
     minutes_actual: int | None = None,
     status: PlanItemStatus = PlanItemStatus.pending,
-    linked_task_id: int | None = None,
-    task_title: str | None = None,
 ) -> PlanItem:
     item = PlanItem()
     item.id = id_
@@ -84,11 +82,9 @@ def _make_plan_item(
     item.minutes_planned = minutes_planned
     item.minutes_actual = minutes_actual
     item.status = status
-    item.linked_task_id = linked_task_id
     item.notes = None
     item.created_at = datetime(2026, 4, 17, 8, 0, tzinfo=timezone.utc)
     item.updated_at = datetime(2026, 4, 17, 8, 0, tzinfo=timezone.utc)
-    item.task_title = task_title
     return item
 
 

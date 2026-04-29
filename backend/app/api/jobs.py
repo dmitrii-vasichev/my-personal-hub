@@ -19,7 +19,6 @@ from app.schemas.job import (
     JobUpdate,
     KanbanCardResponse,
     KanbanResponse,
-    LinkedTaskBrief,
     LinkedEventBrief,
     MatchResultResponse,
     StatusHistoryResponse,
@@ -27,7 +26,6 @@ from app.schemas.job import (
 from app.schemas.note import LinkedNoteBrief
 from app.services.job import DuplicateJobError
 from app.services import job as job_service
-from app.services import job_task_link as jtl_service
 from app.services import job_event_link as jel_service
 from app.services import note_job_link as njl_service
 from app.services import job_matching as match_service
@@ -320,47 +318,6 @@ async def run_job_match(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)
         )
     return result
-
-
-# ── Job-Task linking ─────────────────────────────────────────────────────────
-
-
-@router.post("/{job_id}/link-task/{task_id}")
-async def link_job_task(
-    job_id: int,
-    task_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    ok = await jtl_service.link_job_task(db, job_id, task_id, current_user)
-    if not ok:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job or task not found")
-    return {"ok": True}
-
-
-@router.delete("/{job_id}/link-task/{task_id}")
-async def unlink_job_task(
-    job_id: int,
-    task_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    ok = await jtl_service.unlink_job_task(db, job_id, task_id, current_user)
-    if not ok:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
-    return {"ok": True}
-
-
-@router.get("/{job_id}/linked-tasks", response_model=list[LinkedTaskBrief])
-async def get_job_linked_tasks(
-    job_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    tasks = await jtl_service.get_job_linked_tasks(db, job_id, current_user)
-    if tasks is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
-    return tasks
 
 
 # ── Job-Event linking ────────────────────────────────────────────────────────

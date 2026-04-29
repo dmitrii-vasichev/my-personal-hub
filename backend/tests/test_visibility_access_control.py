@@ -1,6 +1,6 @@
 """
 Phase 9 — Visibility and access control tests.
-Tests for task/calendar visibility filtering and owner-based edit/delete restrictions.
+Tests for calendar visibility filtering and owner-based edit/delete restrictions.
 """
 import pytest
 from datetime import datetime, timezone
@@ -8,12 +8,11 @@ from unittest.mock import AsyncMock, MagicMock
 
 from app.models.calendar import CalendarEvent, EventSource
 from app.models.job import Job
-from app.models.task import Task, TaskStatus, TaskPriority, TaskSource, Visibility
+from app.models.visibility import Visibility
 from app.models.user import User, UserRole
-from app.services import task as task_service
 from app.services import calendar as calendar_service
 from app.services import job as job_service
-from app.services.task import PermissionDeniedError
+from app.services.calendar import PermissionDeniedError
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -26,34 +25,6 @@ def make_user(role: UserRole = UserRole.member, user_id: int = 1) -> User:
     u.email = f"user{user_id}@example.com"
     u.display_name = f"User {user_id}"
     return u
-
-
-def make_task(
-    user_id: int = 1,
-    task_id: int = 10,
-    visibility: Visibility = Visibility.family,
-    assignee_id: int = None,
-) -> Task:
-    t = Task()
-    t.id = task_id
-    t.user_id = user_id
-    t.created_by_id = user_id
-    t.assignee_id = assignee_id
-    t.title = "Test Task"
-    t.description = None
-    t.status = TaskStatus.new
-    t.priority = TaskPriority.medium
-    t.checklist = []
-    t.source = TaskSource.web
-    t.visibility = visibility
-    t.deadline = None
-    t.reminder_at = None
-    t.reminder_dismissed = False
-    t.completed_at = None
-    t.created_at = datetime(2026, 3, 9, 12, 0, tzinfo=timezone.utc)
-    t.updated_at = datetime(2026, 3, 9, 12, 0, tzinfo=timezone.utc)
-    t.updates = []
-    return t
 
 
 def make_event(
@@ -94,134 +65,6 @@ def _mock_unique_result(value):
     mock_result.unique.return_value = unique_mock
     mock_result.scalar_one_or_none.return_value = value
     return mock_result
-
-
-# ── Task visibility tests ───────────────────────────────────────────────────
-
-
-class TestTaskVisibility:
-    """Tests for task visibility rules."""
-
-    def test_member_can_read_own_task(self):
-        user = make_user(user_id=1)
-        task = make_task(user_id=1, visibility=Visibility.private)
-        assert task_service._can_access_task(task, user) is True
-
-    def test_member_can_read_assigned_task(self):
-        user = make_user(user_id=2)
-        task = make_task(user_id=1, assignee_id=2, visibility=Visibility.private)
-        assert task_service._can_access_task(task, user) is True
-
-    def test_member_can_read_others_family_task(self):
-        user = make_user(user_id=2)
-        task = make_task(user_id=1, visibility=Visibility.family)
-        assert task_service._can_access_task(task, user) is True
-
-    def test_member_cannot_read_others_private_task(self):
-        user = make_user(user_id=2)
-        task = make_task(user_id=1, visibility=Visibility.private)
-        assert task_service._can_access_task(task, user) is False
-
-    def test_admin_can_read_any_task(self):
-        admin = make_user(role=UserRole.admin, user_id=99)
-        task = make_task(user_id=1, visibility=Visibility.private)
-        assert task_service._can_access_task(task, admin) is True
-
-    def test_default_visibility_is_family(self):
-        task = make_task(user_id=1)
-        assert task.visibility == Visibility.family
-
-
-# ── Task access control tests ────────────────────────────────────────────────
-
-
-class TestTaskAccessControl:
-    """Tests for task edit/delete permission rules."""
-
-    def test_member_can_edit_own_task(self):
-        user = make_user(user_id=1)
-        task = make_task(user_id=1)
-        assert task_service._can_edit_task(task, user) is True
-
-    def test_member_can_edit_assigned_task(self):
-        user = make_user(user_id=2)
-        task = make_task(user_id=1, assignee_id=2)
-        assert task_service._can_edit_task(task, user) is True
-
-    def test_member_cannot_edit_others_family_task(self):
-        user = make_user(user_id=2)
-        task = make_task(user_id=1, visibility=Visibility.family)
-        assert task_service._can_edit_task(task, user) is False
-
-    def test_admin_can_edit_any_task(self):
-        admin = make_user(role=UserRole.admin, user_id=99)
-        task = make_task(user_id=1)
-        assert task_service._can_edit_task(task, admin) is True
-
-
-@pytest.mark.asyncio
-class TestTaskEditDeleteRestrictions:
-    """Tests for 403 on update/delete of non-owned tasks."""
-
-    async def test_update_others_family_task_raises_403(self):
-        db = AsyncMock()
-        task = make_task(user_id=1, visibility=Visibility.family)
-        db.execute = AsyncMock(return_value=_mock_unique_result(task))
-
-        user = make_user(user_id=2)
-        with pytest.raises(PermissionDeniedError):
-            await task_service.update_task(
-                db, 10, task_service.TaskUpdateSchema(title="Hacked"), user
-            )
-
-    async def test_delete_others_family_task_raises_403(self):
-        db = AsyncMock()
-        task = make_task(user_id=1, visibility=Visibility.family)
-        db.execute = AsyncMock(return_value=_mock_unique_result(task))
-
-        user = make_user(user_id=2)
-        with pytest.raises(PermissionDeniedError):
-            await task_service.delete_task(db, 10, user)
-
-    async def test_admin_can_update_any_task(self):
-        db = AsyncMock()
-        task = make_task(user_id=1)
-        db.execute = AsyncMock(return_value=_mock_unique_result(task))
-        db.commit = AsyncMock()
-        db.refresh = AsyncMock()
-
-        admin = make_user(role=UserRole.admin, user_id=99)
-        result = await task_service.update_task(
-            db, 10, task_service.TaskUpdateSchema(title="Updated"), admin
-        )
-        assert result is not None
-
-    async def test_admin_can_delete_any_task(self):
-        db = AsyncMock()
-        task = make_task(user_id=1)
-        mock_result = MagicMock()
-        mock_result.unique.return_value.scalar_one_or_none.return_value = task
-        mock_result.scalar_one_or_none.return_value = task
-        db.execute = AsyncMock(return_value=mock_result)
-        db.delete = AsyncMock()
-        db.commit = AsyncMock()
-
-        admin = make_user(role=UserRole.admin, user_id=99)
-        result = await task_service.delete_task(db, 10, admin)
-        assert result is True
-
-    async def test_owner_can_update_own_task(self):
-        db = AsyncMock()
-        task = make_task(user_id=1)
-        db.execute = AsyncMock(return_value=_mock_unique_result(task))
-        db.commit = AsyncMock()
-        db.refresh = AsyncMock()
-
-        user = make_user(user_id=1)
-        result = await task_service.update_task(
-            db, 10, task_service.TaskUpdateSchema(title="My Update"), user
-        )
-        assert result is not None
 
 
 # ── Calendar visibility tests ────────────────────────────────────────────────

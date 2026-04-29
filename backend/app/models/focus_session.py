@@ -1,14 +1,12 @@
 """FocusSession model — Pomodoro-style focus timers (D12).
 
 Each row represents one focus-timer run for the owning user, optionally
-linked to a ``Task`` and/or ``PlanItem``. ``ended_at`` is ``NULL`` while the
+linked to an ``Action`` and/or ``PlanItem``. ``ended_at`` is ``NULL`` while the
 session is still active; a lazy reaper auto-closes sessions whose
 ``started_at + planned_minutes`` has elapsed.
 
 FKs:
 - ``user_id`` → CASCADE on user delete (sessions belong to the user).
-- ``task_id`` → SET NULL on task delete (we keep the history even after
-  the linked task is removed).
 - ``action_id`` → SET NULL on reminder/action delete for the same reason.
 - ``plan_item_id`` → SET NULL on plan item delete for the same reason.
 """
@@ -38,11 +36,6 @@ class FocusSession(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
-    )
-    task_id: Mapped[Optional[int]] = mapped_column(
-        Integer,
-        ForeignKey("tasks.id", ondelete="SET NULL"),
-        nullable=True,
     )
     action_id: Mapped[Optional[int]] = mapped_column(
         Integer,

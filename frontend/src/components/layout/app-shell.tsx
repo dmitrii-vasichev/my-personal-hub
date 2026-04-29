@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
-import { ReminderPoller } from "@/components/tasks/reminder-poller";
+import { ReminderPoller } from "@/components/reminders/reminder-poller";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();

@@ -150,13 +150,19 @@ class TestVitalsDashboardSummaryWithData:
             call_count += 1
             result = MagicMock()
             if call_count == 1:
-                result.scalar_one_or_none.return_value = metric
+                result.scalar.return_value = "UTC"
             elif call_count == 2:
-                result.scalar_one_or_none.return_value = sleep
+                result.scalar_one_or_none.return_value = metric
             elif call_count == 3:
+                result.scalar_one_or_none.return_value = sleep
+            elif call_count == 4:
                 result.scalar_one_or_none.return_value = conn
-            else:
+            elif call_count == 5:
                 result.scalar_one_or_none.return_value = briefing
+            elif call_count == 6:
+                result.scalars.return_value.all.return_value = [metric]
+            else:
+                result.scalars.return_value.all.return_value = [sleep]
             return result
 
         from app.core.database import get_db as real_get_db
@@ -198,15 +204,19 @@ class TestVitalsDashboardSummaryWithData:
             nonlocal call_count
             call_count += 1
             result = MagicMock()
-            if call_count <= 2:
+            if call_count == 1:
+                result.scalar.return_value = "UTC"
+            elif call_count <= 3:
                 # metrics and sleep: no data today
                 result.scalar_one_or_none.return_value = None
-            elif call_count == 3:
+            elif call_count == 4:
                 # connection
                 result.scalar_one_or_none.return_value = conn
-            else:
+            elif call_count == 5:
                 # briefing: none
                 result.scalar_one_or_none.return_value = None
+            else:
+                result.scalars.return_value.all.return_value = []
             return result
 
         from app.core.database import get_db as real_get_db

@@ -17,10 +17,7 @@ router = APIRouter(prefix="/api/reminders", tags=["reminders"])
 
 
 def _to_response(r) -> ReminderResponse:
-    resp = ReminderResponse.model_validate(r)
-    if r.task_id and hasattr(r, "task") and r.task:
-        resp.task_title = r.task.title
-    return resp
+    return ReminderResponse.model_validate(r)
 
 
 @router.get("/", response_model=list[ReminderResponse])
@@ -51,7 +48,6 @@ async def create_reminder(
         current_user,
         action_date=data.action_date,
         recurrence_rule=data.recurrence_rule,
-        task_id=data.task_id,
         is_floating=data.is_floating,
         is_urgent=data.is_urgent,
         details=data.details,

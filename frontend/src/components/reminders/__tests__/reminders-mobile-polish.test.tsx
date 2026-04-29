@@ -70,8 +70,6 @@ function makeReminder(overrides: Partial<Reminder> = {}): Reminder {
     recurrence_rule: "daily",
     snooze_count: 2,
     notification_sent_count: 0,
-    task_id: null,
-    task_title: null,
     details: null,
     checklist: [],
     completed_at: null,

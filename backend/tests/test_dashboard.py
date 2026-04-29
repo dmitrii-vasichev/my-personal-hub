@@ -6,7 +6,7 @@ from datetime import datetime, timezone, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 from app.models.job import ApplicationStatus
-from app.models.task import TaskStatus
+from app.models.reminder import ReminderStatus
 from app.models.user import User, UserRole
 from app.services import dashboard as dashboard_service
 
@@ -33,9 +33,9 @@ async def test_get_summary_empty():
     """Returns zeroed metrics when user has no data."""
     db = AsyncMock()
 
-    # Task status query → empty
-    task_result = MagicMock()
-    task_result.all.return_value = []
+    # Action status query → empty
+    action_result = MagicMock()
+    action_result.all.return_value = []
 
     # Overdue count → 0
     overdue_result = MagicMock()
@@ -49,16 +49,16 @@ async def test_get_summary_empty():
     events_result = MagicMock()
     events_result.all.return_value = []
 
-    db.execute = AsyncMock(side_effect=[task_result, overdue_result, app_result, events_result])
+    db.execute = AsyncMock(side_effect=[action_result, overdue_result, app_result, events_result])
 
     user = make_user()
     result = await dashboard_service.get_summary(db, user)
 
-    assert result["tasks"]["total"] == 0
-    assert result["tasks"]["active"] == 0
-    assert result["tasks"]["done"] == 0
-    assert result["tasks"]["overdue"] == 0
-    assert result["tasks"]["completion_rate"] == 0.0
+    assert result["actions"]["total"] == 0
+    assert result["actions"]["active"] == 0
+    assert result["actions"]["done"] == 0
+    assert result["actions"]["overdue"] == 0
+    assert result["actions"]["completion_rate"] == 0.0
     assert result["job_hunt"]["active_applications"] == 0
     assert result["job_hunt"]["upcoming_interviews"] == 0
     assert result["calendar"]["upcoming_count"] == 0
@@ -66,17 +66,14 @@ async def test_get_summary_empty():
 
 
 @pytest.mark.asyncio
-async def test_get_summary_with_tasks():
-    """Task metrics are calculated correctly."""
+async def test_get_summary_with_actions():
+    """Action metrics are calculated correctly."""
     db = AsyncMock()
 
-    # Task status: 3 new, 2 in_progress, 5 done, 1 cancelled
-    task_row_new = make_row(status=TaskStatus.new, count=3)
-    task_row_ip = make_row(status=TaskStatus.in_progress, count=2)
-    task_row_done = make_row(status=TaskStatus.done, count=5)
-    task_row_cancel = make_row(status=TaskStatus.cancelled, count=1)
-    task_result = MagicMock()
-    task_result.all.return_value = [task_row_new, task_row_ip, task_row_done, task_row_cancel]
+    action_row_pending = make_row(status=ReminderStatus.pending, count=5)
+    action_row_done = make_row(status=ReminderStatus.done, count=5)
+    action_result = MagicMock()
+    action_result.all.return_value = [action_row_pending, action_row_done]
 
     overdue_result = MagicMock()
     overdue_result.scalar_one.return_value = 2
@@ -87,18 +84,16 @@ async def test_get_summary_with_tasks():
     events_result = MagicMock()
     events_result.all.return_value = []
 
-    db.execute = AsyncMock(side_effect=[task_result, overdue_result, app_result, events_result])
+    db.execute = AsyncMock(side_effect=[action_result, overdue_result, app_result, events_result])
 
     user = make_user()
     result = await dashboard_service.get_summary(db, user)
 
-    assert result["tasks"]["total"] == 11
-    assert result["tasks"]["done"] == 5
-    # active = total - done - cancelled = 11 - 5 - 1 = 5
-    assert result["tasks"]["active"] == 5
-    assert result["tasks"]["overdue"] == 2
-    # completion_rate = 5/11 * 100
-    assert result["tasks"]["completion_rate"] == round(5 / 11 * 100, 1)
+    assert result["actions"]["total"] == 10
+    assert result["actions"]["done"] == 5
+    assert result["actions"]["active"] == 5
+    assert result["actions"]["overdue"] == 2
+    assert result["actions"]["completion_rate"] == 50.0
 
 
 @pytest.mark.asyncio
@@ -106,8 +101,8 @@ async def test_get_summary_job_hunt():
     """Job hunt metrics: active apps and upcoming interviews."""
     db = AsyncMock()
 
-    task_result = MagicMock()
-    task_result.all.return_value = []
+    action_result = MagicMock()
+    action_result.all.return_value = []
     overdue_result = MagicMock()
     overdue_result.scalar_one.return_value = 0
 
@@ -124,7 +119,7 @@ async def test_get_summary_job_hunt():
     events_result = MagicMock()
     events_result.all.return_value = []
 
-    db.execute = AsyncMock(side_effect=[task_result, overdue_result, app_result, events_result])
+    db.execute = AsyncMock(side_effect=[action_result, overdue_result, app_result, events_result])
 
     user = make_user()
     result = await dashboard_service.get_summary(db, user)
@@ -140,8 +135,8 @@ async def test_get_summary_calendar_events():
     """Calendar events are included with correct fields."""
     db = AsyncMock()
 
-    task_result = MagicMock()
-    task_result.all.return_value = []
+    action_result = MagicMock()
+    action_result.all.return_value = []
     overdue_result = MagicMock()
     overdue_result.scalar_one.return_value = 0
     app_result = MagicMock()
@@ -156,7 +151,7 @@ async def test_get_summary_calendar_events():
     events_result = MagicMock()
     events_result.all.return_value = [event_row]
 
-    db.execute = AsyncMock(side_effect=[task_result, overdue_result, app_result, events_result])
+    db.execute = AsyncMock(side_effect=[action_result, overdue_result, app_result, events_result])
 
     user = make_user()
     result = await dashboard_service.get_summary(db, user)

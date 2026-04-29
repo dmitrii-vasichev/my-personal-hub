@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChecklistItem } from "@/types/task";
+import type { ChecklistItem } from "@/types/checklist";
 
 interface ChecklistViewProps {
   items: ChecklistItem[];

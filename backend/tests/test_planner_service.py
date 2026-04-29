@@ -1,8 +1,7 @@
 """Unit tests for the planner service layer.
 
 Mocks ``AsyncSession`` at the method level (matching the convention used in
-``test_calendar.py``, ``test_task_reminder_persistence.py``, and
-``test_task_analytics.py`` — the rest of this codebase). No live DB.
+``test_calendar.py`` and the rest of this codebase). No live DB.
 """
 
 from __future__ import annotations
@@ -14,7 +13,6 @@ import pytest
 
 from app.models.daily_plan import DailyPlan, PlanItem, PlanItemStatus
 from app.models.reminder import Reminder, ReminderStatus
-from app.models.task import Task, TaskPriority, TaskStatus
 from app.models.user import User, UserRole
 from app.schemas.planner import DailyPlanCreate, PlanItemCreate, PlanItemUpdate
 from app.services import planner as planner_service
@@ -51,7 +49,6 @@ def make_item(
     item.minutes_planned = minutes_planned
     item.minutes_actual = minutes_actual
     item.status = status
-    item.linked_task_id = None
     item.notes = None
     return item
 
@@ -440,49 +437,27 @@ class TestGetPlan:
 # ── build_context ────────────────────────────────────────────────────────────
 
 
-def _make_task(
-    task_id: int,
-    *,
-    title: str = "task",
-    status: TaskStatus = TaskStatus.new,
-    priority: TaskPriority = TaskPriority.medium,
-    deadline: datetime | None = None,
-) -> Task:
-    t = Task()
-    t.id = task_id
-    t.title = title
-    t.status = status
-    t.priority = priority
-    t.deadline = deadline
-    return t
-
-
 def _make_reminder(
     reminder_id: int,
     *,
     title: str = "ping",
     remind_at: datetime = datetime(2026, 4, 17, 9, 0, tzinfo=timezone.utc),
     is_urgent: bool = False,
-    task_id: int | None = None,
 ) -> Reminder:
     r = Reminder()
     r.id = reminder_id
     r.title = title
     r.remind_at = remind_at
+    r.action_date = None
     r.status = ReminderStatus.pending
     r.is_urgent = is_urgent
-    r.task_id = task_id
     return r
 
 
 @pytest.mark.asyncio
 class TestBuildContext:
-    async def test_with_tasks_reminders_and_yesterday(self, monkeypatch):
-        """Seeded tasks + reminders + yesterday plan → correct assembly."""
-        tasks = [
-            _make_task(1, title="A", status=TaskStatus.in_progress),
-            _make_task(2, title="B", status=TaskStatus.new),
-        ]
+    async def test_with_reminders_and_yesterday(self, monkeypatch):
+        """Seeded reminders + yesterday plan → correct assembly."""
         reminders = [
             _make_reminder(10, title="Standup"),
             _make_reminder(11, title="Urgent!", is_urgent=True),
@@ -495,9 +470,8 @@ class TestBuildContext:
             replans_count=2,
         )
 
-        # Responses: tasks query, reminders query, yesterday plan lookup.
+        # Responses: reminders query, yesterday plan lookup.
         responses = [
-            _scalars_all_result(tasks),
             _scalars_all_result(reminders),
             _scalar_one_result(yesterday),
         ]
@@ -522,7 +496,6 @@ class TestBuildContext:
 
         assert ctx.date == date(2026, 4, 17)
         assert ctx.timezone == "UTC"
-        assert [t.title for t in ctx.pending_tasks] == ["A", "B"]
         assert [r.title for r in ctx.due_reminders] == ["Standup", "Urgent!"]
         assert ctx.calendar_events == []
         assert ctx.yesterday is not None
@@ -532,7 +505,6 @@ class TestBuildContext:
 
     async def test_without_yesterday_plan(self, monkeypatch):
         responses = [
-            _scalars_all_result([]),
             _scalars_all_result([]),
             _scalar_one_result(None),
         ]
@@ -553,7 +525,6 @@ class TestBuildContext:
         user = make_user()
         ctx = await planner_service.build_context(db, user, date(2026, 4, 17))
 
-        assert ctx.pending_tasks == []
         assert ctx.due_reminders == []
         assert ctx.yesterday is None
 

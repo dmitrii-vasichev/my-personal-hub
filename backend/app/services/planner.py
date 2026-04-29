@@ -1,8 +1,8 @@
 """Planner service layer — plan CRUD, context aggregation, analytics.
 
-Pure business logic; no HTTP concerns. Router layer (Task 5) wires these
+Pure business logic; no HTTP concerns. Router layer wires these
 functions to FastAPI endpoints and translates ``None`` returns into 404s,
-matching the convention used in ``task.py`` and ``reminders.py``.
+matching the convention used in ``reminders.py``.
 """
 
 from __future__ import annotations
@@ -18,13 +18,11 @@ from sqlalchemy.orm import selectinload
 from app.core.timezone import get_user_tz
 from app.models.daily_plan import DailyPlan, PlanItem, PlanItemStatus
 from app.models.reminder import Reminder, ReminderStatus
-from app.models.task import Task, TaskStatus
 from app.models.user import User
 from app.schemas.planner import (
     AnalyticsResponse,
     ContextEvent,
     ContextReminder,
-    ContextTask,
     DailyAnalyticsPoint,
     DailyPlanCreate,
     PlanItemUpdate,
@@ -38,12 +36,6 @@ logger = logging.getLogger(__name__)
 # stable, explicit key makes category aggregates round-trip cleanly
 # through JSON and analytics.
 UNCATEGORIZED = "uncategorized"
-
-# ``pending_tasks`` in the planner context is a best-effort shortlist for
-# the LLM prompt, not a full backlog view. Cap it so large backlogs don't
-# balloon the context payload.
-PENDING_TASKS_LIMIT = 50
-
 
 # ── Aggregate recomputation (pure) ───────────────────────────────────────────
 
@@ -100,48 +92,15 @@ async def _get_plan_row(
     return result.scalar_one_or_none()
 
 
-async def _attach_task_titles(
-    db: AsyncSession, items: list[PlanItem]
-) -> None:
-    """Populate ``item.task_title`` (Python-side attr) for each plan item.
-
-    Performs a single batched ``SELECT`` on ``Task`` when at least one item
-    has a ``linked_task_id``. Skips the query entirely when there are no
-    linked tasks so unit tests with mocked sessions aren't surprised by
-    extra ``db.execute`` calls.
-
-    The attribute is set even when no task is found (``None``) so
-    ``PlanItemResponse.task_title`` serializes consistently.
-    """
-    task_ids = {i.linked_task_id for i in items if i.linked_task_id}
-    if not task_ids:
-        for item in items:
-            item.task_title = None
-        return
-
-    result = await db.execute(
-        select(Task.id, Task.title).where(Task.id.in_(task_ids))
-    )
-    title_by_id = {tid: title for tid, title in result.all()}
-    for item in items:
-        item.task_title = (
-            title_by_id.get(item.linked_task_id) if item.linked_task_id else None
-        )
-
-
 async def get_plan(
     db: AsyncSession, user: User, date_: date
 ) -> Optional[DailyPlan]:
     """Return the user's plan for ``date_`` or ``None`` if none exists.
 
     Cross-user access is structurally impossible because the query filters
-    by ``user_id``; mismatched rows simply aren't returned. ``task_title``
-    is populated on each item for the API response layer.
+    by ``user_id``; mismatched rows simply aren't returned.
     """
-    plan = await _get_plan_row(db, user, date_)
-    if plan is not None:
-        await _attach_task_titles(db, plan.items)
-    return plan
+    return await _get_plan_row(db, user, date_)
 
 
 async def upsert_plan(
@@ -183,7 +142,6 @@ async def upsert_plan(
                 title=item_data.title,
                 category=item_data.category,
                 minutes_planned=item_data.minutes_planned,
-                linked_task_id=item_data.linked_task_id,
                 notes=item_data.notes,
                 status=PlanItemStatus.pending,
             )
@@ -192,7 +150,6 @@ async def upsert_plan(
     _recompute_aggregates(plan)
     await db.commit()
     await db.refresh(plan, attribute_names=["items"])
-    await _attach_task_titles(db, plan.items)
     return plan
 
 
@@ -223,7 +180,6 @@ async def update_item(
     _recompute_aggregates(plan)
     await db.commit()
     await db.refresh(item)
-    await _attach_task_titles(db, [item])
     return item
 
 
@@ -266,9 +222,6 @@ async def build_context(
 ) -> PlannerContextResponse:
     """Aggregate the LLM-ready context for ``date_``.
 
-    - ``pending_tasks``: user's tasks still in play — active statuses or
-      a deadline at/before end-of-tomorrow. Ordered by deadline then
-      id; capped at ``PENDING_TASKS_LIMIT``.
     - ``due_reminders``: pending reminders whose ``remind_at`` falls on
       ``date_`` (in the user's timezone) or that are flagged urgent.
     - ``calendar_events``: events overlapping ``date_`` from the local
@@ -277,38 +230,6 @@ async def build_context(
     """
     tz = await get_user_tz(db, user.id)
     tz_name = str(tz)
-
-    # Pending tasks: active statuses OR due within tomorrow.
-    active_statuses = (
-        TaskStatus.backlog,
-        TaskStatus.new,
-        TaskStatus.in_progress,
-    )
-    deadline_cutoff = datetime.combine(
-        date_ + timedelta(days=1), time.max, tzinfo=tz
-    )
-    task_result = await db.execute(
-        select(Task)
-        .where(
-            Task.user_id == user.id,
-            or_(
-                Task.status.in_(active_statuses),
-                and_(Task.deadline.is_not(None), Task.deadline <= deadline_cutoff),
-            ),
-        )
-        .order_by(Task.deadline.asc().nullslast(), Task.id.asc())
-        .limit(PENDING_TASKS_LIMIT)
-    )
-    pending_tasks = [
-        ContextTask(
-            id=t.id,
-            title=t.title,
-            priority=t.priority.value if t.priority else "medium",
-            deadline=t.deadline,
-            category=None,
-        )
-        for t in task_result.scalars().all()
-    ]
 
     # Due reminders: pending + (fires on date_ in user tz OR urgent).
     day_start = datetime.combine(date_, time.min, tzinfo=tz)
@@ -337,7 +258,6 @@ async def build_context(
             remind_at=r.remind_at,
             action_date=r.action_date,
             is_urgent=bool(r.is_urgent),
-            task_id=r.task_id,
         )
         for r in reminder_result.scalars().all()
     ]
@@ -361,7 +281,6 @@ async def build_context(
     return PlannerContextResponse(
         date=date_,
         timezone=tz_name,
-        pending_tasks=pending_tasks,
         due_reminders=due_reminders,
         calendar_events=calendar_events,
         yesterday=yesterday,

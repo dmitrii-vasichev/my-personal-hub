@@ -50,8 +50,6 @@ function plan(): DailyPlan {
         minutes_planned: 10,
         minutes_actual: 10,
         status: "done",
-        linked_task_id: null,
-        task_title: null,
         notes: null,
         created_at: "",
         updated_at: "",
@@ -65,8 +63,6 @@ function plan(): DailyPlan {
         minutes_planned: 60,
         minutes_actual: null,
         status: "pending",
-        linked_task_id: 42,
-        task_title: "Cover letter",
         notes: null,
         created_at: "",
         updated_at: "",
@@ -80,12 +76,11 @@ function plan(): DailyPlan {
 beforeEach(() => mutateSpy.mockClear());
 
 describe("FocusQueue", () => {
-  it("renders items with category + duration without task-link noise", () => {
+  it("renders items with category + duration", () => {
     wrap(<FocusQueue plan={plan()} />);
     expect(screen.getByText("Cover letter Acme")).toBeInTheDocument();
     expect(screen.getByText("CAREER")).toBeInTheDocument();
     expect(screen.getByText("60m")).toBeInTheDocument();
-    expect(screen.queryByText("#42")).toBeNull();
   });
 
   it("done rows render with .done modifier", () => {

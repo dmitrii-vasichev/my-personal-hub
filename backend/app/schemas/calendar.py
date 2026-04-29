@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 from app.models.calendar import EventSource
 from app.models.job import ApplicationStatus
-from app.models.task import Visibility
+from app.models.visibility import Visibility
 
 
 # ── Calendar Event schemas ────────────────────────────────────────────────────
@@ -64,18 +64,8 @@ class CalendarEventResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
-class LinkedTaskBrief(BaseModel):
-    id: int
-    title: str
-    status: str
-    priority: str
-
-    model_config = {"from_attributes": True}
-
-
 class CalendarEventDetailResponse(CalendarEventResponse):
     notes: list[EventNoteBrief] = []
-    linked_tasks: list[LinkedTaskBrief] = []
 
 
 # ── Job-hint schemas (D13) ────────────────────────────────────────────────────

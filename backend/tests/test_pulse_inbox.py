@@ -75,15 +75,15 @@ def make_source(source_id: int = 1, title: str = "Learning Channel") -> PulseSou
 
 def test_inbox_action_enum():
     """InboxAction enum has correct values."""
-    assert InboxAction.to_task == "to_task"
+    assert InboxAction.to_action == "to_action"
     assert InboxAction.to_note == "to_note"
     assert InboxAction.skip == "skip"
 
 
 def test_inbox_action_request():
     """InboxActionRequest validates action."""
-    req = InboxActionRequest(action=InboxAction.to_task)
-    assert req.action == InboxAction.to_task
+    req = InboxActionRequest(action=InboxAction.to_action)
+    assert req.action == InboxAction.to_action
 
 
 def test_bulk_action_request():
@@ -207,8 +207,8 @@ async def test_process_action_skip():
 
 
 @pytest.mark.asyncio
-async def test_process_action_to_task():
-    """process_action to_task creates a task and marks message as actioned."""
+async def test_process_action_to_action():
+    """process_action to_action creates an action and marks message as actioned."""
     from app.services import pulse_inbox
 
     msg = make_message(msg_id=1, text="Great article about Python")
@@ -220,17 +220,16 @@ async def test_process_action_to_task():
     mock_db.execute.return_value = mock_result
     mock_db.commit = AsyncMock()
 
-    with patch("app.services.pulse_inbox.task_service.create_task", new_callable=AsyncMock) as mock_create:
+    with patch("app.services.pulse_inbox.action_service.create_action", new_callable=AsyncMock) as mock_create:
         mock_create.return_value = MagicMock(id=42)
-        ok = await pulse_inbox.process_action(mock_db, user, 1, InboxAction.to_task)
+        ok = await pulse_inbox.process_action(mock_db, user, 1, InboxAction.to_action)
 
     assert ok is True
     assert msg.status == "actioned"
     mock_create.assert_awaited_once()
-    # Check task title contains [Pulse] prefix
+    # Check action title contains [Pulse] prefix
     call_args = mock_create.call_args
-    task_data = call_args.args[1]
-    assert task_data.title.startswith("[Pulse]")
+    assert call_args.kwargs["title"].startswith("[Pulse]")
 
 
 @pytest.mark.asyncio

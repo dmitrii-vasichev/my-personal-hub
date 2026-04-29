@@ -25,9 +25,6 @@ vi.mock("@/hooks/use-jobs", () => ({
 vi.mock("@/components/jobs/job-match-section", () => ({
   JobMatchSection: () => <div data-testid="job-match-section" />,
 }));
-vi.mock("@/components/jobs/linked-tasks-section", () => ({
-  LinkedTasksSection: () => <div data-testid="linked-tasks" />,
-}));
 vi.mock("@/components/jobs/linked-events-section", () => ({
   LinkedEventsSection: () => <div data-testid="linked-events" />,
 }));

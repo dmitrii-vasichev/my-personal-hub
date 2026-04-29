@@ -130,12 +130,6 @@ export default function ActionsPage() {
             >
               History
             </button>
-            <Link
-              href="/actions/task-cleanup"
-              className="h-8 border-[1.5px] border-[color:var(--line)] px-2.5 py-2 text-[10px] uppercase tracking-[1.2px] font-mono text-[color:var(--ink-3)] transition-colors hover:border-[color:var(--line-2)] hover:text-[color:var(--ink)] sm:h-9 sm:px-3 sm:text-[11px] sm:tracking-[1.5px]"
-            >
-              Legacy review
-            </Link>
           </div>
         </div>
       </header>

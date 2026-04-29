@@ -15,7 +15,6 @@ import type { PlannedMinutes } from "@/types/focus-session";
 interface StartFocusDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  taskId?: number | null;
   actionId?: number | null;
   planItemId?: number | null;
 }
@@ -25,7 +24,6 @@ const PRESETS: PlannedMinutes[] = [25, 50, 90];
 export function StartFocusDialog({
   open,
   onOpenChange,
-  taskId,
   actionId,
   planItemId,
 }: StartFocusDialogProps) {
@@ -38,7 +36,6 @@ export function StartFocusDialog({
     setPendingPreset(minutes);
     try {
       await start.mutateAsync({
-        task_id: taskId ?? null,
         action_id: actionId ?? null,
         plan_item_id: planItemId ?? null,
         planned_minutes: minutes,

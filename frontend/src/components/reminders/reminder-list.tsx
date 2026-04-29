@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import {
   format,
   isToday,
@@ -17,7 +16,6 @@ import {
   ExternalLink,
   Flag,
   ListChecks,
-  ListTodo,
   Pencil,
   Pin,
   Repeat,
@@ -47,7 +45,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
-import { ChecklistEditor } from "@/components/tasks/checklist-editor";
+import { ChecklistEditor } from "@/components/shared/checklist-editor";
 import {
   useMarkDone,
   useSnoozeReminder,
@@ -55,7 +53,7 @@ import {
   useDeleteReminder,
 } from "@/hooks/use-reminders";
 import type { Reminder } from "@/types/reminder";
-import type { ChecklistItem } from "@/types/task";
+import type { ChecklistItem } from "@/types/checklist";
 
 // -- Recurrence badge label --
 
@@ -765,16 +763,6 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
                   <ExternalLink className="h-3 w-3" />
                   Link
                 </span>
-              )}
-              {reminder.task_id && (
-                <Link
-                  href={`/tasks?task=${reminder.task_id}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-0.5 border border-[color:var(--accent-3)] bg-transparent px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-[color:var(--accent-3)] hover:border-[color:var(--accent)] sm:tracking-[1.5px]"
-                >
-                  <ListTodo className="h-3 w-3" />
-                  Task
-                </Link>
               )}
               {reminder.recurrence_rule && (
                 <span className="inline-flex min-w-0 items-center gap-0.5 border border-[color:var(--ink-3)] bg-transparent px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-[color:var(--ink-3)] sm:tracking-[1.5px]">

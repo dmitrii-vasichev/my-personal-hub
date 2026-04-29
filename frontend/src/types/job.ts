@@ -31,14 +31,6 @@ export interface MatchResult {
   recommendations: string[];
 }
 
-// Brief types for linked items display
-export interface LinkedTaskBrief {
-  id: number;
-  title: string;
-  status: string;
-  priority: string;
-}
-
 export interface LinkedEventBrief {
   id: number;
   title: string;

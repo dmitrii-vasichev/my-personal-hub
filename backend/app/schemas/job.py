@@ -6,18 +6,6 @@ from pydantic import BaseModel
 from app.models.job import ApplicationStatus
 
 
-# ── Nested schemas ───────────────────────────────────────────────────────────
-
-
-class LinkedTaskBrief(BaseModel):
-    id: int
-    title: str
-    status: str
-    priority: str
-
-    model_config = {"from_attributes": True}
-
-
 class LinkedEventBrief(BaseModel):
     id: int
     title: str

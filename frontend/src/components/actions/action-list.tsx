@@ -43,7 +43,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
 import { StartFocusButton } from "@/components/focus/start-focus-button";
-import { ChecklistEditor } from "@/components/tasks/checklist-editor";
+import { ChecklistEditor } from "@/components/shared/checklist-editor";
 import {
   useDeleteAction,
   useMarkActionDone,
@@ -51,7 +51,7 @@ import {
   useUpdateAction,
 } from "@/hooks/use-actions";
 import type { Action } from "@/types/action";
-import type { ChecklistItem } from "@/types/task";
+import type { ChecklistItem } from "@/types/checklist";
 
 // -- Recurrence badge label --
 
@@ -687,7 +687,6 @@ function ActionRow({ action, expanded, onToggle }: { action: Action; expanded: b
     hasChecklist ? `${doneCount}/${checklist.length}` : null,
     hasDetails ? "Note" : null,
     detailsHaveUrl ? "Link" : null,
-    action.task_id ? "Legacy task" : null,
     action.recurrence_rule ? recurrenceLabel(action.recurrence_rule) : null,
   ].filter((item): item is string => Boolean(item));
   const recurrenceText = action.recurrence_rule

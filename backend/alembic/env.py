@@ -9,7 +9,18 @@ from app.core.config import settings
 from app.core.database import Base
 
 # Import all models so Alembic sees them
-from app.models import user, task, job, calendar, telegram, garmin, outreach, reminder, birthday, daily_plan, focus_session  # noqa: F401
+from app.models import (  # noqa: F401
+    birthday,
+    calendar,
+    daily_plan,
+    focus_session,
+    garmin,
+    job,
+    outreach,
+    reminder,
+    telegram,
+    user,
+)
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

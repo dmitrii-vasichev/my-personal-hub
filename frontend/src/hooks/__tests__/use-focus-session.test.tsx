@@ -39,14 +39,14 @@ function makeSession(overrides: Partial<FocusSession> = {}): FocusSession {
   return {
     id: 1,
     user_id: 1,
-    task_id: null,
+    action_id: null,
     plan_item_id: null,
     started_at: "2026-04-21T10:00:00Z",
     ended_at: null,
     planned_minutes: 25,
     auto_closed: false,
     actual_minutes: null,
-    task_title: null,
+    action_title: null,
     plan_item_title: null,
     ...overrides,
   };

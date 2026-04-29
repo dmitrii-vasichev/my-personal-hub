@@ -1,4 +1,4 @@
-"""Service for acting on structured digest items: to_task, to_note, to_job, skip."""
+"""Service for acting on structured digest items: to_action, to_note, to_job, skip."""
 from __future__ import annotations
 
 import logging
@@ -10,15 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.job import Job
 from app.models.telegram import PulseDigestItem
 from app.models.user import User
-from app.schemas.task import TaskCreate
+from app.services import actions as action_service
 from app.services import note as note_service
-from app.services import task as task_service
 from app.services import google_oauth
 from app.services.settings import get_or_create_settings
 
 logger = logging.getLogger(__name__)
 
-VALID_ACTIONS = ("to_task", "to_note", "to_job", "skip")
+VALID_ACTIONS = ("to_action", "to_note", "to_job", "skip")
 
 
 async def process_item_action(
@@ -48,13 +47,14 @@ async def process_item_action(
     now = datetime.now(timezone.utc)
     created_id = None
 
-    if action == "to_task":
-        task_data = TaskCreate(
+    if action == "to_action":
+        action_item = await action_service.create_action(
+            db,
             title=f"[Pulse] {item.title}",
-            description=item.summary,
+            details=item.summary,
+            user=user,
         )
-        task = await task_service.create_task(db, task_data, user)
-        created_id = task.id
+        created_id = action_item.id
         item.status = "actioned"
 
     elif action == "to_note":

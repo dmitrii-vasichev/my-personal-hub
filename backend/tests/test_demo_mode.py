@@ -368,8 +368,8 @@ async def test_demo_user_can_get_me():
 
 
 @pytest.mark.asyncio
-async def test_demo_user_can_list_tasks():
-    """Demo user can access tasks (allowed CRUD)."""
+async def test_demo_user_can_list_actions():
+    """Demo user can access actions (allowed CRUD)."""
     demo = make_demo_user()
     from app.core.deps import get_current_user
     from app.core.database import get_db
@@ -384,7 +384,7 @@ async def test_demo_user_can_list_tasks():
         async with AsyncClient(
             transport=ASGITransport(app=app), base_url="http://test"
         ) as client:
-            resp = await client.get("/api/tasks/")
+            resp = await client.get("/api/actions/")
         assert resp.status_code == 200
     finally:
         app.dependency_overrides.pop(get_current_user, None)
@@ -636,8 +636,6 @@ async def test_seed_demo_module_importable():
     assert callable(seed_demo.cleanup_demo_user)
     assert callable(seed_demo.create_demo_user)
     assert callable(seed_demo.create_profile)
-    assert callable(seed_demo.create_tags)
-    assert callable(seed_demo.create_tasks)
     assert callable(seed_demo.create_jobs)
     assert callable(seed_demo.create_events)
     assert callable(seed_demo.create_kb_docs)

@@ -1,6 +1,6 @@
 """Learning inbox service for Pulse.
 
-Provides inbox item listing, single/bulk action routing (→ Task, → Note, skip).
+Provides inbox item listing, single/bulk action routing (→ Action, → Note, skip).
 """
 from __future__ import annotations
 
@@ -14,9 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.telegram import PulseMessage, PulseSource
 from app.models.user import User
 from app.schemas.pulse_inbox import InboxAction, InboxItemResponse
-from app.schemas.task import TaskCreate
+from app.services import actions as action_service
 from app.services import note as note_service
-from app.services import task as task_service
 
 logger = logging.getLogger(__name__)
 
@@ -111,14 +110,15 @@ async def process_action(
     if not message:
         return False
 
-    if action == InboxAction.to_task:
+    if action == InboxAction.to_action:
         title = _extract_title(message.text)
         description = message.text or ""
-        task_data = TaskCreate(
+        await action_service.create_action(
+            db,
             title=f"[Pulse] {title}",
-            description=description,
+            details=description,
+            user=user,
         )
-        await task_service.create_task(db, task_data, user)
         message.status = "actioned"
 
     elif action == InboxAction.to_note:

@@ -2,7 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi } from "vitest";
 import type { Action } from "@/types/action";
-import type { ChecklistItem } from "@/types/task";
+import type { ChecklistItem } from "@/types/checklist";
 import { ActionList } from "../action-list";
 
 vi.mock("@/hooks/use-actions", () => {
@@ -40,8 +40,6 @@ function makeAction(overrides: Partial<Action> = {}): Action {
     recurrence_rule: null,
     snooze_count: 0,
     notification_sent_count: 0,
-    task_id: null,
-    task_title: null,
     completed_at: null,
     is_floating: true,
     is_urgent: false,

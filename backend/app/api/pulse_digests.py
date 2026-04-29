@@ -287,7 +287,7 @@ async def action_digest_item(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Act on a single digest item: to_task, to_note, to_job, or skip."""
+    """Act on a single digest item: to_action, to_note, to_job, or skip."""
     from app.services.pulse_digest_items import process_item_action
 
     try:

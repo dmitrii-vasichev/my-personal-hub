@@ -14,7 +14,6 @@ class ReminderCreate(BaseModel):
     details: Optional[str] = None
     checklist: list[dict] = Field(default_factory=list)
     recurrence_rule: Optional[str] = None
-    task_id: Optional[int] = None
     is_floating: bool = False
     is_urgent: bool = False
 
@@ -64,14 +63,10 @@ class ReminderResponse(BaseModel):
     recurrence_rule: Optional[str]
     snooze_count: int
     notification_sent_count: int
-    task_id: Optional[int]
     completed_at: Optional[datetime]
     is_floating: bool
     is_urgent: bool
     created_at: datetime
     updated_at: datetime
-
-    # Derived field for frontend
-    task_title: Optional[str] = None
 
     model_config = {"from_attributes": True}

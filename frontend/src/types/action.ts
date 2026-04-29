@@ -1,4 +1,4 @@
-import type { ChecklistItem } from "./task";
+import type { ChecklistItem } from "./checklist";
 
 export type ActionStatus = "pending" | "done";
 export type ActionMode = "inbox" | "anytime" | "scheduled";
@@ -17,8 +17,6 @@ export interface Action {
   recurrence_rule: string | null;
   snooze_count: number;
   notification_sent_count: number;
-  task_id: number | null;
-  task_title: string | null;
   completed_at: string | null;
   is_floating: boolean;
   is_urgent: boolean;
@@ -33,7 +31,6 @@ export interface CreateActionInput {
   details?: string | null;
   checklist?: ChecklistItem[];
   recurrence_rule?: string | null;
-  task_id?: number;
   is_urgent?: boolean;
 }
 

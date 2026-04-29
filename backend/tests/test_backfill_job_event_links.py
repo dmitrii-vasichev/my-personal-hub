@@ -20,7 +20,7 @@ import pytest
 
 from app.models.calendar import CalendarEvent, EventSource
 from app.models.job import ApplicationStatus, Job
-from app.models.task import Visibility
+from app.models.visibility import Visibility
 from app.models.user import User, UserRole
 from scripts.backfill_job_event_links import run_backfill
 

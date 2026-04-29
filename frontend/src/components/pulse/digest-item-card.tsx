@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   CheckSquare,
   FileText,
+  ListTodo,
   Mail,
   MailOpen,
   SkipForward,
@@ -37,7 +38,7 @@ function ClassificationBadge({ type }: { type: string }) {
 }
 
 const ACTION_LABELS: Record<string, string> = {
-  to_task: "Saved",
+  to_action: "Saved as action",
   to_note: "Saved as note",
   to_job: "Added to Job Hunt",
   skip: "Skipped",
@@ -171,6 +172,14 @@ export function DigestItemCard({
       {/* Actions */}
       {!isDone && (
         <div className="flex shrink-0 items-start gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <button
+            onClick={() => onAction("to_action")}
+            disabled={isPending}
+            title="Save as Action"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-surface-hover hover:text-foreground cursor-pointer"
+          >
+            <ListTodo className="h-3.5 w-3.5" />
+          </button>
           <button
             onClick={() => onAction("to_note")}
             disabled={isPending}

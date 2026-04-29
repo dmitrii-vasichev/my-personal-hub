@@ -7,7 +7,6 @@ from typing import Optional
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.scheduler import cancel_reminder_notification, schedule_reminder_notification
 from app.models.reminder import Reminder, ReminderStatus
@@ -31,7 +30,6 @@ async def create_reminder(
     user: User,
     action_date: date | None = None,
     recurrence_rule: str | None = None,
-    task_id: int | None = None,
     is_floating: bool = False,
     is_urgent: bool = False,
     details: str | None = None,
@@ -45,7 +43,6 @@ async def create_reminder(
         action_date=action_date or (remind_at.date() if remind_at else None),
         remind_at=None if is_floating else remind_at,
         recurrence_rule=recurrence_rule,
-        task_id=task_id,
         is_floating=is_floating or remind_at is None,
         is_urgent=is_urgent,
     )
@@ -78,10 +75,7 @@ async def list_reminders(
             Reminder.created_at.asc(),
         )
     result = await db.execute(
-        select(Reminder)
-        .options(selectinload(Reminder.task))
-        .where(and_(*conditions))
-        .order_by(*order)
+        select(Reminder).where(and_(*conditions)).order_by(*order)
     )
     return list(result.scalars().all())
 
@@ -92,9 +86,7 @@ async def get_reminder(
     user: User,
 ) -> Optional[Reminder]:
     result = await db.execute(
-        select(Reminder)
-        .options(selectinload(Reminder.task))
-        .where(Reminder.id == reminder_id, Reminder.user_id == user.id)
+        select(Reminder).where(Reminder.id == reminder_id, Reminder.user_id == user.id)
     )
     return result.scalar_one_or_none()
 
@@ -292,17 +284,3 @@ def _reset_checklist_completion(checklist: object) -> list[dict]:
             continue
         reset_items.append({**item, "completed": False})
     return reset_items
-
-
-async def get_reminder_by_task(
-    db: AsyncSession,
-    task_id: int,
-    user: User,
-) -> Optional[Reminder]:
-    """Get reminder linked to a task."""
-    result = await db.execute(
-        select(Reminder).where(
-            Reminder.task_id == task_id, Reminder.user_id == user.id
-        )
-    )
-    return result.scalar_one_or_none()

@@ -20,7 +20,6 @@ from app.models.garmin import (
 )
 from app.models.calendar import CalendarEvent
 from app.models.job import Job
-from app.models.task import TaskPriority
 from app.models.user import User, UserRole
 
 
@@ -103,7 +102,7 @@ def make_briefing(
     b.date = briefing_date or date(2026, 3, 20)
     b.content = "# Daily Briefing\n\nTest content"
     b.health_data_json = {"sleep": {}, "metrics": {}}
-    b.tasks_data_json = {"active_count": 5}
+    b.actions_data_json = {"active_count": 5}
     b.calendar_data_json = {"events": []}
     b.jobs_data_json = {"active_count": 3}
     b.generated_at = datetime(2026, 3, 20, 8, 0, 0, tzinfo=timezone.utc)
@@ -175,13 +174,13 @@ class TestHealthSnapshot:
         assert snapshot["activities"] == []
 
 
-# ── Test Tasks Snapshot ──────────────────────────────────────────────────────
+# ── Test Actions Snapshot ────────────────────────────────────────────────────
 
 
-class TestTasksSnapshot:
+class TestActionsSnapshot:
     @pytest.mark.asyncio
-    async def test_with_tasks(self):
-        from app.services.vitals_briefing import get_tasks_snapshot
+    async def test_with_actions(self):
+        from app.services.vitals_briefing import get_actions_snapshot
 
         call_count = 0
 
@@ -196,10 +195,10 @@ class TestTasksSnapshot:
                 # overdue_count
                 result.scalar.return_value = 2
             elif call_count == 3:
-                # today's deadlines
+                # today's actions
                 row = MagicMock()
                 row.title = "Review PR"
-                row.priority = TaskPriority.high
+                row.is_urgent = True
                 result.all.return_value = [row]
             elif call_count == 4:
                 # completed in 7d
@@ -212,17 +211,18 @@ class TestTasksSnapshot:
         db = AsyncMock()
         db.execute = mock_execute
 
-        snapshot = await get_tasks_snapshot(db, 1, date(2026, 3, 20))
+        snapshot = await get_actions_snapshot(db, 1, date(2026, 3, 20))
 
         assert snapshot["active_count"] == 10
         assert snapshot["overdue_count"] == 2
-        assert len(snapshot["todays_deadlines"]) == 1
-        assert snapshot["todays_deadlines"][0]["title"] == "Review PR"
+        assert len(snapshot["todays_actions"]) == 1
+        assert snapshot["todays_actions"][0]["title"] == "Review PR"
+        assert snapshot["todays_actions"][0]["is_urgent"] is True
         assert snapshot["completion_rate_7d"] == 70
 
     @pytest.mark.asyncio
-    async def test_no_tasks(self):
-        from app.services.vitals_briefing import get_tasks_snapshot
+    async def test_no_actions(self):
+        from app.services.vitals_briefing import get_actions_snapshot
 
         async def mock_execute(query):
             result = MagicMock()
@@ -233,11 +233,11 @@ class TestTasksSnapshot:
         db = AsyncMock()
         db.execute = mock_execute
 
-        snapshot = await get_tasks_snapshot(db, 1, date(2026, 3, 20))
+        snapshot = await get_actions_snapshot(db, 1, date(2026, 3, 20))
 
         assert snapshot["active_count"] == 0
         assert snapshot["overdue_count"] == 0
-        assert snapshot["todays_deadlines"] == []
+        assert snapshot["todays_actions"] == []
         assert snapshot["completion_rate_7d"] == 0
 
 
@@ -400,11 +400,11 @@ class TestPromptAssembly:
             "body_battery": {"high": 85, "low": 25},
             "activities": [{"type": "running", "name": "Morning Run", "duration_seconds": 1800, "start_time": "2026-03-20T07:00:00", "distance_m": 5000, "avg_hr": 155, "calories": 350}],
         }
-        tasks = {"active_count": 10, "overdue_count": 2, "todays_deadlines": [{"title": "Review PR", "priority": "high"}], "completion_rate_7d": 70}
+        actions = {"active_count": 10, "overdue_count": 2, "todays_actions": [{"title": "Review PR", "is_urgent": True}], "completion_rate_7d": 70}
         calendar = {"events": [{"title": "Standup", "start_time": "2026-03-20T09:00:00", "end_time": "2026-03-20T09:30:00", "all_day": False}], "meetings_count": 1, "interviews": [], "free_blocks": []}
         jobs = {"upcoming_interviews": [{"company": "Google", "title": "SWE", "date": "2026-03-21", "next_action": "Interview"}], "active_count": 5, "pending_actions": []}
 
-        prompt = _build_briefing_prompt(health, tasks, calendar, jobs)
+        prompt = _build_briefing_prompt(health, actions, calendar, jobs)
 
         assert "## Health Data (Garmin)" in prompt
         assert "8h 0m" in prompt
@@ -412,7 +412,7 @@ class TestPromptAssembly:
         assert "Body Battery" in prompt
         assert "## Today's Schedule" in prompt
         assert "## Workload" in prompt
-        assert "Active tasks: 10" in prompt
+        assert "Active actions: 10" in prompt
         assert "## Job Hunt" in prompt
         assert "Google" in prompt
         assert "Health Status" in prompt
@@ -457,11 +457,11 @@ class TestGenerationService:
     @pytest.mark.asyncio
     @patch("app.services.vitals_briefing.get_jobs_snapshot")
     @patch("app.services.vitals_briefing.get_calendar_snapshot")
-    @patch("app.services.vitals_briefing.get_tasks_snapshot")
+    @patch("app.services.vitals_briefing.get_actions_snapshot")
     @patch("app.services.vitals_briefing.get_health_snapshot")
     @patch("app.services.vitals_briefing._get_llm_for_user")
     async def test_generate_new_briefing(
-        self, mock_llm, mock_health, mock_tasks, mock_cal, mock_jobs
+        self, mock_llm, mock_health, mock_actions, mock_cal, mock_jobs
     ):
         from app.services.vitals_briefing import generate_vitals_briefing
 
@@ -470,7 +470,7 @@ class TestGenerationService:
         mock_llm.return_value = (mock_adapter, "openai")
 
         mock_health.return_value = {"sleep": {}, "metrics": {}, "body_battery": {}, "activities": []}
-        mock_tasks.return_value = {"active_count": 5, "overdue_count": 0, "todays_deadlines": [], "completion_rate_7d": 80}
+        mock_actions.return_value = {"active_count": 5, "overdue_count": 0, "todays_actions": [], "completion_rate_7d": 80}
         mock_cal.return_value = {"events": [], "meetings_count": 0, "interviews": [], "free_blocks": []}
         mock_jobs.return_value = {"upcoming_interviews": [], "active_count": 2, "pending_actions": []}
 
@@ -489,11 +489,11 @@ class TestGenerationService:
     @pytest.mark.asyncio
     @patch("app.services.vitals_briefing.get_jobs_snapshot")
     @patch("app.services.vitals_briefing.get_calendar_snapshot")
-    @patch("app.services.vitals_briefing.get_tasks_snapshot")
+    @patch("app.services.vitals_briefing.get_actions_snapshot")
     @patch("app.services.vitals_briefing.get_health_snapshot")
     @patch("app.services.vitals_briefing._get_llm_for_user")
     async def test_regenerate_existing_briefing(
-        self, mock_llm, mock_health, mock_tasks, mock_cal, mock_jobs
+        self, mock_llm, mock_health, mock_actions, mock_cal, mock_jobs
     ):
         from app.services.vitals_briefing import generate_vitals_briefing
 
@@ -502,7 +502,7 @@ class TestGenerationService:
         mock_llm.return_value = (mock_adapter, "openai")
 
         mock_health.return_value = {"sleep": {}, "metrics": {}, "body_battery": {}, "activities": []}
-        mock_tasks.return_value = {"active_count": 5, "overdue_count": 0, "todays_deadlines": [], "completion_rate_7d": 80}
+        mock_actions.return_value = {"active_count": 5, "overdue_count": 0, "todays_actions": [], "completion_rate_7d": 80}
         mock_cal.return_value = {"events": [], "meetings_count": 0, "interviews": [], "free_blocks": []}
         mock_jobs.return_value = {"upcoming_interviews": [], "active_count": 2, "pending_actions": []}
 
@@ -533,11 +533,11 @@ class TestGenerationService:
     @pytest.mark.asyncio
     @patch("app.services.vitals_briefing.get_jobs_snapshot")
     @patch("app.services.vitals_briefing.get_calendar_snapshot")
-    @patch("app.services.vitals_briefing.get_tasks_snapshot")
+    @patch("app.services.vitals_briefing.get_actions_snapshot")
     @patch("app.services.vitals_briefing.get_health_snapshot")
     @patch("app.services.vitals_briefing._get_llm_for_user")
     async def test_llm_failure_returns_none(
-        self, mock_llm, mock_health, mock_tasks, mock_cal, mock_jobs
+        self, mock_llm, mock_health, mock_actions, mock_cal, mock_jobs
     ):
         from app.services.vitals_briefing import generate_vitals_briefing
 
@@ -546,7 +546,7 @@ class TestGenerationService:
         mock_llm.return_value = (mock_adapter, "openai")
 
         mock_health.return_value = {"sleep": {}, "metrics": {}, "body_battery": {}, "activities": []}
-        mock_tasks.return_value = {"active_count": 0, "overdue_count": 0, "todays_deadlines": [], "completion_rate_7d": 0}
+        mock_actions.return_value = {"active_count": 0, "overdue_count": 0, "todays_actions": [], "completion_rate_7d": 0}
         mock_cal.return_value = {"events": [], "meetings_count": 0, "interviews": [], "free_blocks": []}
         mock_jobs.return_value = {"upcoming_interviews": [], "active_count": 0, "pending_actions": []}
 

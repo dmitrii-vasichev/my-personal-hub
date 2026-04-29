@@ -29,7 +29,7 @@ describe("ApiClient error handling", () => {
     });
     // Re-import to get fresh instance with mocked fetch
     const { api } = await import("@/lib/api");
-    return api.post("/api/tags", { name: "test" });
+    return api.post("/api/actions", { title: "test" });
   }
 
   it("extracts string detail from backend error", async () => {
@@ -67,6 +67,6 @@ describe("ApiClient error handling", () => {
       headers: new Headers(),
     });
     const { api } = await import("@/lib/api");
-    await expect(api.post("/api/tags", { name: "test" })).rejects.toThrow("Request failed");
+    await expect(api.post("/api/actions", { title: "test" })).rejects.toThrow("Request failed");
   });
 });

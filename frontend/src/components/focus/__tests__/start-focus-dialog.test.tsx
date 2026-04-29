@@ -24,7 +24,7 @@ describe("StartFocusDialog", () => {
       <StartFocusDialog
         open
         onOpenChange={() => {}}
-        taskId={42}
+        actionId={42}
         planItemId={null}
       />,
     );
@@ -38,7 +38,7 @@ describe("StartFocusDialog", () => {
       <StartFocusDialog
         open
         onOpenChange={() => {}}
-        taskId={42}
+        actionId={42}
         planItemId={null}
       />,
     );
@@ -47,8 +47,7 @@ describe("StartFocusDialog", () => {
       expect(mutateAsyncSpy).toHaveBeenCalledTimes(1);
     });
     expect(mutateAsyncSpy).toHaveBeenCalledWith({
-      task_id: 42,
-      action_id: null,
+      action_id: 42,
       plan_item_id: null,
       planned_minutes: 25,
     });
@@ -59,14 +58,12 @@ describe("StartFocusDialog", () => {
       <StartFocusDialog
         open
         onOpenChange={() => {}}
-        taskId={null}
         planItemId={7}
       />,
     );
     fireEvent.click(screen.getByRole("button", { name: "50M" }));
     await waitFor(() => {
       expect(mutateAsyncSpy).toHaveBeenCalledWith({
-        task_id: null,
         action_id: null,
         plan_item_id: 7,
         planned_minutes: 50,

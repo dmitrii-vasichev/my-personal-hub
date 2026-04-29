@@ -174,8 +174,6 @@ async def reset_demo_data(
         create_notes,
         create_profile,
         create_pulse_data,
-        create_tags,
-        create_tasks,
         create_vitals_data,
     )
 
@@ -183,8 +181,6 @@ async def reset_demo_data(
 
     user = await create_demo_user(db)
     await create_profile(db, user.id)
-    tags = await create_tags(db, user.id)
-    await create_tasks(db, user.id, tags)
     await create_jobs(db, user.id)
     await create_events(db, user.id)
     await create_kb_docs(db, user.id)

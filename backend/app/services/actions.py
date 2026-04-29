@@ -9,7 +9,6 @@ from zoneinfo import ZoneInfo
 from fastapi import HTTPException
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.core.scheduler import cancel_reminder_notification, schedule_reminder_notification
 from app.models.reminder import Reminder, ReminderStatus
@@ -81,7 +80,6 @@ async def create_action(
     action_date: date | None = None,
     remind_at: datetime | None = None,
     recurrence_rule: str | None = None,
-    task_id: int | None = None,
     is_urgent: bool = False,
     details: str | None = None,
     checklist: list[dict] | None = None,
@@ -94,7 +92,6 @@ async def create_action(
         action_date=_derive_action_date(remind_at, action_date),
         remind_at=remind_at,
         recurrence_rule=recurrence_rule,
-        task_id=task_id,
         is_floating=remind_at is None,
         is_urgent=is_urgent,
     )
@@ -127,10 +124,7 @@ async def list_actions(
             Reminder.created_at.asc(),
         )
     result = await db.execute(
-        select(Reminder)
-        .options(selectinload(Reminder.task))
-        .where(and_(*conditions))
-        .order_by(*order)
+        select(Reminder).where(and_(*conditions)).order_by(*order)
     )
     actions = list(result.scalars().all())
     if status_filter == ReminderStatus.done:
@@ -144,9 +138,7 @@ async def get_action(
     user: User,
 ) -> Optional[Reminder]:
     result = await db.execute(
-        select(Reminder)
-        .options(selectinload(Reminder.task))
-        .where(Reminder.id == action_id, Reminder.user_id == user.id)
+        select(Reminder).where(Reminder.id == action_id, Reminder.user_id == user.id)
     )
     return result.scalar_one_or_none()
 

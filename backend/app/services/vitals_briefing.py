@@ -18,8 +18,8 @@ from app.models.garmin import (
     VitalsSleep,
 )
 from app.models.job import ApplicationStatus, Job
+from app.models.reminder import Reminder, ReminderStatus
 from app.models.settings import UserSettings
-from app.models.task import Task, TaskStatus
 from app.services.ai import get_llm_client
 from app.services.settings import get_decrypted_key
 
@@ -38,9 +38,6 @@ _INTERVIEW_STATUSES = {
     ApplicationStatus.technical_interview,
     ApplicationStatus.final_interview,
 }
-
-_DONE_TASK_STATUSES = {TaskStatus.done, TaskStatus.cancelled}
-
 
 # ── Task 1: Health data snapshot ──────────────────────────────────────────────
 
@@ -117,67 +114,74 @@ async def get_health_snapshot(
     }
 
 
-# ── Task 2: Tasks data snapshot ──────────────────────────────────────────────
+# ── Task 2: Actions data snapshot ────────────────────────────────────────────
 
 
-async def get_tasks_snapshot(
+async def get_actions_snapshot(
     db: AsyncSession, user_id: int, target_date: date
 ) -> dict:
-    """Collect active tasks count, overdue count, today's deadlines, completion rate."""
-    now = datetime.combine(target_date, datetime.min.time(), tzinfo=timezone.utc)
-    day_end = now + timedelta(days=1)
+    """Collect active actions count, overdue count, today's actions, completion rate."""
+    day_start = datetime.combine(target_date, datetime.min.time(), tzinfo=timezone.utc)
+    day_end = day_start + timedelta(days=1)
 
-    # Active tasks (not done/cancelled)
+    # Active actions
     result = await db.execute(
-        select(func.count(Task.id)).where(
-            Task.user_id == user_id,
-            Task.status.notin_([s.value for s in _DONE_TASK_STATUSES]),
+        select(func.count(Reminder.id)).where(
+            Reminder.user_id == user_id,
+            Reminder.status == ReminderStatus.pending,
         )
     )
     active_count = result.scalar() or 0
 
-    # Overdue tasks
+    # Overdue actions
     result = await db.execute(
-        select(func.count(Task.id)).where(
-            Task.user_id == user_id,
-            Task.status.notin_([s.value for s in _DONE_TASK_STATUSES]),
-            Task.deadline.isnot(None),
-            Task.deadline < now,
+        select(func.count(Reminder.id)).where(
+            Reminder.user_id == user_id,
+            Reminder.status == ReminderStatus.pending,
+            (
+                (Reminder.action_date < target_date)
+                | (Reminder.remind_at < day_start)
+                | (Reminder.snoozed_until < day_start)
+            ),
         )
     )
     overdue_count = result.scalar() or 0
 
-    # Today's deadlines
+    # Today's scheduled actions
     result = await db.execute(
-        select(Task.title, Task.priority).where(
-            Task.user_id == user_id,
-            Task.status.notin_([s.value for s in _DONE_TASK_STATUSES]),
-            Task.deadline.isnot(None),
-            Task.deadline >= now,
-            Task.deadline < day_end,
+        select(Reminder.title, Reminder.is_urgent).where(
+            Reminder.user_id == user_id,
+            Reminder.status == ReminderStatus.pending,
+            (
+                (Reminder.action_date == target_date)
+                | (
+                    (Reminder.remind_at >= day_start)
+                    & (Reminder.remind_at < day_end)
+                )
+            ),
         )
     )
-    todays_deadlines = [
-        {"title": row.title, "priority": row.priority.value if row.priority else "medium"}
+    todays_actions = [
+        {"title": row.title, "is_urgent": bool(row.is_urgent)}
         for row in result.all()
     ]
 
     # 7-day completion rate
-    week_ago = now - timedelta(days=7)
+    week_ago = day_start - timedelta(days=7)
     result = await db.execute(
-        select(func.count(Task.id)).where(
-            Task.user_id == user_id,
-            Task.status == TaskStatus.done.value,
-            Task.completed_at.isnot(None),
-            Task.completed_at >= week_ago,
+        select(func.count(Reminder.id)).where(
+            Reminder.user_id == user_id,
+            Reminder.status == ReminderStatus.done,
+            Reminder.completed_at.isnot(None),
+            Reminder.completed_at >= week_ago,
         )
     )
     completed_7d = result.scalar() or 0
 
     result = await db.execute(
-        select(func.count(Task.id)).where(
-            Task.user_id == user_id,
-            Task.created_at >= week_ago,
+        select(func.count(Reminder.id)).where(
+            Reminder.user_id == user_id,
+            Reminder.created_at >= week_ago,
         )
     )
     created_7d = result.scalar() or 0
@@ -186,7 +190,7 @@ async def get_tasks_snapshot(
     return {
         "active_count": active_count,
         "overdue_count": overdue_count,
-        "todays_deadlines": todays_deadlines,
+        "todays_actions": todays_actions,
         "completion_rate_7d": completion_rate,
     }
 
@@ -346,7 +350,7 @@ def _format_seconds(seconds: int | None) -> str:
 
 def _build_briefing_prompt(
     health: dict | None,
-    tasks: dict | None,
+    actions: dict | None,
     calendar: dict | None,
     jobs: dict | None,
 ) -> str:
@@ -411,18 +415,19 @@ def _build_briefing_prompt(
         if len(lines) > 1:
             sections.append("\n".join(lines))
 
-    # Tasks section
-    if tasks:
+    # Actions section
+    if actions:
         lines = ["## Workload"]
         lines.append(
-            f"- Active tasks: {tasks.get('active_count', 0)}, "
-            f"overdue: {tasks.get('overdue_count', 0)}"
+            f"- Active actions: {actions.get('active_count', 0)}, "
+            f"overdue: {actions.get('overdue_count', 0)}"
         )
-        lines.append(f"- Completion rate (7d): {tasks.get('completion_rate_7d', 0)}%")
-        deadlines = tasks.get("todays_deadlines", [])
-        if deadlines:
-            for d in deadlines[:5]:
-                lines.append(f"  - Deadline: {d['title']} (priority: {d['priority']})")
+        lines.append(f"- Completion rate (7d): {actions.get('completion_rate_7d', 0)}%")
+        todays_actions = actions.get("todays_actions", [])
+        if todays_actions:
+            for item in todays_actions[:5]:
+                urgency = "urgent" if item.get("is_urgent") else "normal"
+                lines.append(f"  - Action: {item['title']} ({urgency})")
 
         if len(lines) > 1:
             sections.append("\n".join(lines))
@@ -495,15 +500,15 @@ async def generate_vitals_briefing(
     llm, provider = llm_result
 
     # Collect all snapshots in parallel
-    health, tasks, calendar, jobs = await asyncio.gather(
+    health, actions, calendar, jobs = await asyncio.gather(
         get_health_snapshot(db, user_id, target_date),
-        get_tasks_snapshot(db, user_id, target_date),
+        get_actions_snapshot(db, user_id, target_date),
         get_calendar_snapshot(db, user_id, target_date),
         get_jobs_snapshot(db, user_id, target_date),
     )
 
     # Build prompt
-    user_prompt = _build_briefing_prompt(health, tasks, calendar, jobs)
+    user_prompt = _build_briefing_prompt(health, actions, calendar, jobs)
 
     # Call LLM
     try:
@@ -527,7 +532,7 @@ async def generate_vitals_briefing(
             date=target_date,
             content=content,
             health_data_json=health,
-            tasks_data_json=tasks,
+            actions_data_json=actions,
             calendar_data_json=calendar,
             jobs_data_json=jobs,
             generated_at=datetime.now(timezone.utc),
@@ -536,7 +541,7 @@ async def generate_vitals_briefing(
     else:
         briefing.content = content
         briefing.health_data_json = health
-        briefing.tasks_data_json = tasks
+        briefing.actions_data_json = actions
         briefing.calendar_data_json = calendar
         briefing.jobs_data_json = jobs
         briefing.generated_at = datetime.now(timezone.utc)

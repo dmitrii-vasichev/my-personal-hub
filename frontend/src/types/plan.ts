@@ -14,8 +14,6 @@ export interface PlanItem {
   minutes_planned: number;
   minutes_actual: number | null;
   status: PlanItemStatus;
-  linked_task_id: number | null;
-  task_title: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -50,15 +48,6 @@ export interface ContextReminder {
   remind_at: string | null;
   action_date: string | null;
   is_urgent: boolean;
-  task_id: number | null;
-}
-
-export interface ContextTask {
-  id: number;
-  title: string;
-  priority: string;
-  deadline: string | null;
-  category: string | null;
 }
 
 export interface YesterdaySummary {
@@ -70,7 +59,6 @@ export interface YesterdaySummary {
 export interface PlannerContext {
   date: string;
   timezone: string;
-  pending_tasks: ContextTask[];
   due_reminders: ContextReminder[];
   calendar_events: ContextEvent[];
   yesterday: YesterdaySummary | null;

@@ -5,7 +5,7 @@ export interface DashboardUpcomingEvent {
 }
 
 export interface DashboardSummary {
-  tasks: {
+  actions: {
     total: number;
     active: number;
     done: number;

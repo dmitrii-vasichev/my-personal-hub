@@ -40,8 +40,6 @@ function makeReminder(overrides: Partial<Reminder> = {}): Reminder {
     recurrence_rule: null,
     snooze_count: 0,
     notification_sent_count: 0,
-    task_id: null,
-    task_title: null,
     completed_at: null,
     is_floating: false,
     is_urgent: false,

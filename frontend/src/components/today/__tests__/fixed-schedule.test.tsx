@@ -66,8 +66,8 @@ describe("FixedSchedule", () => {
           id: 99,
           title: "Buy tickets",
           remind_at: "2026-04-20T10:30:00Z",
+          action_date: null,
           is_urgent: true,
-          task_id: null,
         },
       ],
     };

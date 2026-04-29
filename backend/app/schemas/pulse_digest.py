@@ -76,12 +76,12 @@ class DigestItemListResponse(BaseModel):
 
 
 class DigestItemAction(BaseModel):
-    action: Literal["to_task", "to_note", "to_job", "skip"]
+    action: Literal["to_action", "to_note", "to_job", "skip"]
 
 
 class DigestItemBulkAction(BaseModel):
     item_ids: list[int]
-    action: Literal["to_task", "to_note", "to_job", "skip"]
+    action: Literal["to_action", "to_note", "to_job", "skip"]
 
 
 class DigestItemReadUpdate(BaseModel):

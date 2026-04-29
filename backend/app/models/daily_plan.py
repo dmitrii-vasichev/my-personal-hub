@@ -1,6 +1,6 @@
 import enum
 from datetime import date, datetime
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from sqlalchemy import (
     Date,
@@ -19,9 +19,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
-
-if TYPE_CHECKING:
-    from app.models.task import Task
 
 
 class PlanItemStatus(str, enum.Enum):
@@ -103,12 +100,6 @@ class PlanItem(Base):
     status: Mapped[PlanItemStatus] = mapped_column(
         Enum(PlanItemStatus), default=PlanItemStatus.pending, nullable=False
     )
-    linked_task_id: Mapped[Optional[int]] = mapped_column(
-        Integer,
-        ForeignKey("tasks.id", ondelete="SET NULL"),
-        nullable=True,
-        index=True,
-    )
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -123,8 +114,6 @@ class PlanItem(Base):
     plan: Mapped["DailyPlan"] = relationship(
         "DailyPlan", back_populates="items", lazy="noload"
     )
-    task: Mapped[Optional["Task"]] = relationship("Task", lazy="noload")
-
     __table_args__ = (
         Index("ix_plan_items_plan_order", "plan_id", "order"),
     )

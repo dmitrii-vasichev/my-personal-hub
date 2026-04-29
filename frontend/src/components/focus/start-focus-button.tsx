@@ -4,14 +4,12 @@ import { useState } from "react";
 import { StartFocusDialog } from "./start-focus-dialog";
 
 interface StartFocusButtonProps {
-  taskId?: number | null;
   actionId?: number | null;
   planItemId?: number | null;
   className?: string;
 }
 
 export function StartFocusButton({
-  taskId,
   actionId,
   planItemId,
   className,
@@ -31,7 +29,6 @@ export function StartFocusButton({
       <StartFocusDialog
         open={open}
         onOpenChange={setOpen}
-        taskId={taskId}
         actionId={actionId}
         planItemId={planItemId}
       />

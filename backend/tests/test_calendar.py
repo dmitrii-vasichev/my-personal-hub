@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 from fastapi import HTTPException
 
 from app.models.calendar import CalendarEvent, EventNote, EventSource
-from app.models.task import Visibility
+from app.models.visibility import Visibility
 from app.models.user import User, UserRole
 from app.schemas.calendar import CalendarEventCreate, CalendarEventUpdate, EventNoteCreate, EventNoteUpdate
 from app.services import calendar as calendar_service

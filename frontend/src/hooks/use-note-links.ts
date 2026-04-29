@@ -3,42 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import type { LinkedNoteBrief } from "@/types/note";
-import { TASKS_KEY } from "./use-tasks";
 import { JOBS_KEY } from "./use-jobs";
 import { CALENDAR_KEY } from "./use-calendar";
-
-// ── Task → Linked Notes ─────────────────────────────────────────────────────
-
-export function useTaskLinkedNotes(taskId: number) {
-  return useQuery<LinkedNoteBrief[]>({
-    queryKey: [TASKS_KEY, taskId, "linked-notes"],
-    queryFn: () =>
-      api.get<LinkedNoteBrief[]>(`/api/tasks/${taskId}/linked-notes`),
-    enabled: taskId > 0,
-  });
-}
-
-export function useLinkNoteToTask(taskId: number) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (noteId: number) =>
-      api.post(`/api/notes/${noteId}/link-task/${taskId}`, {}),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [TASKS_KEY, taskId, "linked-notes"] });
-    },
-  });
-}
-
-export function useUnlinkNoteFromTask(taskId: number) {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (noteId: number) =>
-      api.delete(`/api/notes/${noteId}/link-task/${taskId}`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: [TASKS_KEY, taskId, "linked-notes"] });
-    },
-  });
-}
 
 // ── Job → Linked Notes ──────────────────────────────────────────────────────
 

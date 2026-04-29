@@ -41,7 +41,7 @@ const mockActionedItem: DigestItem = {
   status: "actioned",
   read_at: "2026-03-19T12:05:00Z",
   is_read: true,
-  action_type: "to_task",
+  action_type: "to_action",
   action_result_id: 42,
 };
 
@@ -116,6 +116,9 @@ describe("DigestItemCard", () => {
       />
     );
 
+    fireEvent.click(screen.getByTitle("Save as Action"));
+    expect(onAction).toHaveBeenCalledWith("to_action");
+
     fireEvent.click(screen.getByTitle("Save as Note"));
     expect(onAction).toHaveBeenCalledWith("to_note");
 
@@ -171,9 +174,9 @@ describe("DigestItemCard", () => {
 
     const card = screen.getByTestId("digest-item-card");
     expect(card.className).toContain("opacity-50");
-    expect(screen.getByText("Saved")).toBeInTheDocument();
+    expect(screen.getByText("Saved as action")).toBeInTheDocument();
     // No action buttons for actioned items
-    expect(screen.queryByTitle("Save as Task")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Save as Action")).not.toBeInTheDocument();
   });
 
   it("shows skipped items as dimmed", () => {

@@ -13,22 +13,13 @@ from app.schemas.action import (
     ActionSnooze,
     ActionUpdate,
 )
-from app.schemas.task_cleanup import (
-    PreserveTaskLinkedRemindersRequest,
-    PreserveTaskLinkedRemindersResponse,
-    TaskLinkedReminderReviewItem,
-)
 from app.services import actions as action_service
-from app.services import task_cleanup as task_cleanup_service
 
 router = APIRouter(prefix="/api/actions", tags=["actions"])
 
 
 def _to_response(action) -> ActionResponse:
-    resp = ActionResponse.model_validate(action)
-    if action.task_id and hasattr(action, "task") and action.task:
-        resp.task_title = action.task.title
-    return resp
+    return ActionResponse.model_validate(action)
 
 
 @router.get("/", response_model=list[ActionResponse])
@@ -58,39 +49,11 @@ async def create_action(
         action_date=data.action_date,
         remind_at=data.remind_at,
         recurrence_rule=data.recurrence_rule,
-        task_id=data.task_id,
         is_urgent=data.is_urgent,
         details=data.details,
         checklist=data.checklist,
     )
     return _to_response(action)
-
-
-@router.get(
-    "/task-cleanup/review",
-    response_model=list[TaskLinkedReminderReviewItem],
-)
-async def review_task_linked_reminders(
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return await task_cleanup_service.list_task_linked_reminder_review(
-        db, current_user
-    )
-
-
-@router.post(
-    "/task-cleanup/preserve",
-    response_model=PreserveTaskLinkedRemindersResponse,
-)
-async def preserve_task_linked_reminders(
-    data: PreserveTaskLinkedRemindersRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(restrict_demo),
-):
-    return await task_cleanup_service.preserve_task_linked_reminders(
-        db, current_user, data.reminder_ids
-    )
 
 
 @router.patch("/{action_id}", response_model=ActionResponse)

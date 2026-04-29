@@ -1,16 +1,44 @@
-# Actions Unification Status
+# Legacy Tasks Domain Removal Status
 
 Last updated: 2026-04-29
 
 ## Current State
 
-- Branch: `codex/actions-unification`
+- Branch: `codex/remove-legacy-tasks-domain`
 - Base branch: `main`
-- Working tree at start of Actions pass: clean
-- Current feature: Actions unification
+- Current feature: Legacy Tasks domain removal
 - Current execution source of truth: `docs/PLAN.md`
 
 ## Live Journal
+
+### 2026-04-29 — Legacy Tasks Domain Removed
+
+Changed:
+- Added destructive Alembic migration `b2c3d4e5f6a7_remove_legacy_tasks_domain`.
+- Detached and removed legacy task references from reminders, focus sessions, planner items, and vitals briefing storage.
+- Dropped legacy task/tag/link/update tables and removed task-only backend APIs, models, schemas, services, seed data, and tests.
+- Moved `Visibility` into `app.models.visibility` for Calendar and shared access-control usage.
+- Removed task fields from Actions, Reminders, Focus, Planner, Pulse, Dashboard, Vitals, Jobs, Calendar, and Notes flows.
+- Replaced Pulse `to_task` with `to_action`, including a visible frontend "Save as Action" control.
+- Removed frontend task/tag pages, hooks, components, types, cleanup UI, linked-task surfaces, and the Actions page `Legacy Review` button.
+- Kept `/tasks`, `/tasks/[id]`, and `/tasks/analytics` as redirect shims to `/actions`.
+- Updated `docs/PLAN.md` and `docs/TEST_PLAN.md` for the destructive removal phase.
+
+Validation:
+- Migration: `cd backend && PYTHONPATH=. ./venv/bin/alembic upgrade head` -> passed.
+- Migration current: `cd backend && PYTHONPATH=. ./venv/bin/alembic current` -> `b2c3d4e5f6a7 (head)`.
+- Database inspection confirmed no legacy tables remain among `tasks`, `task_updates`, `task_tags`, `tags`, `task_event_links`, `job_task_links`, `note_task_links`.
+- Database inspection confirmed no legacy columns remain among `reminders.task_id`, `focus_sessions.task_id`, `plan_items.linked_task_id`, `vitals_briefings.tasks_data_json`; `vitals_briefings.actions_data_json` exists.
+- Backend focused: `cd backend && PYTHONPATH=. ./venv/bin/pytest -q tests/test_actions.py tests/test_reminders.py tests/test_focus_sessions.py tests/test_planner_api.py tests/test_planner_service.py tests/test_pulse_digest_items.py tests/test_pulse_inbox.py tests/test_calendar.py tests/test_job_links.py tests/test_dashboard.py tests/test_vitals_briefing.py` -> `185 passed`.
+- Backend compile smoke: `cd backend && PYTHONPATH=. ./venv/bin/python -m py_compile app/main.py app/api/actions.py app/api/reminders.py app/api/calendar.py app/api/jobs.py app/api/notes.py app/services/actions.py app/services/reminders.py app/services/planner.py app/services/pulse_digest_items.py app/services/pulse_inbox.py app/services/vitals_briefing.py` -> passed.
+- Backend broad: `cd backend && PYTHONPATH=. ./venv/bin/pytest -q` -> `770 passed`.
+- Frontend focused: `cd frontend && npm test -- --run src/components/actions/__tests__/action-list-groups.test.tsx src/components/actions/__tests__/actions-page.test.tsx src/components/focus/__tests__/start-focus-dialog.test.tsx src/components/today/__tests__/fixed-schedule.test.tsx src/components/today/__tests__/focus-queue.test.tsx src/components/today/__tests__/now-block.test.tsx src/components/today/__tests__/plan-bar.test.tsx src/hooks/__tests__/use-focus-session.test.tsx src/components/reminders/__tests__/reminder-list-groups.test.tsx src/components/reminders/__tests__/reminders-mobile-polish.test.tsx __tests__/digest-items.test.tsx __tests__/job-detail-tracking.test.tsx __tests__/collapsible-description.test.tsx __tests__/inline-edit.test.tsx __tests__/api-error-handling.test.ts` -> `73 passed`.
+- Frontend broad: `cd frontend && npm test -- --run` -> `372 passed`.
+- Frontend lint: `cd frontend && npm run lint` -> passed.
+- Frontend build: `cd frontend && npm run build` -> passed.
+
+Notes:
+- Backend broad validation still emits existing dependency/deprecation and `AsyncMock` warnings, but no failures.
 
 ### 2026-04-29 — Actions Unification Started
 

@@ -14,7 +14,6 @@ class PlanItemBase(BaseModel):
     title: str = Field(min_length=1, max_length=500)
     category: Optional[str] = Field(default=None, max_length=100)
     minutes_planned: int = Field(ge=0)
-    linked_task_id: Optional[int] = None
     notes: Optional[str] = None
 
 
@@ -39,8 +38,6 @@ class PlanItemResponse(PlanItemBase):
     plan_id: int
     minutes_actual: Optional[int] = None
     status: PlanItemStatus
-    # Derived from linked_task_id; None if the task is missing/deleted.
-    task_title: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -75,21 +72,12 @@ class DailyPlanResponse(BaseModel):
 # ── Planner context (read-only, derived) ─────────────────────────────────────
 
 
-class ContextTask(BaseModel):
-    id: int
-    title: str
-    priority: str
-    deadline: Optional[datetime] = None
-    category: Optional[str] = None
-
-
 class ContextReminder(BaseModel):
     id: int
     title: str
     remind_at: Optional[datetime] = None
     action_date: Optional[date_type] = None
     is_urgent: bool
-    task_id: Optional[int] = None
 
 
 class ContextEvent(BaseModel):
@@ -108,7 +96,6 @@ class YesterdaySummary(BaseModel):
 class PlannerContextResponse(BaseModel):
     date: date_type
     timezone: str
-    pending_tasks: list[ContextTask]
     due_reminders: list[ContextReminder]
     calendar_events: list[ContextEvent]
     yesterday: Optional[YesterdaySummary] = None

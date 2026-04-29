@@ -26,10 +26,9 @@ from app.models.job import ApplicationStatus, Job, StatusHistory
 from app.models.knowledge_base import AiKnowledgeBase
 from app.models.note import Note
 from app.models.profile import UserProfile
-from app.models.tag import Tag, TaskTag
-from app.models.task import Task, TaskPriority, TaskSource, TaskStatus, Visibility
 from app.models.telegram import PulseDigest, PulseDigestItem, PulseSource
 from app.models.user import User, UserRole
+from app.models.visibility import Visibility
 
 DEMO_EMAIL = "demo@personalhub.app"
 DEMO_DISPLAY_NAME = "Alex Demo"
@@ -112,197 +111,6 @@ async def create_profile(session, user_id: int) -> None:
     )
     session.add(profile)
     print("  Created profile")
-
-
-async def create_tags(session, user_id: int) -> list[Tag]:
-    """Create 8 tags and return them."""
-    tag_data = [
-        ("Work", "#4f8ef7"),
-        ("Personal", "#a855f7"),
-        ("Learning", "#f59e0b"),
-        ("Health", "#10b981"),
-        ("Finance", "#ef4444"),
-        ("Home", "#f97316"),
-        ("Career", "#3b82f6"),
-        ("Side Project", "#8b5cf6"),
-    ]
-    tags = []
-    for name, color in tag_data:
-        tag = Tag(user_id=user_id, name=name, color=color)
-        session.add(tag)
-        tags.append(tag)
-    await session.flush()
-    print(f"  Created {len(tags)} tags")
-    return tags
-
-
-async def create_tasks(session, user_id: int, tags: list[Tag]) -> None:
-    """Create 12 tasks across all statuses with checklists and updates."""
-    now = datetime.now(timezone.utc)
-    tasks_data = [
-        {
-            "title": "Set up CI/CD pipeline for the new microservice",
-            "description": "Configure GitHub Actions for automated testing, linting, and deployment to staging.",
-            "status": TaskStatus.done,
-            "priority": TaskPriority.high,
-            "deadline": now - timedelta(days=3),
-            "tag_indices": [0, 6],
-            "checklist": [
-                {"id": "1", "text": "Create workflow YAML", "completed": True},
-                {"id": "2", "text": "Add test stage", "completed": True},
-                {"id": "3", "text": "Configure deploy to staging", "completed": True},
-            ],
-        },
-        {
-            "title": "Review and update resume for senior roles",
-            "description": "Tailor resume to highlight leadership experience and system design skills.",
-            "status": TaskStatus.in_progress,
-            "priority": TaskPriority.high,
-            "deadline": now + timedelta(days=5),
-            "tag_indices": [6],
-            "checklist": [
-                {"id": "1", "text": "Update work experience section", "completed": True},
-                {"id": "2", "text": "Add recent project metrics", "completed": False},
-                {"id": "3", "text": "Get peer review", "completed": False},
-            ],
-        },
-        {
-            "title": "Complete Advanced TypeScript course",
-            "description": "Finish remaining modules on generics, conditional types, and mapped types.",
-            "status": TaskStatus.in_progress,
-            "priority": TaskPriority.medium,
-            "deadline": now + timedelta(days=14),
-            "tag_indices": [2],
-            "checklist": [
-                {"id": "1", "text": "Module 5: Advanced Generics", "completed": True},
-                {"id": "2", "text": "Module 6: Conditional Types", "completed": True},
-                {"id": "3", "text": "Module 7: Template Literals", "completed": False},
-                {"id": "4", "text": "Final project", "completed": False},
-            ],
-        },
-        {
-            "title": "Fix authentication token refresh bug",
-            "description": "Users are getting logged out randomly. Likely race condition in token refresh logic.",
-            "status": TaskStatus.review,
-            "priority": TaskPriority.urgent,
-            "deadline": now + timedelta(days=1),
-            "tag_indices": [0],
-            "checklist": [],
-        },
-        {
-            "title": "Grocery shopping for the week",
-            "description": "Buy vegetables, fruits, chicken, rice, and snacks.",
-            "status": TaskStatus.new,
-            "priority": TaskPriority.low,
-            "deadline": now + timedelta(days=2),
-            "tag_indices": [1, 5],
-            "checklist": [
-                {"id": "1", "text": "Vegetables and fruits", "completed": False},
-                {"id": "2", "text": "Chicken and fish", "completed": False},
-                {"id": "3", "text": "Rice and pasta", "completed": False},
-            ],
-        },
-        {
-            "title": "Schedule dentist appointment",
-            "description": "Annual checkup overdue. Call Dr. Smith's office.",
-            "status": TaskStatus.backlog,
-            "priority": TaskPriority.medium,
-            "deadline": None,
-            "tag_indices": [3],
-            "checklist": [],
-        },
-        {
-            "title": "Research investment options for Q2",
-            "description": "Compare index funds, bonds, and high-yield savings accounts.",
-            "status": TaskStatus.backlog,
-            "priority": TaskPriority.low,
-            "deadline": None,
-            "tag_indices": [4],
-            "checklist": [],
-        },
-        {
-            "title": "Build personal blog with Next.js",
-            "description": "Create a markdown-powered blog with dark mode, RSS feed, and syntax highlighting.",
-            "status": TaskStatus.in_progress,
-            "priority": TaskPriority.medium,
-            "deadline": now + timedelta(days=30),
-            "tag_indices": [7, 2],
-            "checklist": [
-                {"id": "1", "text": "Set up Next.js project", "completed": True},
-                {"id": "2", "text": "MDX integration", "completed": True},
-                {"id": "3", "text": "Dark mode toggle", "completed": False},
-                {"id": "4", "text": "Deploy to Vercel", "completed": False},
-            ],
-        },
-        {
-            "title": "Prepare for system design interview",
-            "description": "Practice designing distributed systems: URL shortener, chat app, news feed.",
-            "status": TaskStatus.new,
-            "priority": TaskPriority.high,
-            "deadline": now + timedelta(days=10),
-            "tag_indices": [6, 2],
-            "checklist": [
-                {"id": "1", "text": "URL shortener design", "completed": False},
-                {"id": "2", "text": "Chat application design", "completed": False},
-                {"id": "3", "text": "News feed system", "completed": False},
-            ],
-        },
-        {
-            "title": "Organize home office setup",
-            "description": "Cable management, new monitor arm, better lighting for video calls.",
-            "status": TaskStatus.done,
-            "priority": TaskPriority.low,
-            "deadline": now - timedelta(days=7),
-            "tag_indices": [5, 1],
-            "checklist": [
-                {"id": "1", "text": "Order monitor arm", "completed": True},
-                {"id": "2", "text": "Cable management", "completed": True},
-                {"id": "3", "text": "Desk lamp", "completed": True},
-            ],
-        },
-        {
-            "title": "Write blog post about FastAPI testing patterns",
-            "description": "Share learnings from building test suites for async FastAPI apps.",
-            "status": TaskStatus.new,
-            "priority": TaskPriority.medium,
-            "deadline": now + timedelta(days=21),
-            "tag_indices": [7, 2],
-            "checklist": [],
-        },
-        {
-            "title": "Annual gym membership renewal",
-            "description": "Current membership expires in 2 weeks. Check if corporate discount applies.",
-            "status": TaskStatus.cancelled,
-            "priority": TaskPriority.low,
-            "deadline": now - timedelta(days=1),
-            "tag_indices": [3, 4],
-            "checklist": [],
-        },
-    ]
-
-    for td in tasks_data:
-        task = Task(
-            user_id=user_id,
-            created_by_id=user_id,
-            assignee_id=user_id,
-            title=td["title"],
-            description=td["description"],
-            status=td["status"],
-            priority=td["priority"],
-            deadline=td["deadline"],
-            checklist=td["checklist"],
-            source=TaskSource.web,
-            visibility=Visibility.private,
-            completed_at=(now - timedelta(days=2)) if td["status"] == TaskStatus.done else None,
-        )
-        session.add(task)
-        await session.flush()
-
-        # Link tags
-        for idx in td["tag_indices"]:
-            session.add(TaskTag(task_id=task.id, tag_id=tags[idx].id))
-
-    print(f"  Created {len(tasks_data)} tasks with tags")
 
 
 async def create_jobs(session, user_id: int) -> list[Job]:
@@ -931,12 +739,12 @@ async def create_vitals_data(session, user_id: int) -> None:
             " energy reserves. Resting heart rate at 64 bpm is within your normal"
             " range. Stress levels moderate at 28 avg.\n\n"
             "## Day Forecast\n"
-            "Moderate workload ahead: 3 active tasks due today, 1 team meeting"
+            "Moderate workload ahead: 3 actions due today, 1 team meeting"
             " at 2 PM. No interviews scheduled this week. Your energy levels"
             " support focused deep work in the morning.\n\n"
             "## Recommendations\n"
             "- **Best focus window: 9 AM – 12 PM** — Body Battery is highest,"
-            " tackle your most demanding task first\n"
+            " tackle your most demanding action first\n"
             "- Take a 15-min walk after lunch to manage afternoon stress\n"
             "- Light evening activity recommended — your 7-day activity trend"
             " is slightly below average\n\n"
@@ -944,7 +752,7 @@ async def create_vitals_data(session, user_id: int) -> None:
             "- Sleep quality improved 12% this week compared to last week\n"
             "- Resting HR trending down (64 → 62 bpm over 14 days)"
             " — good fitness adaptation\n"
-            "- Task completion rate correlates with sleep scores above 75"
+            "- Action completion rate correlates with sleep scores above 75"
         ),
         generated_at=now,
     )
@@ -963,8 +771,6 @@ async def seed() -> None:
 
         user = await create_demo_user(session)
         await create_profile(session, user.id)
-        tags = await create_tags(session, user.id)
-        await create_tasks(session, user.id, tags)
         await create_jobs(session, user.id)
         await create_events(session, user.id)
         await create_kb_docs(session, user.id)

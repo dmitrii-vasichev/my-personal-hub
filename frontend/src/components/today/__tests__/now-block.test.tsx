@@ -22,7 +22,7 @@ function session(overrides: Partial<FocusSession> = {}): FocusSession {
   return {
     id: 1,
     user_id: 1,
-    task_id: 42,
+    action_id: 42,
     plan_item_id: null,
     // 1 minute ago — plenty of remaining time for a 25m session.
     started_at: new Date(Date.now() - 60_000).toISOString(),
@@ -30,7 +30,7 @@ function session(overrides: Partial<FocusSession> = {}): FocusSession {
     planned_minutes: 25,
     auto_closed: false,
     actual_minutes: null,
-    task_title: "Write PRD",
+    action_title: "Write PRD",
     plan_item_title: null,
     ...overrides,
   };
@@ -50,7 +50,7 @@ describe("NowBlock", () => {
     expect(screen.queryByText("NOW")).toBeNull();
   });
 
-  it("renders NOW label, countdown, and task title when active", () => {
+  it("renders NOW label, countdown, and action title when active", () => {
     activeState.data = session();
     render(<NowBlock />);
     expect(screen.getByText("NOW")).toBeInTheDocument();

@@ -174,7 +174,7 @@ class VitalsBriefing(Base):
     date: Mapped[date] = mapped_column(Date, nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     health_data_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    tasks_data_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    actions_data_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     calendar_data_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     jobs_data_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     generated_at: Mapped[datetime] = mapped_column(

@@ -54,6 +54,7 @@ describe("Actions page", () => {
     expect(screen.getByText("Module · Actions")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "ACTIONS_" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /history/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /legacy review/i })).not.toBeInTheDocument();
   });
 
   it("creates title-only actions as inbox items", async () => {

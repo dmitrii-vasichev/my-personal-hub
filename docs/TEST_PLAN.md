@@ -1,10 +1,23 @@
-# Actions Unification Test Plan
+# Legacy Tasks Domain Removal Test Plan
 
 Last updated: 2026-04-29
 
 ## Strategy
 
-Use TDD for each behavior change. Prefer focused tests around Actions, Reminders compatibility, Focus, navigation, and the removed Tasks surfaces, then run broader frontend validation when the rollout is stable.
+Validate the destructive migration first, then focused backend/frontend areas that previously touched Tasks. Run broader suites after focused regressions are clean.
+
+## Migration
+
+```bash
+cd backend
+PYTHONPATH=. ./venv/bin/alembic upgrade head
+PYTHONPATH=. ./venv/bin/alembic current
+```
+
+Manual database inspection:
+- Confirm legacy tables are absent: `tasks`, `task_updates`, `task_tags`, `tags`, `task_event_links`, `job_task_links`, `note_task_links`.
+- Confirm legacy columns are absent: `reminders.task_id`, `focus_sessions.task_id`, `plan_items.linked_task_id`, `vitals_briefings.tasks_data_json`.
+- Confirm `vitals_briefings.actions_data_json` exists.
 
 ## Backend
 
@@ -12,22 +25,45 @@ Focused commands:
 
 ```bash
 cd backend
-source venv/bin/activate
-pytest -q tests/test_actions.py tests/test_reminders.py tests/test_focus_sessions.py
-pytest -q tests/test_actions.py tests/test_telegram_notifications.py
-pytest -q tests/test_task_cleanup.py
+PYTHONPATH=. ./venv/bin/pytest -q \
+  tests/test_actions.py \
+  tests/test_reminders.py \
+  tests/test_focus_sessions.py \
+  tests/test_planner_api.py \
+  tests/test_planner_service.py \
+  tests/test_pulse_digest_items.py \
+  tests/test_pulse_inbox.py \
+  tests/test_calendar.py \
+  tests/test_job_links.py \
+  tests/test_dashboard.py \
+  tests/test_vitals_briefing.py
+```
+
+Compile/import smoke:
+
+```bash
+cd backend
+PYTHONPATH=. ./venv/bin/python -m py_compile \
+  app/main.py \
+  app/api/actions.py \
+  app/api/reminders.py \
+  app/api/calendar.py \
+  app/api/jobs.py \
+  app/api/notes.py \
+  app/services/actions.py \
+  app/services/reminders.py \
+  app/services/planner.py \
+  app/services/pulse_digest_items.py \
+  app/services/pulse_inbox.py \
+  app/services/vitals_briefing.py
 ```
 
 Broad command:
 
 ```bash
 cd backend
-source venv/bin/activate
-pytest -q
+PYTHONPATH=. ./venv/bin/pytest -q
 ```
-
-Expected caveats:
-- Existing task-reminder persistence tests may emit `AsyncMock` warnings.
 
 ## Frontend
 
@@ -35,9 +71,22 @@ Focused commands:
 
 ```bash
 cd frontend
-npm test -- --run src/components/actions/__tests__/action-list-groups.test.tsx src/components/actions/__tests__/actions-page.test.tsx
-npm test -- --run src/components/__tests__/command-palette.test.tsx src/hooks/__tests__/use-command-palette.test.tsx src/components/layout/__tests__/sidebar-safe-area.test.tsx
-npm test -- --run src/components/today/__tests__/hero-priority.test.tsx src/components/today/__tests__/focus-today-cell.test.tsx
+npm test -- --run \
+  src/components/actions/__tests__/action-list-groups.test.tsx \
+  src/components/actions/__tests__/actions-page.test.tsx \
+  src/components/focus/__tests__/start-focus-dialog.test.tsx \
+  src/components/today/__tests__/fixed-schedule.test.tsx \
+  src/components/today/__tests__/focus-queue.test.tsx \
+  src/components/today/__tests__/now-block.test.tsx \
+  src/components/today/__tests__/plan-bar.test.tsx \
+  src/hooks/__tests__/use-focus-session.test.tsx \
+  src/components/reminders/__tests__/reminder-list-groups.test.tsx \
+  src/components/reminders/__tests__/reminders-mobile-polish.test.tsx \
+  __tests__/digest-items.test.tsx \
+  __tests__/job-detail-tracking.test.tsx \
+  __tests__/collapsible-description.test.tsx \
+  __tests__/inline-edit.test.tsx \
+  __tests__/api-error-handling.test.ts
 ```
 
 Broad commands:
@@ -49,46 +98,10 @@ npm run lint
 npm run build
 ```
 
-## Cleanup Dry Run
-
-Focused command:
-
-```bash
-cd backend
-source venv/bin/activate
-pytest -q tests/test_task_cleanup.py
-```
-
-Manual review:
-- Run the dry-run endpoint or helper.
-- Confirm every task-linked reminder row includes task title, reminder title, action date/time, urgency, recurrence, details presence, checklist count, and reminder id.
-- Preserve selected reminders by detaching them from their task.
-- Stop before hard deletion unless explicit destructive confirmation is given.
-
 ## Manual Smoke Checklist
 
-Actions:
-- Open `/actions`.
-- Add title-only action and confirm it lands in Inbox/Someday.
-- Add date-only action and confirm it lands in Today or future date under Anytime.
-- Add date+time action and confirm it lands under Scheduled before Anytime.
-- Mark urgent date-only action and confirm it sorts within Anytime, not above Scheduled.
-- Expand an action with details, URL, and checklist.
-- Mark done and restore from history.
-
-Birthdays:
-- Open `/actions/birthdays`.
-- Confirm `/reminders/birthdays` redirects.
-
-Focus:
-- Start focus from an Action.
-- Confirm active/today focus cells display without task dependencies.
-
-Notifications:
-- Confirm scheduled actions can snooze and notify.
-- Confirm inbox/anytime actions do not schedule exact notifications.
-
-Visible Tasks removal:
-- Sidebar and command palette do not show Tasks.
-- Calendar, jobs, notes, and Today do not expose task-link creation.
-- Old task URLs redirect away from the old Tasks experience.
+- `/actions` has no `Legacy Review` button.
+- `/tasks`, `/tasks/[id]`, and `/tasks/analytics` redirect to `/actions`.
+- Pulse item action saves as an Action, not a Task.
+- Calendar, Jobs, and Notes no longer show task-link UI.
+- Settings no longer exposes task tag management.

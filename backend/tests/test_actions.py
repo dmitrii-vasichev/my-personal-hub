@@ -64,7 +64,6 @@ def _make_action(
     action.recurrence_rule = None
     action.snooze_count = 0
     action.notification_sent_count = 0
-    action.task_id = None
     action.completed_at = None
     action.is_floating = remind_at is None
     action.is_urgent = is_urgent
@@ -92,8 +91,11 @@ def test_action_schemas_support_inbox_anytime_and_scheduled_modes():
     assert scheduled.remind_at == scheduled_at
     assert update.action_date is None
     assert update.remind_at is None
+    assert not hasattr(inbox, "task_id")
 
-    assert ActionResponse.model_validate(_make_action()).mode == "inbox"
+    inbox_response = ActionResponse.model_validate(_make_action())
+    assert inbox_response.mode == "inbox"
+    assert not hasattr(inbox_response, "task_id")
     assert (
         ActionResponse.model_validate(
             _make_action(action_date=date(2026, 5, 2))

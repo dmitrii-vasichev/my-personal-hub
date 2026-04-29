@@ -67,7 +67,6 @@ def _make_session(
     *,
     id_: int = 1,
     user_id: int = 1,
-    task_id: int | None = None,
     action_id: int | None = None,
     plan_item_id: int | None = None,
     started_at: datetime | None = None,
@@ -78,7 +77,6 @@ def _make_session(
     s = FocusSession()
     s.id = id_
     s.user_id = user_id
-    s.task_id = task_id
     s.action_id = action_id
     s.plan_item_id = plan_item_id
     s.started_at = started_at or datetime(2026, 4, 21, 10, 0, tzinfo=timezone.utc)
@@ -100,8 +98,7 @@ async def test_post_start_returns_201_with_correct_shape(monkeypatch):
     session = _make_session(
         id_=5,
         user_id=user.id,
-        task_id=42,
-        plan_item_id=None,
+        action_id=42,
         started_at=started,
         ended_at=None,
         planned_minutes=50,
@@ -124,20 +121,22 @@ async def test_post_start_returns_201_with_correct_shape(monkeypatch):
         ) as client:
             resp = await client.post(
                 "/api/focus-sessions/start",
-                json={"task_id": 42, "planned_minutes": 50},
+                json={"action_id": 42, "planned_minutes": 50},
             )
         assert resp.status_code == 201
         data = resp.json()
         assert data["id"] == 5
         assert data["user_id"] == user.id
-        assert data["task_id"] == 42
+        assert "task_id" not in data
+        assert data["action_id"] == 42
         assert data["plan_item_id"] is None
         assert data["planned_minutes"] == 50
         assert data["ended_at"] is None
         assert data["auto_closed"] is False
         # Active session → actual_minutes is None.
         assert data["actual_minutes"] is None
-        assert captured["payload"].task_id == 42
+        assert not hasattr(captured["payload"], "task_id")
+        assert captured["payload"].action_id == 42
         assert captured["payload"].planned_minutes == 50
     finally:
         app.dependency_overrides.pop(get_current_user, None)
@@ -179,7 +178,7 @@ async def test_post_start_accepts_action_id(monkeypatch):
         assert resp.status_code == 201
         data = resp.json()
         assert data["action_id"] == 33
-        assert data["task_id"] is None
+        assert "task_id" not in data
         assert captured["payload"].action_id == 33
     finally:
         app.dependency_overrides.pop(get_current_user, None)
@@ -317,7 +316,6 @@ async def test_get_active_returns_session(monkeypatch):
     session = _make_session(
         id_=11,
         user_id=user.id,
-        task_id=None,
         plan_item_id=77,
         ended_at=None,
         planned_minutes=90,
@@ -387,7 +385,7 @@ async def test_get_today_aggregates_total_minutes_and_count(monkeypatch):
         FocusSessionResponse(
             id=1,
             user_id=user.id,
-            task_id=None,
+            action_id=None,
             plan_item_id=None,
             started_at=datetime(2026, 4, 21, 9, 0, tzinfo=timezone.utc),
             ended_at=datetime(2026, 4, 21, 9, 25, tzinfo=timezone.utc),
@@ -398,7 +396,7 @@ async def test_get_today_aggregates_total_minutes_and_count(monkeypatch):
         FocusSessionResponse(
             id=2,
             user_id=user.id,
-            task_id=42,
+            action_id=42,
             plan_item_id=None,
             started_at=datetime(2026, 4, 21, 10, 0, tzinfo=timezone.utc),
             ended_at=datetime(2026, 4, 21, 10, 30, tzinfo=timezone.utc),
@@ -409,7 +407,7 @@ async def test_get_today_aggregates_total_minutes_and_count(monkeypatch):
         FocusSessionResponse(
             id=3,
             user_id=user.id,
-            task_id=None,
+            action_id=None,
             plan_item_id=5,
             started_at=datetime(2026, 4, 21, 11, 0, tzinfo=timezone.utc),
             ended_at=datetime(2026, 4, 21, 11, 50, tzinfo=timezone.utc),

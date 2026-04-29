@@ -10,8 +10,8 @@ from datetime import datetime
 from unittest.mock import AsyncMock, patch
 
 from app.models.user import User, UserRole
-from app.models.task import Task, Visibility
 from app.models.calendar import CalendarEvent
+from app.models.visibility import Visibility
 from app.services.auth import update_last_login, create_user
 from app.core.security import create_access_token, decode_access_token
 
@@ -94,22 +94,7 @@ def test_visibility_enum_has_private():
 
 
 # ---------------------------------------------------------------------------
-# 4. Task model visibility field
-# ---------------------------------------------------------------------------
-
-def test_task_has_visibility_field():
-    t = Task()
-    assert hasattr(t, "visibility")
-
-
-def test_task_visibility_default_is_family():
-    t = Task()
-    t.visibility = Visibility.family
-    assert t.visibility == Visibility.family
-
-
-# ---------------------------------------------------------------------------
-# 5. CalendarEvent model visibility field
+# 4. CalendarEvent model visibility field
 # ---------------------------------------------------------------------------
 
 def test_calendar_event_has_visibility_field():

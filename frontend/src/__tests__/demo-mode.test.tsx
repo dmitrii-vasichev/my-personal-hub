@@ -250,11 +250,11 @@ describe("Settings tabs demo mode", () => {
     currentUser = { ...mockUser, role: "demo" };
   });
 
-  it("shows only General and Tags tabs for demo user", async () => {
+  it("shows only General and API Tokens tabs for demo user", async () => {
     const SettingsPage = (await import("@/app/(dashboard)/settings/page")).default;
     render(<SettingsPage />, { wrapper: createWrapper() });
     expect(screen.getByText("General")).toBeInTheDocument();
-    expect(screen.getByText("Tags")).toBeInTheDocument();
+    expect(screen.getByText("API Tokens")).toBeInTheDocument();
     expect(screen.queryByText("AI & API Keys")).not.toBeInTheDocument();
     expect(screen.queryByText("Integrations")).not.toBeInTheDocument();
     expect(screen.queryByText("Telegram")).not.toBeInTheDocument();

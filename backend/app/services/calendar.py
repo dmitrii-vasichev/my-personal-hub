@@ -10,7 +10,7 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from app.models.calendar import CalendarEvent, EventNote
 from app.models.job import ApplicationStatus, Job
-from app.models.task import Visibility
+from app.models.visibility import Visibility
 from app.models.user import User, UserRole
 from app.schemas.calendar import (
     CalendarEventCreate,
@@ -20,7 +20,10 @@ from app.schemas.calendar import (
     JobBrief,
     JobHintResponse,
 )
-from app.services.task import PermissionDeniedError
+
+
+class PermissionDeniedError(Exception):
+    pass
 
 
 TERMINAL_JOB_STATUSES = frozenset({

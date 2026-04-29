@@ -12,7 +12,6 @@ import { IntegrationsTab } from "@/components/settings/integrations-tab";
 import { UserManagementTable } from "@/components/settings/user-management-table";
 import { AiInstructionsTab } from "@/components/settings/ai-instructions-tab";
 import { AiKnowledgeBaseTab } from "@/components/settings/ai-knowledge-base-tab";
-import { TagsManagementTab } from "@/components/settings/tags-management-tab";
 import { TelegramTab } from "@/components/settings/telegram-tab";
 import { PulseSettingsTab } from "@/components/settings/pulse-settings-tab";
 import { RemindersSettingsTab } from "@/components/settings/reminders-settings-tab";
@@ -40,7 +39,6 @@ function hasApiKeys(s: unknown): s is {
 const ADMIN_TABS = [
   { id: "general", label: "General" },
   { id: "api-tokens", label: "API Tokens" },
-  { id: "tags", label: "Tags" },
   { id: "ai-keys", label: "AI & API Keys" },
   { id: "ai-instructions", label: "AI Instructions" },
   { id: "ai-kb", label: "AI Knowledge Base" },
@@ -176,7 +174,7 @@ export default function SettingsPage() {
   const visibleTabs =
     isAdmin && !isDemo
       ? ADMIN_TABS
-      : ADMIN_TABS.filter((t) => t.id === "general" || t.id === "tags" || t.id === "api-tokens");
+      : ADMIN_TABS.filter((t) => t.id === "general" || t.id === "api-tokens");
 
   return (
     <div className="space-y-6 p-6">
@@ -231,8 +229,6 @@ export default function SettingsPage() {
         )}
 
         {activeTab === "api-tokens" && <ApiTokensTab />}
-
-        {activeTab === "tags" && <TagsManagementTab />}
 
         {activeTab === "ai-keys" && isAdmin && (
           <AiApiKeysTab

@@ -23,7 +23,6 @@ from app.schemas.planner import (
     AnalyticsResponse,
     ContextEvent,
     ContextReminder,
-    ContextTask,
     DailyAnalyticsPoint,
     PlannerContextResponse,
     YesterdaySummary,
@@ -81,8 +80,6 @@ def _make_plan_item(
     minutes_planned: int = 30,
     minutes_actual: int | None = None,
     status: PlanItemStatus = PlanItemStatus.pending,
-    linked_task_id: int | None = None,
-    task_title: str | None = None,
     notes: str | None = None,
 ) -> PlanItem:
     item = PlanItem()
@@ -94,12 +91,9 @@ def _make_plan_item(
     item.minutes_planned = minutes_planned
     item.minutes_actual = minutes_actual
     item.status = status
-    item.linked_task_id = linked_task_id
     item.notes = notes
     item.created_at = datetime(2026, 4, 17, 8, 0, tzinfo=timezone.utc)
     item.updated_at = datetime(2026, 4, 17, 8, 0, tzinfo=timezone.utc)
-    # Python-side attribute populated by service._attach_task_titles.
-    item.task_title = task_title
     return item
 
 
@@ -155,7 +149,6 @@ async def test_post_plan_creates_with_items_in_order(monkeypatch):
                 title=p.title,
                 category=p.category,
                 minutes_planned=p.minutes_planned,
-                linked_task_id=p.linked_task_id,
             )
             for i, p in enumerate(payload.items)
         ]
@@ -223,13 +216,12 @@ async def test_post_plan_creates_with_items_in_order(monkeypatch):
         app.dependency_overrides.pop(get_db, None)
 
 
-# ── GET /plans/{date} — happy path + task_title ──────────────────────────────
+# ── GET /plans/{date} — happy path ───────────────────────────────────────────
 
 
 @pytest.mark.asyncio
-async def test_get_plan_returns_items_in_order_with_task_title(monkeypatch):
-    """GET /plans/{date} returns items in order; task_title present when
-    linked_task_id set, null otherwise (AC-3)."""
+async def test_get_plan_returns_items_in_order(monkeypatch):
+    """GET /plans/{date} returns items in order."""
     user = make_user()
     plan = _make_plan(
         plan_id=1,
@@ -240,8 +232,6 @@ async def test_get_plan_returns_items_in_order_with_task_title(monkeypatch):
                 plan_id=1,
                 order=0,
                 title="Write report",
-                linked_task_id=42,
-                task_title="Write quarterly report",
             ),
             _make_plan_item(
                 id_=11, plan_id=1, order=1, title="Standalone work"
@@ -266,10 +256,10 @@ async def test_get_plan_returns_items_in_order_with_task_title(monkeypatch):
         assert resp.status_code == 200
         data = resp.json()
         assert [i["order"] for i in data["items"]] == [0, 1]
-        assert data["items"][0]["task_title"] == "Write quarterly report"
-        assert data["items"][0]["linked_task_id"] == 42
-        assert data["items"][1]["task_title"] is None
-        assert data["items"][1]["linked_task_id"] is None
+        assert [i["title"] for i in data["items"]] == [
+            "Write report",
+            "Standalone work",
+        ]
     finally:
         app.dependency_overrides.pop(get_current_user, None)
         app.dependency_overrides.pop(get_db, None)
@@ -433,16 +423,13 @@ async def test_get_context_returns_structurally_correct_payload(monkeypatch):
     ctx = PlannerContextResponse(
         date=date(2026, 4, 17),
         timezone="UTC",
-        pending_tasks=[
-            ContextTask(id=1, title="Task A", priority="high", deadline=None)
-        ],
         due_reminders=[
             ContextReminder(
                 id=5,
                 title="Standup",
                 remind_at=datetime(2026, 4, 17, 9, 0, tzinfo=timezone.utc),
+                action_date=None,
                 is_urgent=False,
-                task_id=None,
             )
         ],
         calendar_events=[
@@ -479,7 +466,6 @@ async def test_get_context_returns_structurally_correct_payload(monkeypatch):
         for key in (
             "date",
             "timezone",
-            "pending_tasks",
             "due_reminders",
             "calendar_events",
             "yesterday",
@@ -487,7 +473,6 @@ async def test_get_context_returns_structurally_correct_payload(monkeypatch):
             assert key in data
         assert data["date"] == "2026-04-17"
         assert data["timezone"] == "UTC"
-        assert len(data["pending_tasks"]) == 1
         assert len(data["due_reminders"]) == 1
         assert len(data["calendar_events"]) == 1
         assert data["yesterday"]["adherence_pct"] == 0.8
@@ -647,7 +632,6 @@ async def test_demo_user_can_read_context(monkeypatch):
     ctx = PlannerContextResponse(
         date=date(2026, 4, 17),
         timezone="UTC",
-        pending_tasks=[],
         due_reminders=[],
         calendar_events=[],
         yesterday=None,
@@ -779,7 +763,6 @@ async def test_get_context_without_date_uses_user_timezone(monkeypatch):
         return PlannerContextResponse(
             date=d,
             timezone=u.timezone,
-            pending_tasks=[],
             due_reminders=[],
             calendar_events=[],
             yesterday=None,

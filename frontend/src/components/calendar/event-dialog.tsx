@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { useCreateCalendarEvent, useUpdateCalendarEvent } from "@/hooks/use-calendar";
 import type { CalendarEvent, CalendarEventCreate } from "@/types/calendar";
-import type { Visibility } from "@/types/task";
+import type { Visibility } from "@/types/visibility";
 import { JobLinkSelector } from "./job-link-selector";
 
 const VISIBILITY_LABELS: Record<string, string> = {

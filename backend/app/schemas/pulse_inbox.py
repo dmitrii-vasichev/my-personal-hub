@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 
 class InboxAction(str, Enum):
-    to_task = "to_task"
+    to_action = "to_action"
     to_note = "to_note"
     skip = "skip"
 

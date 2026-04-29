@@ -400,14 +400,14 @@ class TestJsonParser:
 
 class TestDigestItemActions:
     @pytest.mark.asyncio
-    async def test_action_to_task(self):
-        """to_task creates a Task and updates item status."""
+    async def test_action_to_action(self):
+        """to_action creates an Action and updates item status."""
         from app.services.pulse_digest_items import process_item_action
 
         user = make_user()
         item = make_digest_item()
-        mock_task = MagicMock()
-        mock_task.id = 42
+        mock_action = MagicMock()
+        mock_action.id = 42
 
         mock_db = AsyncMock()
         mock_result = MagicMock()
@@ -416,17 +416,17 @@ class TestDigestItemActions:
         mock_db.commit = AsyncMock()
 
         with patch(
-            "app.services.pulse_digest_items.task_service.create_task",
+            "app.services.pulse_digest_items.action_service.create_action",
             new_callable=AsyncMock,
-            return_value=mock_task,
+            return_value=mock_action,
         ):
-            result = await process_item_action(mock_db, user, 1, "to_task")
+            result = await process_item_action(mock_db, user, 1, "to_action")
 
         assert result is not None
-        assert result["action"] == "to_task"
+        assert result["action"] == "to_action"
         assert result["created_id"] == 42
         assert item.status == "actioned"
-        assert item.action_type == "to_task"
+        assert item.action_type == "to_action"
         assert item.read_at is not None
 
     @pytest.mark.asyncio

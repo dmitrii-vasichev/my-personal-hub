@@ -53,11 +53,9 @@ export function ReminderPoller() {
       const source = reminder.snoozed_until ?? reminder.remind_at;
       toast(reminder.title, {
         id: toastId,
-        description: reminder.task_title
-          ? `Legacy task: ${reminder.task_title}`
-          : source
-            ? `Due: ${new Date(source).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}`
-            : "Due now",
+        description: source
+          ? `Due: ${new Date(source).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}`
+          : "Due now",
         icon: <Bell size={14} className="text-accent-amber" />,
         duration: Infinity,
         closeButton: true,

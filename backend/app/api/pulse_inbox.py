@@ -49,7 +49,7 @@ async def action_inbox_item(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Route a single inbox item: to_task, to_note, or skip."""
+    """Route a single inbox item: to_action, to_note, or skip."""
     credentials, folder_id = None, None
     if body.action == InboxAction.to_note:
         credentials, folder_id = await _get_note_prerequisites(db, current_user)
