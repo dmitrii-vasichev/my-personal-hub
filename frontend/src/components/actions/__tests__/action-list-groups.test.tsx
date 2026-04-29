@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi } from "vitest";
 import type { Action } from "@/types/action";
+import type { ChecklistItem } from "@/types/task";
 import { ActionList } from "../action-list";
 
 vi.mock("@/hooks/use-actions", () => {
@@ -48,6 +49,14 @@ function makeAction(overrides: Partial<Action> = {}): Action {
     updated_at: now,
     ...overrides,
   };
+}
+
+function makeChecklist(completed: number, total: number): ChecklistItem[] {
+  return Array.from({ length: total }, (_, index) => ({
+    id: `item-${index + 1}`,
+    text: `Step ${index + 1}`,
+    completed: index < completed,
+  }));
 }
 
 describe("ActionList grouping", () => {
@@ -107,5 +116,33 @@ describe("ActionList grouping", () => {
       "Anytime urgent",
       "Anytime normal",
     ]);
+  });
+
+  it("shows mobile icon chips for urgent recurring snoozed checklist actions", () => {
+    wrap(
+      <ActionList
+        actions={[
+          makeAction({
+            title: "Long mobile action with important metadata",
+            is_urgent: true,
+            recurrence_rule: "daily",
+            snooze_count: 6,
+            checklist: makeChecklist(0, 2),
+          }),
+        ]}
+        today={new Date("2026-05-02T09:00:00Z")}
+        isLoading={false}
+        error={null}
+      />,
+    );
+
+    const row = screen
+      .getByRole("heading", { name: "Long mobile action with important metadata" })
+      .closest("article");
+
+    expect(within(row!).getByLabelText("Urgent action")).toBeInTheDocument();
+    expect(within(row!).getByLabelText("Repeats Daily")).toBeInTheDocument();
+    expect(within(row!).getByLabelText("Snoozed 6 times")).toBeInTheDocument();
+    expect(within(row!).getByLabelText("Checklist 0 of 2")).toBeInTheDocument();
   });
 });

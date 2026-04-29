@@ -12,8 +12,10 @@ import {
   Trash2,
   Bell,
   Flag,
+  ListChecks,
   Pencil,
   Pin,
+  Repeat,
   StickyNote,
   X,
 } from "lucide-react";
@@ -688,6 +690,14 @@ function ActionRow({ action, expanded, onToggle }: { action: Action; expanded: b
     action.task_id ? "Legacy task" : null,
     action.recurrence_rule ? recurrenceLabel(action.recurrence_rule) : null,
   ].filter((item): item is string => Boolean(item));
+  const recurrenceText = action.recurrence_rule
+    ? recurrenceLabel(action.recurrence_rule)
+    : null;
+  const hasMobileMeta =
+    action.is_urgent ||
+    Boolean(recurrenceText) ||
+    action.snooze_count > 0 ||
+    hasChecklist;
 
   return (
     <>
@@ -731,9 +741,48 @@ function ActionRow({ action, expanded, onToggle }: { action: Action; expanded: b
             >
               {action.title}
             </h4>
-            <div className="flex min-w-0 items-center gap-1 text-[10px] uppercase tracking-[1px] text-[color:var(--ink-3)] sm:hidden">
-              {metaItems.slice(0, 3).join(" · ")}
-            </div>
+            {hasMobileMeta && (
+              <div className="flex min-w-0 flex-wrap items-center gap-1 text-[10px] uppercase tracking-[1px] sm:hidden">
+                {action.is_urgent && (
+                  <span
+                    aria-label="Urgent action"
+                    className="inline-flex max-w-full items-center gap-0.5 border border-[color:var(--accent-2)] bg-transparent px-1.5 py-0.5 font-mono text-[color:var(--accent-2)]"
+                  >
+                    <Flag className="h-3 w-3 shrink-0" fill="currentColor" />
+                    <span>Urgent</span>
+                  </span>
+                )}
+                {recurrenceText && (
+                  <span
+                    aria-label={`Repeats ${recurrenceText}`}
+                    className="inline-flex min-w-0 max-w-full items-center gap-0.5 border border-[color:var(--ink-3)] bg-transparent px-1.5 py-0.5 font-mono text-[color:var(--ink-3)]"
+                  >
+                    <Repeat className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{recurrenceText}</span>
+                  </span>
+                )}
+                {action.snooze_count > 0 && (
+                  <span
+                    aria-label={`Snoozed ${action.snooze_count} times`}
+                    className={`inline-flex max-w-full items-center gap-0.5 border bg-transparent px-1.5 py-0.5 font-mono ${snoozeBadgeClass(action.snooze_count)}`}
+                  >
+                    <Clock className="h-3 w-3 shrink-0" />
+                    <span>Snooze {action.snooze_count}</span>
+                  </span>
+                )}
+                {hasChecklist && (
+                  <span
+                    aria-label={`Checklist ${doneCount} of ${checklist.length}`}
+                    className="inline-flex max-w-full items-center gap-0.5 border border-[color:var(--accent)] bg-transparent px-1.5 py-0.5 font-mono text-[color:var(--accent)]"
+                  >
+                    <ListChecks className="h-3 w-3 shrink-0" />
+                    <span>
+                      {doneCount}/{checklist.length}
+                    </span>
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="hidden min-w-[120px] items-center justify-end gap-1 font-mono text-[10px] uppercase tracking-[1px] text-[color:var(--ink-3)] sm:flex">
