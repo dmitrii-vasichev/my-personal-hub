@@ -14,11 +14,14 @@ import {
   Clock,
   Trash2,
   Bell,
+  ExternalLink,
   Flag,
+  ListChecks,
   ListTodo,
   Pencil,
   Pin,
   Repeat,
+  StickyNote,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -41,8 +44,10 @@ import {
   SelectPopup,
   SelectItem,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
+import { ChecklistEditor } from "@/components/tasks/checklist-editor";
 import {
   useMarkDone,
   useSnoozeReminder,
@@ -50,6 +55,7 @@ import {
   useDeleteReminder,
 } from "@/hooks/use-reminders";
 import type { Reminder } from "@/types/reminder";
+import type { ChecklistItem } from "@/types/task";
 
 // -- Recurrence badge label --
 
@@ -194,6 +200,34 @@ const RECURRENCE_LABELS: Record<string, string> = Object.fromEntries(
   RECURRENCE_OPTIONS.map((opt) => [opt.value, opt.label])
 );
 
+const URL_PATTERN = /(https?:\/\/[^\s]+)/g;
+
+function hasUrl(text: string | null | undefined): boolean {
+  return /(https?:\/\/[^\s]+)/.test(text ?? "");
+}
+
+function LinkifiedText({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(URL_PATTERN).map((part, index) =>
+        part.startsWith("http://") || part.startsWith("https://") ? (
+          <a
+            key={`${part}-${index}`}
+            href={part}
+            target="_blank"
+            rel="noreferrer"
+            className="break-all text-[color:var(--accent)] underline underline-offset-2 hover:text-[color:var(--accent-2)]"
+          >
+            {part}
+          </a>
+        ) : (
+          <span key={`${part}-${index}`}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
+
 // -- Edit dialog (form mounts fresh when dialog opens → no useEffect needed) --
 
 function EditReminderForm({
@@ -211,6 +245,8 @@ function EditReminderForm({
   const [date, setDate] = useState(initialDate);
   const [time, setTime] = useState(initialTime);
   const [isUrgent, setIsUrgent] = useState(reminder.is_urgent);
+  const [details, setDetails] = useState(reminder.details ?? "");
+  const [checklist, setChecklist] = useState<ChecklistItem[]>(reminder.checklist ?? []);
 
   const existingRule = reminder.recurrence_rule ?? "";
   const isExistingCustom = existingRule.startsWith("custom:");
@@ -248,6 +284,8 @@ function EditReminderForm({
         remind_at: remindAt,
         is_floating: isFloating,
         is_urgent: isUrgent,
+        details: details.trim() || null,
+        checklist,
         recurrence_rule: isCustom
           ? `custom:${customDays.join(",")}`
           : recurrenceRule || null,
@@ -370,6 +408,29 @@ function EditReminderForm({
           </div>
         )}
       </div>
+      <div className="space-y-1.5">
+        <label
+          htmlFor="reminder-details"
+          className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]"
+        >
+          Details
+        </label>
+        <Textarea
+          id="reminder-details"
+          aria-label="Reminder details"
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          placeholder="Notes, links, quick instructions..."
+          rows={4}
+          className="resize-y font-mono"
+        />
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
+          Checklist
+        </label>
+        <ChecklistEditor items={checklist} onChange={setChecklist} />
+      </div>
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="ghost" onClick={onClose}>
           Cancel
@@ -398,7 +459,7 @@ function EditReminderDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogBackdrop />
-        <DialogPopup className="w-full max-w-md p-6">
+        <DialogPopup className="w-full max-w-lg p-6">
           <DialogClose />
           <DialogTitle>Edit reminder</DialogTitle>
           {open && (
@@ -471,6 +532,12 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
   };
 
   const isDone = reminder.status === "done";
+  const checklist = reminder.checklist ?? [];
+  const doneCount = checklist.filter((item) => item.completed).length;
+  const details = reminder.details?.trim() ?? "";
+  const hasDetails = details.length > 0;
+  const hasChecklist = checklist.length > 0;
+  const detailsHaveUrl = hasUrl(details);
 
   const handleRowClick = (e: React.MouseEvent) => {
     // Don't collapse if the click happened on a stop-propagation child.
@@ -481,62 +548,118 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
     onToggle();
   };
 
+  const handleChecklistToggle = (itemId: string) => {
+    const nextChecklist = checklist.map((item) =>
+      item.id === itemId ? { ...item, completed: !item.completed } : item
+    );
+    updateReminder.mutate(
+      { id: reminder.id, checklist: nextChecklist },
+      { onError: () => toast.error("Failed to update checklist") }
+    );
+  };
+
   /* -- Expanded action panel (click-to-expand), brutalist bordered row -- */
   const expandedActions = expanded && (
-    <div
-      className={`grid ${reminder.is_floating ? "grid-cols-3" : "grid-cols-4"} gap-2 border-t-[1.5px] border-[color:var(--line)] bg-[color:var(--bg)] px-3 py-2`}
-    >
-      <button
-        className="flex flex-col items-center gap-1 py-2 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-2)] hover:text-[color:var(--accent)] active:bg-[color:var(--bg-2)]"
-        onClick={handleDone}
-        disabled={isPending}
+    <>
+      <div className="border-t-[1.5px] border-[color:var(--line)] bg-[color:var(--bg)] px-3 py-3 font-mono">
+        {hasDetails || hasChecklist ? (
+          <div className="space-y-3">
+            {hasDetails && (
+              <div className="whitespace-pre-wrap break-words text-[12px] leading-relaxed text-[color:var(--ink-2)]">
+                <LinkifiedText text={details} />
+              </div>
+            )}
+            {hasChecklist && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-[10px] uppercase tracking-[1.5px] text-[color:var(--ink-3)]">
+                  <span>Checklist</span>
+                  <span>{doneCount}/{checklist.length}</span>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {checklist.map((item) => (
+                    <label key={item.id} className="flex items-start gap-2 text-[12px] leading-snug text-[color:var(--ink-2)]">
+                      <input
+                        type="checkbox"
+                        checked={item.completed}
+                        onChange={() => handleChecklistToggle(item.id)}
+                        disabled={isPending}
+                        className="mt-0.5 h-3.5 w-3.5 border-[color:var(--line)] accent-[color:var(--accent)]"
+                      />
+                      <span className={item.completed ? "line-through text-[color:var(--ink-3)]" : ""}>
+                        {item.text}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setEditOpen(true)}
+            className="flex items-center gap-1.5 text-[11px] uppercase tracking-[1.5px] text-[color:var(--ink-3)] hover:text-[color:var(--accent)]"
+          >
+            <StickyNote className="h-3.5 w-3.5" />
+            Add details
+          </button>
+        )}
+      </div>
+      <div
+        className={`grid ${reminder.is_floating ? "grid-cols-3" : "grid-cols-4"} gap-2 border-t-[1.5px] border-[color:var(--line)] bg-[color:var(--bg)] px-3 py-2`}
       >
-        <Check className="h-5 w-5 text-[color:var(--accent-3)]" />
-        Done
-      </button>
-      <button
-        className="flex flex-col items-center gap-1 py-2 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-2)] hover:text-[color:var(--ink)] active:bg-[color:var(--bg-2)]"
-        onClick={() => setEditOpen(true)}
-        disabled={isPending}
-      >
-        <Pencil className="h-5 w-5" />
-        Edit
-      </button>
-      {!reminder.is_floating && (
-        <Popover open={snoozeOpen} onOpenChange={setSnoozeOpen}>
-          <PopoverTrigger
-            render={
-              <button
-                className="flex flex-col items-center gap-1 py-2 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-2)] hover:text-[color:var(--ink)] active:bg-[color:var(--bg-2)]"
-                disabled={isPending}
-              >
-                <Bell className="h-5 w-5" />
-                Snooze
-              </button>
-            }
-          />
-          <PopoverContent align="center" className="w-48 p-1">
-            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleSnooze(15)}>15 minutes</button>
-            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleSnooze(30)}>30 minutes</button>
-            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleSnooze(60)}>1 hour</button>
-            <div className="my-1 h-px bg-[color:var(--line)]" />
-            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleReschedule(tomorrowAt(10))}>Tomorrow, 10:00</button>
-            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
-            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
-            <div className="my-1 h-px bg-[color:var(--line)]" />
-            <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => { setSnoozeOpen(false); setEditOpen(true); }}>Other…</button>
-          </PopoverContent>
-        </Popover>
-      )}
-      <button
-        className="flex flex-col items-center gap-1 py-2 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--accent-2)] hover:text-[color:var(--accent-2)] active:bg-[color:var(--bg-2)]"
-        onClick={() => setConfirmDelete(true)}
-        disabled={isPending}
-      >
-        <Trash2 className="h-5 w-5" />
-        Delete
-      </button>
-    </div>
+        <button
+          className="flex flex-col items-center gap-1 py-2 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-2)] hover:text-[color:var(--accent)] active:bg-[color:var(--bg-2)]"
+          onClick={handleDone}
+          disabled={isPending}
+        >
+          <Check className="h-5 w-5 text-[color:var(--accent-3)]" />
+          Done
+        </button>
+        <button
+          className="flex flex-col items-center gap-1 py-2 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-2)] hover:text-[color:var(--ink)] active:bg-[color:var(--bg-2)]"
+          onClick={() => setEditOpen(true)}
+          disabled={isPending}
+        >
+          <Pencil className="h-5 w-5" />
+          Edit
+        </button>
+        {!reminder.is_floating && (
+          <Popover open={snoozeOpen} onOpenChange={setSnoozeOpen}>
+            <PopoverTrigger
+              render={
+                <button
+                  className="flex flex-col items-center gap-1 py-2 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-2)] hover:text-[color:var(--ink)] active:bg-[color:var(--bg-2)]"
+                  disabled={isPending}
+                >
+                  <Bell className="h-5 w-5" />
+                  Snooze
+                </button>
+              }
+            />
+            <PopoverContent align="center" className="w-48 p-1">
+              <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleSnooze(15)}>15 minutes</button>
+              <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleSnooze(30)}>30 minutes</button>
+              <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleSnooze(60)}>1 hour</button>
+              <div className="my-1 h-px bg-[color:var(--line)]" />
+              <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleReschedule(tomorrowAt(10))}>Tomorrow, 10:00</button>
+              <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleReschedule(tomorrowAt(14))}>Tomorrow, 14:00</button>
+              <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => handleReschedule(tomorrowAt(18))}>Tomorrow, 18:00</button>
+              <div className="my-1 h-px bg-[color:var(--line)]" />
+              <button className="flex w-full items-center px-2 py-1.5 text-sm font-mono text-[color:var(--ink-2)] hover:bg-[color:var(--bg)] hover:text-[color:var(--ink)]" onClick={() => { setSnoozeOpen(false); setEditOpen(true); }}>Other…</button>
+            </PopoverContent>
+          </Popover>
+        )}
+        <button
+          className="flex flex-col items-center gap-1 py-2 text-[11px] uppercase tracking-[1.5px] font-mono text-[color:var(--accent-2)] hover:text-[color:var(--accent-2)] active:bg-[color:var(--bg-2)]"
+          onClick={() => setConfirmDelete(true)}
+          disabled={isPending}
+        >
+          <Trash2 className="h-5 w-5" />
+          Delete
+        </button>
+      </div>
+    </>
   );
 
   const effectiveIso = effectiveTime;
@@ -599,6 +722,24 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
                 >
                   <Clock className="h-3 w-3" />
                   {reminder.snooze_count}
+                </span>
+              )}
+              {hasChecklist && (
+                <span className="inline-flex items-center gap-0.5 border border-[color:var(--accent)] bg-transparent px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-[color:var(--accent)] sm:tracking-[1.5px]">
+                  <ListChecks className="h-3 w-3" />
+                  {doneCount}/{checklist.length}
+                </span>
+              )}
+              {hasDetails && (
+                <span className="inline-flex items-center gap-0.5 border border-[color:var(--line)] bg-transparent px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-[color:var(--ink-3)] sm:tracking-[1.5px]">
+                  <StickyNote className="h-3 w-3" />
+                  Notes
+                </span>
+              )}
+              {detailsHaveUrl && (
+                <span className="inline-flex items-center gap-0.5 border border-[color:var(--line)] bg-transparent px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[1px] text-[color:var(--ink-3)] sm:tracking-[1.5px]">
+                  <ExternalLink className="h-3 w-3" />
+                  Link
                 </span>
               )}
               {reminder.task_id && (

@@ -32,6 +32,8 @@ function makeReminder(overrides: Partial<Reminder> = {}): Reminder {
     id: 1,
     user_id: 1,
     title: "Pay rent",
+    details: null,
+    checklist: [],
     remind_at: now,
     status: "pending",
     snoozed_until: null,

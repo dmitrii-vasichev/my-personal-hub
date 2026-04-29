@@ -9,6 +9,8 @@ from app.models.reminder import ReminderStatus
 class ReminderCreate(BaseModel):
     title: str
     remind_at: datetime
+    details: Optional[str] = None
+    checklist: list[dict] = []
     recurrence_rule: Optional[str] = None
     task_id: Optional[int] = None
     is_floating: bool = False
@@ -18,6 +20,8 @@ class ReminderCreate(BaseModel):
 class ReminderUpdate(BaseModel):
     title: Optional[str] = None
     remind_at: Optional[datetime] = None
+    details: Optional[str] = None
+    checklist: Optional[list[dict]] = None
     recurrence_rule: Optional[str] = None
     is_floating: Optional[bool] = None
     is_urgent: Optional[bool] = None
@@ -31,6 +35,8 @@ class ReminderResponse(BaseModel):
     id: int
     user_id: int
     title: str
+    details: Optional[str] = None
+    checklist: list[dict] = []
     remind_at: datetime
     status: ReminderStatus
     snoozed_until: Optional[datetime]

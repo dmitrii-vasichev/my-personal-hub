@@ -10,7 +10,9 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    JSON,
     String,
+    Text,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -31,6 +33,10 @@ class Reminder(Base):
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     title: Mapped[str] = mapped_column(String(500), nullable=False)
+    details: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    checklist: Mapped[list] = mapped_column(
+        JSON, default=list, server_default="[]", nullable=False
+    )
     remind_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, index=True
     )

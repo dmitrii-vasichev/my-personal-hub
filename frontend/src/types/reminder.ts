@@ -1,9 +1,13 @@
+import type { ChecklistItem } from "./task";
+
 export type ReminderStatus = "pending" | "done";
 
 export interface Reminder {
   id: number;
   user_id: number;
   title: string;
+  details: string | null;
+  checklist: ChecklistItem[];
   remind_at: string;
   status: ReminderStatus;
   snoozed_until: string | null;
@@ -22,6 +26,8 @@ export interface Reminder {
 export interface CreateReminderInput {
   title: string;
   remind_at: string;
+  details?: string | null;
+  checklist?: ChecklistItem[];
   recurrence_rule?: string | null;
   task_id?: number;
   is_floating?: boolean;
@@ -31,6 +37,8 @@ export interface CreateReminderInput {
 export interface UpdateReminderInput {
   title?: string;
   remind_at?: string;
+  details?: string | null;
+  checklist?: ChecklistItem[];
   recurrence_rule?: string | null;
   is_floating?: boolean;
   is_urgent?: boolean;

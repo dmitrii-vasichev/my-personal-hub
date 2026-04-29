@@ -10,6 +10,7 @@ import RemindersPage from "@/app/(dashboard)/reminders/page";
 const mocks = vi.hoisted(() => ({
   markDoneMutate: vi.fn(),
   createReminderMutate: vi.fn(),
+  updateReminderMutate: vi.fn(),
   replace: vi.fn(),
 }));
 
@@ -28,7 +29,10 @@ vi.mock("@/hooks/use-reminders", () => {
       mutate: mocks.createReminderMutate,
       isPending: false,
     }),
-    useUpdateReminder: stub,
+    useUpdateReminder: () => ({
+      mutate: mocks.updateReminderMutate,
+      isPending: false,
+    }),
     useDeleteReminder: stub,
     useMarkDone: () => ({
       mutate: mocks.markDoneMutate,
@@ -66,6 +70,8 @@ function makeReminder(overrides: Partial<Reminder> = {}): Reminder {
     notification_sent_count: 0,
     task_id: null,
     task_title: null,
+    details: null,
+    checklist: [],
     completed_at: null,
     is_floating: false,
     is_urgent: true,
@@ -148,5 +154,86 @@ describe("Reminders mobile polish", () => {
     await user.click(screen.getByRole("button", { name: /done/i }));
 
     expect(mocks.markDoneMutate).toHaveBeenCalledWith(42, expect.any(Object));
+  });
+
+  it("shows rich details with auto-linked URLs and toggles checklist items inline", async () => {
+    const user = userEvent.setup();
+    wrap(
+      <ReminderList
+        reminders={[
+          makeReminder({
+            id: 77,
+            title: "Submit renewal",
+            details: "Use https://example.com/renewal before sending.",
+            checklist: [
+              { id: "open-link", text: "Open renewal link", completed: false },
+              { id: "send-form", text: "Send completed form", completed: true },
+            ],
+          }),
+        ]}
+        isLoading={false}
+        error={null}
+      />,
+    );
+
+    await user.click(screen.getByText("Submit renewal"));
+
+    expect(screen.getByRole("link", { name: "https://example.com/renewal" })).toHaveAttribute(
+      "href",
+      "https://example.com/renewal",
+    );
+    expect(screen.getAllByText("1/2").length).toBeGreaterThan(0);
+
+    await user.click(screen.getByRole("checkbox", { name: "Open renewal link" }));
+
+    expect(mocks.updateReminderMutate).toHaveBeenCalledWith(
+      {
+        id: 77,
+        checklist: [
+          { id: "open-link", text: "Open renewal link", completed: true },
+          { id: "send-form", text: "Send completed form", completed: true },
+        ],
+      },
+      expect.any(Object),
+    );
+  });
+
+  it("saves details and a new checklist item from the edit dialog", async () => {
+    const user = userEvent.setup();
+    wrap(
+      <ReminderList
+        reminders={[
+          makeReminder({
+            id: 88,
+            title: "Prepare instructions",
+            details: "Old note",
+            checklist: [{ id: "existing", text: "Existing step", completed: false }],
+          }),
+        ]}
+        isLoading={false}
+        error={null}
+      />,
+    );
+
+    await user.click(screen.getByText("Prepare instructions"));
+    await user.click(screen.getByRole("button", { name: /edit/i }));
+
+    const details = screen.getByLabelText("Reminder details");
+    await user.clear(details);
+    await user.type(details, "Updated note with https://example.com/reference");
+    await user.type(screen.getByPlaceholderText("Add checklist item…"), "Confirm receipt{enter}");
+    await user.click(screen.getByRole("button", { name: /^save$/i }));
+
+    expect(mocks.updateReminderMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 88,
+        details: "Updated note with https://example.com/reference",
+        checklist: expect.arrayContaining([
+          { id: "existing", text: "Existing step", completed: false },
+          expect.objectContaining({ text: "Confirm receipt", completed: false }),
+        ]),
+      }),
+      expect.any(Object),
+    );
   });
 });

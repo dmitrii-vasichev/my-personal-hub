@@ -53,6 +53,8 @@ async def create_reminder(
         task_id=data.task_id,
         is_floating=data.is_floating,
         is_urgent=data.is_urgent,
+        details=data.details,
+        checklist=data.checklist,
     )
     return _to_response(reminder)
 
