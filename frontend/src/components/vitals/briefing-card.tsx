@@ -1,6 +1,7 @@
 "use client";
 
-import { RefreshCw, Sparkles, Clock } from "lucide-react";
+import { useId, useState } from "react";
+import { RefreshCw, Sparkles, Clock, ChevronDown, ChevronUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { formatDistanceToNow } from "date-fns";
@@ -23,6 +24,8 @@ export function BriefingCard({
   isGenerating,
 }: BriefingCardProps) {
   const { isDemo } = useAuth();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const contentId = useId();
 
   if (isLoading) {
     return (
@@ -64,13 +67,22 @@ export function BriefingCard({
   });
 
   return (
-    <div className="rounded-xl border border-border-subtle bg-card p-6" data-testid="briefing-card">
-      <div className="flex items-center justify-between mb-4">
+    <div
+      className={`rounded-xl border border-border-subtle bg-card transition-[padding] duration-200 ${
+        isExpanded ? "p-6" : "p-4"
+      }`}
+      data-testid="briefing-card"
+    >
+      <div
+        className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${
+          isExpanded ? "mb-4" : ""
+        }`}
+      >
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-[var(--accent-amber)]" />
           <h3 className="text-sm font-semibold text-foreground">Daily Briefing</h3>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:gap-3">
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" />
             {generatedAgo}
@@ -93,14 +105,34 @@ export function BriefingCard({
               Regenerate
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsExpanded((prev) => !prev)}
+            aria-expanded={isExpanded}
+            aria-controls={contentId}
+            className="h-7 text-xs"
+          >
+            {isExpanded ? (
+              <ChevronUp className="mr-1.5 h-3 w-3" />
+            ) : (
+              <ChevronDown className="mr-1.5 h-3 w-3" />
+            )}
+            {isExpanded ? "Hide briefing" : "Show briefing"}
+          </Button>
         </div>
       </div>
 
-      <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:text-[var(--text-primary)] prose-p:text-[var(--text-secondary)] prose-a:text-[var(--accent)] prose-strong:text-[var(--text-primary)] prose-code:text-[var(--accent-teal)] prose-li:text-[var(--text-secondary)] prose-blockquote:border-[var(--accent)] prose-blockquote:text-[var(--text-secondary)]">
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-          {briefing.content}
-        </ReactMarkdown>
-      </div>
+      {isExpanded && (
+        <div
+          id={contentId}
+          className="prose prose-sm max-w-none border-t border-border-subtle pt-5 dark:prose-invert prose-headings:text-[var(--text-primary)] prose-p:text-[var(--text-secondary)] prose-a:text-[var(--accent)] prose-strong:text-[var(--text-primary)] prose-code:text-[var(--accent-teal)] prose-li:text-[var(--text-secondary)] prose-blockquote:border-[var(--accent)] prose-blockquote:text-[var(--text-secondary)]"
+        >
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {briefing.content}
+          </ReactMarkdown>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi, describe, it, expect } from "vitest";
 import { BriefingCard } from "@/components/vitals/briefing-card";
@@ -173,11 +173,13 @@ describe("Vitals page — demo user sees vitals data", () => {
     expect(screen.getByText("87 / 32")).toBeInTheDocument();     // body battery
   });
 
-  it("renders the AI briefing content", async () => {
+  it("renders the AI briefing content after expanding it", async () => {
     const VitalsPage = (await import("@/app/(dashboard)/vitals/page")).default;
     render(<VitalsPage />, { wrapper: createWrapper() });
 
-    // Briefing markdown should be rendered
+    fireEvent.click(screen.getByRole("button", { name: "Show briefing" }));
+
+    // Briefing markdown should be rendered after opening the compact row
     expect(screen.getByText("Health Status")).toBeInTheDocument();
     expect(screen.getByText(/Good energy levels/)).toBeInTheDocument();
   });

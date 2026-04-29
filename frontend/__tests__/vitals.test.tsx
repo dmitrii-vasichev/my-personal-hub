@@ -134,7 +134,7 @@ describe("TodaySummary", () => {
 
 // --- BriefingCard ---
 describe("BriefingCard", () => {
-  it("renders markdown content", () => {
+  it("keeps markdown content collapsed by default", () => {
     render(
       <BriefingCard
         briefing={mockBriefing}
@@ -143,8 +143,39 @@ describe("BriefingCard", () => {
         isGenerating={false}
       />
     );
+    expect(screen.getByText("Daily Briefing")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Show briefing" })).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    expect(screen.queryByText("Health Status")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Best focus window/)).not.toBeInTheDocument();
+  });
+
+  it("reveals and hides markdown content from the compact briefing row", () => {
+    render(
+      <BriefingCard
+        briefing={mockBriefing}
+        isLoading={false}
+        onGenerate={vi.fn()}
+        isGenerating={false}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Show briefing" }));
+    expect(screen.getByRole("button", { name: "Hide briefing" })).toHaveAttribute(
+      "aria-expanded",
+      "true"
+    );
     expect(screen.getByText("Health Status")).toBeInTheDocument();
     expect(screen.getByText(/Best focus window/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Hide briefing" }));
+    expect(screen.getByRole("button", { name: "Show briefing" })).toHaveAttribute(
+      "aria-expanded",
+      "false"
+    );
+    expect(screen.queryByText("Health Status")).not.toBeInTheDocument();
   });
 
   it("shows regenerate button", () => {
