@@ -4,12 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth";
+import { useVitalsConnection } from "@/hooks/use-vitals";
 
 export type NavItem = {
   label: string;
   href: string;
   glyph: string;
   hideForDemo?: boolean;
+  requiresVitalsConnection?: boolean;
 };
 
 export type NavSection = {
@@ -37,7 +39,15 @@ export const navSections: NavSection[] = [
   },
   {
     title: "Signals",
-    items: [{ label: "Pulse", href: "/pulse", glyph: "◐" }],
+    items: [
+      { label: "Pulse", href: "/pulse", glyph: "◐" },
+      {
+        label: "Vitals",
+        href: "/vitals",
+        glyph: "♡",
+        requiresVitalsConnection: true,
+      },
+    ],
   },
   {
     title: "Account",
@@ -48,6 +58,25 @@ export const navSections: NavSection[] = [
   },
 ];
 
+export function getVisibleNavSections({
+  isDemo,
+  vitalsConnected,
+}: {
+  isDemo: boolean;
+  vitalsConnected: boolean;
+}): NavSection[] {
+  return navSections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => {
+        if (item.hideForDemo && isDemo) return false;
+        if (item.requiresVitalsConnection && !vitalsConnected) return false;
+        return true;
+      }),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
@@ -57,6 +86,11 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle, onNavClick }: SidebarProps) {
   const pathname = usePathname();
   const { isDemo } = useAuth();
+  const { data: vitalsConnection } = useVitalsConnection();
+  const visibleSections = getVisibleNavSections({
+    isDemo,
+    vitalsConnected: vitalsConnection?.connected ?? false,
+  });
 
   return (
     <aside
@@ -92,12 +126,7 @@ export function Sidebar({ collapsed, onToggle, onNavClick }: SidebarProps) {
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto py-2">
-        {navSections.map((section) => {
-          const visibleItems = section.items.filter(
-            (item) => !(item.hideForDemo && isDemo)
-          );
-          if (visibleItems.length === 0) return null;
-
+        {visibleSections.map((section) => {
           return (
             <div key={section.title}>
               {!collapsed && (
@@ -108,7 +137,7 @@ export function Sidebar({ collapsed, onToggle, onNavClick }: SidebarProps) {
               {collapsed && (
                 <div className="h-[1px] bg-[color:var(--line)] my-2 mx-2" aria-hidden />
               )}
-              {visibleItems.map((item) => {
+              {section.items.map((item) => {
                 const isActive =
                   item.href === "/"
                     ? pathname === "/"

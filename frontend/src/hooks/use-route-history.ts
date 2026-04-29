@@ -17,6 +17,7 @@ export const KNOWN_ROUTES = [
   "/outreach",
   "/notes",
   "/pulse",
+  "/vitals",
   "/settings",
   "/profile",
 ] as const;

@@ -4,6 +4,8 @@ import { CommandPalette } from "@/components/command-palette";
 import { CommandPaletteProvider } from "@/hooks/use-command-palette";
 import type { ReactNode } from "react";
 
+const vitalsMock = vi.hoisted(() => ({ connected: false }));
+
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, replace: vi.fn() }),
@@ -13,6 +15,13 @@ vi.mock("next/navigation", () => ({
 
 vi.mock("@/lib/auth", () => ({
   useAuth: () => ({ isDemo: false, user: null }),
+}));
+
+vi.mock("@/hooks/use-vitals", () => ({
+  useVitalsConnection: () => ({
+    data: { connected: vitalsMock.connected },
+    isLoading: false,
+  }),
 }));
 
 function setup() {
@@ -26,6 +35,7 @@ function setup() {
 describe("<CommandPalette />", () => {
   beforeEach(() => {
     mockPush.mockClear();
+    vitalsMock.connected = false;
     window.localStorage.clear();
   });
 
@@ -61,6 +71,22 @@ describe("<CommandPalette />", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     fireEvent.click(screen.getByText("Tasks"));
     expect(mockPush).toHaveBeenCalledWith("/tasks");
+  });
+
+  it("hides Vitals when Garmin is not connected", () => {
+    setup();
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+
+    expect(screen.queryByText("Vitals")).not.toBeInTheDocument();
+  });
+
+  it("shows Vitals when Garmin is connected", () => {
+    vitalsMock.connected = true;
+
+    setup();
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+
+    expect(screen.getByText("Vitals")).toBeInTheDocument();
   });
 
   it("shows 'No results' on zero filter matches", () => {

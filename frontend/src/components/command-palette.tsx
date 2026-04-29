@@ -3,11 +3,13 @@
 import { Command } from "cmdk";
 import * as RadixDialog from "@radix-ui/react-dialog";
 import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 import { useCommandPalette } from "@/hooks/use-command-palette";
 import { useRouteHistory } from "@/hooks/use-route-history";
 import { useRecentEntities } from "@/hooks/use-recent-entities";
-import { navSections } from "@/components/layout/sidebar";
+import { getVisibleNavSections } from "@/components/layout/sidebar";
 import { useAuth } from "@/lib/auth";
+import { useVitalsConnection } from "@/hooks/use-vitals";
 
 const ENTITY_GLYPH: Record<"task" | "job", string> = {
   task: "▦",
@@ -25,10 +27,6 @@ const QUICK_ACTIONS: QuickAction[] = [
   { id: "new-task", label: "New task…", glyph: "+", href: "/tasks?new=1" },
   { id: "new-reminder", label: "Remind me…", glyph: "◷", href: "/reminders?new=1" },
 ];
-
-const ROUTE_META: Record<string, { label: string; glyph: string }> = Object.fromEntries(
-  navSections.flatMap((s) => s.items.map((i) => [i.href, { label: i.label, glyph: i.glyph }]))
-);
 
 const ROW_CLASS =
   "px-[18px] py-[8px] flex items-center gap-[12px] text-[13px] cursor-pointer " +
@@ -48,14 +46,27 @@ export function CommandPalette() {
   const history = useRouteHistory();
   const entities = useRecentEntities();
   const { isDemo } = useAuth();
+  const { data: vitalsConnection } = useVitalsConnection();
 
   const run = (href: string) => {
     setOpen(false);
     router.push(href);
   };
 
-  const jumpItems = navSections.flatMap((s) =>
-    s.items.filter((i) => !(i.hideForDemo && isDemo))
+  const jumpItems = useMemo(
+    () =>
+      getVisibleNavSections({
+        isDemo,
+        vitalsConnected: vitalsConnection?.connected ?? false,
+      }).flatMap((s) => s.items),
+    [isDemo, vitalsConnection?.connected]
+  );
+  const routeMeta = useMemo(
+    () =>
+      Object.fromEntries(
+        jumpItems.map((i) => [i.href, { label: i.label, glyph: i.glyph }])
+      ),
+    [jumpItems]
   );
 
   return (
@@ -129,7 +140,7 @@ export function CommandPalette() {
               </Command.Item>
             ))}
             {history.map((path) => {
-              const meta = ROUTE_META[path];
+              const meta = routeMeta[path];
               if (!meta) return null;
               return (
                 <Command.Item
