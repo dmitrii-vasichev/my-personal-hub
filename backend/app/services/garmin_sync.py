@@ -23,6 +23,52 @@ from app.services.garmin_auth import GarminRateLimitError
 logger = logging.getLogger(__name__)
 
 
+def _coerce_number(value) -> int | float | None:
+    """Return numeric Garmin values while excluding booleans and blanks."""
+    if isinstance(value, bool) or value in (None, ""):
+        return None
+    if isinstance(value, (int, float)):
+        return value
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _extract_body_battery_range(body_battery) -> tuple[int | None, int | None]:
+    """Extract high/low Body Battery from Garmin's known response shapes."""
+    values: list[int | float] = []
+
+    if isinstance(body_battery, list):
+        for entry in body_battery:
+            if not isinstance(entry, dict):
+                continue
+
+            samples = entry.get("bodyBatteryValuesArray")
+            if isinstance(samples, list):
+                for sample in samples:
+                    if isinstance(sample, (list, tuple)) and len(sample) >= 2:
+                        value = _coerce_number(sample[1])
+                        if value is not None:
+                            values.append(value)
+
+            for key in (
+                "chargedValue",
+                "bodyBatteryValue",
+                "bodyBatteryMostRecentValue",
+                "bodyBatteryHighestValue",
+                "bodyBatteryLowestValue",
+            ):
+                value = _coerce_number(entry.get(key))
+                if value is not None:
+                    values.append(value)
+
+    if not values:
+        return None, None
+
+    return int(max(values)), int(min(values))
+
+
 async def sync_user_data(db: AsyncSession, user_id: int) -> None:
     """Main sync function: fetch data from Garmin and upsert into DB."""
     # Load connection and set syncing status
@@ -148,6 +194,8 @@ async def _sync_daily_metrics(
     except Exception as e:
         logger.warning("Failed to get user summary for %s: %s", date_str, e)
         summary = {}
+    if not isinstance(summary, dict):
+        summary = {}
 
     try:
         body_battery = client.get_body_battery(date_str, date_str)
@@ -164,19 +212,10 @@ async def _sync_daily_metrics(
     except Exception as e:
         logger.warning("Failed to get max metrics for %s: %s", date_str, e)
         max_metrics = {}
+    if not isinstance(max_metrics, dict):
+        max_metrics = {}
 
-    # Parse body battery (list of dicts with charged/drained values)
-    bb_high = None
-    bb_low = None
-    if body_battery and isinstance(body_battery, list):
-        bb_values = [
-            entry.get("chargedValue", 0)
-            for entry in body_battery
-            if isinstance(entry, dict) and "chargedValue" in entry
-        ]
-        if bb_values:
-            bb_high = max(bb_values)
-            bb_low = min(bb_values)
+    bb_high, bb_low = _extract_body_battery_range(body_battery)
 
     # Parse VO2 max
     vo2_max = None
@@ -187,15 +226,6 @@ async def _sync_daily_metrics(
 
     # Build raw_json from all responses
     raw_json = {"summary": summary, "body_battery": body_battery, "max_metrics": max_metrics}
-
-    # Upsert
-    result = await db.execute(
-        select(VitalsDailyMetric).where(
-            VitalsDailyMetric.user_id == user_id,
-            VitalsDailyMetric.date == target_date,
-        )
-    )
-    metric = result.scalar_one_or_none()
 
     values = {
         "steps": summary.get("totalSteps"),
@@ -215,6 +245,20 @@ async def _sync_daily_metrics(
         "vo2_max": vo2_max,
         "raw_json": raw_json,
     }
+
+    metric_values = {key: value for key, value in values.items() if key != "raw_json"}
+    if all(value is None for value in metric_values.values()):
+        logger.info("Skipping empty Garmin daily metrics payload for %s", date_str)
+        return 0
+
+    # Upsert
+    result = await db.execute(
+        select(VitalsDailyMetric).where(
+            VitalsDailyMetric.user_id == user_id,
+            VitalsDailyMetric.date == target_date,
+        )
+    )
+    metric = result.scalar_one_or_none()
 
     if metric is None:
         metric = VitalsDailyMetric(user_id=user_id, date=target_date, **values)

@@ -509,8 +509,8 @@ class TestGarminAuthService:
 
     @pytest.mark.asyncio
     @patch("app.services.garmin_auth.decrypt_value", return_value='{"tokens": "data"}')
-    async def test_get_garmin_client_uses_tokens_without_login(self, mock_decrypt):
-        """get_garmin_client should load cached tokens without login() or validation calls."""
+    async def test_get_garmin_client_hydrates_cached_tokens_with_login(self, mock_decrypt):
+        """get_garmin_client should hydrate profile metadata from cached tokens."""
         from app.services.garmin_auth import get_garmin_client
 
         conn = make_garmin_connection()
@@ -524,16 +524,17 @@ class TestGarminAuthService:
         with patch("garminconnect.Garmin", return_value=mock_client):
             client = await get_garmin_client(db, 1)
 
-        # Should NOT call login() or get_user_profile() — trust Garth tokens
-        mock_client.login.assert_not_called()
+        mock_client.login.assert_called_once_with(tokenstore='{"tokens": "data"}')
         mock_client.get_user_profile.assert_not_called()
         assert client is mock_client
 
     @pytest.mark.asyncio
     @patch("app.services.garmin_auth.decrypt_value", return_value='{"tokens": "data"}')
-    async def test_get_garmin_client_loads_tokens_with_new_client_attr(self, mock_decrypt):
-        """garminconnect 0.3.x should load cached tokens through client.client.loads()."""
+    async def test_get_garmin_client_converts_login_429_to_rate_limit(self, mock_decrypt):
+        """429 while hydrating cached tokens should enter the normal cooldown path."""
         from app.services.garmin_auth import get_garmin_client
+        from app.services.garmin_auth import GarminRateLimitError
+        from garminconnect import GarminConnectTooManyRequestsError
 
         conn = make_garmin_connection()
         db = AsyncMock()
@@ -541,15 +542,14 @@ class TestGarminAuthService:
         mock_result.scalar_one_or_none.return_value = conn
         db.execute = AsyncMock(return_value=mock_result)
 
-        token_store = SimpleNamespace(loads=MagicMock())
-        mock_client = SimpleNamespace(login=MagicMock(), client=token_store)
+        mock_client = MagicMock()
+        mock_client.login.side_effect = GarminConnectTooManyRequestsError("429")
 
         with patch("garminconnect.Garmin", return_value=mock_client):
-            client = await get_garmin_client(db, 1)
+            with pytest.raises(GarminRateLimitError):
+                await get_garmin_client(db, 1)
 
-        token_store.loads.assert_called_once_with('{"tokens": "data"}')
-        mock_client.login.assert_not_called()
-        assert client is mock_client
+        mock_client.login.assert_called_once_with(tokenstore='{"tokens": "data"}')
 
     @pytest.mark.asyncio
     async def test_set_rate_limited_sets_cooldown(self):

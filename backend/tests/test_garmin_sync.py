@@ -133,6 +133,19 @@ def make_garmin_api_body_battery():
     ]
 
 
+def make_garmin_api_body_battery_values_array():
+    """Mock current Garmin body battery response with intraday value samples."""
+    return [
+        {
+            "bodyBatteryValuesArray": [
+                ["2026-03-19T00:00:00.0", 42],
+                ["2026-03-19T08:00:00.0", 78],
+                ["2026-03-19T23:45:00.0", 31],
+            ],
+        }
+    ]
+
+
 def make_garmin_api_sleep():
     """Mock Garmin API sleep response."""
     return {
@@ -195,6 +208,7 @@ class TestGarminSyncService:
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         db.execute = AsyncMock(return_value=mock_result)
+        db.add = MagicMock()
 
         client = MagicMock()
         client.get_user_summary.return_value = make_garmin_api_summary()
@@ -210,6 +224,47 @@ class TestGarminSyncService:
         assert added.body_battery_high == 85
         assert added.body_battery_low == 25
         assert added.vo2_max == 48.5
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
+    async def test_sync_daily_metrics_parses_body_battery_values_array(self, mock_auth):
+        """Body Battery should parse Garmin's intraday values array shape."""
+        from app.services.garmin_sync import _sync_daily_metrics
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(return_value=mock_result)
+        db.add = MagicMock()
+
+        client = MagicMock()
+        client.get_user_summary.return_value = make_garmin_api_summary()
+        client.get_body_battery.return_value = make_garmin_api_body_battery_values_array()
+        client.get_max_metrics.return_value = {}
+
+        await _sync_daily_metrics(db, 1, client, date(2026, 3, 19))
+
+        added = db.add.call_args[0][0]
+        assert added.body_battery_high == 78
+        assert added.body_battery_low == 31
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
+    async def test_sync_daily_metrics_skips_empty_payload(self, mock_auth):
+        """Empty Garmin metric payloads should not create all-null metric rows."""
+        from app.services.garmin_sync import _sync_daily_metrics
+
+        db = AsyncMock()
+        client = MagicMock()
+        client.get_user_summary.return_value = {}
+        client.get_body_battery.return_value = []
+        client.get_max_metrics.return_value = {}
+
+        count = await _sync_daily_metrics(db, 1, client, date(2026, 3, 19))
+
+        assert count == 0
+        db.execute.assert_not_called()
+        db.add.assert_not_called()
 
     @pytest.mark.asyncio
     @patch("app.services.garmin_sync.garmin_auth")

@@ -217,7 +217,12 @@ async def get_garmin_client(db: AsyncSession, user_id: int):
 
     tokens_data = decrypt_value(conn.garth_tokens_encrypted)
     client = Garmin()
-    load_garmin_tokens(client, tokens_data)
+    try:
+        # login(tokenstore=...) loads cached tokens and hydrates Garmin profile metadata
+        # such as display_name, which daily summary and sleep endpoints require.
+        client.login(tokenstore=tokens_data)
+    except GarminConnectTooManyRequestsError as e:
+        raise GarminRateLimitError("429 while hydrating cached Garmin tokens") from e
 
     return client
 
