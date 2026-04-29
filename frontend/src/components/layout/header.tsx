@@ -74,7 +74,7 @@ export function Header({ onMenuToggle, showMenuButton }: HeaderProps) {
   const stamp = useLiveStamp();
 
   return (
-    <header className="flex min-h-[calc(44px+var(--safe-top))] shrink-0 items-center gap-2 border-b border-[color:var(--line)] bg-[color:var(--bg)] pl-[max(12px,var(--safe-left))] pr-[max(12px,var(--safe-right))] pt-[var(--safe-top)] text-[11px] tracking-[0.5px] text-[color:var(--ink-3)] max-md:items-end max-md:pb-2 md:min-h-11 md:gap-4 md:px-5 md:pt-0">
+    <header className="flex min-h-[calc(44px+var(--safe-top))] shrink-0 items-center gap-2 border-b border-[color:var(--line)] bg-[color:var(--bg)] pl-[max(12px,var(--safe-left))] pr-[max(12px,var(--safe-right))] pt-[var(--safe-top)] text-[11px] tracking-[0.5px] text-[color:var(--ink-3)] max-md:items-end max-md:pb-2 md:min-h-12 md:gap-4 md:px-5 md:pt-0">
       <div className="flex min-w-0 flex-1 items-center gap-2">
         {showMenuButton && (
           <button
