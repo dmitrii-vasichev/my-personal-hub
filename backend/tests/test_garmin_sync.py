@@ -434,6 +434,55 @@ class TestGarminSyncService:
 
     @pytest.mark.asyncio
     @patch("app.services.garmin_sync.garmin_auth")
+    @patch("app.services.garmin_sync._needs_vitals_backfill", create=True)
+    @patch("app.services.garmin_sync.user_today")
+    async def test_sync_user_data_backfills_30_days_when_history_is_sparse(
+        self, mock_today, mock_needs_backfill, mock_auth
+    ):
+        """Sparse existing history should trigger a 30-day vitals backfill."""
+        from app.services.garmin_sync import sync_user_data
+
+        mock_today.return_value = date(2026, 3, 30)
+        mock_needs_backfill.return_value = True
+
+        conn = make_garmin_connection()
+        conn.last_sync_at = datetime(2026, 3, 29, 12, 0, 0, tzinfo=timezone.utc)
+
+        call_count = 0
+
+        async def mock_execute(query):
+            nonlocal call_count
+            call_count += 1
+            result = MagicMock()
+            if call_count == 1:
+                result.scalar_one_or_none.return_value = conn
+            else:
+                result.scalar_one_or_none.return_value = None
+            return result
+
+        db = AsyncMock()
+        db.execute = mock_execute
+
+        mock_client = MagicMock()
+        mock_client.get_user_summary.return_value = make_garmin_api_summary()
+        mock_client.get_body_battery.return_value = make_garmin_api_body_battery()
+        mock_client.get_max_metrics.return_value = {}
+        mock_client.get_sleep_data.return_value = {}
+        mock_client.get_activities_by_date.return_value = []
+        mock_auth.get_garmin_client = AsyncMock(return_value=mock_client)
+
+        await sync_user_data(db, 1)
+
+        assert mock_client.get_user_summary.call_count == 30
+        assert mock_client.get_sleep_data.call_count == 30
+        assert mock_client.get_user_summary.call_args_list[0].args == ("2026-03-01",)
+        assert mock_client.get_user_summary.call_args_list[-1].args == ("2026-03-30",)
+        mock_client.get_activities_by_date.assert_called_once_with(
+            "2026-03-01", "2026-03-30"
+        )
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
     async def test_sync_user_data_error(self, mock_auth):
         """Test sync_user_data sets status to error on failure."""
         from app.services.garmin_sync import sync_user_data

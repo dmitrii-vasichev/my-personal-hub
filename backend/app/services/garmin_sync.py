@@ -5,7 +5,7 @@ import logging
 from datetime import date, datetime, timedelta, timezone
 
 from garminconnect import GarminConnectTooManyRequestsError
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_factory
@@ -21,6 +21,10 @@ from app.services import garmin_auth
 from app.services.garmin_auth import GarminRateLimitError
 
 logger = logging.getLogger(__name__)
+
+INITIAL_BACKFILL_DAYS = 30
+INCREMENTAL_SYNC_DAYS = 2
+BACKFILL_MIN_HISTORY_DAYS = 7
 
 
 def _coerce_number(value) -> int | float | None:
@@ -67,6 +71,38 @@ def _extract_body_battery_range(body_battery) -> tuple[int | None, int | None]:
         return None, None
 
     return int(max(values)), int(min(values))
+
+
+def _inclusive_dates(start_date: date, end_date: date) -> list[date]:
+    """Return all dates in [start_date, end_date]."""
+    days = (end_date - start_date).days
+    return [start_date + timedelta(days=offset) for offset in range(days + 1)]
+
+
+def _coerce_count(value) -> int:
+    """Normalize SQL count results and test doubles to an integer."""
+    return value if isinstance(value, int) else 0
+
+
+async def _count_recent_rows(db: AsyncSession, model, user_id: int, today: date) -> int:
+    start_date = today - timedelta(days=INITIAL_BACKFILL_DAYS - 1)
+    result = await db.execute(
+        select(func.count())
+        .select_from(model)
+        .where(
+            model.user_id == user_id,
+            model.date >= start_date,
+            model.date <= today,
+        )
+    )
+    return _coerce_count(result.scalar_one())
+
+
+async def _needs_vitals_backfill(db: AsyncSession, user_id: int, today: date) -> bool:
+    """Return True while recent metrics/sleep history is still sparse."""
+    metrics_count = await _count_recent_rows(db, VitalsDailyMetric, user_id, today)
+    sleep_count = await _count_recent_rows(db, VitalsSleep, user_id, today)
+    return metrics_count < BACKFILL_MIN_HISTORY_DAYS or sleep_count < BACKFILL_MIN_HISTORY_DAYS
 
 
 async def sync_user_data(db: AsyncSession, user_id: int) -> None:
@@ -116,26 +152,26 @@ async def sync_user_data(db: AsyncSession, user_id: int) -> None:
         client = await garmin_auth.get_garmin_client(db, user_id)
 
         today = await user_today(db, user_id)
-        yesterday = today - timedelta(days=1)
 
-        # Determine activity date range: 7 days on first sync, 2 days on subsequent
-        if conn.last_sync_at is None:
-            activity_start = today - timedelta(days=7)
-        else:
-            activity_start = today - timedelta(days=2)
+        needs_backfill = conn.last_sync_at is None or await _needs_vitals_backfill(
+            db, user_id, today
+        )
+        sync_days = INITIAL_BACKFILL_DAYS if needs_backfill else INCREMENTAL_SYNC_DAYS
+        sync_start = today - timedelta(days=sync_days - 1)
+        sync_dates = _inclusive_dates(sync_start, today)
 
-        # Sync daily metrics for today and yesterday
+        # Sync daily metrics for the selected history window.
         metrics_count = 0
-        for d in [yesterday, today]:
+        for d in sync_dates:
             metrics_count += await _sync_daily_metrics(db, user_id, client, d)
 
-        # Sync sleep for today and yesterday
+        # Sync sleep for the selected history window.
         sleep_count = 0
-        for d in [yesterday, today]:
+        for d in sync_dates:
             sleep_count += await _sync_sleep(db, user_id, client, d)
 
         # Sync activities
-        activities_count = await _sync_activities(db, user_id, client, activity_start, today)
+        activities_count = await _sync_activities(db, user_id, client, sync_start, today)
 
         finished_at = datetime.now(timezone.utc)
         duration_ms = int((finished_at - started_at).total_seconds() * 1000)

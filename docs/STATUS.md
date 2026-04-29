@@ -19,15 +19,19 @@ Findings:
 - Demo vitals data includes non-null daily metrics, sleep, and activities through 2026-04-27.
 - Root cause found in code: token-only Garmin clients were loaded without hydrating `display_name`, while Garmin summary/sleep endpoints build URLs with that profile value.
 - Secondary sync issue: empty daily metric payloads were counted as successful all-null rows, and Body Battery parsing did not handle Garmin's intraday values array shape.
+- Follow-up root cause for two-day history: `sync_user_data` used the first-sync history window only for activities; daily metrics and sleep were always limited to today/yesterday.
 
 Changed:
 - `get_garmin_client` now hydrates cached tokens with `login(tokenstore=...)` and maps hydration 429s into the existing Garmin cooldown path.
 - Daily metrics sync now skips all-null metric payloads and parses Body Battery from `bodyBatteryValuesArray` in addition to older scalar fields.
+- Vitals sync now backfills 30 days for first sync or sparse existing metrics/sleep history, then returns to a lightweight 2-day incremental window.
 
 Validation:
 - RED focused tests reproduced the missing token hydration, Body Battery parsing, and empty-payload behavior.
 - GREEN focused tests: `python -m pytest -q backend/tests/test_garmin_auth.py::TestGarminAuthService::test_get_garmin_client_hydrates_cached_tokens_with_login backend/tests/test_garmin_auth.py::TestGarminAuthService::test_get_garmin_client_converts_login_429_to_rate_limit backend/tests/test_garmin_sync.py::TestGarminSyncService::test_sync_daily_metrics_parses_body_battery_values_array backend/tests/test_garmin_sync.py::TestGarminSyncService::test_sync_daily_metrics_skips_empty_payload` → `4 passed`.
-- Touched backend slice: `python -m pytest -q backend/tests/test_garmin_auth.py backend/tests/test_garmin_sync.py` → `97 passed`.
+- RED backfill regression: `python -m pytest -q backend/tests/test_garmin_sync.py::TestGarminSyncService::test_sync_user_data_backfills_30_days_when_history_is_sparse` failed with `2 == 30`.
+- Touched backend slice: `python -m pytest -q backend/tests/test_garmin_auth.py backend/tests/test_garmin_sync.py` → `98 passed`.
+- Compile check: `python -m py_compile backend/app/services/garmin_sync.py backend/app/services/garmin_auth.py` → passed.
 - Wider Vitals slice: `python -m pytest -q backend/tests/test_garmin_auth.py backend/tests/test_garmin_sync.py backend/tests/test_vitals_demo.py backend/tests/test_vitals_briefing.py` → `137 passed / 2 mock-order failures in test_vitals_demo.py` outside the touched auth/sync path.
 
 ### 2026-04-29 — Rich Reminder Cards Implemented
