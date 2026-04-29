@@ -93,6 +93,7 @@ async def run_user_birthday_check(user_id: int) -> None:
                 reminder = Reminder(
                     user_id=user_id,
                     title=title,
+                    action_date=remind_at.date(),
                     remind_at=remind_at,
                     status=ReminderStatus.pending,
                     recurrence_rule=None,

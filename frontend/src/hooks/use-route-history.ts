@@ -10,8 +10,7 @@ const MAX_ENTRIES = 5;
 // deep-links we don't surface in RECENT) are filtered out before persisting.
 export const KNOWN_ROUTES = [
   "/",
-  "/tasks",
-  "/reminders",
+  "/actions",
   "/calendar",
   "/jobs",
   "/outreach",

@@ -1,10 +1,11 @@
 import enum
-from datetime import datetime
+from datetime import date, datetime
 from typing import Optional
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    Date,
     DateTime,
     Enum,
     ForeignKey,
@@ -37,8 +38,11 @@ class Reminder(Base):
     checklist: Mapped[list] = mapped_column(
         JSON, default=list, server_default="[]", nullable=False
     )
-    remind_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, index=True
+    action_date: Mapped[Optional[date]] = mapped_column(
+        Date, nullable=True, index=True
+    )
+    remind_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
     )
     status: Mapped[ReminderStatus] = mapped_column(
         Enum(ReminderStatus), default=ReminderStatus.pending, nullable=False
@@ -86,3 +90,11 @@ class Reminder(Base):
         Index("ix_reminders_user_status", "user_id", "status"),
         Index("ix_reminders_remind_at_status", "remind_at", "status"),
     )
+
+    @property
+    def mode(self) -> str:
+        if self.remind_at is not None:
+            return "scheduled"
+        if self.action_date is not None:
+            return "anytime"
+        return "inbox"

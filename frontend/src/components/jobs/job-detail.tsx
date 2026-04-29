@@ -25,7 +25,6 @@ import { InlineEditSalary } from "@/components/ui/inline-edit-salary";
 import { StatusChangeDialog } from "@/components/jobs/status-change-dialog";
 import { JobTrackingEditDialog } from "@/components/jobs/job-tracking-edit-dialog";
 import { JobMatchSection } from "@/components/jobs/job-match-section";
-import { LinkedTasksSection } from "@/components/jobs/linked-tasks-section";
 import { LinkedEventsSection } from "@/components/jobs/linked-events-section";
 import { LinkedNotesSection } from "@/components/notes/linked-notes-section";
 import {
@@ -305,9 +304,6 @@ export function JobDetail({ job }: JobDetailProps) {
               </div>
             </>
           )}
-
-          {/* Linked Tasks */}
-          <LinkedTasksSection jobId={job.id} />
 
           {/* Linked Events */}
           <LinkedEventsSection jobId={job.id} />

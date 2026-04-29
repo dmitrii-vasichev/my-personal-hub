@@ -1,7 +1,7 @@
 """Reminder CRUD service — create, list, update, delete, snooze, done."""
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Optional
 
 from dateutil.relativedelta import relativedelta
@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 def _schedule_if_eligible(reminder: Reminder) -> None:
-    """Schedule event-driven notification if reminder is pending and time-bound."""
-    if reminder.is_floating or reminder.status != ReminderStatus.pending:
+    """Schedule event-driven notification if reminder is pending and scheduled."""
+    if reminder.status != ReminderStatus.pending or reminder.remind_at is None:
         return
     fire_at = reminder.snoozed_until or reminder.remind_at
     schedule_reminder_notification(reminder.id, fire_at)
@@ -27,8 +27,9 @@ def _schedule_if_eligible(reminder: Reminder) -> None:
 async def create_reminder(
     db: AsyncSession,
     title: str,
-    remind_at: datetime,
+    remind_at: datetime | None,
     user: User,
+    action_date: date | None = None,
     recurrence_rule: str | None = None,
     task_id: int | None = None,
     is_floating: bool = False,
@@ -41,10 +42,11 @@ async def create_reminder(
         title=title,
         details=details,
         checklist=checklist or [],
-        remind_at=remind_at,
+        action_date=action_date or (remind_at.date() if remind_at else None),
+        remind_at=None if is_floating else remind_at,
         recurrence_rule=recurrence_rule,
         task_id=task_id,
-        is_floating=is_floating,
+        is_floating=is_floating or remind_at is None,
         is_urgent=is_urgent,
     )
     db.add(reminder)
@@ -71,9 +73,9 @@ async def list_reminders(
         order = (Reminder.completed_at.desc().nullslast(),)
     else:
         order = (
-            Reminder.is_urgent.desc(),    # urgent first
-            Reminder.is_floating.asc(),   # time-bound before floating
-            Reminder.remind_at,           # then by time
+            Reminder.action_date.asc().nullslast(),
+            Reminder.remind_at.asc().nullslast(),
+            Reminder.created_at.asc(),
         )
     result = await db.execute(
         select(Reminder)
@@ -109,6 +111,16 @@ async def update_reminder(
 
     old_remind_at = reminder.remind_at
 
+    if "remind_at" in kwargs:
+        new_remind_at = kwargs["remind_at"]
+        if kwargs.get("action_date") is None and new_remind_at is not None:
+            kwargs["action_date"] = new_remind_at.date()
+        if kwargs.get("is_floating") is True:
+            kwargs["remind_at"] = None
+        kwargs["is_floating"] = kwargs["remind_at"] is None
+    elif kwargs.get("is_floating") is True:
+        kwargs["remind_at"] = None
+
     for key, value in kwargs.items():
         if key == "checklist" and value is None:
             value = []
@@ -119,11 +131,17 @@ async def update_reminder(
         new_remind_at = kwargs["remind_at"]
         now = datetime.now(tz=timezone.utc)
         # Count as postpone: reminder was due (past or now) and moved forward
-        if old_remind_at <= now and new_remind_at > old_remind_at:
+        if (
+            old_remind_at is not None
+            and new_remind_at is not None
+            and old_remind_at <= now
+            and new_remind_at > old_remind_at
+        ):
             reminder.snooze_count += 1
         reminder.notification_sent_count = 0
         reminder.snoozed_until = None
         reminder.telegram_message_id = None
+        cancel_reminder_notification(reminder_id)
 
     await db.commit()
     await db.refresh(reminder)
@@ -156,9 +174,15 @@ async def mark_done(
 
     if reminder.recurrence_rule:
         # Advance to next occurrence
-        reminder.remind_at = _next_occurrence(
-            reminder.remind_at, reminder.recurrence_rule
-        )
+        if reminder.remind_at is not None:
+            reminder.remind_at = _next_occurrence(
+                reminder.remind_at, reminder.recurrence_rule
+            )
+            reminder.action_date = reminder.remind_at.date()
+        elif reminder.action_date is not None:
+            reminder.action_date = _next_anytime_date(
+                reminder.action_date, reminder.recurrence_rule
+            )
         reminder.checklist = _reset_checklist_completion(reminder.checklist)
         reminder.status = ReminderStatus.pending
         reminder.snooze_count = 0
@@ -191,7 +215,7 @@ async def restore_reminder(
         return None
     reminder.status = ReminderStatus.pending
     reminder.completed_at = None
-    reminder.remind_at = datetime.now(tz=timezone.utc)
+    reminder.action_date = datetime.now(tz=timezone.utc).date()
     await db.commit()
     await db.refresh(reminder)
     _schedule_if_eligible(reminder)
@@ -207,6 +231,8 @@ async def snooze_reminder(
     reminder = await get_reminder(db, reminder_id, user)
     if not reminder:
         return None
+    if reminder.remind_at is None:
+        raise ValueError("Only scheduled reminders can be snoozed")
 
     now = datetime.now(tz=timezone.utc)
     base = max(reminder.remind_at, now)
@@ -249,6 +275,11 @@ def _next_occurrence(current: datetime, rule: str) -> datetime:
         case _:
             logger.warning("Unknown recurrence rule: %s, defaulting to daily", rule)
             return current + timedelta(days=1)
+
+
+def _next_anytime_date(current: date, rule: str) -> date:
+    anchor = datetime.combine(current, time.min, tzinfo=timezone.utc)
+    return _next_occurrence(anchor, rule).date()
 
 
 def _reset_checklist_completion(checklist: object) -> list[dict]:

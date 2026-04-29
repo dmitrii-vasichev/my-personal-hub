@@ -86,7 +86,8 @@ class ContextTask(BaseModel):
 class ContextReminder(BaseModel):
     id: int
     title: str
-    remind_at: datetime
+    remind_at: Optional[datetime] = None
+    action_date: Optional[date_type] = None
     is_urgent: bool
     task_id: Optional[int] = None
 

@@ -27,6 +27,7 @@ from app.api.resumes import router as resumes_router
 from app.api.search import router as search_router
 from app.api.settings import router as settings_router
 from app.api.tasks import router as tasks_router
+from app.api.actions import router as actions_router
 from app.api.gmail import router as gmail_router
 from app.api.outreach import batch_router, industry_router, router as outreach_router
 from app.api.birthdays import router as birthdays_router
@@ -59,7 +60,7 @@ async def _restore_reminder_jobs() -> None:
             select(Reminder).where(
                 and_(
                     Reminder.status == ReminderStatus.pending,
-                    Reminder.is_floating == False,  # noqa: E712
+                    Reminder.remind_at.is_not(None),
                     Reminder.notification_sent_count == 0,
                 )
             )
@@ -67,7 +68,8 @@ async def _restore_reminder_jobs() -> None:
         reminders = result.scalars().all()
         for r in reminders:
             fire_at = r.snoozed_until or r.remind_at
-            schedule_reminder_notification(r.id, fire_at)
+            if fire_at is not None:
+                schedule_reminder_notification(r.id, fire_at)
         if reminders:
             logger.info("Restored %d event-driven reminder jobs", len(reminders))
 
@@ -296,6 +298,7 @@ app.include_router(industry_router)
 app.include_router(gmail_router)
 app.include_router(batch_router)
 app.include_router(miniapp_router)
+app.include_router(actions_router)
 app.include_router(reminders_router)
 app.include_router(birthdays_router)
 app.include_router(planner_router)

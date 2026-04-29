@@ -21,32 +21,32 @@ describe("useRouteHistory", () => {
   });
 
   it("records visited routes and excludes the current one from the returned list", () => {
-    usePathname.mockReturnValue("/tasks");
+    usePathname.mockReturnValue("/actions");
     const { rerender, result } = renderHook(() => useRouteHistory());
-    expect(result.current).toEqual([]); // at /tasks, excluded
+    expect(result.current).toEqual([]); // at /actions, excluded
 
     usePathname.mockReturnValue("/jobs");
     rerender();
-    // Storage now contains ["/jobs", "/tasks"], returned excludes /jobs.
-    expect(result.current).toEqual(["/tasks"]);
+    // Storage now contains ["/jobs", "/actions"], returned excludes /jobs.
+    expect(result.current).toEqual(["/actions"]);
   });
 
   it("dedupes repeated visits — each pathname appears at most once", () => {
-    usePathname.mockReturnValue("/tasks");
+    usePathname.mockReturnValue("/actions");
     const { rerender, result } = renderHook(() => useRouteHistory());
     usePathname.mockReturnValue("/jobs");
     rerender();
-    usePathname.mockReturnValue("/tasks");
+    usePathname.mockReturnValue("/actions");
     rerender();
-    usePathname.mockReturnValue("/reminders");
+    usePathname.mockReturnValue("/calendar");
     rerender();
-    // At /reminders, storage: ["/reminders", "/tasks", "/jobs"] — /tasks dedupes.
-    expect(result.current).toEqual(["/tasks", "/jobs"]);
-    expect(result.current.filter((p) => p === "/tasks")).toHaveLength(1);
+    // At /calendar, storage: ["/calendar", "/actions", "/jobs"] — /actions dedupes.
+    expect(result.current).toEqual(["/actions", "/jobs"]);
+    expect(result.current.filter((p) => p === "/actions")).toHaveLength(1);
   });
 
   it("caps history at 5 unique entries", () => {
-    const visits = ["/tasks", "/reminders", "/calendar", "/jobs", "/notes", "/pulse", "/settings"];
+    const visits = ["/actions", "/calendar", "/jobs", "/notes", "/pulse", "/vitals", "/settings"];
     usePathname.mockReturnValue("/");
     const { rerender, result } = renderHook(() => useRouteHistory());
     for (const path of visits) {
@@ -72,11 +72,11 @@ describe("useRouteHistory", () => {
   });
 
   it("persists writes to hub-recent-routes key", () => {
-    usePathname.mockReturnValue("/tasks");
+    usePathname.mockReturnValue("/actions");
     const { rerender } = renderHook(() => useRouteHistory());
     usePathname.mockReturnValue("/jobs");
     rerender();
     const stored = JSON.parse(window.localStorage.getItem("hub-recent-routes") ?? "[]");
-    expect(stored).toEqual(["/jobs", "/tasks"]);
+    expect(stored).toEqual(["/jobs", "/actions"]);
   });
 });

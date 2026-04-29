@@ -3,12 +3,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { vi, describe, it, expect } from "vitest";
 import { StatsGrid } from "../stats-grid";
 
-vi.mock("@/hooks/use-tasks", () => ({ useTasks: () => ({ data: [] }) }));
+vi.mock("@/hooks/use-actions", () => ({ useActions: () => ({ data: [] }) }));
 vi.mock("@/hooks/use-jobs", () => ({ useJobs: () => ({ data: [] }) }));
 vi.mock("@/hooks/use-notes", () => ({ useNotes: () => ({ data: [] }) }));
-vi.mock("@/hooks/use-dashboard", () => ({
-  useDashboardSummary: () => ({ data: { tasks: { overdue: 0 } } }),
-}));
 
 function wrap(ui: React.ReactElement) {
   const qc = new QueryClient({
@@ -18,12 +15,12 @@ function wrap(ui: React.ReactElement) {
 }
 
 describe("StatsGrid", () => {
-  it("renders Tasks done · today by default", () => {
+  it("renders Actions done · today by default", () => {
     wrap(<StatsGrid />);
-    expect(screen.getByText(/Tasks done · today/i)).toBeInTheDocument();
+    expect(screen.getByText(/Actions done · today/i)).toBeInTheDocument();
   });
 
-  it("replaces Tasks done cell when replaceTasksDoneWith is provided", () => {
+  it("replaces Actions done cell when replaceTasksDoneWith is provided", () => {
     wrap(
       <StatsGrid
         replaceTasksDoneWith={
@@ -31,13 +28,13 @@ describe("StatsGrid", () => {
         }
       />,
     );
-    expect(screen.queryByText(/Tasks done · today/i)).toBeNull();
+    expect(screen.queryByText(/Actions done · today/i)).toBeNull();
     expect(screen.getByTestId("planner-cell")).toBeInTheDocument();
   });
 
   it("keeps the other three cells unchanged in plan-mode", () => {
     wrap(<StatsGrid replaceTasksDoneWith={<div>P</div>} />);
-    expect(screen.getByText(/Overdue tasks/i)).toBeInTheDocument();
+    expect(screen.getByText(/Overdue actions/i)).toBeInTheDocument();
     expect(screen.getByText(/Notes · 30d/i)).toBeInTheDocument();
     expect(screen.getByText(/Response rate · 30d/i)).toBeInTheDocument();
   });
@@ -68,9 +65,9 @@ describe("StatsGrid", () => {
     expect(screen.getByTestId("adherence-cell")).toBeInTheDocument();
     expect(screen.getByTestId("focus-cell")).toBeInTheDocument();
     expect(screen.queryByText(/Response rate · 30d/i)).toBeNull();
-    expect(screen.queryByText(/Tasks done · today/i)).toBeNull();
+    expect(screen.queryByText(/Actions done · today/i)).toBeNull();
     // Cells #1 (Overdue) and #2 (Notes) keep defaults.
-    expect(screen.getByText(/Overdue tasks/i)).toBeInTheDocument();
+    expect(screen.getByText(/Overdue actions/i)).toBeInTheDocument();
     expect(screen.getByText(/Notes · 30d/i)).toBeInTheDocument();
   });
 });

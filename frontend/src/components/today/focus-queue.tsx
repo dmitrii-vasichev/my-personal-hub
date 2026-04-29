@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type { DailyPlan, PlanItem } from "@/types/plan";
 import { labelForCategory, UNCHECKED_STATUSES } from "@/types/plan";
 import { useCompleteItemMutation } from "@/hooks/use-plan-today";
@@ -35,19 +34,7 @@ export function FocusQueue({ plan }: { plan: DailyPlan }) {
             <Chip>{i.minutes_planned}m</Chip>
             <Chip>{labelForCategory(i.category)}</Chip>
             {(i.status === "pending" || i.status === "rescheduled") && (
-              <StartFocusButton
-                taskId={i.linked_task_id ?? undefined}
-                planItemId={i.id}
-              />
-            )}
-            {i.linked_task_id && (
-              <Link
-                href={`/tasks/${i.linked_task_id}`}
-                className="text-[10.5px] text-[color:var(--accent-3)] hover:underline"
-                title={i.task_title ?? undefined}
-              >
-                #{i.linked_task_id}
-              </Link>
+              <StartFocusButton planItemId={i.id} />
             )}
           </li>
         ))}

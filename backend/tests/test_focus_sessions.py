@@ -68,6 +68,7 @@ def _make_session(
     id_: int = 1,
     user_id: int = 1,
     task_id: int | None = None,
+    action_id: int | None = None,
     plan_item_id: int | None = None,
     started_at: datetime | None = None,
     ended_at: datetime | None = None,
@@ -78,6 +79,7 @@ def _make_session(
     s.id = id_
     s.user_id = user_id
     s.task_id = task_id
+    s.action_id = action_id
     s.plan_item_id = plan_item_id
     s.started_at = started_at or datetime(2026, 4, 21, 10, 0, tzinfo=timezone.utc)
     s.ended_at = ended_at
@@ -137,6 +139,48 @@ async def test_post_start_returns_201_with_correct_shape(monkeypatch):
         assert data["actual_minutes"] is None
         assert captured["payload"].task_id == 42
         assert captured["payload"].planned_minutes == 50
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+        app.dependency_overrides.pop(get_db, None)
+
+
+@pytest.mark.asyncio
+async def test_post_start_accepts_action_id(monkeypatch):
+    """POST /start with action_id → 201, action_id is preserved."""
+    user = make_user()
+    started = datetime(2026, 4, 21, 10, 0, tzinfo=timezone.utc)
+    session = _make_session(
+        id_=8,
+        user_id=user.id,
+        action_id=33,
+        started_at=started,
+        ended_at=None,
+        planned_minutes=25,
+    )
+
+    captured: dict = {}
+
+    async def fake_start(db, u, payload):
+        captured["payload"] = payload
+        return session
+
+    monkeypatch.setattr(service, "start", fake_start)
+
+    app.dependency_overrides[get_current_user] = _override_auth(user)
+    app.dependency_overrides[get_db] = _override_db()
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            resp = await client.post(
+                "/api/focus-sessions/start",
+                json={"action_id": 33, "planned_minutes": 25},
+            )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["action_id"] == 33
+        assert data["task_id"] is None
+        assert captured["payload"].action_id == 33
     finally:
         app.dependency_overrides.pop(get_current_user, None)
         app.dependency_overrides.pop(get_db, None)

@@ -3,7 +3,7 @@
 import { Calendar, ExternalLink, FolderOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiKeyInput } from "@/app/(dashboard)/settings/page";
+import { ApiKeyInput } from "@/components/settings/shared-inputs";
 
 interface AdminSettings {
   has_google_client_id: boolean;

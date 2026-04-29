@@ -61,7 +61,7 @@ describe("LoginPage", () => {
     ).toBeInTheDocument();
 
     // Module grid
-    expect(screen.getByText("Tasks")).toBeInTheDocument();
+    expect(screen.getByText("Actions")).toBeInTheDocument();
     expect(screen.getByText("Calendar")).toBeInTheDocument();
     expect(screen.getByText("Jobs")).toBeInTheDocument();
     expect(screen.getByText("Notes")).toBeInTheDocument();

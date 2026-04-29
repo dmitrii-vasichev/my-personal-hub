@@ -27,6 +27,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.daily_plan import DailyPlan, PlanItem
 from app.models.focus_session import FocusSession
+from app.models.reminder import Reminder, ReminderStatus
 from app.models.task import Task
 from app.models.user import User
 from app.schemas.focus_session import (
@@ -127,6 +128,7 @@ def _to_response(session: FocusSession) -> FocusSessionResponse:
         "id": session.id,
         "user_id": session.user_id,
         "task_id": session.task_id,
+        "action_id": session.action_id,
         "plan_item_id": session.plan_item_id,
         "started_at": session.started_at,
         "ended_at": session.ended_at,
@@ -136,6 +138,7 @@ def _to_response(session: FocusSession) -> FocusSessionResponse:
         # MVP: titles left as None; frontend resolves via its own task/plan
         # caches. Add a best-effort lookup here later if needed.
         "task_title": None,
+        "action_title": None,
         "plan_item_title": None,
     }
     return FocusSessionResponse.model_validate(data)
@@ -180,6 +183,17 @@ async def start(
         if task_row.scalar_one_or_none() is None:
             raise HTTPException(status_code=404, detail="Task not found")
 
+    if payload.action_id is not None:
+        action_row = await db.execute(
+            select(Reminder.id).where(
+                Reminder.id == payload.action_id,
+                Reminder.user_id == user.id,
+                Reminder.status == ReminderStatus.pending,
+            )
+        )
+        if action_row.scalar_one_or_none() is None:
+            raise HTTPException(status_code=404, detail="Action not found")
+
     if payload.plan_item_id is not None:
         pi_row = await db.execute(
             select(PlanItem.id)
@@ -197,6 +211,7 @@ async def start(
     session = FocusSession(
         user_id=user.id,
         task_id=payload.task_id,
+        action_id=payload.action_id,
         plan_item_id=payload.plan_item_id,
         started_at=_now(),
         planned_minutes=payload.planned_minutes,

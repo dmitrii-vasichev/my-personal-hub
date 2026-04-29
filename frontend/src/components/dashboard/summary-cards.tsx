@@ -7,6 +7,8 @@ import {
   CalendarDays,
 } from "lucide-react";
 import type { DashboardSummary } from "@/types/dashboard";
+import { useActions } from "@/hooks/use-actions";
+import { parseLocalDateSource, todayStart } from "@/components/today/today-date";
 
 interface SummaryCardProps {
   icon: React.ReactNode;
@@ -79,6 +81,8 @@ const RED = "var(--destructive)";
 const RED_MUTED = "var(--destructive-muted)";
 
 export function SummaryCards({ data, isLoading }: SummaryCardsProps) {
+  const { data: actions = [] } = useActions(true);
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -89,28 +93,38 @@ export function SummaryCards({ data, isLoading }: SummaryCardsProps) {
     );
   }
 
-  const tasks = data?.tasks;
   const jobHunt = data?.job_hunt;
   const calendar = data?.calendar;
 
-  const overdueColor = tasks?.overdue ? RED : GREEN;
-  const overdueMuted = tasks?.overdue ? RED_MUTED : GREEN_MUTED;
+  const openActions = actions.filter((action) => action.status !== "done").length;
+  const doneActions = actions.filter((action) => action.status === "done").length;
+  const completionRate =
+    actions.length > 0 ? Math.round((doneActions / actions.length) * 100) : 0;
+  const today0 = todayStart().getTime();
+  const overdueActions = actions.filter((action) => {
+    const source = action.action_date ?? action.remind_at;
+    const sourceDate = parseLocalDateSource(source);
+    return sourceDate && action.status !== "done" && sourceDate.getTime() < today0;
+  }).length;
+
+  const overdueColor = overdueActions ? RED : GREEN;
+  const overdueMuted = overdueActions ? RED_MUTED : GREEN_MUTED;
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <SummaryCard
         icon={<CheckSquare size={16} />}
-        label="Active Tasks"
-        value={tasks?.active ?? 0}
-        subtitle={tasks ? `${tasks.completion_rate}% completion rate` : undefined}
+        label="Open Actions"
+        value={openActions}
+        subtitle={`${completionRate}% completion rate`}
         color={BLUE}
         colorMuted={BLUE_MUTED}
       />
       <SummaryCard
         icon={<AlertCircle size={16} />}
-        label="Overdue Tasks"
-        value={tasks?.overdue ?? 0}
-        subtitle={tasks?.overdue ? "Need attention" : "All on track"}
+        label="Overdue Actions"
+        value={overdueActions}
+        subtitle={overdueActions ? "Need attention" : "All on track"}
         color={overdueColor}
         colorMuted={overdueMuted}
       />

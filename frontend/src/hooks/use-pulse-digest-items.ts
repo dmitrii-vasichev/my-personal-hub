@@ -63,7 +63,7 @@ export function useDigestItemAction() {
       queryClient.invalidateQueries({ queryKey: [PULSE_DIGESTS_KEY] });
       queryClient.invalidateQueries({ queryKey: [PULSE_UNREAD_COUNT_KEY] });
       const labels: Record<string, string> = {
-        to_task: "Saved as task",
+        to_task: "Saved",
         to_note: "Saved as note",
         to_job: "Added to Job Hunt",
         skip: "Skipped",

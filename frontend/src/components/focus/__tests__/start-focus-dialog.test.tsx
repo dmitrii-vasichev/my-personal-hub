@@ -48,6 +48,7 @@ describe("StartFocusDialog", () => {
     });
     expect(mutateAsyncSpy).toHaveBeenCalledWith({
       task_id: 42,
+      action_id: null,
       plan_item_id: null,
       planned_minutes: 25,
     });
@@ -66,6 +67,7 @@ describe("StartFocusDialog", () => {
     await waitFor(() => {
       expect(mutateAsyncSpy).toHaveBeenCalledWith({
         task_id: null,
+        action_id: null,
         plan_item_id: 7,
         planned_minutes: 50,
       });

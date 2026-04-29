@@ -116,9 +116,6 @@ describe("DigestItemCard", () => {
       />
     );
 
-    fireEvent.click(screen.getByTitle("Save as Task"));
-    expect(onAction).toHaveBeenCalledWith("to_task");
-
     fireEvent.click(screen.getByTitle("Save as Note"));
     expect(onAction).toHaveBeenCalledWith("to_note");
 
@@ -174,7 +171,7 @@ describe("DigestItemCard", () => {
 
     const card = screen.getByTestId("digest-item-card");
     expect(card.className).toContain("opacity-50");
-    expect(screen.getByText("Saved as task")).toBeInTheDocument();
+    expect(screen.getByText("Saved")).toBeInTheDocument();
     // No action buttons for actioned items
     expect(screen.queryByTitle("Save as Task")).not.toBeInTheDocument();
   });

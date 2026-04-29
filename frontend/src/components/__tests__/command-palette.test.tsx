@@ -58,19 +58,19 @@ describe("<CommandPalette />", () => {
     setup();
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     const input = screen.getByPlaceholderText(/search or type/i);
-    fireEvent.change(input, { target: { value: "task" } });
-    expect(screen.getByText("Tasks")).toBeInTheDocument();
-    expect(screen.getByText("New task…")).toBeInTheDocument();
+    fireEvent.change(input, { target: { value: "action" } });
+    expect(screen.getByText("Actions")).toBeInTheDocument();
+    expect(screen.getByText("New action…")).toBeInTheDocument();
     // Non-matching routes drop out.
-    expect(screen.queryByText("Reminders")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tasks")).not.toBeInTheDocument();
     expect(screen.queryByText("Meetings")).not.toBeInTheDocument();
   });
 
   it("routes via router.push when an item is clicked", () => {
     setup();
     fireEvent.keyDown(window, { key: "k", metaKey: true });
-    fireEvent.click(screen.getByText("Tasks"));
-    expect(mockPush).toHaveBeenCalledWith("/tasks");
+    fireEvent.click(screen.getByText("Actions"));
+    expect(mockPush).toHaveBeenCalledWith("/actions");
   });
 
   it("hides Vitals when Garmin is not connected", () => {
@@ -121,25 +121,25 @@ describe("<CommandPalette />", () => {
     fireEvent.keyDown(window, { key: "k", metaKey: true });
     expect(screen.getByText("RECENT")).toBeInTheDocument();
     expect(screen.getByText("Acme · Senior Engineer")).toBeInTheDocument();
-    expect(screen.getByText("#42 · Fix login bug")).toBeInTheDocument();
+    expect(screen.queryByText("#42 · Fix login bug")).not.toBeInTheDocument();
   });
 
-  it("routes to entity href when a recent entity is clicked", () => {
+  it("routes to job entity href when a recent entity is clicked", () => {
     window.localStorage.setItem(
       "hub-recent-entities",
       JSON.stringify([
         {
-          kind: "task",
-          id: 42,
-          label: "#42 · Fix login bug",
-          href: "/tasks/42",
+          kind: "job",
+          id: 77,
+          label: "Acme · Senior Engineer",
+          href: "/jobs/77",
           visitedAt: 100,
         },
       ]),
     );
     setup();
     fireEvent.keyDown(window, { key: "k", metaKey: true });
-    fireEvent.click(screen.getByText("#42 · Fix login bug"));
-    expect(mockPush).toHaveBeenCalledWith("/tasks/42");
+    fireEvent.click(screen.getByText("Acme · Senior Engineer"));
+    expect(mockPush).toHaveBeenCalledWith("/jobs/77");
   });
 });

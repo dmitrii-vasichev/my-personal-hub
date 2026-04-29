@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EventNotes } from "@/components/calendar/event-notes";
 import { EventDialog } from "@/components/calendar/event-dialog";
-import { LinkedTasks } from "@/components/calendar/linked-tasks";
 import { LinkedNotesSection } from "@/components/notes/linked-notes-section";
 import {
   useEventLinkedNotes,
@@ -177,11 +176,6 @@ export default function EventDetailPage() {
           </p>
         </div>
       )}
-
-      {/* Linked Tasks */}
-      <div className="border-t border-[--border] pt-6">
-        <LinkedTasks eventId={event.id} />
-      </div>
 
       {/* Linked Notes */}
       <div className="border-t border-[--border] pt-6">

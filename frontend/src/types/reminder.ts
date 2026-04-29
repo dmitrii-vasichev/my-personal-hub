@@ -8,7 +8,9 @@ export interface Reminder {
   title: string;
   details: string | null;
   checklist: ChecklistItem[];
-  remind_at: string;
+  action_date: string | null;
+  remind_at: string | null;
+  mode: "inbox" | "anytime" | "scheduled";
   status: ReminderStatus;
   snoozed_until: string | null;
   recurrence_rule: string | null;
@@ -25,7 +27,8 @@ export interface Reminder {
 
 export interface CreateReminderInput {
   title: string;
-  remind_at: string;
+  action_date?: string | null;
+  remind_at?: string | null;
   details?: string | null;
   checklist?: ChecklistItem[];
   recurrence_rule?: string | null;
@@ -36,7 +39,8 @@ export interface CreateReminderInput {
 
 export interface UpdateReminderInput {
   title?: string;
-  remind_at?: string;
+  action_date?: string | null;
+  remind_at?: string | null;
   details?: string | null;
   checklist?: ChecklistItem[];
   recurrence_rule?: string | null;

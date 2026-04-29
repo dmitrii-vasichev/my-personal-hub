@@ -52,7 +52,7 @@ export function NowBlock() {
 
   if (!session) return null;
 
-  const label = session.task_title ?? session.plan_item_title ?? "FOCUS";
+  const label = session.action_title ?? session.plan_item_title ?? session.task_title ?? "FOCUS";
 
   return (
     <div className="grid grid-cols-[64px_14px_1fr_auto] gap-[14px] items-center p-[10px_16px] bg-[color:var(--bg-2)] border-l-[3px] border-l-[color:var(--accent)]">

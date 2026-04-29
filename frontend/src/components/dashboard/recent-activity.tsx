@@ -10,7 +10,7 @@ import {
   Zap,
   Plus,
 } from "lucide-react";
-import { useTasks } from "@/hooks/use-tasks";
+import { useActions } from "@/hooks/use-actions";
 import { useJobs } from "@/hooks/use-jobs";
 import { useDashboardSummary } from "@/hooks/use-dashboard";
 
@@ -49,24 +49,24 @@ function formatEventTime(iso: string): string {
 
 export function RecentActivity() {
   const router = useRouter();
-  const { data: tasks } = useTasks();
+  const { data: actions } = useActions(true);
   const { data: trackedJobs } = useJobs({ status: "found,saved,resume_generated,applied,screening,technical_interview,final_interview,offer" });
   const { data: summary } = useDashboardSummary();
 
   const items = useMemo<ActivityItem[]>(() => {
     const result: ActivityItem[] = [];
 
-    if (tasks) {
-      const sorted = [...tasks]
+    if (actions) {
+      const sorted = [...actions]
         .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
         .slice(0, 4);
-      for (const task of sorted) {
+      for (const action of sorted) {
         result.push({
-          id: `task-${task.id}`,
+          id: `action-${action.id}`,
           icon: <CheckSquare size={14} className="text-primary" />,
-          label: task.title,
-          time: formatRelativeTime(task.updated_at),
-          href: `/tasks/${task.id}`,
+          label: action.title,
+          time: formatRelativeTime(action.updated_at),
+          href: "/actions",
         });
       }
     }
@@ -99,7 +99,7 @@ export function RecentActivity() {
     }
 
     return result.slice(0, 10);
-  }, [tasks, trackedJobs, summary]);
+  }, [actions, trackedJobs, summary]);
 
   if (items.length === 0) {
     return (
@@ -109,15 +109,15 @@ export function RecentActivity() {
         </div>
         <p className="mb-1.5 text-[15px] font-medium text-foreground">No recent activity</p>
         <p className="mb-5 max-w-[300px] text-[13px] text-tertiary">
-          Start by creating a task or tracking a job to see your activity here
+          Start by creating an action or tracking a job to see your activity here
         </p>
         <div className="flex gap-2.5">
           <Link
-            href="/tasks"
+            href="/actions"
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors duration-150 hover:bg-primary/80"
           >
             <Plus size={14} />
-            New Task
+            New Action
           </Link>
           <Link
             href="/jobs"

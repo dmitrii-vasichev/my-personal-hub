@@ -9,6 +9,7 @@ FKs:
 - ``user_id`` → CASCADE on user delete (sessions belong to the user).
 - ``task_id`` → SET NULL on task delete (we keep the history even after
   the linked task is removed).
+- ``action_id`` → SET NULL on reminder/action delete for the same reason.
 - ``plan_item_id`` → SET NULL on plan item delete for the same reason.
 """
 from __future__ import annotations
@@ -42,6 +43,12 @@ class FocusSession(Base):
         Integer,
         ForeignKey("tasks.id", ondelete="SET NULL"),
         nullable=True,
+    )
+    action_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("reminders.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     plan_item_id: Mapped[Optional[int]] = mapped_column(
         Integer,

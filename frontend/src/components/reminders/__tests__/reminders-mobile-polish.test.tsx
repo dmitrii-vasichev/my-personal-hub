@@ -12,9 +12,11 @@ const mocks = vi.hoisted(() => ({
   createReminderMutate: vi.fn(),
   updateReminderMutate: vi.fn(),
   replace: vi.fn(),
+  redirect: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
+  redirect: mocks.redirect,
   usePathname: () => "/reminders",
   useRouter: () => ({ replace: mocks.replace }),
   useSearchParams: () => new URLSearchParams(),
@@ -86,29 +88,10 @@ describe("Reminders mobile polish", () => {
     vi.clearAllMocks();
   });
 
-  it("does not render Quick Add in the Reminders page header", () => {
-    wrap(<RemindersPage />);
+  it("redirects the legacy Reminders page to Actions", () => {
+    RemindersPage();
 
-    expect(screen.queryByText(/\+ Quick Add/i)).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /history/i })).toBeInTheDocument();
-  });
-
-  it("uses a compact mobile page header while preserving desktop details", () => {
-    wrap(<RemindersPage />);
-
-    const eyebrow = screen.getByText("Module · Reminders");
-    const heading = screen.getByRole("heading", { name: "REMINDERS_" });
-    const stats = screen.getByText(/0 for today/i);
-    const history = screen.getByRole("button", { name: /history/i });
-
-    expect(eyebrow.className).toContain("hidden");
-    expect(eyebrow.className).toContain("sm:block");
-    expect(heading.className).toContain("text-[22px]");
-    expect(heading.className).toContain("sm:text-[28px]");
-    expect(stats.className).toContain("hidden");
-    expect(stats.className).toContain("sm:block");
-    expect(history.className).toContain("h-8");
-    expect(history.className).toContain("sm:h-9");
+    expect(mocks.redirect).toHaveBeenCalledWith("/actions");
   });
 
   it("removes Natural hint and keeps quick-add input at iOS-safe mobile size", () => {

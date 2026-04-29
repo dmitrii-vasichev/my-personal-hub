@@ -1,178 +1,136 @@
-# Finish-Out Plan
+# Actions Unification Plan
 
-Last updated: 2026-04-27
+Last updated: 2026-04-29
 
 ## Goal
 
-Finish the currently queued, not-yet-built project work after D13:
-
-1. Close deferred D13/D12 smoke verification where it can be checked locally.
-2. Ship D14: primary task draft document link.
-3. Ship D15: Pulse item read state and Today hero unread count.
-4. Ship E18: Telegram bot project discovery refresh without restart.
-5. Ship E17: per-project Claude settings overlay for Telegram bot runs.
-6. Ship E16: voice transcription benchmark knobs and optional non-CPU Whisper device path.
+Replace the daily Tasks/Reminders split with one primary Actions section backed by the existing reminders table. Actions support open/done state, optional date, optional time, details, checklist, urgency, recurrence, notifications for scheduled items, and focus sessions.
 
 ## Non-Goals
 
-- No broad redesign beyond the affected surfaces.
-- No new GitHub issue/PR gates.
-- No production backfill execution without a separate explicit approval.
-- No deletion of old local or remote branches in this finish-out pass.
+- Do not hard-delete existing task data during the Phase 1 rollout.
+- Do not add structured note/job/calendar links to Actions in v1.
+- Do not keep an old Tasks archive UI.
+- Do not execute destructive task cleanup without explicit action-time confirmation.
+
+## Architecture
+
+- Evolve `Reminder` into the durable Action record by adding nullable `action_date` and nullable `remind_at`.
+- Add `/api/actions` as the new primary API while leaving `/api/reminders` as a compatibility layer over the same service.
+- Keep notification semantics narrow: only scheduled actions (`remind_at IS NOT NULL`) can schedule exact notifications or snooze.
+- Add `focus_sessions.action_id` and move new frontend focus starts to Actions.
+- Remove Tasks from visible daily navigation and linking surfaces while keeping task tables and APIs intact until the destructive cleanup phase.
 
 ## Milestones
 
-### M0 — Baseline And Documentation
+### M0 — Baseline And Execution Pack
 
 Definition of done:
-- Execution pack exists: `AGENTS.md`, `docs/PLAN.md`, `docs/STATUS.md`, `docs/TEST_PLAN.md`, `docs/BACKLOG.md`.
-- Working tree status is recorded.
-- Current known unfinished scope is recorded.
+- Working tree is isolated on `codex/actions-unification`.
+- Focused Reminders/Tasks/Focus tests are run before behavior changes.
+- `docs/PLAN.md`, `docs/STATUS.md`, `docs/TEST_PLAN.md`, and `docs/BACKLOG.md` reflect the Actions rollout.
 
 Validation:
 - `git status --short --branch`
+- `cd backend && source venv/bin/activate && pytest -q tests/test_reminders.py tests/test_task_reminder_persistence.py tests/test_focus_sessions.py`
+- `cd frontend && npm test -- --run src/components/reminders/__tests__/reminder-list-groups.test.tsx src/components/reminders/__tests__/reminders-mobile-polish.test.tsx src/components/today/__tests__/focus-today-cell.test.tsx`
 
-### M1 — Deferred Smoke Verification
+### M1 — Backend Action Model And API
 
 Scope:
-- Run low-risk automated verification for D13/D12 affected areas.
-- Record any manual-only smoke that still needs a browser or production snapshot.
+- Add Alembic migration for `reminders.action_date`, nullable `reminders.remind_at`, and `focus_sessions.action_id`.
+- Extend reminder/action schemas with `action_date` and derived `mode` (`inbox`, `anytime`, `scheduled`).
+- Create `/api/actions` endpoints for list/create/update/delete/done/restore/snooze.
+- Keep `/api/reminders` compatibility over the same schemas and service.
 
 Definition of done:
-- Targeted backend/frontend/telegram tests are run before feature changes where practical.
-- Known blockers and manual-only items are recorded in `docs/STATUS.md`.
-
-Validation candidates:
-- `cd backend && source venv/bin/activate && pytest -q tests/test_job_hint.py tests/test_backfill_job_event_links.py tests/test_calendar.py tests/test_google_calendar_sync.py tests/test_focus_sessions.py`
-- `cd frontend && npm test -- --run src/components/today/__tests__/hero-cells.test.tsx src/components/calendar/__tests__/job-link-selector.test.tsx src/components/today/__tests__/now-block.test.tsx src/components/today/__tests__/focus-today-cell.test.tsx`
-- `cd telegram_bot && .venv/bin/python -m pytest tests/test_main.py tests/test_projects.py tests/test_voice.py`
-
-### M2 — D14 Task Primary Draft Link
-
-Problem:
-- The handoff UI wanted a `JUMP TO DRAFT` action in `HeroPriority`, but `Task` has no primary draft/document field.
-- Existing many-to-many task-note links are useful, but they do not identify which note is the task's primary draft.
-
-Implementation:
-- Add nullable `tasks.linked_document_id` FK to `notes.id` with `ON DELETE SET NULL`.
-- Add SQLAlchemy model field and optional relationship loading.
-- Extend `TaskCreate`, `TaskUpdate`, and `TaskResponse`.
-- Validate that a linked document belongs to the same user as the task.
-- When setting a primary document, ensure the task-note link also exists.
-- When unlinking a note from a task, clear `linked_document_id` if it pointed at that note.
-- Add UI on task detail to set/clear the primary draft from linked notes.
-- Add `JUMP TO DRAFT` in `HeroPriority` when the selected task has a primary document.
-
-Definition of done:
-- User can set, clear, and view a task primary draft.
-- Hero priority task shows `JUMP TO DRAFT` only when a valid primary draft exists.
-- Cross-user document assignment returns 404/permission-safe failure.
-- Existing linked notes behavior remains intact.
+- Title-only creates an inbox action.
+- Date-only creates an anytime action.
+- Date plus time creates a scheduled action.
+- Existing reminder rows can still be listed through `/api/reminders`.
+- Focus sessions can start with `action_id`.
 
 Validation:
-- Backend focused tests for task update + note-task unlink.
-- Frontend tests for HeroPriority and task detail draft selector.
+- `cd backend && source venv/bin/activate && pytest -q tests/test_actions.py tests/test_reminders.py tests/test_focus_sessions.py`
+- `cd backend && source venv/bin/activate && PYTHONPATH=. alembic heads`
 
-### M3 — D15 Pulse Read State
+### M2 — Notification And Recurrence Semantics
 
-Problem:
-- Today hero still uses `Meetings today` because Pulse has no item-level read state.
-- Existing `status=new/actioned/skipped` means processing state; it must not be reused as read/unread.
-
-Implementation:
-- Add nullable `pulse_digest_items.read_at` or equivalent read state.
-- Extend schema and frontend types with `is_read`/`read_at`.
-- Add endpoint to mark a single item read/unread.
-- Add read mutation hook.
-- Mark an item read when it is opened/expanded or via explicit control.
-- Add an unread count endpoint or reuse list data safely for `HeroCells`.
-- Replace `Meetings today` with `Pulse unread` once count exists.
+Scope:
+- Scheduling and polling must ignore inbox/anytime actions.
+- Snooze must reject non-scheduled actions.
+- Recurring scheduled actions advance `remind_at` and `action_date`.
+- Recurring anytime actions advance `action_date` and keep `remind_at = NULL`.
 
 Definition of done:
-- Read/unread state is independent from actioned/skipped.
-- Today hero counts unread Pulse digest items.
-- Digest item UI can mark read/unread without losing action status.
+- Exact notifications are only produced for scheduled actions.
+- Date-only/undated actions are UI and digest items only.
+- Compatibility reminder callbacks still work for scheduled actions.
 
 Validation:
-- Backend digest item tests for read set/clear and cross-user 404.
-- Frontend hook/card/HeroCells tests.
+- `cd backend && source venv/bin/activate && pytest -q tests/test_actions.py tests/test_reminders.py tests/test_telegram_notifications.py`
 
-### M4 — E18 Telegram Project Discovery Refresh
+### M3 — Frontend Actions UI
 
-Problem:
-- `projects.discover()` runs only at bot startup; new projects require LaunchAgent restart.
-
-Implementation:
-- Add `/refresh` command that re-runs discovery, updates `app.bot_data["projects"]` and `_projects_ref["known"]`, and reports added/removed/current count.
-- Update `/project` and callback unknown-project copy to reference `/refresh`.
-- Keep refresh whitelisted.
+Scope:
+- Add `/actions` and `/actions/birthdays`.
+- Rename the current Reminders page UI to `ACTIONS_`.
+- Add title-only quick add to Inbox/Someday.
+- Group list as Overdue, Today, future dates, Inbox/Someday.
+- Sort each dated group as Scheduled first by time, then Anytime; urgent sorts only inside Anytime and Inbox.
+- Replace noisy inline badge pile with a compact right-side metadata cluster in collapsed rows.
+- Keep details, URLs, checklist, and controls in expanded state.
 
 Definition of done:
-- Owner can add/remove a project and run `/refresh` without restarting the bot.
-- Active stale projects still fall back safely.
+- `/actions` is the primary section.
+- `/reminders` and `/reminders/birthdays` redirect to the new routes.
+- Quick add supports inbox, anytime, and scheduled modes.
+- Existing details/checklist editing still works.
 
 Validation:
-- Telegram bot tests for `/refresh`, command registration, and project list update.
+- `cd frontend && npm test -- --run src/components/actions/__tests__/action-list-groups.test.tsx src/components/actions/__tests__/actions-page.test.tsx`
 
-### M5 — E17 Per-Project Settings Overlay
+### M4 — Remove Visible Tasks Surfaces
 
-Problem:
-- Locked/unlocked CC settings profiles are global. Project-specific `.claude/settings.json` files are not considered.
-
-Implementation:
-- Resolve profile per run using active project and lock state.
-- If `<project>/.claude/settings.json` exists, merge it over the global locked/unlocked profile into a generated runtime profile.
-- Keep global deny rules load-bearing; project overlay may add rules but must not weaken the protected personal-data deny list.
-- Cache generated profiles by `(project, locked/unlocked, source mtimes/content hash)` to avoid rewriting on every message.
+Scope:
+- Remove Tasks from sidebar, command palette quick actions, Today widgets, dashboard activity, calendar linked-task UI, job linked-task UI, note linked-task UI, and old task routes.
+- Replace task-linked reminder badge/link with a non-navigating legacy marker until cleanup.
+- Keep backend task APIs and task tables for the cleanup review phase.
 
 Definition of done:
-- Runs in a project with `.claude/settings.json` pass a generated merged settings path to `claude -p`.
-- Runs without project settings keep existing global profile behavior.
-- Protected deny rules remain present after merge.
+- The daily UI no longer routes users into Tasks.
+- Task route files are removed or redirect away from the old Tasks experience.
+- Jobs, notes, calendar, and Today no longer expose task-link creation controls.
 
 Validation:
-- Unit tests for merge semantics and `run_cc` settings path routing.
+- `cd frontend && npm test -- --run src/components/__tests__/command-palette.test.tsx src/hooks/__tests__/use-command-palette.test.tsx src/components/layout/__tests__/sidebar-safe-area.test.tsx src/components/today/__tests__/hero-priority.test.tsx src/components/calendar/__tests__/job-link-selector.test.tsx __tests__/notes/linked-notes-section.test.tsx __tests__/job-linked-items.test.tsx`
 
-### M6 — E16 Whisper Benchmark And Optional Device Path
+### M5 — Cleanup Dry Run
 
-Problem:
-- Voice transcription is CPU int8 only. Metal/auto acceleration should be attempted only if latency proves painful.
-
-Implementation:
-- Add `WHISPER_DEVICE` setting, default `cpu`, allowed practical values `cpu`, `auto`, or platform-supported explicit device strings.
-- Add transcription duration logging and real-time factor when Telegram voice duration is available.
-- Add a small local benchmark script that runs transcription on an audio file and prints JSON metrics.
-- Keep CPU int8 default unchanged.
+Scope:
+- Add a backend dry-run report for task-linked reminders before destructive cleanup.
+- Report task title, reminder title, action date/time, urgency, recurrence, details presence, checklist count, and reminder id.
+- Add a preservation helper that detaches selected task-linked reminders as standalone Actions.
+- Do not execute hard deletion.
 
 Definition of done:
-- Existing behavior is unchanged by default.
-- Owner can benchmark real voice files and opt into `WHISPER_DEVICE=auto`.
-- Logs show transcription duration for live voice messages.
+- The owner can review task-linked reminders before deletion.
+- Selected reminders can be preserved as standalone Actions.
+- Hard delete remains a separately confirmed operation outside this implementation pass.
 
 Validation:
-- Voice unit tests for device forwarding and benchmark helper where practical.
+- `cd backend && source venv/bin/activate && pytest -q tests/test_task_cleanup.py`
 
-## Final Validation
+### M6 — Final Validation
 
-Run targeted tests after each milestone and then broad validation when the finish-out pass is complete:
+Definition of done:
+- Focused tests pass for touched backend/frontend areas.
+- Lint and build pass where practical.
+- Status and test plan record exact commands and outcomes.
+- Destructive cleanup is left unexecuted with a clear next action.
 
-- `cd backend && source venv/bin/activate && pytest -q`
-- `cd frontend && npm test -- --run` (`422 passed` after cleanup)
-- `cd frontend && npm run lint` (passes with no output after cleanup)
-- `cd frontend && npm run build` (passes)
-- `cd telegram_bot && .venv/bin/python -m pytest`
-
-Historical baseline from `CLAUDE.md`:
-- Backend broad suite had 9 pre-existing failures after D13; the current finish-out pass is green.
-- Frontend broad suite had pre-existing flakes/setup failures after D13; the current finish-out pass is green after test debt cleanup.
-
-## Rollout Order
-
-1. M0 documentation.
-2. M1 targeted smoke baseline.
-3. M2 D14.
-4. M3 D15.
-5. M4 E18.
-6. M5 E17.
-7. M6 E16.
-8. Final validation and status update.
+Validation:
+- `cd backend && source venv/bin/activate && pytest -q tests/test_actions.py tests/test_reminders.py tests/test_focus_sessions.py tests/test_task_cleanup.py`
+- `cd frontend && npm test -- --run src/components/actions/__tests__/action-list-groups.test.tsx src/components/actions/__tests__/actions-page.test.tsx src/components/__tests__/command-palette.test.tsx src/components/today/__tests__/focus-today-cell.test.tsx`
+- `cd frontend && npm run lint`
+- `cd frontend && npm run build`

@@ -80,12 +80,12 @@ function plan(): DailyPlan {
 beforeEach(() => mutateSpy.mockClear());
 
 describe("FocusQueue", () => {
-  it("renders items with category + duration + linked-task chip", () => {
+  it("renders items with category + duration without task-link noise", () => {
     wrap(<FocusQueue plan={plan()} />);
     expect(screen.getByText("Cover letter Acme")).toBeInTheDocument();
     expect(screen.getByText("CAREER")).toBeInTheDocument();
     expect(screen.getByText("60m")).toBeInTheDocument();
-    expect(screen.getByText("#42")).toBeInTheDocument();
+    expect(screen.queryByText("#42")).toBeNull();
   });
 
   it("done rows render with .done modifier", () => {

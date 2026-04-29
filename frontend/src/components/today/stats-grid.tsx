@@ -1,10 +1,9 @@
 "use client";
 
-import { useTasks } from "@/hooks/use-tasks";
+import { useActions } from "@/hooks/use-actions";
 import { useJobs } from "@/hooks/use-jobs";
 import { useNotes } from "@/hooks/use-notes";
-import { useDashboardSummary } from "@/hooks/use-dashboard";
-import { daysAgo, isSameLocalDay } from "./today-date";
+import { daysAgo, isSameLocalDay, parseLocalDateSource, todayStart } from "./today-date";
 
 type Cell = {
   lab: string;
@@ -22,12 +21,16 @@ export function StatsGrid({
   replaceTasksDoneWith?: React.ReactNode;
   replaceResponseRateWith?: React.ReactNode;
 } = {}) {
-  const { data: tasks = [] } = useTasks();
+  const { data: actions = [] } = useActions(true);
   const { data: jobs = [] } = useJobs();
   const { data: notes = [] } = useNotes();
-  const { data: summary } = useDashboardSummary();
 
-  const overdue = summary?.tasks.overdue ?? 0;
+  const today0 = todayStart().getTime();
+  const overdue = actions.filter((action) => {
+    const source = action.action_date ?? action.remind_at;
+    const sourceDate = parseLocalDateSource(source);
+    return sourceDate && action.status !== "done" && sourceDate.getTime() < today0;
+  }).length;
 
   const thirty = daysAgo(30);
   const sixty = daysAgo(60);
@@ -55,12 +58,12 @@ export function StatsGrid({
       ? Math.round((replied30.length / applied30.length) * 100)
       : 0;
 
-  const doneToday = tasks.filter(
-    (t) => t.completed_at && isSameLocalDay(t.completed_at)
+  const doneToday = actions.filter(
+    (action) => action.completed_at && isSameLocalDay(action.completed_at)
   ).length;
 
   const cells: Cell[] = [
-    { lab: "Overdue tasks", val: overdue, alert: overdue > 0 },
+    { lab: "Overdue actions", val: overdue, alert: overdue > 0 },
     {
       lab: "Notes · 30d",
       val: notes30,
@@ -72,7 +75,7 @@ export function StatsGrid({
       unit: "%",
       bar: replyRate,
     },
-    { lab: "Tasks done · today", val: doneToday },
+    { lab: "Actions done · today", val: doneToday },
   ];
 
   return (
@@ -81,7 +84,7 @@ export function StatsGrid({
         const borderCls = `${i < 2 ? "border-b-[1.5px]" : ""} ${i % 2 === 0 ? "border-r-[1.5px]" : ""}`;
         const tileCls = `p-[14px] flex flex-col gap-1 min-h-[80px] justify-between border-[color:var(--line)] ${borderCls}`;
 
-        if (c.lab === "Tasks done · today" && replaceTasksDoneWith) {
+        if (c.lab === "Actions done · today" && replaceTasksDoneWith) {
           return (
             <div key={c.lab} className={tileCls}>
               {replaceTasksDoneWith}

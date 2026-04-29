@@ -1,42 +1,24 @@
-# Finish-Out Backlog
+# Actions Unification Backlog
 
-Last updated: 2026-04-27
+Last updated: 2026-04-29
 
-## Completed In This Finish-Out Pass
+## In Scope For This Rollout
 
-### D14 — Task Primary Draft Link
+- Ship `/actions` as the primary daily action/reminder section.
+- Keep `/api/reminders` compatible while introducing `/api/actions`.
+- Support inbox, anytime, and scheduled action modes.
+- Move birthdays to `/actions/birthdays`.
+- Add focus sessions linked to Actions.
+- Remove old Tasks from visible frontend surfaces.
+- Add task-linked reminder cleanup dry-run and preservation helpers.
 
-Added `linked_document_id` to tasks and wired `JUMP TO DRAFT` in Today.
+## Deferred
 
-### D15 — Pulse Item Read State
+- Execute hard deletion of task data after owner review and action-time confirmation.
+- Add structured note/job/calendar links to Actions.
+- Build a dedicated digest UI for inbox/anytime Actions.
+- Add a dedicated mobile offline/PWA smoke pass.
 
-Added item-level read/unread state and restored `Pulse unread` in Today.
+## Historical Completed Work
 
-### E18 — Telegram Bot Project Refresh
-
-Added `/refresh` to rediscover sibling projects without restarting the LaunchAgent.
-
-### E17 — Telegram Bot Per-Project Settings Overlay
-
-Merged project-local `.claude/settings.json` with the global locked/unlocked profile at runtime.
-
-### E16 — Whisper Benchmark And Optional Device
-
-Added live latency logging, benchmark tooling, and opt-in Whisper device selection.
-
-### Frontend Test Debt Cleanup
-
-Restored the broad frontend Vitest suite, removed lint warnings, and kept production build green.
-
-## Deferred / Manual
-
-- D13 production backfill rehearsal against a production snapshot.
-- Full browser smoke for D13 event dialog link/clear flow.
-- Full browser smoke for D12 focus session reload behavior.
-- Cleanup old local/remote branches if the owner wants repository hygiene later.
-
-## Parking Lot
-
-- Command palette backend search endpoint if recent entities grow beyond local filtering scale.
-- Searchable job selector for calendar event linking if the job list exceeds roughly 50 active jobs.
-- Optimize D13 backfill from O(events × jobs-query) to one jobs prefetch per user if production data grows.
+The previous finish-out pass shipped task primary draft links, Pulse item read state, Telegram project refresh, per-project Telegram settings overlay, Whisper benchmark controls, and frontend test debt cleanup. Historical status details remain in `docs/STATUS.md`.

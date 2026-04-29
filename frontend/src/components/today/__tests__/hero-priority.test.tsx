@@ -2,69 +2,56 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HeroPriority } from "../hero-priority";
 
-const { mockTasks, mockEvents, updateTask } = vi.hoisted(() => ({
-  mockTasks: { data: [] as unknown[] },
+const { mockActions, mockEvents, updateAction } = vi.hoisted(() => ({
+  mockActions: { data: [] as unknown[] },
   mockEvents: { data: [] as unknown[] },
-  updateTask: { mutate: vi.fn(), isPending: false },
+  updateAction: { mutate: vi.fn(), isPending: false },
 }));
 
-vi.mock("@/hooks/use-tasks", () => ({
-  useTasks: () => ({ data: mockTasks.data }),
-  useUpdateTask: () => updateTask,
+vi.mock("@/hooks/use-actions", () => ({
+  useActions: () => ({ data: mockActions.data }),
+  useUpdateAction: () => updateAction,
 }));
 
 vi.mock("@/hooks/use-calendar", () => ({
   useCalendarEvents: () => ({ data: mockEvents.data }),
 }));
 
-function task(overrides: Record<string, unknown> = {}) {
+function action(overrides: Record<string, unknown> = {}) {
+  const now = new Date().toISOString();
   return {
     id: 42,
     title: "Write interview draft",
-    description: "Draft the follow-up note",
-    status: "new",
-    priority: "urgent",
-    deadline: new Date().toISOString(),
-    linked_document_id: null,
-    linked_document: null,
+    details: "Draft the follow-up note",
+    status: "pending",
+    is_urgent: true,
+    action_date: now.slice(0, 10),
+    remind_at: now,
     ...overrides,
   };
 }
 
 beforeEach(() => {
-  mockTasks.data = [];
+  mockActions.data = [];
   mockEvents.data = [];
-  updateTask.mutate.mockReset();
+  updateAction.mutate.mockReset();
 });
 
-describe("HeroPriority draft link", () => {
-  it("renders Jump to draft for task targets with a primary linked document", () => {
-    mockTasks.data = [
-      task({
-        linked_document_id: 7,
-        linked_document: {
-          id: 7,
-          title: "Draft.md",
-          folder_path: "Career",
-          google_file_id: "drive_file_7",
-          file_id: "drive_file_7",
-        },
-      }),
-    ];
+describe("HeroPriority actions", () => {
+  it("renders the top action and opens Actions", () => {
+    mockActions.data = [action()];
 
     render(<HeroPriority />);
 
-    const link = screen.getByRole("link", { name: /jump to draft/i });
-    expect(link).toHaveAttribute("href", "/notes?file=drive_file_7");
+    expect(screen.getByRole("heading", { name: /write interview draft/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /open action/i })).toHaveAttribute("href", "/actions");
   });
 
-  it("omits Jump to draft when the task has no primary linked document", () => {
-    mockTasks.data = [task()];
+  it("does not render task draft controls", () => {
+    mockActions.data = [action()];
 
     render(<HeroPriority />);
 
-    expect(
-      screen.queryByRole("link", { name: /jump to draft/i })
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /jump to draft/i })).not.toBeInTheDocument();
   });
 });

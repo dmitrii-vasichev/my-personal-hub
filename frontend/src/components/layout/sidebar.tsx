@@ -24,8 +24,7 @@ export const navSections: NavSection[] = [
     title: "Daily",
     items: [
       { label: "Today", href: "/", glyph: "◉" },
-      { label: "Tasks", href: "/tasks", glyph: "▦" },
-      { label: "Reminders", href: "/reminders", glyph: "◷" },
+      { label: "Actions", href: "/actions", glyph: "▦" },
       { label: "Meetings", href: "/calendar", glyph: "◧" },
     ],
   },

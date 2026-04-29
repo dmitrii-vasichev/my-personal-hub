@@ -49,6 +49,7 @@ async def create_reminder(
         data.title,
         data.remind_at,
         current_user,
+        action_date=data.action_date,
         recurrence_rule=data.recurrence_rule,
         task_id=data.task_id,
         is_floating=data.is_floating,
@@ -119,12 +120,12 @@ async def snooze_reminder(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(restrict_demo),
 ):
-    reminder = await reminder_service.snooze_reminder(
-        db,
-        reminder_id,
-        current_user,
-        data.minutes,
-    )
+    try:
+        reminder = await reminder_service.snooze_reminder(
+            db, reminder_id, current_user, data.minutes
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if not reminder:
         raise HTTPException(status_code=404, detail="Reminder not found")
     return _to_response(reminder)

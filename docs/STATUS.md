@@ -1,16 +1,61 @@
-# Finish-Out Status
+# Actions Unification Status
 
 Last updated: 2026-04-29
 
 ## Current State
 
-- Branch: `main`
-- Remote sync: `main...origin/main`
-- Working tree at start of rich reminder pass: clean
-- Latest local feature: Rich reminder cards
+- Branch: `codex/actions-unification`
+- Base branch: `main`
+- Working tree at start of Actions pass: clean
+- Current feature: Actions unification
 - Current execution source of truth: `docs/PLAN.md`
 
 ## Live Journal
+
+### 2026-04-29 — Actions Unification Started
+
+Changed:
+- Created isolated worktree at `/Users/dmitry.vasichev/.config/superpowers/worktrees/my-personal-hub/actions-unification`.
+- Created branch `codex/actions-unification`.
+- Replaced the old finish-out execution plan/test plan/backlog with the Actions rollout plan.
+
+Baseline validation:
+- Backend: `source venv/bin/activate && pytest -q tests/test_reminders.py tests/test_task_reminder_persistence.py tests/test_focus_sessions.py` → `15 passed`.
+- Frontend: `npm test -- --run src/components/reminders/__tests__/reminder-list-groups.test.tsx src/components/reminders/__tests__/reminders-mobile-polish.test.tsx src/components/today/__tests__/focus-today-cell.test.tsx` → `12 passed`.
+
+Notes:
+- Backend baseline emitted the existing task-reminder `AsyncMock` warnings.
+
+Next action:
+- Write RED backend tests for nullable action scheduling modes and `/api/actions`.
+
+### 2026-04-29 — Actions Unification Implemented
+
+Changed:
+- Added `/api/actions` backed by the existing `Reminder` model, with `action_date`, nullable `remind_at`, and derived `inbox` / `anytime` / `scheduled` modes.
+- Added nullable `focus_sessions.action_id` and frontend focus start support from Actions.
+- Updated reminder scheduling, restore, snooze, recurrence, birthday, planner, and startup job restoration paths for nullable `remind_at`.
+- Added `/actions`, `/actions/birthdays`, and `/actions/task-cleanup`; legacy `/reminders*` and `/tasks*` routes redirect to Actions.
+- Replaced visible daily Tasks/Reminders surfaces in sidebar, command palette, Today widgets, dashboard cards/activity, miniapp login, settings labels, and Pulse item actions.
+- Added grouped Actions list behavior: Overdue, Today, future dates, Inbox/Someday; scheduled items sort by time before anytime items; urgent only ranks within anytime/inbox.
+- Added cleanup dry-run APIs and UI for task-linked reminders, plus preserve-selected behavior that only detaches reminders from `task_id`.
+- Moved settings shared inputs out of the Next page file so production build type checks under Next 16.
+
+Validation:
+- Backend focused baseline before changes: `pytest -q tests/test_reminders.py tests/test_task_reminder_persistence.py tests/test_focus_sessions.py` → `15 passed`.
+- Frontend focused baseline before changes: `npm test -- --run src/components/reminders/__tests__/reminder-list-groups.test.tsx src/components/reminders/__tests__/reminders-mobile-polish.test.tsx src/components/today/__tests__/focus-today-cell.test.tsx` → `12 passed`.
+- Backend focused Actions/Reminders/Focus/Cleanup: `pytest -q tests/test_actions.py tests/test_reminders.py tests/test_focus_sessions.py tests/test_task_cleanup.py` → `25 passed`.
+- Backend compile: `python -m py_compile app/api/actions.py app/services/actions.py app/services/task_cleanup.py app/schemas/action.py app/schemas/task_cleanup.py app/models/reminder.py app/models/focus_session.py` → passed.
+- Alembic: `alembic heads` → `a1b2c3d4e5f6 (head)`.
+- Frontend full tests: `npm test -- --run` → `81 passed / 439 tests passed`.
+- Frontend lint: `npm run lint` → passed.
+- Frontend build: `npm run build -- --webpack` → passed.
+- Frontend default build note: `npm run build` with Turbopack fails in this isolated worktree because `node_modules` is a symlink outside the filesystem root; webpack build is clean.
+- Backend broad suite: `pytest -q` → `887 passed / 2 failures` in `tests/test_vitals_demo.py` on vitals dashboard mock ordering outside the touched Actions/Reminders/Focus/Cleanup areas.
+
+Notes:
+- No hard-delete endpoint or task data deletion was added. The cleanup path stops at dry-run review plus explicit preserve-selected detach.
+- Existing backend dependency/deprecation and `AsyncMock` warnings remain present in broad suite output.
 
 ### 2026-04-29 — Garmin Vitals Metrics Sync Fix
 
@@ -230,19 +275,17 @@ Next action:
 
 ## Progress
 
-- [x] M0 documentation pack created.
-- [x] M1 deferred smoke baseline.
-- [x] M2 D14 task primary draft link.
-- [x] M3 D15 Pulse read state.
-- [x] M4 E18 Telegram project refresh.
-- [x] M5 E17 per-project settings overlay.
-- [x] M6 E16 Whisper benchmark/device path.
-- [x] Final validation.
-- [x] Frontend test debt cleanup.
+- [x] M0 baseline and execution pack.
+- [x] M1 backend Action model and API.
+- [x] M2 notification and recurrence semantics.
+- [x] M3 frontend Actions UI.
+- [x] M4 remove visible Tasks surfaces.
+- [x] M5 cleanup dry run.
+- [x] M6 final validation.
 
 ## Blockers
 
-None currently.
+None for the Actions rollout. Broad backend validation still has two unrelated vitals dashboard test failures recorded above.
 
 ## Manual-Only Items
 

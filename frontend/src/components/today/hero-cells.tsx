@@ -1,11 +1,12 @@
 "use client";
 
-import { useTasks } from "@/hooks/use-tasks";
+import { useActions } from "@/hooks/use-actions";
 import { useJobs } from "@/hooks/use-jobs";
 import { useCalendarEvents } from "@/hooks/use-calendar";
 import { usePulseUnreadCount } from "@/hooks/use-pulse-digest-items";
 import {
   daysAgo,
+  parseLocalDateSource,
   thisWeekBounds,
   todayStart,
 } from "./today-date";
@@ -27,7 +28,7 @@ type Cell = {
 
 export function HeroCells() {
   const { startIso: weekStartIso, endIso: weekEndIso } = thisWeekBounds();
-  const { data: tasks = [] } = useTasks();
+  const { data: actions = [] } = useActions();
   const { data: jobs = [] } = useJobs();
   const { data: weekEvents = [] } = useCalendarEvents({
     start: weekStartIso,
@@ -37,16 +38,12 @@ export function HeroCells() {
 
   const today0 = todayStart().getTime();
 
-  const openTasks = tasks.filter(
-    (t) => t.status !== "done" && t.status !== "cancelled"
-  ).length;
-  const overdue = tasks.filter(
-    (t) =>
-      t.deadline &&
-      t.status !== "done" &&
-      t.status !== "cancelled" &&
-      new Date(t.deadline).getTime() < today0
-  ).length;
+  const openActions = actions.filter((action) => action.status !== "done").length;
+  const overdue = actions.filter((action) => {
+    const source = action.action_date ?? action.remind_at;
+    const sourceDate = parseLocalDateSource(source);
+    return sourceDate && action.status !== "done" && sourceDate.getTime() < today0;
+  }).length;
 
   const interviewsThisWeek = weekEvents.filter(
     (e) => e.job_id != null
@@ -72,8 +69,8 @@ export function HeroCells() {
 
   const cells: Cell[] = [
     {
-      lab: "Open tasks",
-      val: openTasks,
+      lab: "Open actions",
+      val: openActions,
       delta: overdue > 0 ? `${overdue} overdue` : null,
       deltaColor: overdue > 0 ? "orange" : undefined,
     },

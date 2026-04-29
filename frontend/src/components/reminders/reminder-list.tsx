@@ -119,7 +119,21 @@ function groupByDate(reminders: Reminder[]): DateGroup[] {
   const groups = new Map<string, DateGroup>();
 
   for (const r of reminders) {
-    const dt = parseISO(r.remind_at);
+    const source = r.action_date ?? r.remind_at;
+    if (!source) {
+      const key = "inbox";
+      if (!groups.has(key)) {
+        groups.set(key, {
+          label: "Inbox/Someday",
+          sortKey: Number.MAX_SAFE_INTEGER,
+          reminders: [],
+        });
+      }
+      groups.get(key)!.reminders.push(r);
+      continue;
+    }
+
+    const dt = parseISO(source);
     const day = startOfDay(dt);
     const key = day.toISOString();
 
@@ -150,12 +164,12 @@ function groupByDate(reminders: Reminder[]): DateGroup[] {
       if (aUrgentFloat !== bUrgentFloat) return aUrgentFloat - bUrgentFloat;
 
       // 2. Time-bound before normal floating
-      const aFloat = a.is_floating ? 1 : 0;
-      const bFloat = b.is_floating ? 1 : 0;
+      const aFloat = a.remind_at ? 0 : 1;
+      const bFloat = b.remind_at ? 0 : 1;
       if (aFloat !== bFloat) return aFloat - bFloat;
 
       // 3. Within same tier: time-bound by time, floating by creation
-      if (!a.is_floating && !b.is_floating) {
+      if (a.remind_at && b.remind_at) {
         return new Date(a.remind_at).getTime() - new Date(b.remind_at).getTime();
       }
       return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
@@ -238,8 +252,12 @@ function EditReminderForm({
   onClose: () => void;
 }) {
   // Parse initial date/time from reminder
-  const initialDate = format(parseISO(reminder.remind_at), "yyyy-MM-dd");
-  const initialTime = reminder.is_floating ? "" : format(parseISO(reminder.remind_at), "HH:mm");
+  const initialDate = reminder.action_date
+    ? format(parseISO(reminder.action_date), "yyyy-MM-dd")
+    : reminder.remind_at
+      ? format(parseISO(reminder.remind_at), "yyyy-MM-dd")
+      : "";
+  const initialTime = reminder.remind_at ? format(parseISO(reminder.remind_at), "HH:mm") : "";
 
   const [title, setTitle] = useState(reminder.title);
   const [date, setDate] = useState(initialDate);
@@ -663,10 +681,16 @@ function ReminderRow({ reminder, expanded, onToggle }: { reminder: Reminder; exp
   );
 
   const effectiveIso = effectiveTime;
-  const timeText = reminder.is_floating
-    ? "—"
-    : format(parseISO(effectiveIso), "HH:mm").toUpperCase();
-  const relText = reminder.is_floating ? "FLOAT" : relativeLabel(effectiveIso);
+  const timeText = effectiveIso
+    ? format(parseISO(effectiveIso), "HH:mm").toUpperCase()
+    : reminder.action_date
+      ? "Anytime"
+      : "Inbox";
+  const relText = effectiveIso
+    ? relativeLabel(effectiveIso)
+    : reminder.action_date
+      ? "ANYTIME"
+      : "SOMEDAY";
 
   return (
     <>

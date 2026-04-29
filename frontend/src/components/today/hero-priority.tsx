@@ -2,40 +2,39 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useTasks, useUpdateTask } from "@/hooks/use-tasks";
+import { useActions, useUpdateAction } from "@/hooks/use-actions";
 import { useCalendarEvents } from "@/hooks/use-calendar";
-import type { Task } from "@/types/task";
+import type { Action } from "@/types/action";
 import type { CalendarEvent } from "@/types/calendar";
 import { formatTime, isSameLocalDay, todayBounds } from "./today-date";
 
 type PriorityTarget =
-  | { kind: "task"; task: Task }
+  | { kind: "action"; action: Action }
   | { kind: "meeting"; event: CalendarEvent }
   | { kind: "empty" };
 
 function selectPriority(
-  tasks: Task[],
+  actions: Action[],
   events: CalendarEvent[]
 ): PriorityTarget {
   const now = Date.now();
 
-  const todayTasks = tasks
+  const todayActions = actions
     .filter(
-      (t) =>
-        t.deadline &&
-        t.status !== "done" &&
-        t.status !== "cancelled" &&
-        isSameLocalDay(t.deadline)
+      (action) =>
+        action.status !== "done" &&
+        ((action.remind_at && isSameLocalDay(action.remind_at)) ||
+          (action.action_date && isSameLocalDay(action.action_date)))
     )
     .sort(
       (a, b) =>
-        new Date(a.deadline as string).getTime() -
-        new Date(b.deadline as string).getTime()
+        (a.remind_at ? new Date(a.remind_at).getTime() : Number.MAX_SAFE_INTEGER) -
+        (b.remind_at ? new Date(b.remind_at).getTime() : Number.MAX_SAFE_INTEGER)
     );
 
-  const urgent = todayTasks.find((t) => t.priority === "urgent");
-  if (urgent) return { kind: "task", task: urgent };
-  if (todayTasks.length > 0) return { kind: "task", task: todayTasks[0] };
+  const urgent = todayActions.find((action) => action.is_urgent);
+  if (urgent) return { kind: "action", action: urgent };
+  if (todayActions.length > 0) return { kind: "action", action: todayActions[0] };
 
   const nextMeeting = events
     .filter((e) => new Date(e.start_time).getTime() >= now)
@@ -66,21 +65,21 @@ function useCountdown(targetIso: string | null | undefined): string {
 
 export function HeroPriority() {
   const { startIso, endIso } = todayBounds();
-  const { data: tasks = [] } = useTasks();
+  const { data: actions = [] } = useActions();
   const { data: events = [] } = useCalendarEvents({
     start: startIso,
     end: endIso,
   });
-  const updateTask = useUpdateTask();
+  const updateAction = useUpdateAction();
 
   const target = useMemo(
-    () => selectPriority(tasks, events),
-    [tasks, events]
+    () => selectPriority(actions, events),
+    [actions, events]
   );
 
   const targetIso =
-    target.kind === "task"
-      ? target.task.deadline
+    target.kind === "action"
+      ? target.action.remind_at ?? target.action.action_date
       : target.kind === "meeting"
         ? target.event.start_time
         : null;
@@ -100,32 +99,29 @@ export function HeroPriority() {
   }
 
   const kicker =
-    target.kind === "task" ? "Priority_01" : "Priority_01 · meeting";
+    target.kind === "action" ? "Priority_01" : "Priority_01 · meeting";
   const title =
-    target.kind === "task" ? target.task.title : target.event.title;
+    target.kind === "action" ? target.action.title : target.event.title;
   const description =
-    target.kind === "task"
-      ? (target.task.description?.slice(0, 200) ?? "")
+    target.kind === "action"
+      ? (target.action.details?.slice(0, 200) ?? "")
       : `${formatTime(target.event.start_time)}–${formatTime(target.event.end_time)} · ${target.event.location || "no location"}`;
   const openHref =
-    target.kind === "task"
-      ? `/tasks/${target.task.id}`
+    target.kind === "action"
+      ? `/actions`
       : `/calendar/${target.event.id}`;
   const openLabel =
-    target.kind === "task" ? "▶ Open task" : "▶ Open meeting";
-  const draftHref =
-    target.kind === "task" && target.task.linked_document
-      ? `/notes?file=${encodeURIComponent(target.task.linked_document.file_id)}`
-      : null;
+    target.kind === "action" ? "▶ Open action" : "▶ Open meeting";
 
   const handleSnooze = () => {
-    if (target.kind !== "task" || !target.task.deadline) return;
-    const newDeadline = new Date(
-      new Date(target.task.deadline).getTime() + 3_600_000
+    if (target.kind !== "action" || !target.action.remind_at) return;
+    const newTime = new Date(
+      new Date(target.action.remind_at).getTime() + 3_600_000
     ).toISOString();
-    updateTask.mutate({
-      taskId: target.task.id,
-      data: { deadline: newDeadline },
+    updateAction.mutate({
+      id: target.action.id,
+      action_date: newTime.slice(0, 10),
+      remind_at: newTime,
     });
   };
 
@@ -158,19 +154,11 @@ export function HeroPriority() {
         >
           {openLabel}
         </Link>
-        {draftHref && (
-          <Link
-            href={draftHref}
-            className="inline-flex items-center h-8 px-3 border-[1.5px] border-[color:var(--line-2)] bg-transparent text-[color:var(--ink)] text-[10.5px] tracking-[1.5px] uppercase hover:border-[color:var(--accent)] hover:text-[color:var(--accent)]"
-          >
-            ✎ Jump to draft
-          </Link>
-        )}
-        {target.kind === "task" && (
+        {target.kind === "action" && target.action.remind_at && (
           <button
             type="button"
             onClick={handleSnooze}
-            disabled={updateTask.isPending}
+            disabled={updateAction.isPending}
             className="inline-flex items-center h-8 px-3 border-[1.5px] border-[color:var(--line-2)] bg-transparent text-[color:var(--ink)] text-[10.5px] tracking-[1.5px] uppercase hover:border-[color:var(--ink)] disabled:opacity-60"
           >
             ◷ Snooze 1h

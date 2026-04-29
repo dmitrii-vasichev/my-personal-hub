@@ -11,8 +11,7 @@ import { getVisibleNavSections } from "@/components/layout/sidebar";
 import { useAuth } from "@/lib/auth";
 import { useVitalsConnection } from "@/hooks/use-vitals";
 
-const ENTITY_GLYPH: Record<"task" | "job", string> = {
-  task: "▦",
+const ENTITY_GLYPH: Record<"job", string> = {
   job: "▤",
 };
 
@@ -24,8 +23,7 @@ interface QuickAction {
 }
 
 const QUICK_ACTIONS: QuickAction[] = [
-  { id: "new-task", label: "New task…", glyph: "+", href: "/tasks?new=1" },
-  { id: "new-reminder", label: "Remind me…", glyph: "◷", href: "/reminders?new=1" },
+  { id: "new-action", label: "New action…", glyph: "+", href: "/actions?new=1" },
 ];
 
 const ROW_CLASS =
@@ -44,7 +42,7 @@ export function CommandPalette() {
   const { open, setOpen, query, setQuery } = useCommandPalette();
   const router = useRouter();
   const history = useRouteHistory();
-  const entities = useRecentEntities();
+  const entities = useRecentEntities().filter((entity) => entity.kind === "job");
   const { isDemo } = useAuth();
   const { data: vitalsConnection } = useVitalsConnection();
 
@@ -135,7 +133,7 @@ export function CommandPalette() {
                 onSelect={() => run(e.href)}
                 className={`group ${ROW_CLASS}`}
               >
-                <span className={GLYPH_CLASS} aria-hidden>{ENTITY_GLYPH[e.kind]}</span>
+                <span className={GLYPH_CLASS} aria-hidden>{ENTITY_GLYPH.job}</span>
                 <span className="truncate">{e.label}</span>
               </Command.Item>
             ))}

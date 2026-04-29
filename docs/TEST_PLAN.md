@@ -1,10 +1,10 @@
-# Finish-Out Test Plan
+# Actions Unification Test Plan
 
 Last updated: 2026-04-29
 
 ## Strategy
 
-Use focused validation after each milestone, then broad validation at the end. Historical broad-suite failures should be fixed or explicitly recorded before the finish-out pass is considered complete.
+Use TDD for each behavior change. Prefer focused tests around Actions, Reminders compatibility, Focus, navigation, and the removed Tasks surfaces, then run broader frontend validation when the rollout is stable.
 
 ## Backend
 
@@ -13,9 +13,9 @@ Focused commands:
 ```bash
 cd backend
 source venv/bin/activate
-pytest -q tests/test_reminders.py tests/test_task_reminder_persistence.py
-pytest -q tests/test_job_hint.py tests/test_backfill_job_event_links.py tests/test_calendar.py tests/test_google_calendar_sync.py tests/test_focus_sessions.py
-pytest -q tests/test_note_task_link.py tests/test_pulse_digest_items.py
+pytest -q tests/test_actions.py tests/test_reminders.py tests/test_focus_sessions.py
+pytest -q tests/test_actions.py tests/test_telegram_notifications.py
+pytest -q tests/test_task_cleanup.py
 ```
 
 Broad command:
@@ -26,8 +26,8 @@ source venv/bin/activate
 pytest -q
 ```
 
-Expected historical broad-suite caveat:
-- Final finish-out validation is green: `864 passed`.
+Expected caveats:
+- Existing task-reminder persistence tests may emit `AsyncMock` warnings.
 
 ## Frontend
 
@@ -35,10 +35,9 @@ Focused commands:
 
 ```bash
 cd frontend
-npm test -- --run src/components/reminders/__tests__/reminder-list-groups.test.tsx src/components/reminders/__tests__/reminders-mobile-polish.test.tsx
-npm test -- --run src/components/today/__tests__/hero-cells.test.tsx src/components/calendar/__tests__/job-link-selector.test.tsx
-npm test -- --run src/components/today/__tests__/now-block.test.tsx src/components/today/__tests__/focus-today-cell.test.tsx
-npm test -- --run src/components/today/__tests__/hero-priority.test.tsx
+npm test -- --run src/components/actions/__tests__/action-list-groups.test.tsx src/components/actions/__tests__/actions-page.test.tsx
+npm test -- --run src/components/__tests__/command-palette.test.tsx src/hooks/__tests__/use-command-palette.test.tsx src/components/layout/__tests__/sidebar-safe-area.test.tsx
+npm test -- --run src/components/today/__tests__/hero-priority.test.tsx src/components/today/__tests__/focus-today-cell.test.tsx
 ```
 
 Broad commands:
@@ -50,52 +49,46 @@ npm run lint
 npm run build
 ```
 
-Expected result:
-- Final frontend validation is green: `422 passed`.
-- `npm run lint` passes with no output.
-- `npm run build` passes.
+## Cleanup Dry Run
 
-## Telegram Bot
-
-Focused commands:
+Focused command:
 
 ```bash
-cd telegram_bot
-.venv/bin/python -m pytest tests/test_main.py tests/test_projects.py tests/test_voice.py tests/test_cc_runner.py
+cd backend
+source venv/bin/activate
+pytest -q tests/test_task_cleanup.py
 ```
 
-Broad command:
-
-```bash
-cd telegram_bot
-.venv/bin/python -m pytest
-```
+Manual review:
+- Run the dry-run endpoint or helper.
+- Confirm every task-linked reminder row includes task title, reminder title, action date/time, urgency, recurrence, details presence, checklist count, and reminder id.
+- Preserve selected reminders by detaching them from their task.
+- Stop before hard deletion unless explicit destructive confirmation is given.
 
 ## Manual Smoke Checklist
 
-D14:
-- Create or pick a task with at least one linked note.
-- Set that note as the primary draft.
-- Confirm Today `Priority_01` shows `JUMP TO DRAFT` when that task is selected.
-- Open the draft link and verify the note renders.
-- Clear the primary draft and confirm the button disappears.
+Actions:
+- Open `/actions`.
+- Add title-only action and confirm it lands in Inbox/Someday.
+- Add date-only action and confirm it lands in Today or future date under Anytime.
+- Add date+time action and confirm it lands under Scheduled before Anytime.
+- Mark urgent date-only action and confirm it sorts within Anytime, not above Scheduled.
+- Expand an action with details, URL, and checklist.
+- Mark done and restore from history.
 
-D15:
-- Generate or seed structured Pulse items.
-- Confirm unread count appears in Today hero.
-- Mark item read and unread.
-- Confirm actioning/skipping an item does not corrupt read state.
+Birthdays:
+- Open `/actions/birthdays`.
+- Confirm `/reminders/birthdays` redirects.
 
-E18:
-- Add a sibling project with root `CLAUDE.md`.
-- Send `/refresh`.
-- Send `/project` and verify the new project appears.
+Focus:
+- Start focus from an Action.
+- Confirm active/today focus cells display without task dependencies.
 
-E17:
-- Add `<project>/.claude/settings.json` with a harmless additional rule.
-- Send a command in that project.
-- Verify logs show a generated merged settings profile path.
+Notifications:
+- Confirm scheduled actions can snooze and notify.
+- Confirm inbox/anytime actions do not schedule exact notifications.
 
-E16:
-- Run the benchmark script against a real `.ogg` voice note.
-- Compare `WHISPER_DEVICE=cpu` and `WHISPER_DEVICE=auto` before changing production env.
+Visible Tasks removal:
+- Sidebar and command palette do not show Tasks.
+- Calendar, jobs, notes, and Today do not expose task-link creation.
+- Old task URLs redirect away from the old Tasks experience.

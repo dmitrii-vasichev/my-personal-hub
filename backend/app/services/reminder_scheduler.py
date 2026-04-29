@@ -26,7 +26,7 @@ async def fire_single_reminder(reminder_id: int) -> None:
             reminder = result.scalar_one_or_none()
             if not reminder or reminder.status != ReminderStatus.pending:
                 return
-            if reminder.is_floating:
+            if reminder.remind_at is None:
                 return
             if reminder.notification_sent_count > 0:
                 return  # already sent, let polling handle repeats
@@ -98,7 +98,7 @@ async def run_reminder_check() -> None:
                 select(Reminder).where(
                     and_(
                         Reminder.status == ReminderStatus.pending,
-                        Reminder.is_floating == False,  # noqa: E712
+                        Reminder.remind_at.is_not(None),
                         Reminder.remind_at <= now,
                         # Either not snoozed, or snooze expired
                         (Reminder.snoozed_until.is_(None))

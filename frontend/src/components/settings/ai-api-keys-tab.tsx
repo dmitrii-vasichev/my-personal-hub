@@ -8,7 +8,7 @@ import {
   SelectPopup,
   SelectItem,
 } from "@/components/ui/select";
-import { ApiKeyInput } from "@/app/(dashboard)/settings/page";
+import { ApiKeyInput } from "@/components/settings/shared-inputs";
 
 const LLM_PROVIDER_LABELS: Record<string, string> = {
   openai: "OpenAI",

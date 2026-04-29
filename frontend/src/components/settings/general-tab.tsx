@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { TagInput } from "@/app/(dashboard)/settings/page";
+import { TagInput } from "@/components/settings/shared-inputs";
 import { useResetDemoData } from "@/hooks/use-users";
 import { useAuth } from "@/lib/auth";
 

@@ -320,16 +320,22 @@ async def build_context(
             Reminder.status == ReminderStatus.pending,
             or_(
                 and_(Reminder.remind_at >= day_start, Reminder.remind_at <= day_end),
+                Reminder.action_date == date_,
                 Reminder.is_urgent.is_(True),
             ),
         )
-        .order_by(Reminder.is_urgent.desc(), Reminder.remind_at.asc())
+        .order_by(
+            Reminder.is_urgent.desc(),
+            Reminder.action_date.asc().nullslast(),
+            Reminder.remind_at.asc().nullslast(),
+        )
     )
     due_reminders = [
         ContextReminder(
             id=r.id,
             title=r.title,
             remind_at=r.remind_at,
+            action_date=r.action_date,
             is_urgent=bool(r.is_urgent),
             task_id=r.task_id,
         )

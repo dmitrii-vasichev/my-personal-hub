@@ -31,9 +31,19 @@ export function todayBounds(): {
   };
 }
 
+export function parseLocalDateSource(iso: string | null | undefined): Date | null {
+  if (!iso) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+    const [year, month, day] = iso.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+  return new Date(iso);
+}
+
 export function isSameLocalDay(iso: string | null | undefined, ref: Date = new Date()): boolean {
   if (!iso) return false;
-  const d = new Date(iso);
+  const d = parseLocalDateSource(iso);
+  if (!d) return false;
   return (
     d.getFullYear() === ref.getFullYear() &&
     d.getMonth() === ref.getMonth() &&
@@ -43,7 +53,8 @@ export function isSameLocalDay(iso: string | null | undefined, ref: Date = new D
 
 export function formatTime(iso: string | null | undefined): string {
   if (!iso) return "—";
-  const d = new Date(iso);
+  const d = parseLocalDateSource(iso);
+  if (!d) return "—";
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 

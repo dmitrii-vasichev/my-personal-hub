@@ -109,7 +109,7 @@ export default function TodayPage() {
             replaceTasksDoneWith={<FocusTodayCell />}
           />
           <div>
-            <Hdline title="Reminders · Today" />
+            <Hdline title="Actions · Today" />
             <RemindersToday />
           </div>
         </div>

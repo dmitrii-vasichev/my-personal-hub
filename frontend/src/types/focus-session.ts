@@ -4,6 +4,7 @@ export interface FocusSession {
   id: number;
   user_id: number;
   task_id: number | null;
+  action_id: number | null;
   plan_item_id: number | null;
   started_at: string;
   ended_at: string | null;
@@ -11,11 +12,13 @@ export interface FocusSession {
   auto_closed: boolean;
   actual_minutes: number | null;
   task_title: string | null;
+  action_title: string | null;
   plan_item_title: string | null;
 }
 
 export interface StartFocusBody {
   task_id?: number | null;
+  action_id?: number | null;
   plan_item_id?: number | null;
   planned_minutes: PlannedMinutes;
 }

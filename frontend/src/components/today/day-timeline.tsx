@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useTasks } from "@/hooks/use-tasks";
+import { useActions } from "@/hooks/use-actions";
 import { useCalendarEvents } from "@/hooks/use-calendar";
-import { useReminders } from "@/hooks/use-reminders";
-import type { TaskPriority } from "@/types/task";
-import { formatTime, isSameLocalDay, todayBounds } from "./today-date";
+import {
+  formatTime,
+  isSameLocalDay,
+  parseLocalDateSource,
+  todayBounds,
+} from "./today-date";
 import { NowBlock } from "./now-block";
 
 type TagCls = "default" | "warn" | "teal" | "acc";
@@ -22,24 +25,13 @@ type Row = {
   p1: boolean;
 };
 
-function priorityTag(priority: TaskPriority): {
-  label: string;
-  cls: TagCls;
-} {
-  if (priority === "urgent") return { label: "P1", cls: "warn" };
-  if (priority === "high") return { label: "P2", cls: "default" };
-  if (priority === "medium") return { label: "P3", cls: "default" };
-  return { label: "P4", cls: "default" };
-}
-
 export function DayTimeline() {
   const { startIso, endIso } = todayBounds();
-  const { data: tasks = [] } = useTasks();
+  const { data: actions = [] } = useActions(true);
   const { data: events = [] } = useCalendarEvents({
     start: startIso,
     end: endIso,
   });
-  const { data: reminders = [] } = useReminders(true);
 
   const [now, setNow] = useState<number>(() => Date.now());
   useEffect(() => {
@@ -50,20 +42,24 @@ export function DayTimeline() {
   const rows: Row[] = useMemo(() => {
     const out: Row[] = [];
 
-    for (const t of tasks) {
-      if (!t.deadline || !isSameLocalDay(t.deadline)) continue;
-      const done = t.status === "done" || t.status === "cancelled";
-      const tag = priorityTag(t.priority);
+    for (const action of actions) {
+      const source = action.remind_at ?? action.action_date;
+      if (!source || !isSameLocalDay(source)) continue;
+      const done = action.status === "done";
+      const scheduled = Boolean(action.remind_at);
+      const sourceDate = parseLocalDateSource(source);
       out.push({
-        key: `task-${t.id}`,
-        time: formatTime(t.deadline),
-        sortTime: new Date(t.deadline).getTime(),
-        title: t.title,
-        sub: t.description?.slice(0, 120) ?? "",
-        tag: tag.label,
-        tagClass: tag.cls,
+        key: `action-${action.id}`,
+        time: scheduled ? formatTime(action.remind_at) : "Anytime",
+        sortTime: scheduled
+          ? new Date(action.remind_at!).getTime()
+          : (sourceDate?.setHours(23, 59, 59, 999) ?? Number.MAX_SAFE_INTEGER),
+        title: action.title,
+        sub: action.details?.slice(0, 120) ?? "",
+        tag: action.is_urgent ? "P1" : action.recurrence_rule ? "RECUR" : "ACTION",
+        tagClass: action.is_urgent ? "warn" : "default",
         done,
-        p1: t.priority === "urgent",
+        p1: action.is_urgent,
       });
     }
 
@@ -82,24 +78,8 @@ export function DayTimeline() {
       });
     }
 
-    for (const r of reminders) {
-      if (!isSameLocalDay(r.remind_at)) continue;
-      const done = r.status === "done";
-      out.push({
-        key: `rem-${r.id}`,
-        time: formatTime(r.remind_at),
-        sortTime: new Date(r.remind_at).getTime(),
-        title: r.title,
-        sub: "",
-        tag: r.recurrence_rule ? "RECUR" : "REMIND",
-        tagClass: "default",
-        done,
-        p1: false,
-      });
-    }
-
     return out.sort((a, b) => a.sortTime - b.sortTime);
-  }, [tasks, events, reminders, now]);
+  }, [actions, events, now]);
 
   if (rows.length === 0) {
     return (

@@ -54,7 +54,7 @@ export function RemindersSettingsTab() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
-        Loading reminder settings...
+        Loading action settings...
       </div>
     );
   }
@@ -63,7 +63,7 @@ export function RemindersSettingsTab() {
     <section className="space-y-6 rounded-lg border border-border p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">
-          Reminder Defaults
+          Action Defaults
         </h2>
         <Button
           size="sm"
@@ -76,8 +76,8 @@ export function RemindersSettingsTab() {
       </div>
 
       <p className="text-xs text-muted-foreground">
-        These settings control how reminders nag you and how many times you can
-        snooze before quick-snooze is disabled.
+        These settings control how scheduled actions nag you and how many times
+        you can snooze before quick-snooze is disabled.
       </p>
 
       <div className="grid grid-cols-2 gap-4">
@@ -136,13 +136,13 @@ export function RemindersSettingsTab() {
         </div>
       </div>
 
-      {/* Reminder Digest */}
+      {/* Action Digest */}
       <div className="space-y-3 border-t border-border pt-5">
         <h3 className="text-xs font-semibold uppercase text-muted-foreground">
-          Reminder Digest
+          Action Digest
         </h3>
         <p className="text-[11px] text-muted-foreground">
-          Bundle pending reminders into a single Telegram message sent at regular
+          Bundle pending actions into a single Telegram message sent at regular
           intervals during your active hours.
         </p>
 

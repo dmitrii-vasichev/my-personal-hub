@@ -16,6 +16,7 @@ interface StartFocusDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   taskId?: number | null;
+  actionId?: number | null;
   planItemId?: number | null;
 }
 
@@ -25,6 +26,7 @@ export function StartFocusDialog({
   open,
   onOpenChange,
   taskId,
+  actionId,
   planItemId,
 }: StartFocusDialogProps) {
   const start = useStartFocusMutation();
@@ -37,6 +39,7 @@ export function StartFocusDialog({
     try {
       await start.mutateAsync({
         task_id: taskId ?? null,
+        action_id: actionId ?? null,
         plan_item_id: planItemId ?? null,
         planned_minutes: minutes,
       });

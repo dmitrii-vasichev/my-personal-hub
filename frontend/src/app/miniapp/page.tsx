@@ -50,7 +50,7 @@ export default function MiniAppPage() {
       .then((data) => {
         if (cancelled) return;
         localStorage.setItem("access_token", data.token);
-        router.replace("/reminders");
+        router.replace("/actions");
       })
       .catch((err) => {
         if (cancelled) return;

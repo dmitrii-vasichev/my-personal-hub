@@ -18,6 +18,7 @@ PlannedMinutes = Literal[25, 50, 90]
 
 class FocusSessionStart(BaseModel):
     task_id: Optional[int] = None
+    action_id: Optional[int] = None
     plan_item_id: Optional[int] = None
     planned_minutes: PlannedMinutes
 
@@ -28,6 +29,7 @@ class FocusSessionResponse(BaseModel):
     id: int
     user_id: int
     task_id: Optional[int] = None
+    action_id: Optional[int] = None
     plan_item_id: Optional[int] = None
     started_at: datetime
     ended_at: Optional[datetime] = None
@@ -35,6 +37,7 @@ class FocusSessionResponse(BaseModel):
     auto_closed: bool
     actual_minutes: Optional[int] = None
     task_title: Optional[str] = None
+    action_title: Optional[str] = None
     plan_item_title: Optional[str] = None
 
 

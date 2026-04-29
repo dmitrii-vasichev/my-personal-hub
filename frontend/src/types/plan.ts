@@ -47,7 +47,8 @@ export interface ContextEvent {
 export interface ContextReminder {
   id: number;
   title: string;
-  remind_at: string;
+  remind_at: string | null;
+  action_date: string | null;
   is_urgent: boolean;
   task_id: number | null;
 }

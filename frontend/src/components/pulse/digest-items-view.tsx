@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   Briefcase,
   CheckCheck,
-  CheckSquare,
   FileText,
   Loader2,
   SkipForward,
@@ -181,28 +180,16 @@ export function DigestItemsView({ digestId, category }: DigestItemsViewProps) {
                 {selected.size} selected
               </span>
               {!isJobs && (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleBulkAction("to_task")}
-                    disabled={bulkAction.isPending}
-                    className="h-7 text-xs"
-                  >
-                    <CheckSquare className="mr-1 h-3 w-3" />
-                    Tasks
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleBulkAction("to_note")}
-                    disabled={bulkAction.isPending}
-                    className="h-7 text-xs"
-                  >
-                    <FileText className="mr-1 h-3 w-3" />
-                    Notes
-                  </Button>
-                </>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleBulkAction("to_note")}
+                  disabled={bulkAction.isPending}
+                  className="h-7 text-xs"
+                >
+                  <FileText className="mr-1 h-3 w-3" />
+                  Notes
+                </Button>
               )}
               {isJobs && (
                 <Button

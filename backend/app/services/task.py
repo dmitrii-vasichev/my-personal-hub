@@ -546,8 +546,11 @@ async def _sync_task_reminder(
     from app.core.scheduler import cancel_reminder_notification, schedule_reminder_notification
 
     if task.reminder_at:
+        action_date = task.reminder_at.date()
+        scheduled_at = None if task.reminder_floating else task.reminder_at
         if existing:
-            existing.remind_at = task.reminder_at
+            existing.action_date = action_date
+            existing.remind_at = scheduled_at
             existing.title = task.title
             existing.is_floating = task.reminder_floating
             existing.notification_sent_count = 0
@@ -561,7 +564,8 @@ async def _sync_task_reminder(
             reminder = Reminder(
                 user_id=user.id,
                 title=task.title,
-                remind_at=task.reminder_at,
+                action_date=action_date,
+                remind_at=scheduled_at,
                 is_floating=task.reminder_floating,
                 task_id=task.id,
             )

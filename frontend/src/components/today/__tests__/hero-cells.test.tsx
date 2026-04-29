@@ -3,17 +3,17 @@ import { vi, describe, it, expect, beforeEach } from "vitest";
 import { HeroCells } from "../hero-cells";
 
 // Hoisted mock state — mutated per test, re-read by mocked hooks.
-const { mockTasks, mockJobs, mockWeekEvents, mockPulseUnread } = vi.hoisted(
+const { mockActions, mockJobs, mockWeekEvents, mockPulseUnread } = vi.hoisted(
   () => ({
-    mockTasks: { data: [] as unknown[] },
+    mockActions: { data: [] as unknown[] },
     mockJobs: { data: [] as unknown[] },
     mockWeekEvents: { data: [] as unknown[] },
     mockPulseUnread: { data: { unread_count: 0 } },
   }),
 );
 
-vi.mock("@/hooks/use-tasks", () => ({
-  useTasks: () => ({ data: mockTasks.data }),
+vi.mock("@/hooks/use-actions", () => ({
+  useActions: () => ({ data: mockActions.data }),
 }));
 vi.mock("@/hooks/use-jobs", () => ({
   useJobs: () => ({ data: mockJobs.data }),
@@ -26,7 +26,7 @@ vi.mock("@/hooks/use-pulse-digest-items", () => ({
 }));
 
 beforeEach(() => {
-  mockTasks.data = [];
+  mockActions.data = [];
   mockJobs.data = [];
   mockWeekEvents.data = [];
   mockPulseUnread.data = { unread_count: 0 };

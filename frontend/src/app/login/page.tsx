@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 
 const MODULES = [
-  { icon: CheckSquare, label: "Tasks", color: "#4f8ef7" },
+  { icon: CheckSquare, label: "Actions", color: "#4f8ef7" },
   { icon: Calendar, label: "Calendar", color: "#2dd4bf" },
   { icon: Briefcase, label: "Jobs", color: "#a78bfa" },
   { icon: StickyNote, label: "Notes", color: "#fbbf24" },
