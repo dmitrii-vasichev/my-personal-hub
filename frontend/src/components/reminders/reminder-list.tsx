@@ -322,7 +322,7 @@ function EditReminderForm({
     <form onSubmit={handleSubmit} className="mt-4 space-y-4">
       <div className="flex items-end gap-2">
         <div className="flex-1 space-y-1.5">
-          <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
+          <label className="block text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
             Title
           </label>
           <Input
@@ -348,13 +348,13 @@ function EditReminderForm({
       </div>
       <div className="flex gap-3">
         <div className="flex-1 space-y-1.5">
-          <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
+          <label className="block text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
             Date
           </label>
           <DatePicker value={date} onChange={setDate} placeholder="Pick date" />
         </div>
         <div className="space-y-1.5">
-          <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
+          <label className="block text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
             Time (optional)
           </label>
           {time ? (
@@ -385,7 +385,7 @@ function EditReminderForm({
         </div>
       </div>
       <div className="space-y-1.5">
-        <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
+        <label className="block text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
           Repeat
         </label>
         <SelectRoot
@@ -429,7 +429,7 @@ function EditReminderForm({
       <div className="space-y-1.5">
         <label
           htmlFor="reminder-details"
-          className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]"
+          className="block text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]"
         >
           Details
         </label>
@@ -444,7 +444,7 @@ function EditReminderForm({
         />
       </div>
       <div className="space-y-1.5">
-        <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
+        <label className="block text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
           Checklist
         </label>
         <ChecklistEditor items={checklist} onChange={setChecklist} />
