@@ -25,8 +25,8 @@ def upgrade() -> None:
         unique=False,
     )
     op.execute("UPDATE reminders SET action_date = CAST(remind_at AS DATE)")
-    op.execute("UPDATE reminders SET remind_at = NULL WHERE is_floating = true")
     op.alter_column("reminders", "remind_at", existing_type=sa.DateTime(timezone=True), nullable=True)
+    op.execute("UPDATE reminders SET remind_at = NULL WHERE is_floating = true")
 
     op.add_column("focus_sessions", sa.Column("action_id", sa.Integer(), nullable=True))
     op.create_index(
