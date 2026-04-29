@@ -1,16 +1,37 @@
 # Finish-Out Status
 
-Last updated: 2026-04-27
+Last updated: 2026-04-29
 
 ## Current State
 
 - Branch: `main`
 - Remote sync: `main...origin/main`
-- Working tree at start of finish-out pass: clean
-- Latest shipped feature: D13 `job<->calendar linking`
+- Working tree at start of rich reminder pass: clean
+- Latest local feature: Rich reminder cards
 - Current execution source of truth: `docs/PLAN.md`
 
 ## Live Journal
+
+### 2026-04-29 — Rich Reminder Cards Implemented
+
+Changed:
+- Added `reminders.details` and non-null `reminders.checklist` with an Alembic migration.
+- Extended Reminder schemas, API create/update, and service create/update support.
+- Recurring reminders now reset checklist completion when advanced to the next occurrence while preserving details.
+- Reminder cards now show notes/link/checklist badges, render auto-linked URLs in expanded cards, and support inline checklist toggles.
+- Reminder edit dialog now saves details and checklist items while Quick Add remains title/date focused.
+
+Validation:
+- Backend RED: `pytest -q tests/test_reminders.py` failed on missing rich reminder fields and recurring checklist reset.
+- Backend GREEN: `pytest -q tests/test_reminders.py tests/test_task_reminder_persistence.py` → `7 passed`.
+- Frontend RED: `npm test -- --run src/components/reminders/__tests__/reminders-mobile-polish.test.tsx` failed on missing rich card UI.
+- Frontend GREEN: `npm test -- --run src/components/reminders/__tests__/reminder-list-groups.test.tsx src/components/reminders/__tests__/reminders-mobile-polish.test.tsx` → `9 passed`.
+- Alembic: `PYTHONPATH=. alembic heads` → `9c1d2e3f4a5b (head)`.
+- Frontend: `npm run lint` → passed with no output.
+- Frontend: `npm run build` → passed.
+
+Notes:
+- Backend focused validation still emits existing `AsyncMock` warnings from `tests/test_task_reminder_persistence.py`.
 
 ### 2026-04-27 — Visual QA Pass
 

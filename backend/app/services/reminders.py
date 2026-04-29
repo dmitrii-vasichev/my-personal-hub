@@ -33,10 +33,14 @@ async def create_reminder(
     task_id: int | None = None,
     is_floating: bool = False,
     is_urgent: bool = False,
+    details: str | None = None,
+    checklist: list[dict] | None = None,
 ) -> Reminder:
     reminder = Reminder(
         user_id=user.id,
         title=title,
+        details=details,
+        checklist=checklist or [],
         remind_at=remind_at,
         recurrence_rule=recurrence_rule,
         task_id=task_id,
@@ -106,6 +110,8 @@ async def update_reminder(
     old_remind_at = reminder.remind_at
 
     for key, value in kwargs.items():
+        if key == "checklist" and value is None:
+            value = []
         setattr(reminder, key, value)
 
     # Reset notification state if remind_at changed
@@ -153,6 +159,7 @@ async def mark_done(
         reminder.remind_at = _next_occurrence(
             reminder.remind_at, reminder.recurrence_rule
         )
+        reminder.checklist = _reset_checklist_completion(reminder.checklist)
         reminder.status = ReminderStatus.pending
         reminder.snooze_count = 0
         reminder.notification_sent_count = 0
@@ -242,6 +249,18 @@ def _next_occurrence(current: datetime, rule: str) -> datetime:
         case _:
             logger.warning("Unknown recurrence rule: %s, defaulting to daily", rule)
             return current + timedelta(days=1)
+
+
+def _reset_checklist_completion(checklist: object) -> list[dict]:
+    """Return a checklist copy with all items unchecked for the next recurrence."""
+    if not isinstance(checklist, list):
+        return []
+    reset_items: list[dict] = []
+    for item in checklist:
+        if not isinstance(item, dict):
+            continue
+        reset_items.append({**item, "completed": False})
+    return reset_items
 
 
 async def get_reminder_by_task(

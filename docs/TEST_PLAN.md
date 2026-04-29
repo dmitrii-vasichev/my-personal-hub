@@ -1,6 +1,6 @@
 # Finish-Out Test Plan
 
-Last updated: 2026-04-27
+Last updated: 2026-04-29
 
 ## Strategy
 
@@ -13,6 +13,7 @@ Focused commands:
 ```bash
 cd backend
 source venv/bin/activate
+pytest -q tests/test_reminders.py tests/test_task_reminder_persistence.py
 pytest -q tests/test_job_hint.py tests/test_backfill_job_event_links.py tests/test_calendar.py tests/test_google_calendar_sync.py tests/test_focus_sessions.py
 pytest -q tests/test_note_task_link.py tests/test_pulse_digest_items.py
 ```
@@ -34,6 +35,7 @@ Focused commands:
 
 ```bash
 cd frontend
+npm test -- --run src/components/reminders/__tests__/reminder-list-groups.test.tsx src/components/reminders/__tests__/reminders-mobile-polish.test.tsx
 npm test -- --run src/components/today/__tests__/hero-cells.test.tsx src/components/calendar/__tests__/job-link-selector.test.tsx
 npm test -- --run src/components/today/__tests__/now-block.test.tsx src/components/today/__tests__/focus-today-cell.test.tsx
 npm test -- --run src/components/today/__tests__/hero-priority.test.tsx
