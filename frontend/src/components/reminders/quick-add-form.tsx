@@ -146,8 +146,8 @@ export function QuickAddForm() {
       >
         <div className="overflow-hidden">
           <div className="flex flex-col gap-2 pt-2 sm:gap-3 sm:pt-3 md:flex-row md:flex-wrap md:items-end">
-            {/* Date + Time — side by side on mobile */}
-            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:contents">
+            {/* Date + Time — stacked on mobile, side by side from sm */}
+            <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 md:contents">
               <div className="flex flex-col gap-1 md:min-w-[180px]">
                 <label className="text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
                   Date
@@ -165,7 +165,11 @@ export function QuickAddForm() {
                 </label>
                 {time ? (
                   <div className="flex items-center gap-1">
-                    <TimePicker value={time} onChange={setTime} />
+                    <TimePicker
+                      value={time}
+                      onChange={setTime}
+                      className="min-w-0 flex-1 shrink sm:flex-none sm:shrink-0"
+                    />
                     <Button
                       type="button"
                       variant="ghost"
@@ -181,7 +185,7 @@ export function QuickAddForm() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="justify-start text-left font-normal text-muted-foreground"
+                    className="w-full justify-start text-left font-normal text-muted-foreground"
                     onClick={() => setTime("09:00")}
                   >
                     <Clock className="h-4 w-4 opacity-60 shrink-0" />

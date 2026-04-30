@@ -344,20 +344,24 @@ function EditReminderForm({
           <Flag className="h-4 w-4" fill={isUrgent ? "currentColor" : "none"} />
         </Button>
       </div>
-      <div className="flex gap-3">
-        <div className="flex-1 space-y-1.5">
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="space-y-1.5">
           <label className="block text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
             Date
           </label>
           <DatePicker value={date} onChange={setDate} placeholder="Pick date" />
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 sm:min-w-[170px]">
           <label className="block text-[10px] uppercase tracking-[1.5px] font-mono text-[color:var(--ink-3)]">
             Time (optional)
           </label>
           {time ? (
             <div className="flex items-center gap-1">
-              <TimePicker value={time} onChange={setTime} />
+              <TimePicker
+                value={time}
+                onChange={setTime}
+                className="min-w-0 flex-1 shrink sm:flex-none sm:shrink-0"
+              />
               <Button
                 type="button"
                 variant="ghost"
@@ -373,7 +377,7 @@ function EditReminderForm({
             <Button
               type="button"
               variant="outline"
-              className="justify-start text-left font-normal text-muted-foreground"
+              className="w-full justify-start text-left font-normal text-muted-foreground"
               onClick={() => setTime("09:00")}
             >
               <Clock className="h-4 w-4 opacity-60 shrink-0" />
