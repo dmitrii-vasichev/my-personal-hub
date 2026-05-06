@@ -100,7 +100,9 @@ async def _process_user_digest(db, ps: PulseSettings, now: datetime) -> None:
     # Fetch pending reminders: today's timed + today's/overdue floating
     today_start = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
     today_end = local_now.replace(hour=23, minute=59, second=59, microsecond=0)
+    today_start_utc = today_start.astimezone(ZoneInfo("UTC"))
     today_end_utc = today_end.astimezone(ZoneInfo("UTC"))
+    local_today = local_now.date()
 
     result = await db.execute(
         select(Reminder).where(
@@ -111,19 +113,21 @@ async def _process_user_digest(db, ps: PulseSettings, now: datetime) -> None:
                     # Today's timed reminders
                     (
                         (Reminder.is_floating == False)  # noqa: E712
-                        & (Reminder.remind_at >= today_start.astimezone(ZoneInfo("UTC")))
+                        & (Reminder.remind_at >= today_start_utc)
                         & (Reminder.remind_at <= today_end_utc)
                     )
                     # Today's + overdue floating reminders
                     | (
                         (Reminder.is_floating == True)  # noqa: E712
-                        & (Reminder.remind_at <= today_end_utc)
+                        & (Reminder.action_date.isnot(None))
+                        & (Reminder.action_date <= local_today)
                     )
                 ),
             )
         ).order_by(
             Reminder.is_urgent.desc(),
             Reminder.is_floating.asc(),
+            Reminder.action_date.asc().nullslast(),
             Reminder.remind_at,
         )
     )
