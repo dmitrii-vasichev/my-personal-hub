@@ -22,7 +22,7 @@ from app.services.garmin_auth import GarminRateLimitError
 
 logger = logging.getLogger(__name__)
 
-INITIAL_BACKFILL_DAYS = 30
+INITIAL_BACKFILL_DAYS = 90
 INCREMENTAL_SYNC_DAYS = 2
 BACKFILL_MIN_HISTORY_DAYS = 7
 

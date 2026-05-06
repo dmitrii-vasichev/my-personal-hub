@@ -28,7 +28,7 @@ Changed:
 - Dashboard Vitals widget now includes HRV.
 - Vitals briefing health snapshots and prompts now include HRV.
 - Demo seed data now includes realistic HRV values.
-- Vitals backfill detection now counts recent HRV rows and triggers a 30-day sync while HRV history is sparse, even when metrics and sleep history already exist.
+- Vitals backfill detection now counts recent HRV rows and triggers a 90-day sync while HRV history is sparse, matching the maximum Vitals chart filter.
 
 Validation:
 - RED backend HRV regression: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py::TestGarminSyncService::test_sync_daily_metrics_create tests/test_garmin_sync.py::TestGarminSyncService::test_sync_daily_metrics_creates_from_hrv_only` failed on missing HRV fields and HRV-only payload handling.
@@ -37,8 +37,10 @@ Validation:
 - GREEN frontend HRV regression: same command -> `25 passed`.
 - RED frontend ordering regression: `cd frontend && npm test -- --run __tests__/vitals.test.tsx` failed because the Vitals page still rendered six factoids and the first chart was Steps.
 - GREEN frontend ordering regression: `cd frontend && npm test -- --run __tests__/vitals.test.tsx src/components/vitals/__tests__/vitals-demo.test.tsx` -> `25 passed`.
-- RED backend HRV sparse-history regression: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py::TestGarminSyncService::test_needs_vitals_backfill_when_hrv_history_is_sparse` failed because `_needs_vitals_backfill` returned `False` for 30 metrics rows, 30 sleep rows, and only 2 HRV rows.
+- RED backend HRV sparse-history regression: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py::TestGarminSyncService::test_needs_vitals_backfill_when_hrv_history_is_sparse` failed because `_needs_vitals_backfill` returned `False` for full metrics/sleep history and only 2 HRV rows.
 - GREEN backend HRV sparse-history regression: same command -> `1 passed`.
+- RED backend 90-day backfill regression: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py::TestGarminSyncService::test_sync_user_data_backfills_90_days_when_history_is_sparse` failed with `30 == 90`.
+- GREEN backend 90-day backfill regression: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py::TestGarminSyncService::test_sync_user_data_backfills_90_days_when_history_is_sparse tests/test_garmin_sync.py::TestGarminSyncService::test_needs_vitals_backfill_when_hrv_history_is_sparse` -> `2 passed`.
 - Backend focused: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py tests/test_garmin_auth.py tests/test_vitals_briefing.py` -> `129 passed`.
 - Backend focused after sparse-history fix: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py tests/test_garmin_auth.py tests/test_vitals_briefing.py` -> `130 passed`.
 - Backend sparse-history compile: `cd backend && PYTHONPATH=. ./venv/bin/python -m py_compile app/services/garmin_sync.py` -> passed.

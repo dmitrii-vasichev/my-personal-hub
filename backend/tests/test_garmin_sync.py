@@ -489,10 +489,10 @@ class TestGarminSyncService:
     @patch("app.services.garmin_sync.garmin_auth")
     @patch("app.services.garmin_sync._needs_vitals_backfill", create=True)
     @patch("app.services.garmin_sync.user_today")
-    async def test_sync_user_data_backfills_30_days_when_history_is_sparse(
+    async def test_sync_user_data_backfills_90_days_when_history_is_sparse(
         self, mock_today, mock_needs_backfill, mock_auth
     ):
-        """Sparse existing history should trigger a 30-day vitals backfill."""
+        """Sparse existing history should trigger a 90-day vitals backfill."""
         from app.services.garmin_sync import sync_user_data
 
         mock_today.return_value = date(2026, 3, 30)
@@ -526,12 +526,12 @@ class TestGarminSyncService:
 
         await sync_user_data(db, 1)
 
-        assert mock_client.get_user_summary.call_count == 30
-        assert mock_client.get_sleep_data.call_count == 30
-        assert mock_client.get_user_summary.call_args_list[0].args == ("2026-03-01",)
+        assert mock_client.get_user_summary.call_count == 90
+        assert mock_client.get_sleep_data.call_count == 90
+        assert mock_client.get_user_summary.call_args_list[0].args == ("2025-12-31",)
         assert mock_client.get_user_summary.call_args_list[-1].args == ("2026-03-30",)
         mock_client.get_activities_by_date.assert_called_once_with(
-            "2026-03-01", "2026-03-30"
+            "2025-12-31", "2026-03-30"
         )
 
     @pytest.mark.asyncio
@@ -539,7 +539,7 @@ class TestGarminSyncService:
         """Existing metrics/sleep rows should not mask missing HRV history."""
         from app.services.garmin_sync import _needs_vitals_backfill
 
-        counts = iter([30, 30, 2])
+        counts = iter([90, 90, 2])
 
         async def mock_execute(query):
             result = MagicMock()
