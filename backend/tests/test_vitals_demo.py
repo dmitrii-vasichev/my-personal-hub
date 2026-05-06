@@ -82,6 +82,9 @@ def make_daily_metric(user_id: int = 1, metric_date: date | None = None) -> Vita
     m.max_stress = 55
     m.body_battery_high = 85
     m.body_battery_low = 25
+    m.hrv_last_night_avg = 52
+    m.hrv_weekly_avg = 48
+    m.hrv_status = "BALANCED"
     m.vo2_max = 48.5
     return m
 

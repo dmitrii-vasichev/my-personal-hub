@@ -1,6 +1,6 @@
 "use client";
 
-import { Footprints, Heart, Moon, Brain, BatteryFull } from "lucide-react";
+import { Footprints, Moon, Brain, BatteryFull, HeartPulse } from "lucide-react";
 import type { VitalsDailyMetric, VitalsSleep } from "@/types/vitals";
 
 interface TodaySummaryProps {
@@ -74,6 +74,11 @@ function formatValue(val: number | null, suffix = ""): string {
   return `${val}${suffix}`;
 }
 
+function formatHrv(val: number | null): string {
+  if (val == null) return "\u2014";
+  return `${val} ms`;
+}
+
 function formatBattery(high: number | null, low: number | null): string {
   if (high == null && low == null) return "\u2014";
   return `${high ?? "\u2014"} / ${low ?? "\u2014"}`;
@@ -104,16 +109,9 @@ export function TodaySummary({ metrics, sleep, isLoading }: TodaySummaryProps) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" data-testid="vitals-summary">
       <KpiCard
-        icon={<Footprints size={14} />}
-        label="Steps"
-        value={formatSteps(metrics?.steps ?? null)}
-        color={TEAL}
-        colorMuted={TEAL_MUTED}
-      />
-      <KpiCard
-        icon={<Heart size={14} />}
-        label="Resting HR"
-        value={formatValue(metrics?.resting_hr ?? null, " bpm")}
+        icon={<HeartPulse size={14} />}
+        label="HRV"
+        value={formatHrv(metrics?.hrv_last_night_avg ?? null)}
         color={ROSE}
         colorMuted={ROSE_MUTED}
       />
@@ -125,6 +123,13 @@ export function TodaySummary({ metrics, sleep, isLoading }: TodaySummaryProps) {
         colorMuted={INDIGO_MUTED}
       />
       <KpiCard
+        icon={<BatteryFull size={14} />}
+        label="Body Battery"
+        value={formatBattery(metrics?.body_battery_high ?? null, metrics?.body_battery_low ?? null)}
+        color={GREEN}
+        colorMuted={GREEN_MUTED}
+      />
+      <KpiCard
         icon={<Brain size={14} />}
         label="Avg Stress"
         value={formatValue(metrics?.avg_stress ?? null)}
@@ -132,11 +137,11 @@ export function TodaySummary({ metrics, sleep, isLoading }: TodaySummaryProps) {
         colorMuted={AMBER_MUTED}
       />
       <KpiCard
-        icon={<BatteryFull size={14} />}
-        label="Body Battery"
-        value={formatBattery(metrics?.body_battery_high ?? null, metrics?.body_battery_low ?? null)}
-        color={GREEN}
-        colorMuted={GREEN_MUTED}
+        icon={<Footprints size={14} />}
+        label="Steps"
+        value={formatSteps(metrics?.steps ?? null)}
+        color={TEAL}
+        colorMuted={TEAL_MUTED}
       />
     </div>
   );

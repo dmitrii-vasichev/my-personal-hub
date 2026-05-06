@@ -15,6 +15,9 @@ export interface VitalsDailyMetric {
   max_stress: number | null;
   body_battery_high: number | null;
   body_battery_low: number | null;
+  hrv_last_night_avg: number | null;
+  hrv_weekly_avg: number | null;
+  hrv_status: string | null;
   vo2_max: number | null;
 }
 

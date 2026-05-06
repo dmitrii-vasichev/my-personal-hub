@@ -93,6 +93,9 @@ async def get_health_snapshot(
             "avg_stress": metric.avg_stress if metric else None,
             "max_stress": metric.max_stress if metric else None,
             "calories_active": metric.calories_active if metric else None,
+            "hrv_last_night_avg": metric.hrv_last_night_avg if metric else None,
+            "hrv_weekly_avg": metric.hrv_weekly_avg if metric else None,
+            "hrv_status": metric.hrv_status if metric else None,
             "vo2_max": metric.vo2_max if metric else None,
         },
         "body_battery": {
@@ -374,6 +377,13 @@ def _build_briefing_prompt(
             )
         if bb.get("high") is not None or bb.get("low") is not None:
             lines.append(f"- Body Battery: high {bb.get('high', 'N/A')}, low {bb.get('low', 'N/A')}")
+        if metrics.get("hrv_last_night_avg") is not None:
+            status = metrics.get("hrv_status") or "N/A"
+            weekly = metrics.get("hrv_weekly_avg", "N/A")
+            lines.append(
+                f"- HRV: last night {metrics['hrv_last_night_avg']} ms, "
+                f"7-day avg {weekly} ms, status {status}"
+            )
         if metrics.get("resting_hr") is not None:
             lines.append(f"- Resting HR: {metrics['resting_hr']} bpm")
         if metrics.get("avg_stress") is not None:

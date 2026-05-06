@@ -1,6 +1,6 @@
 # Legacy Tasks Domain Removal Status
 
-Last updated: 2026-04-29
+Last updated: 2026-05-06
 
 ## Current State
 
@@ -10,6 +10,42 @@ Last updated: 2026-04-29
 - Current execution source of truth: `docs/PLAN.md`
 
 ## Live Journal
+
+### 2026-05-06 — Garmin HRV Added To Vitals
+
+Findings:
+- HRV was absent because the app had no storage, schema, sync mapping, or frontend display fields for it.
+- The installed `garminconnect` library does expose HRV via `Garmin.get_hrv_data(date)`, backed by Garmin's `/hrv-service/hrv/{date}` endpoint.
+
+Changed:
+- Added nullable HRV fields to `vitals_daily_metrics`: `hrv_last_night_avg`, `hrv_weekly_avg`, and `hrv_status`.
+- Added Alembic migration `c3d4e5f6a7b8_add_hrv_to_vitals_daily_metrics`.
+- Garmin daily metrics sync now fetches HRV, stores it in `raw_json`, persists nightly and weekly HRV values, and treats HRV-only payloads as valid daily metric rows.
+- Vitals API schemas and frontend Vitals types now expose HRV.
+- Vitals page summary now shows five factoids ordered HRV, Sleep, Body Battery, Avg Stress, and Steps; Resting HR was removed from the top factoids.
+- Vitals charts now show HRV first, Sleep second, followed by the previous trend charts.
+- Dashboard Vitals widget now includes HRV.
+- Vitals briefing health snapshots and prompts now include HRV.
+- Demo seed data now includes realistic HRV values.
+
+Validation:
+- RED backend HRV regression: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py::TestGarminSyncService::test_sync_daily_metrics_create tests/test_garmin_sync.py::TestGarminSyncService::test_sync_daily_metrics_creates_from_hrv_only` failed on missing HRV fields and HRV-only payload handling.
+- RED frontend HRV regression: `cd frontend && npm test -- --run __tests__/vitals.test.tsx __tests__/vitals-widget.test.tsx` failed because HRV was not rendered.
+- GREEN backend HRV regression: same command -> `2 passed`.
+- GREEN frontend HRV regression: same command -> `25 passed`.
+- RED frontend ordering regression: `cd frontend && npm test -- --run __tests__/vitals.test.tsx` failed because the Vitals page still rendered six factoids and the first chart was Steps.
+- GREEN frontend ordering regression: `cd frontend && npm test -- --run __tests__/vitals.test.tsx src/components/vitals/__tests__/vitals-demo.test.tsx` -> `25 passed`.
+- Backend focused: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py tests/test_garmin_auth.py tests/test_vitals_briefing.py` -> `129 passed`.
+- Backend demo vitals: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_vitals_demo.py` -> `12 passed`.
+- Backend compile: `cd backend && PYTHONPATH=. ./venv/bin/python -m py_compile app/models/garmin.py app/schemas/garmin.py app/services/garmin_sync.py app/services/vitals_briefing.py app/scripts/seed_demo.py alembic/versions/c3d4e5f6a7b8_add_hrv_to_vitals_daily_metrics.py` -> passed.
+- Alembic heads: `cd backend && PYTHONPATH=. ./venv/bin/alembic heads` -> `c3d4e5f6a7b8 (head)`.
+- Frontend focused: `cd frontend && npm test -- --run __tests__/vitals-widget.test.tsx __tests__/vitals.test.tsx src/components/vitals/__tests__/vitals-demo.test.tsx` -> `32 passed`.
+- Frontend lint: `cd frontend && npm run lint` -> passed.
+- Frontend build: `cd frontend && npm run build` -> passed.
+
+Notes:
+- Local Alembic `current` / `upgrade head` validation was not run because local PostgreSQL was unavailable on `127.0.0.1:5432`.
+- Backend tests still emit existing dependency/deprecation and `AsyncMock` warnings.
 
 ### 2026-04-29 — Legacy Tasks Domain Removed
 

@@ -5,10 +5,27 @@ import { TodaySummary } from "@/components/vitals/today-summary";
 import { BriefingCard } from "@/components/vitals/briefing-card";
 import { ActivitiesList } from "@/components/vitals/activities-list";
 import { PeriodSelector } from "@/components/vitals/period-selector";
+import { ChartsSection } from "@/components/vitals/charts-section";
 import type { VitalsDailyMetric, VitalsSleep, VitalsActivity, VitalsBriefing } from "@/types/vitals";
 
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
+}));
+
+vi.mock("recharts", () => ({
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  BarChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  LineChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  AreaChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Bar: () => null,
+  Line: () => null,
+  Area: () => null,
+  XAxis: () => null,
+  YAxis: () => null,
+  CartesianGrid: () => null,
+  Tooltip: () => null,
+  Legend: () => null,
+  ReferenceLine: () => null,
 }));
 
 let mockIsDemo = false;
@@ -41,6 +58,9 @@ const mockMetrics: VitalsDailyMetric = {
   max_stress: 67,
   body_battery_high: 87,
   body_battery_low: 32,
+  hrv_last_night_avg: 52,
+  hrv_weekly_avg: 48,
+  hrv_status: "BALANCED",
   vo2_max: 45.5,
 };
 
@@ -111,13 +131,20 @@ const mockActivities: VitalsActivity[] = [
 
 // --- TodaySummary ---
 describe("TodaySummary", () => {
-  it("renders 5 KPI cards with correct values", () => {
+  it("renders 5 KPI cards with HRV first, sleep second, and no Resting HR factoid", () => {
     render(<TodaySummary metrics={mockMetrics} sleep={mockSleep} isLoading={false} />);
-    expect(screen.getByText("8,432")).toBeInTheDocument();
-    expect(screen.getByText("62 bpm")).toBeInTheDocument();
+    const summary = screen.getByTestId("vitals-summary");
+
+    expect(summary.children).toHaveLength(5);
+    expect(summary).toHaveTextContent(/HRV[\s\S]*Sleep[\s\S]*Body Battery[\s\S]*Avg Stress[\s\S]*Steps/);
+    expect(screen.getByText("HRV")).toBeInTheDocument();
+    expect(screen.getByText("52 ms")).toBeInTheDocument();
     expect(screen.getByText("7h 23m")).toBeInTheDocument();
+    expect(screen.getByText("8,432")).toBeInTheDocument();
     expect(screen.getByText("32")).toBeInTheDocument();
     expect(screen.getByText("87 / 32")).toBeInTheDocument();
+    expect(screen.queryByText("Resting HR")).not.toBeInTheDocument();
+    expect(screen.queryByText("62 bpm")).not.toBeInTheDocument();
   });
 
   it("shows dashes when metrics are null", () => {
@@ -129,6 +156,28 @@ describe("TodaySummary", () => {
   it("shows skeleton when loading", () => {
     render(<TodaySummary metrics={null} sleep={null} isLoading={true} />);
     expect(screen.getByTestId("vitals-summary-loading")).toBeInTheDocument();
+  });
+});
+
+// --- ChartsSection ---
+describe("ChartsSection", () => {
+  it("renders HRV and Sleep as the first two trend charts", () => {
+    render(<ChartsSection />);
+
+    const chartHeadings = screen
+      .getAllByRole("heading", { level: 3 })
+      .map((heading) => heading.textContent);
+
+    expect(chartHeadings[0]).toBe("HRV");
+    expect(chartHeadings[1]).toBe("Sleep Phases");
+    expect(chartHeadings).toEqual([
+      "HRV",
+      "Sleep Phases",
+      "Steps",
+      "Resting Heart Rate",
+      "Stress Level",
+      "Body Battery",
+    ]);
   });
 });
 

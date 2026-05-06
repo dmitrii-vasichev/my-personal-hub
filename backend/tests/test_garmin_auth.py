@@ -78,6 +78,9 @@ def make_daily_metric(user_id: int = 1) -> VitalsDailyMetric:
     m.avg_stress = 35
     m.body_battery_high = 85
     m.body_battery_low = 25
+    m.hrv_last_night_avg = 52
+    m.hrv_weekly_avg = 48
+    m.hrv_status = "BALANCED"
     m.vo2_max = 48.5
     return m
 
@@ -232,6 +235,7 @@ class TestGarminSchemas:
         m = make_daily_metric()
         resp = VitalsDailyMetricResponse.model_validate(m)
         assert resp.steps == 8500
+        assert resp.hrv_last_night_avg == 52
         assert resp.vo2_max == 48.5
 
     def test_sleep_response(self):

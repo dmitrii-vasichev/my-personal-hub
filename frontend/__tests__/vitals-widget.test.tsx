@@ -21,6 +21,9 @@ const mockMetrics = {
   max_stress: 60,
   body_battery_high: 82,
   body_battery_low: 35,
+  hrv_last_night_avg: 52,
+  hrv_weekly_avg: 48,
+  hrv_status: "BALANCED",
   vo2_max: 44.0,
 };
 
@@ -99,12 +102,15 @@ describe("VitalsWidget", () => {
       </Wrapper>
     );
 
+    // Sleep: 25920s = 7h 12m → 7.2h
+    expect(screen.getByText("7.2h")).toBeInTheDocument();
+    // HRV: 52 ms
+    expect(screen.getByText("HRV")).toBeInTheDocument();
+    expect(screen.getByText("52")).toBeInTheDocument();
     // Steps: 8,500
     expect(screen.getByText("8,500")).toBeInTheDocument();
     // Resting HR: 64
     expect(screen.getByText("64")).toBeInTheDocument();
-    // Sleep: 25920s = 7h 12m → 7.2h
-    expect(screen.getByText("7.2h")).toBeInTheDocument();
     // Body Battery high: 82
     expect(screen.getByText("82")).toBeInTheDocument();
     // Avg Stress: 28
@@ -159,6 +165,9 @@ describe("VitalsWidget", () => {
         max_stress: null,
         body_battery_high: null,
         body_battery_low: null,
+        hrv_last_night_avg: null,
+        hrv_weekly_avg: null,
+        hrv_status: null,
         vo2_max: null,
       },
       sleep: {

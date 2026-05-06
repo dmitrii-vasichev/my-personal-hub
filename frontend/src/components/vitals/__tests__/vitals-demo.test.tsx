@@ -50,7 +50,8 @@ const mockToday = {
     calories_active: 350, calories_total: 2200, floors_climbed: 12,
     intensity_minutes: 45, resting_hr: 62, avg_hr: 75, max_hr: 145,
     min_hr: 55, avg_stress: 32, max_stress: 67, body_battery_high: 87,
-    body_battery_low: 32, vo2_max: 45.5,
+    body_battery_low: 32, hrv_last_night_avg: 52, hrv_weekly_avg: 48,
+    hrv_status: "BALANCED", vo2_max: 45.5,
   } satisfies VitalsDailyMetric,
   sleep: {
     id: 1, date: "2026-03-20", duration_seconds: 26580, deep_seconds: 5400,
@@ -167,10 +168,11 @@ describe("Vitals page — demo user sees vitals data", () => {
 
     // Should render actual KPI values from mockToday.metrics
     expect(screen.getByText("8,432")).toBeInTheDocument();       // steps
-    expect(screen.getByText("62 bpm")).toBeInTheDocument();      // resting HR
     expect(screen.getByText("7h 23m")).toBeInTheDocument();      // sleep duration
+    expect(screen.getByText("52 ms")).toBeInTheDocument();       // HRV
     expect(screen.getByText("32")).toBeInTheDocument();           // avg stress
     expect(screen.getByText("87 / 32")).toBeInTheDocument();     // body battery
+    expect(screen.queryByText("62 bpm")).not.toBeInTheDocument();
   });
 
   it("renders the AI briefing content after expanding it", async () => {
@@ -186,7 +188,7 @@ describe("Vitals page — demo user sees vitals data", () => {
 });
 
 describe("TodaySummary — renders metrics regardless of demo mode", () => {
-  it("displays all 5 KPI cards with values", () => {
+  it("displays 5 KPI cards with HRV and Sleep first", () => {
     render(
       <TodaySummary
         metrics={mockToday.metrics}
@@ -196,15 +198,21 @@ describe("TodaySummary — renders metrics regardless of demo mode", () => {
     );
 
     expect(screen.getByTestId("vitals-summary")).toBeInTheDocument();
+    expect(screen.getByTestId("vitals-summary").children).toHaveLength(5);
+    expect(screen.getByTestId("vitals-summary")).toHaveTextContent(
+      /HRV[\s\S]*Sleep[\s\S]*Body Battery[\s\S]*Avg Stress[\s\S]*Steps/,
+    );
     expect(screen.getByText("Steps")).toBeInTheDocument();
-    expect(screen.getByText("Resting HR")).toBeInTheDocument();
+    expect(screen.queryByText("Resting HR")).not.toBeInTheDocument();
     expect(screen.getByText("Sleep")).toBeInTheDocument();
+    expect(screen.getByText("HRV")).toBeInTheDocument();
     expect(screen.getByText("Avg Stress")).toBeInTheDocument();
     expect(screen.getByText("Body Battery")).toBeInTheDocument();
 
     expect(screen.getByText("8,432")).toBeInTheDocument();
-    expect(screen.getByText("62 bpm")).toBeInTheDocument();
+    expect(screen.queryByText("62 bpm")).not.toBeInTheDocument();
     expect(screen.getByText("7h 23m")).toBeInTheDocument();
+    expect(screen.getByText("52 ms")).toBeInTheDocument();
     expect(screen.getByText("32")).toBeInTheDocument();
     expect(screen.getByText("87 / 32")).toBeInTheDocument();
   });

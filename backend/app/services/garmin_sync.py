@@ -73,6 +73,31 @@ def _extract_body_battery_range(body_battery) -> tuple[int | None, int | None]:
     return int(max(values)), int(min(values))
 
 
+def _coerce_int(value) -> int | None:
+    number = _coerce_number(value)
+    return int(number) if number is not None else None
+
+
+def _extract_hrv_summary(
+    hrv_data,
+) -> tuple[int | None, int | None, str | None]:
+    """Extract nightly and weekly HRV values from Garmin's HRV response."""
+    if not isinstance(hrv_data, dict):
+        return None, None, None
+
+    summary = hrv_data.get("hrvSummary") or hrv_data.get("hrv_summary") or hrv_data
+    if not isinstance(summary, dict):
+        return None, None, None
+
+    last_night_avg = _coerce_int(
+        summary.get("lastNightAvg") or summary.get("last_night_avg")
+    )
+    weekly_avg = _coerce_int(summary.get("weeklyAvg") or summary.get("weekly_avg"))
+    raw_status = summary.get("status")
+    status = raw_status if isinstance(raw_status, str) and raw_status else None
+    return last_night_avg, weekly_avg, status
+
+
 def _inclusive_dates(start_date: date, end_date: date) -> list[date]:
     """Return all dates in [start_date, end_date]."""
     days = (end_date - start_date).days
@@ -251,7 +276,18 @@ async def _sync_daily_metrics(
     if not isinstance(max_metrics, dict):
         max_metrics = {}
 
+    try:
+        hrv_data = client.get_hrv_data(date_str)
+    except GarminConnectTooManyRequestsError:
+        raise GarminRateLimitError("429 on get_hrv_data")
+    except Exception as e:
+        logger.warning("Failed to get HRV data for %s: %s", date_str, e)
+        hrv_data = {}
+    if not isinstance(hrv_data, dict):
+        hrv_data = {}
+
     bb_high, bb_low = _extract_body_battery_range(body_battery)
+    hrv_last_night_avg, hrv_weekly_avg, hrv_status = _extract_hrv_summary(hrv_data)
 
     # Parse VO2 max
     vo2_max = None
@@ -261,7 +297,12 @@ async def _sync_daily_metrics(
             vo2_max = generic.get("vo2MaxValue")
 
     # Build raw_json from all responses
-    raw_json = {"summary": summary, "body_battery": body_battery, "max_metrics": max_metrics}
+    raw_json = {
+        "summary": summary,
+        "body_battery": body_battery,
+        "max_metrics": max_metrics,
+        "hrv": hrv_data,
+    }
 
     values = {
         "steps": summary.get("totalSteps"),
@@ -278,6 +319,9 @@ async def _sync_daily_metrics(
         "max_stress": summary.get("maxStressLevel"),
         "body_battery_high": bb_high,
         "body_battery_low": bb_low,
+        "hrv_last_night_avg": hrv_last_night_avg,
+        "hrv_weekly_avg": hrv_weekly_avg,
+        "hrv_status": hrv_status,
         "vo2_max": vo2_max,
         "raw_json": raw_json,
     }

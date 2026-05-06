@@ -50,6 +50,9 @@ class VitalsDailyMetricResponse(BaseModel):
     max_stress: Optional[int] = None
     body_battery_high: Optional[int] = None
     body_battery_low: Optional[int] = None
+    hrv_last_night_avg: Optional[int] = None
+    hrv_weekly_avg: Optional[int] = None
+    hrv_status: Optional[str] = None
     vo2_max: Optional[float] = None
 
     model_config = {"from_attributes": True}

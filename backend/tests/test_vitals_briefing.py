@@ -52,6 +52,9 @@ def make_daily_metric(user_id: int = 1, metric_date: date | None = None) -> Vita
     m.max_stress = 55
     m.body_battery_high = 85
     m.body_battery_low = 25
+    m.hrv_last_night_avg = 52
+    m.hrv_weekly_avg = 48
+    m.hrv_status = "BALANCED"
     m.vo2_max = 48.5
     return m
 
@@ -146,6 +149,9 @@ class TestHealthSnapshot:
         assert snapshot["sleep"]["duration_seconds"] == 28800
         assert snapshot["metrics"]["steps"] == 8500
         assert snapshot["metrics"]["resting_hr"] == 58
+        assert snapshot["metrics"]["hrv_last_night_avg"] == 52
+        assert snapshot["metrics"]["hrv_weekly_avg"] == 48
+        assert snapshot["metrics"]["hrv_status"] == "BALANCED"
         assert snapshot["body_battery"]["high"] == 85
         assert snapshot["body_battery"]["low"] == 25
         assert len(snapshot["activities"]) == 1
@@ -396,7 +402,7 @@ class TestPromptAssembly:
 
         health = {
             "sleep": {"duration_seconds": 28800, "sleep_score": 82, "deep_seconds": 7200, "rem_seconds": 5400, "light_seconds": 14400, "awake_seconds": 1800},
-            "metrics": {"steps": 8500, "resting_hr": 58, "avg_hr": 72, "avg_stress": 35, "max_stress": 55, "calories_active": 450, "vo2_max": 48.5},
+            "metrics": {"steps": 8500, "resting_hr": 58, "avg_hr": 72, "avg_stress": 35, "max_stress": 55, "calories_active": 450, "hrv_last_night_avg": 52, "hrv_weekly_avg": 48, "hrv_status": "BALANCED", "vo2_max": 48.5},
             "body_battery": {"high": 85, "low": 25},
             "activities": [{"type": "running", "name": "Morning Run", "duration_seconds": 1800, "start_time": "2026-03-20T07:00:00", "distance_m": 5000, "avg_hr": 155, "calories": 350}],
         }
@@ -410,6 +416,7 @@ class TestPromptAssembly:
         assert "8h 0m" in prompt
         assert "82/100" in prompt
         assert "Body Battery" in prompt
+        assert "HRV: last night 52 ms" in prompt
         assert "## Today's Schedule" in prompt
         assert "## Workload" in prompt
         assert "Active actions: 10" in prompt

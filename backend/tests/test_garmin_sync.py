@@ -70,6 +70,9 @@ def make_daily_metric(user_id: int = 1, metric_date: date | None = None) -> Vita
     m.max_stress = 55
     m.body_battery_high = 85
     m.body_battery_low = 25
+    m.hrv_last_night_avg = 52
+    m.hrv_weekly_avg = 48
+    m.hrv_status = "BALANCED"
     m.vo2_max = 48.5
     return m
 
@@ -146,6 +149,24 @@ def make_garmin_api_body_battery_values_array():
     ]
 
 
+def make_garmin_api_hrv():
+    """Mock Garmin API HRV response."""
+    return {
+        "hrvSummary": {
+            "calendarDate": "2026-03-19",
+            "weeklyAvg": 48,
+            "lastNightAvg": 52,
+            "lastNight5MinHigh": 67,
+            "status": "BALANCED",
+            "feedbackPhrase": "Your HRV is balanced.",
+        },
+        "hrvReadings": [
+            {"hrvValue": 49, "readingTimeGMT": "2026-03-19T01:00:00.0"},
+            {"hrvValue": 54, "readingTimeGMT": "2026-03-19T02:00:00.0"},
+        ],
+    }
+
+
 def make_garmin_api_sleep():
     """Mock Garmin API sleep response."""
     return {
@@ -214,6 +235,7 @@ class TestGarminSyncService:
         client.get_user_summary.return_value = make_garmin_api_summary()
         client.get_body_battery.return_value = make_garmin_api_body_battery()
         client.get_max_metrics.return_value = {"generic": {"vo2MaxValue": 48.5}}
+        client.get_hrv_data.return_value = make_garmin_api_hrv()
 
         await _sync_daily_metrics(db, 1, client, date(2026, 3, 19))
 
@@ -224,6 +246,37 @@ class TestGarminSyncService:
         assert added.body_battery_high == 85
         assert added.body_battery_low == 25
         assert added.vo2_max == 48.5
+        assert added.hrv_last_night_avg == 52
+        assert added.hrv_weekly_avg == 48
+        assert added.hrv_status == "BALANCED"
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
+    async def test_sync_daily_metrics_creates_from_hrv_only(self, mock_auth):
+        """HRV-only Garmin payloads should still create a daily metric row."""
+        from app.services.garmin_sync import _sync_daily_metrics
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(return_value=mock_result)
+        db.add = MagicMock()
+
+        client = MagicMock()
+        client.get_user_summary.return_value = {}
+        client.get_body_battery.return_value = []
+        client.get_max_metrics.return_value = {}
+        client.get_hrv_data.return_value = make_garmin_api_hrv()
+
+        count = await _sync_daily_metrics(db, 1, client, date(2026, 3, 19))
+
+        assert count == 1
+        db.add.assert_called_once()
+        added = db.add.call_args[0][0]
+        assert isinstance(added, VitalsDailyMetric)
+        assert added.hrv_last_night_avg == 52
+        assert added.hrv_weekly_avg == 48
+        assert added.hrv_status == "BALANCED"
 
     @pytest.mark.asyncio
     @patch("app.services.garmin_sync.garmin_auth")

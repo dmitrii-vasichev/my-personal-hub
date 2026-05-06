@@ -6,6 +6,7 @@ import {
   Moon,
   Activity,
   Zap,
+  HeartPulse,
   AlertCircle,
   AlertTriangle,
 } from "lucide-react";
@@ -161,10 +162,12 @@ function WidgetSkeleton() {
         </div>
       </div>
       <div className="grid grid-cols-2 gap-0">
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2, 3, 4, 5, 6].map((i) => (
           <div
             key={i}
-            className={`px-4 py-2.5 ${i <= 2 ? "border-b border-border-subtle" : ""}`}
+            className={`px-4 py-2.5 ${i <= 4 ? "border-b border-border-subtle" : ""} ${
+              i % 2 === 1 ? "border-r border-r-border-subtle" : ""
+            }`}
           >
             <div className="flex items-center gap-1.5 mb-1">
               <div className="h-3.5 w-3.5 rounded bg-muted animate-pulse" />
@@ -173,13 +176,6 @@ function WidgetSkeleton() {
             <div className="h-5 w-12 rounded bg-muted animate-pulse" />
           </div>
         ))}
-      </div>
-      <div className="border-t border-border-subtle px-4 py-2.5">
-        <div className="flex items-center gap-1.5 mb-1">
-          <div className="h-3.5 w-3.5 rounded bg-muted animate-pulse" />
-          <div className="h-2.5 w-16 rounded bg-muted animate-pulse" />
-        </div>
-        <div className="h-5 w-12 rounded bg-muted animate-pulse" />
       </div>
       {/* Sparkline skeletons */}
       <div className="border-t border-border-subtle grid grid-cols-2 gap-0">
@@ -283,8 +279,22 @@ export function VitalsWidget() {
         </Link>
       </div>
 
-      {/* KPI grid: 2 columns */}
       <div className="grid grid-cols-2 gap-0">
+        <div className="border-b border-border-subtle border-r border-r-border-subtle">
+          <KpiItem
+            icon={<Moon size={14} />}
+            label="Sleep"
+            value={formatSleepHours(sleep?.duration_seconds ?? null)}
+          />
+        </div>
+        <div className="border-b border-border-subtle">
+          <KpiItem
+            icon={<HeartPulse size={14} />}
+            label="HRV"
+            value={formatNumber(metrics?.hrv_last_night_avg)}
+            suffix="ms"
+          />
+        </div>
         <div className="border-b border-border-subtle border-r border-r-border-subtle">
           <KpiItem
             icon={<Zap size={14} />}
@@ -295,17 +305,18 @@ export function VitalsWidget() {
         </div>
         <div className="border-b border-border-subtle">
           <KpiItem
-            icon={<Footprints size={14} />}
-            label="Steps"
-            value={formatNumber(metrics?.steps)}
-            suffix="/ 10,000"
+            icon={<Activity size={14} />}
+            label="Stress"
+            value={formatNumber(metrics?.avg_stress)}
+            suffix="avg"
           />
         </div>
         <div className="border-r border-r-border-subtle">
           <KpiItem
-            icon={<Moon size={14} />}
-            label="Sleep"
-            value={formatSleepHours(sleep?.duration_seconds ?? null)}
+            icon={<Footprints size={14} />}
+            label="Steps"
+            value={formatNumber(metrics?.steps)}
+            suffix="/ 10,000"
           />
         </div>
         <div>
@@ -316,16 +327,6 @@ export function VitalsWidget() {
             suffix="bpm"
           />
         </div>
-      </div>
-
-      {/* Fifth KPI full-width */}
-      <div className="border-t border-border-subtle">
-        <KpiItem
-          icon={<Activity size={14} />}
-          label="Stress"
-          value={formatNumber(metrics?.avg_stress)}
-          suffix="avg"
-        />
       </div>
 
       {/* Mini sparkline charts */}

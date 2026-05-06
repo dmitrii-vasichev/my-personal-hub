@@ -81,6 +81,10 @@ class VitalsDailyMetric(Base):
     max_stress: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     body_battery_high: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     body_battery_low: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # HRV
+    hrv_last_night_avg: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    hrv_weekly_avg: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    hrv_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     # Fitness
     vo2_max: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     # Raw API response

@@ -617,6 +617,9 @@ async def create_vitals_data(session, user_id: int) -> None:
         max_stress = avg_stress + random.randint(15, 35)
         body_battery_high = random.randint(70, 95)
         body_battery_low = random.randint(15, 45)
+        hrv_last_night_avg = random.randint(42, 68)
+        hrv_weekly_avg = hrv_last_night_avg + random.randint(-4, 4)
+        hrv_status = random.choice(["BALANCED", "UNBALANCED", "LOW"])
         calories_active = random.randint(200, 600)
         calories_total = calories_active + random.randint(1400, 1800)
         distance_m = steps * random.uniform(0.7, 0.85)
@@ -641,6 +644,9 @@ async def create_vitals_data(session, user_id: int) -> None:
             max_stress=max_stress,
             body_battery_high=body_battery_high,
             body_battery_low=body_battery_low,
+            hrv_last_night_avg=hrv_last_night_avg,
+            hrv_weekly_avg=hrv_weekly_avg,
+            hrv_status=hrv_status,
             vo2_max=vo2_max,
         )
         session.add(metric)
