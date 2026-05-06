@@ -5,7 +5,7 @@ import logging
 from datetime import date, datetime, timedelta, timezone
 
 from garminconnect import GarminConnectTooManyRequestsError
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import async_session_factory
@@ -123,11 +123,35 @@ async def _count_recent_rows(db: AsyncSession, model, user_id: int, today: date)
     return _coerce_count(result.scalar_one())
 
 
+async def _count_recent_hrv_rows(db: AsyncSession, user_id: int, today: date) -> int:
+    start_date = today - timedelta(days=INITIAL_BACKFILL_DAYS - 1)
+    result = await db.execute(
+        select(func.count())
+        .select_from(VitalsDailyMetric)
+        .where(
+            VitalsDailyMetric.user_id == user_id,
+            VitalsDailyMetric.date >= start_date,
+            VitalsDailyMetric.date <= today,
+            or_(
+                VitalsDailyMetric.hrv_last_night_avg.is_not(None),
+                VitalsDailyMetric.hrv_weekly_avg.is_not(None),
+                VitalsDailyMetric.hrv_status.is_not(None),
+            ),
+        )
+    )
+    return _coerce_count(result.scalar_one())
+
+
 async def _needs_vitals_backfill(db: AsyncSession, user_id: int, today: date) -> bool:
-    """Return True while recent metrics/sleep history is still sparse."""
+    """Return True while recent metrics, sleep, or HRV history is still sparse."""
     metrics_count = await _count_recent_rows(db, VitalsDailyMetric, user_id, today)
     sleep_count = await _count_recent_rows(db, VitalsSleep, user_id, today)
-    return metrics_count < BACKFILL_MIN_HISTORY_DAYS or sleep_count < BACKFILL_MIN_HISTORY_DAYS
+    hrv_count = await _count_recent_hrv_rows(db, user_id, today)
+    return (
+        metrics_count < BACKFILL_MIN_HISTORY_DAYS
+        or sleep_count < BACKFILL_MIN_HISTORY_DAYS
+        or hrv_count < BACKFILL_MIN_HISTORY_DAYS
+    )
 
 
 async def sync_user_data(db: AsyncSession, user_id: int) -> None:
