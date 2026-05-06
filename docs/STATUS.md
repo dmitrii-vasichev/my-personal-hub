@@ -17,6 +17,7 @@ Findings:
 - HRV was absent because the app had no storage, schema, sync mapping, or frontend display fields for it.
 - The installed `garminconnect` library does expose HRV via `Garmin.get_hrv_data(date)`, backed by Garmin's `/hrv-service/hrv/{date}` endpoint.
 - Follow-up root cause for only two HRV days: existing daily metrics and sleep rows made the backfill gate choose the 2-day incremental sync window because HRV coverage was not part of the sparse-history check.
+- Railway production follow-up for the 90-day HRV gap: production had `metrics_90d=38`, `sleep_90d=38`, `hrv_90d=24`, and HRV only from `2026-04-07` through `2026-05-06`; 24 HRV rows still exceeded the generic 7-row sparse-history threshold, so another 90-day backfill was not triggered.
 
 Changed:
 - Added nullable HRV fields to `vitals_daily_metrics`: `hrv_last_night_avg`, `hrv_weekly_avg`, and `hrv_status`.
@@ -29,6 +30,7 @@ Changed:
 - Vitals briefing health snapshots and prompts now include HRV.
 - Demo seed data now includes realistic HRV values.
 - Vitals backfill detection now counts recent HRV rows and triggers a 90-day sync while HRV history is sparse, matching the maximum Vitals chart filter.
+- HRV backfill detection now keeps the 90-day sync path active until HRV itself has 90 recent rows.
 
 Validation:
 - RED backend HRV regression: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py::TestGarminSyncService::test_sync_daily_metrics_create tests/test_garmin_sync.py::TestGarminSyncService::test_sync_daily_metrics_creates_from_hrv_only` failed on missing HRV fields and HRV-only payload handling.
@@ -44,6 +46,12 @@ Validation:
 - Backend focused: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py tests/test_garmin_auth.py tests/test_vitals_briefing.py` -> `129 passed`.
 - Backend focused after sparse-history fix: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py tests/test_garmin_auth.py tests/test_vitals_briefing.py` -> `130 passed`.
 - Backend sparse-history compile: `cd backend && PYTHONPATH=. ./venv/bin/python -m py_compile app/services/garmin_sync.py` -> passed.
+- RED backend 30-day HRV threshold regression: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py::TestGarminSyncService::test_needs_vitals_backfill_when_hrv_history_is_only_30_days` failed because `_needs_vitals_backfill` returned `False` for 30 HRV rows.
+- GREEN backend 90-day HRV threshold regression: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py::TestGarminSyncService::test_needs_vitals_backfill_when_hrv_history_is_sparse tests/test_garmin_sync.py::TestGarminSyncService::test_needs_vitals_backfill_when_hrv_history_is_only_30_days tests/test_garmin_sync.py::TestGarminSyncService::test_sync_user_data_backfills_90_days_when_history_is_sparse` -> `3 passed`.
+- Backend focused after 90-day HRV threshold fix: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_garmin_sync.py tests/test_garmin_auth.py tests/test_vitals_briefing.py` -> `131 passed`.
+- Railway deploy: `railway up --service backend-api --environment production --message "Fix HRV 90-day backfill threshold"` -> deployment `90298a93-4c35-4105-9812-22ca4ffa48f1` reached `SUCCESS`.
+- Railway manual sync from the deployed container: `railway ssh --service backend-api --environment production ... sync_user_data(...)` -> `sync_success`.
+- Railway post-sync inspection: `metrics_90d=90`, `sleep_90d=89`, `hrv_90d=63`, HRV range `2026-02-18` through `2026-05-06`, Garmin connection `success`, last sync log `success`.
 - Backend demo vitals: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_vitals_demo.py` -> `12 passed`.
 - Backend compile: `cd backend && PYTHONPATH=. ./venv/bin/python -m py_compile app/models/garmin.py app/schemas/garmin.py app/services/garmin_sync.py app/services/vitals_briefing.py app/scripts/seed_demo.py alembic/versions/c3d4e5f6a7b8_add_hrv_to_vitals_daily_metrics.py` -> passed.
 - Alembic heads: `cd backend && PYTHONPATH=. ./venv/bin/alembic heads` -> `c3d4e5f6a7b8 (head)`.
@@ -54,6 +62,8 @@ Validation:
 Notes:
 - Local Alembic `current` / `upgrade head` validation was not run because local PostgreSQL was unavailable on `127.0.0.1:5432`.
 - Local manual HRV backfill was not run because `cd backend && PYTHONPATH=. ./venv/bin/alembic current` still cannot connect to PostgreSQL on `127.0.0.1:5432`.
+- Manual production sync via local `railway run` was not used because the production Garmin tokenstore failed to decode with the local virtualenv Garmin client; run sync from the deployed Railway container after deploying this fix.
+- Garmin returned empty HRV payloads, not parser-readable HRV values, for the remaining missing dates: `2026-02-06` through `2026-02-17`, `2026-03-07` through `2026-03-15`, and `2026-04-09` through `2026-04-14`.
 - Backend tests still emit existing dependency/deprecation and `AsyncMock` warnings.
 
 ### 2026-04-29 — Legacy Tasks Domain Removed

@@ -554,6 +554,25 @@ class TestGarminSyncService:
         assert needs_backfill is True
 
     @pytest.mark.asyncio
+    async def test_needs_vitals_backfill_when_hrv_history_is_only_30_days(self):
+        """Thirty HRV rows are still incomplete for the 90-day Vitals filter."""
+        from app.services.garmin_sync import _needs_vitals_backfill
+
+        counts = iter([90, 90, 30])
+
+        async def mock_execute(query):
+            result = MagicMock()
+            result.scalar_one.return_value = next(counts)
+            return result
+
+        db = AsyncMock()
+        db.execute = mock_execute
+
+        needs_backfill = await _needs_vitals_backfill(db, 1, date(2026, 3, 30))
+
+        assert needs_backfill is True
+
+    @pytest.mark.asyncio
     @patch("app.services.garmin_sync.garmin_auth")
     async def test_sync_user_data_error(self, mock_auth):
         """Test sync_user_data sets status to error on failure."""

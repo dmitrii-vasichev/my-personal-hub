@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 INITIAL_BACKFILL_DAYS = 90
 INCREMENTAL_SYNC_DAYS = 2
 BACKFILL_MIN_HISTORY_DAYS = 7
+HRV_BACKFILL_MIN_HISTORY_DAYS = INITIAL_BACKFILL_DAYS
 
 
 def _coerce_number(value) -> int | float | None:
@@ -150,7 +151,7 @@ async def _needs_vitals_backfill(db: AsyncSession, user_id: int, today: date) ->
     return (
         metrics_count < BACKFILL_MIN_HISTORY_DAYS
         or sleep_count < BACKFILL_MIN_HISTORY_DAYS
-        or hrv_count < BACKFILL_MIN_HISTORY_DAYS
+        or hrv_count < HRV_BACKFILL_MIN_HISTORY_DAYS
     )
 
 
