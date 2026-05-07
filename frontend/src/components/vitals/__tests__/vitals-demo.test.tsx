@@ -175,13 +175,13 @@ describe("Vitals page — demo user sees vitals data", () => {
     expect(screen.queryByText("62 bpm")).not.toBeInTheDocument();
   });
 
-  it("renders the AI briefing content after expanding it", async () => {
+  it("renders the AI briefing content after opening the briefing dialog", async () => {
     const VitalsPage = (await import("@/app/(dashboard)/vitals/page")).default;
     render(<VitalsPage />, { wrapper: createWrapper() });
 
-    fireEvent.click(screen.getByRole("button", { name: "Show briefing" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open briefing" }));
 
-    // Briefing markdown should be rendered after opening the compact row
+    // Briefing markdown should be rendered inside the modal, not inline on the page.
     expect(screen.getByText("Health Status")).toBeInTheDocument();
     expect(screen.getByText(/Good energy levels/)).toBeInTheDocument();
   });

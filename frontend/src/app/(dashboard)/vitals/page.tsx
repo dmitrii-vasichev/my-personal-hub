@@ -16,7 +16,7 @@ import {
   useVitalsActivities,
 } from "@/hooks/use-vitals";
 import { TodaySummary } from "@/components/vitals/today-summary";
-import { BriefingCard } from "@/components/vitals/briefing-card";
+import { BriefingDialog } from "@/components/vitals/briefing-card";
 import { ChartsSection } from "@/components/vitals/charts-section";
 import { ActivitiesList } from "@/components/vitals/activities-list";
 
@@ -130,7 +130,7 @@ export default function VitalsPage() {
   return (
     <div className="mx-auto max-w-5xl px-6 py-6 space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-foreground flex items-center gap-2">
             <Heart className="h-5 w-5 text-[var(--destructive)]" />
@@ -140,12 +140,18 @@ export default function VitalsPage() {
             Garmin health metrics & AI insights
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:gap-3">
           {lastSyncAgo && (
             <span className="text-xs text-muted-foreground">
               Synced {lastSyncAgo}
             </span>
           )}
+          <BriefingDialog
+            briefing={briefing}
+            isLoading={briefingLoading}
+            onGenerate={() => generateBriefing.mutate()}
+            isGenerating={generateBriefing.isPending}
+          />
           {isDemo ? (
             <DemoModeBadge feature="Sync" description="Not available in demo mode" compact />
           ) : isRateLimited ? (
@@ -191,14 +197,6 @@ export default function VitalsPage() {
         metrics={today?.metrics}
         sleep={today?.sleep}
         isLoading={todayLoading}
-      />
-
-      {/* AI Briefing */}
-      <BriefingCard
-        briefing={briefing}
-        isLoading={briefingLoading}
-        onGenerate={() => generateBriefing.mutate()}
-        isGenerating={generateBriefing.isPending}
       />
 
       {/* Charts */}

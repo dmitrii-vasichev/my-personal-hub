@@ -362,11 +362,12 @@ describe("PeriodSelector", () => {
 
 let mockConnection: Record<string, unknown> | undefined = undefined;
 let mockConnectionLoading = false;
+let mockPageBriefing: VitalsBriefing | null = null;
 
 vi.mock("@/hooks/use-vitals", () => ({
   useVitalsConnection: () => ({ data: mockConnection, isLoading: mockConnectionLoading }),
   useVitalsToday: () => ({ data: null, isLoading: false }),
-  useVitalsBriefing: () => ({ data: null, isLoading: false }),
+  useVitalsBriefing: () => ({ data: mockPageBriefing, isLoading: false }),
   useVitalsActivities: () => ({ data: [], isLoading: false }),
   useVitalsMetrics: (...args: unknown[]) => {
     vitalsHookCalls.metrics(...args);
@@ -394,6 +395,7 @@ describe("VitalsPage — Stale Data Banner", () => {
   beforeEach(() => {
     mockIsDemo = false;
     mockConnectionLoading = false;
+    mockPageBriefing = null;
   });
 
   it("shows stale data banner when last sync exceeds 2x interval", () => {
@@ -459,5 +461,57 @@ describe("VitalsPage — Stale Data Banner", () => {
     );
 
     expect(screen.queryByTestId("stale-data-banner")).not.toBeInTheDocument();
+  });
+});
+
+describe("VitalsPage — Briefing Dialog", () => {
+  beforeEach(() => {
+    mockIsDemo = false;
+    mockConnectionLoading = false;
+    mockPageBriefing = null;
+    mockConnection = {
+      connected: true,
+      last_sync_at: "2026-03-20T08:00:00Z",
+      sync_interval_minutes: 240,
+      sync_status: "success",
+      sync_error: null,
+      connected_at: "2026-03-19T12:00:00Z",
+      rate_limited_until: null,
+    };
+  });
+
+  it("keeps the empty briefing state out of the Vitals page until opened", () => {
+    render(
+      <VitalsWrapper>
+        <VitalsPage />
+      </VitalsWrapper>
+    );
+
+    expect(screen.queryByTestId("briefing-empty")).not.toBeInTheDocument();
+    expect(screen.queryByText("No briefing yet")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open briefing" }));
+
+    expect(screen.getByTestId("briefing-empty")).toBeInTheDocument();
+    expect(screen.getByText("No briefing yet")).toBeInTheDocument();
+    expect(screen.getByText("Generate Briefing")).toBeInTheDocument();
+  });
+
+  it("opens generated briefing content from the header briefing control", () => {
+    mockPageBriefing = mockBriefing;
+
+    render(
+      <VitalsWrapper>
+        <VitalsPage />
+      </VitalsWrapper>
+    );
+
+    expect(screen.queryByText("Health Status")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open briefing" }));
+
+    expect(screen.getByText("Daily Briefing")).toBeInTheDocument();
+    expect(screen.getByText("Health Status")).toBeInTheDocument();
+    expect(screen.getByText(/Good energy levels/)).toBeInTheDocument();
   });
 });
