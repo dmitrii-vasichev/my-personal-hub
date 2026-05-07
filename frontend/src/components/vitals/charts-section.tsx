@@ -12,7 +12,7 @@ import { BodyBatteryChart } from "./charts/body-battery-chart";
 import { useVitalsMetrics, useVitalsSleep } from "@/hooks/use-vitals";
 
 export function ChartsSection() {
-  const [period, setPeriod] = useState<Period>("7d");
+  const [period, setPeriod] = useState<Period>("30d");
 
   const days = periodToDays(period);
   const endDate = format(new Date(), "yyyy-MM-dd");

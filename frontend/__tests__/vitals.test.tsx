@@ -8,6 +8,11 @@ import { PeriodSelector } from "@/components/vitals/period-selector";
 import { ChartsSection } from "@/components/vitals/charts-section";
 import type { VitalsDailyMetric, VitalsSleep, VitalsActivity, VitalsBriefing } from "@/types/vitals";
 
+const vitalsHookCalls = vi.hoisted(() => ({
+  metrics: vi.fn(),
+  sleep: vi.fn(),
+}));
+
 vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
@@ -161,6 +166,11 @@ describe("TodaySummary", () => {
 
 // --- ChartsSection ---
 describe("ChartsSection", () => {
+  beforeEach(() => {
+    vitalsHookCalls.metrics.mockClear();
+    vitalsHookCalls.sleep.mockClear();
+  });
+
   it("renders HRV and Sleep as the first two trend charts", () => {
     render(<ChartsSection />);
 
@@ -178,6 +188,21 @@ describe("ChartsSection", () => {
       "Stress Level",
       "Body Battery",
     ]);
+  });
+
+  it("requests 30 days of chart data by default", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-06T12:00:00Z"));
+
+    try {
+      render(<ChartsSection />);
+
+      expect(vitalsHookCalls.metrics).toHaveBeenCalledWith("2026-04-06", "2026-05-06");
+      expect(vitalsHookCalls.sleep).toHaveBeenCalledWith("2026-04-06", "2026-05-06");
+      expect(screen.getByText("30D")).toHaveClass("bg-primary");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -343,8 +368,14 @@ vi.mock("@/hooks/use-vitals", () => ({
   useVitalsToday: () => ({ data: null, isLoading: false }),
   useVitalsBriefing: () => ({ data: null, isLoading: false }),
   useVitalsActivities: () => ({ data: [], isLoading: false }),
-  useVitalsMetrics: () => ({ data: [], isLoading: false }),
-  useVitalsSleep: () => ({ data: [], isLoading: false }),
+  useVitalsMetrics: (...args: unknown[]) => {
+    vitalsHookCalls.metrics(...args);
+    return { data: [], isLoading: false };
+  },
+  useVitalsSleep: (...args: unknown[]) => {
+    vitalsHookCalls.sleep(...args);
+    return { data: [], isLoading: false };
+  },
   useGenerateBriefing: () => ({ mutate: vi.fn(), isPending: false }),
   useSyncVitals: () => ({ mutate: vi.fn(), isPending: false }),
   useVitalsDashboardSummary: () => ({ data: null, isLoading: false }),
