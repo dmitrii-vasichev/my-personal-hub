@@ -9,6 +9,8 @@ from app.schemas.auth import _validate_tz
 class PulseSettingsResponse(BaseModel):
     id: int
     user_id: int
+    polling_enabled: bool = False
+    digest_enabled: bool = False
     polling_interval_minutes: int
     digest_schedule: str
     digest_time: time
@@ -57,6 +59,8 @@ class PulseSettingsResponse(BaseModel):
 
 
 class PulseSettingsUpdate(BaseModel):
+    polling_enabled: Optional[bool] = None
+    digest_enabled: Optional[bool] = None
     polling_interval_minutes: Optional[int] = None
     digest_schedule: Optional[str] = None
     digest_time: Optional[time] = None

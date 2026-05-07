@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.scheduler import (
+    remove_user_digest,
     schedule_user_birthday_check,
     schedule_user_digest,
 )
@@ -41,7 +42,7 @@ async def apply_user_timezone_change(
     )
     settings = result.scalar_one_or_none()
 
-    if settings is not None:
+    if settings is not None and settings.digest_enabled:
         hour = settings.digest_time.hour if settings.digest_time else 9
         minute = settings.digest_time.minute if settings.digest_time else 0
         schedule_user_digest(
@@ -53,5 +54,7 @@ async def apply_user_timezone_change(
             interval_days=settings.digest_interval_days,
             timezone=new_tz or "UTC",
         )
+    elif settings is not None:
+        remove_user_digest(user_id)
 
     schedule_user_birthday_check(user_id, new_tz or "UTC")

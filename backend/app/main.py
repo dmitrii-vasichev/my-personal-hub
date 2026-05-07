@@ -97,23 +97,25 @@ async def lifespan(application: FastAPI):
                 tz_map = {uid: tz for uid, tz in tz_result.all()}
 
             for ps in all_settings:
-                schedule_user_polling(ps.user_id, ps.polling_interval_minutes)
+                if ps.polling_enabled:
+                    schedule_user_polling(ps.user_id, ps.polling_interval_minutes)
                 hour = ps.digest_time.hour if ps.digest_time else 9
                 minute = ps.digest_time.minute if ps.digest_time else 0
                 user_tz = tz_map.get(ps.user_id) or "UTC"
-                schedule_user_digest(
-                    ps.user_id,
-                    schedule=ps.digest_schedule,
-                    hour=hour,
-                    minute=minute,
-                    day_of_week=ps.digest_day,
-                    interval_days=ps.digest_interval_days,
-                    timezone=user_tz,
-                )
+                if ps.digest_enabled:
+                    schedule_user_digest(
+                        ps.user_id,
+                        schedule=ps.digest_schedule,
+                        hour=hour,
+                        minute=minute,
+                        day_of_week=ps.digest_day,
+                        interval_days=ps.digest_interval_days,
+                        timezone=user_tz,
+                    )
                 schedule_user_birthday_check(ps.user_id, user_tz)
             if all_settings:
                 logger.info(
-                    "Restored polling + digest + birthday jobs for %d users",
+                    "Restored enabled Pulse polling/digest and birthday jobs for %d users",
                     len(all_settings),
                 )
 

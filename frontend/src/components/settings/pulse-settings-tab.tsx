@@ -44,6 +44,8 @@ export function PulseSettingsTab() {
   const testBot = useTestBotConnection();
 
   const [pollingInterval, setPollingInterval] = useState("60");
+  const [pollingEnabled, setPollingEnabled] = useState(false);
+  const [digestEnabled, setDigestEnabled] = useState(false);
   const [pollMessageLimit, setPollMessageLimit] = useState("100");
   const [ttlDays, setTtlDays] = useState("30");
   const [digestSchedule, setDigestSchedule] = useState("daily");
@@ -60,6 +62,8 @@ export function PulseSettingsTab() {
   const [prevSettings, setPrevSettings] = useState<typeof settings>(undefined);
   if (settings && settings !== prevSettings) {
     setPrevSettings(settings);
+    setPollingEnabled(settings.polling_enabled);
+    setDigestEnabled(settings.digest_enabled);
     setPollingInterval(String(settings.polling_interval_minutes));
     setPollMessageLimit(String(settings.poll_message_limit));
     setTtlDays(String(settings.message_ttl_days));
@@ -76,6 +80,8 @@ export function PulseSettingsTab() {
   const handleSave = async () => {
     try {
       const data: Record<string, unknown> = {
+        polling_enabled: pollingEnabled,
+        digest_enabled: digestEnabled,
         polling_interval_minutes: parseInt(pollingInterval) || 60,
         poll_message_limit: parseInt(pollMessageLimit) || 100,
         message_ttl_days: parseInt(ttlDays) || 30,
@@ -122,7 +128,7 @@ export function PulseSettingsTab() {
             size="sm"
             variant="outline"
             onClick={() => triggerPoll.mutate()}
-            disabled={triggerPoll.isPending}
+            disabled={triggerPoll.isPending || !pollingEnabled}
           >
             <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${triggerPoll.isPending ? "animate-spin" : ""}`} />
             {triggerPoll.isPending ? "Polling..." : "Poll Now"}
@@ -135,6 +141,59 @@ export function PulseSettingsTab() {
             <Save className="mr-1.5 h-3.5 w-3.5" />
             {updateSettings.isPending ? "Saving..." : "Save"}
           </Button>
+        </div>
+      </div>
+
+      <div className="space-y-3 border-b border-border pb-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <Label className="text-xs uppercase text-muted-foreground">
+              Background Work
+            </Label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Keep both off when Pulse is frozen.
+            </p>
+          </div>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+              pollingEnabled || digestEnabled
+                ? "bg-green-500/10 text-green-700 dark:text-green-400"
+                : "bg-muted text-muted-foreground"
+            }`}
+          >
+            {pollingEnabled || digestEnabled ? "Active" : "Paused"}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={pollingEnabled}
+              onChange={(e) => setPollingEnabled(e.target.checked)}
+              className="mt-0.5 rounded border-border accent-[var(--accent)]"
+            />
+            <span>
+              <span className="block text-sm text-foreground">Telegram polling</span>
+              <span className="block text-[11px] text-muted-foreground">
+                Scheduled channel collection
+              </span>
+            </span>
+          </label>
+          <label className="flex items-start gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={digestEnabled}
+              onChange={(e) => setDigestEnabled(e.target.checked)}
+              className="mt-0.5 rounded border-border accent-[var(--accent)]"
+            />
+            <span>
+              <span className="block text-sm text-foreground">AI digests</span>
+              <span className="block text-[11px] text-muted-foreground">
+                Scheduled digest generation
+              </span>
+            </span>
+          </label>
         </div>
       </div>
 

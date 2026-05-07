@@ -243,6 +243,7 @@ async def test_apply_user_timezone_change_with_pulse_settings(
     settings.digest_time = time(9, 0)
     settings.digest_day = None
     settings.digest_interval_days = None
+    settings.digest_enabled = True
 
     db = AsyncMock()
     result = MagicMock()
@@ -258,6 +259,41 @@ async def test_apply_user_timezone_change_with_pulse_settings(
     assert digest_kwargs["hour"] == 9
     assert digest_kwargs["minute"] == 0
 
+    mock_birthday.assert_called_once_with(1, "Europe/Berlin")
+
+
+@pytest.mark.asyncio
+@patch("app.services.timezone.remove_user_digest")
+@patch("app.services.timezone.schedule_user_birthday_check")
+@patch("app.services.timezone.schedule_user_digest")
+async def test_apply_user_timezone_change_removes_disabled_digest(
+    mock_digest, mock_birthday, mock_remove_digest
+):
+    """When Pulse digest is frozen, timezone changes should not recreate it."""
+    from datetime import time
+    from unittest.mock import AsyncMock, MagicMock
+
+    from app.models.telegram import PulseSettings
+    from app.services.timezone import apply_user_timezone_change
+
+    settings = PulseSettings()
+    settings.id = 1
+    settings.user_id = 1
+    settings.digest_schedule = "daily"
+    settings.digest_time = time(9, 0)
+    settings.digest_day = None
+    settings.digest_interval_days = None
+    settings.digest_enabled = False
+
+    db = AsyncMock()
+    result = MagicMock()
+    result.scalar_one_or_none.return_value = settings
+    db.execute.return_value = result
+
+    await apply_user_timezone_change(db, user_id=1, new_tz="Europe/Berlin")
+
+    mock_digest.assert_not_called()
+    mock_remove_digest.assert_called_once_with(1)
     mock_birthday.assert_called_once_with(1, "Europe/Berlin")
 
 

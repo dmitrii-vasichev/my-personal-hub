@@ -5,6 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.scheduler import (
+    remove_user_digest,
+    remove_user_polling,
     schedule_user_birthday_check,
     schedule_user_digest,
     schedule_user_polling,
@@ -28,7 +30,11 @@ async def get_settings(db: AsyncSession, user_id: int) -> PulseSettings:
     settings = result.scalar_one_or_none()
 
     if settings is None:
-        settings = PulseSettings(user_id=user_id)
+        settings = PulseSettings(
+            user_id=user_id,
+            polling_enabled=False,
+            digest_enabled=False,
+        )
         db.add(settings)
         await db.flush()
         await db.refresh(settings)
@@ -57,10 +63,13 @@ async def update_settings(
         if user is not None:
             user.timezone = new_timezone
 
-    reschedule_polling = "polling_interval_minutes" in update_data
+    polling_fields = {"polling_enabled", "polling_interval_minutes"}
+    reschedule_polling = bool(polling_fields & update_data.keys())
     digest_fields = {"digest_schedule", "digest_time", "digest_day", "digest_interval_days"}
     reschedule_digest = (
-        bool(digest_fields & update_data.keys()) or new_timezone is not None
+        bool(digest_fields & update_data.keys())
+        or "digest_enabled" in update_data
+        or new_timezone is not None
     )
     reschedule_birthday = new_timezone is not None
 
@@ -71,7 +80,10 @@ async def update_settings(
     await db.refresh(settings)
 
     if reschedule_polling:
-        schedule_user_polling(user_id, settings.polling_interval_minutes)
+        if settings.polling_enabled:
+            schedule_user_polling(user_id, settings.polling_interval_minutes)
+        else:
+            remove_user_polling(user_id)
 
     # Resolve the timezone lazily — only when a scheduler call actually
     # needs it, to avoid an extra DB round trip on pure PS-only updates.
@@ -79,17 +91,20 @@ async def update_settings(
         current_tz = new_timezone or await _get_user_timezone(db, user_id)
 
         if reschedule_digest:
-            hour = settings.digest_time.hour if settings.digest_time else 9
-            minute = settings.digest_time.minute if settings.digest_time else 0
-            schedule_user_digest(
-                user_id,
-                schedule=settings.digest_schedule,
-                hour=hour,
-                minute=minute,
-                day_of_week=settings.digest_day,
-                interval_days=settings.digest_interval_days,
-                timezone=current_tz or "UTC",
-            )
+            if settings.digest_enabled:
+                hour = settings.digest_time.hour if settings.digest_time else 9
+                minute = settings.digest_time.minute if settings.digest_time else 0
+                schedule_user_digest(
+                    user_id,
+                    schedule=settings.digest_schedule,
+                    hour=hour,
+                    minute=minute,
+                    day_of_week=settings.digest_day,
+                    interval_days=settings.digest_interval_days,
+                    timezone=current_tz or "UTC",
+                )
+            else:
+                remove_user_digest(user_id)
 
         if reschedule_birthday:
             schedule_user_birthday_check(user_id, current_tz or "UTC")

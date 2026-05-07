@@ -23,6 +23,8 @@ def _to_response(settings, user: User) -> dict:
     return {
         "id": settings.id,
         "user_id": settings.user_id,
+        "polling_enabled": settings.polling_enabled,
+        "digest_enabled": settings.digest_enabled,
         "polling_interval_minutes": settings.polling_interval_minutes,
         "digest_schedule": settings.digest_schedule,
         "digest_time": settings.digest_time,

@@ -151,6 +151,12 @@ class PulseSettings(Base):
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
     )
+    polling_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
+    digest_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
     polling_interval_minutes: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="60"
     )

@@ -34,6 +34,14 @@ async def run_user_poll(user_id: int) -> None:
                 logger.warning("User %s not found, skipping poll", user_id)
                 return
 
+            settings_result = await db.execute(
+                select(PulseSettings).where(PulseSettings.user_id == user_id)
+            )
+            pulse_settings = settings_result.scalar_one_or_none()
+            if not pulse_settings or not pulse_settings.polling_enabled:
+                logger.info("Pulse polling disabled for user %s, skipping poll", user_id)
+                return
+
             # Collect messages (keyword filter applied inside)
             summary = await collect_all_sources(db, user)
 
@@ -131,6 +139,14 @@ async def run_user_digest(user_id: int) -> None:
                 logger.warning("User %s not found, skipping digest", user_id)
                 return
 
+            ps_result = await db.execute(
+                select(PulseSettings).where(PulseSettings.user_id == user_id)
+            )
+            pulse_settings = ps_result.scalar_one_or_none()
+            if not pulse_settings or not pulse_settings.digest_enabled:
+                logger.info("Pulse digest disabled for user %s, skipping digest", user_id)
+                return
+
             # Get LLM client
             settings_result = await db.execute(
                 select(UserSettings).where(UserSettings.user_id == user_id)
@@ -150,12 +166,6 @@ async def run_user_digest(user_id: int) -> None:
             llm_client = get_llm_client(user_settings.llm_provider, api_key)
 
             from app.services.pulse_digest import generate_digest
-
-            # Load PulseSettings for custom prompts
-            ps_result = await db.execute(
-                select(PulseSettings).where(PulseSettings.user_id == user_id)
-            )
-            pulse_settings = ps_result.scalar_one_or_none()
 
             digest = await generate_digest(db, user_id, llm_client, pulse_settings=pulse_settings)
             if digest:

@@ -1,6 +1,8 @@
 export interface PulseSettings {
   id: number;
   user_id: number;
+  polling_enabled: boolean;
+  digest_enabled: boolean;
   polling_interval_minutes: number;
   digest_schedule: string;
   digest_time: string;
@@ -27,6 +29,8 @@ export interface PulseSettings {
 }
 
 export interface PulseSettingsUpdate {
+  polling_enabled?: boolean;
+  digest_enabled?: boolean;
   polling_interval_minutes?: number;
   digest_schedule?: string;
   digest_time?: string;

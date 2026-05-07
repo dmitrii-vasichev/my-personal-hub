@@ -4,12 +4,38 @@ Last updated: 2026-05-06
 
 ## Current State
 
-- Branch: `codex/remove-legacy-tasks-domain`
+- Branch: `main`
 - Base branch: `main`
-- Current feature: Legacy Tasks domain removal
-- Current execution source of truth: `docs/PLAN.md`
+- Current feature: Pulse background freeze
+- Current execution source of truth: `docs/STATUS.md`
 
 ## Live Journal
+
+### 2026-05-07 — Pulse Background Freeze
+
+Changed:
+- Added `polling_enabled` and `digest_enabled` flags to `pulse_settings`, defaulting both to `false` so Pulse background work is opt-in.
+- Added Alembic migration `d4e5f6a7b8c9_add_pulse_freeze_flags`.
+- Updated Pulse settings schemas and API responses to expose the freeze flags.
+- Updated Pulse settings service so enabling polling/digests schedules jobs, while disabling them removes existing jobs.
+- Added scheduler guards so stale polling or digest jobs exit before collecting Telegram messages, applying AI filters, or generating LLM digests when Pulse is frozen.
+- Updated startup scheduler restoration to restore only enabled Pulse polling/digest jobs while keeping birthday checks intact.
+- Updated timezone-change side effects so disabled Pulse digests are removed rather than recreated.
+- Added Settings > Pulse controls for background Telegram polling and scheduled AI digests, with a visible paused/active state. `Poll Now` is disabled while polling is paused.
+
+Validation:
+- RED backend freeze tests: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_pulse_settings.py::TestPulseSettingsSchemas::test_settings_schema_freeze_flags tests/test_pulse_settings.py::TestPulseSettingsSchemas::test_update_schema_freeze_flags tests/test_pulse_settings.py::TestPulseSettingsService::test_disabling_polling_removes_poll_job tests/test_pulse_settings.py::TestPulseSettingsService::test_disabling_digest_removes_digest_job tests/test_pulse_settings.py::TestPulseSettingsAPI::test_api_get_settings` -> failed because freeze flags were absent from schemas/API and ignored by the settings service.
+- GREEN backend freeze tests: same command -> `5 passed`.
+- Backend focused Pulse/Timezone: `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_pulse_settings.py tests/test_pulse_digest.py tests/test_pulse_collection.py tests/test_user_timezone.py tests/test_pulse_sources.py tests/test_pulse_digest_prompts.py` -> `109 passed`.
+- Backend compile: `cd backend && PYTHONPATH=. ./venv/bin/python -m py_compile app/models/telegram.py app/schemas/pulse_settings.py app/services/pulse_settings.py app/services/pulse_scheduler.py app/services/timezone.py app/main.py alembic/versions/d4e5f6a7b8c9_add_pulse_freeze_flags.py` -> passed.
+- Alembic heads: `cd backend && PYTHONPATH=. ./venv/bin/alembic heads` -> `d4e5f6a7b8c9 (head)`.
+- Frontend Pulse prompt test: `cd frontend && npm test -- --run src/__tests__/pulse/prompt-editor.test.tsx` -> `8 passed`.
+- Frontend lint: `cd frontend && npm run lint` -> passed.
+- Frontend build: `cd frontend && npm run build` -> passed.
+
+Notes:
+- Local migration application was not completed because PostgreSQL is unavailable on `127.0.0.1:5432` / `::1:5432`; `alembic upgrade head` failed at database connection time.
+- Focused backend tests still emit existing dependency/deprecation and `AsyncMock` warnings.
 
 ### 2026-05-06 — Garmin HRV Added To Vitals
 

@@ -10,6 +10,8 @@ const mockMutate = vi.fn();
 const mockSettings: PulseSettings = {
   id: 1,
   user_id: 1,
+  polling_enabled: false,
+  digest_enabled: false,
   polling_interval_minutes: 60,
   digest_schedule: "daily",
   digest_time: "09:00",

@@ -35,6 +35,8 @@ def make_pulse_settings(user_id: int = 1) -> PulseSettings:
     s = PulseSettings()
     s.id = 1
     s.user_id = user_id
+    s.polling_enabled = False
+    s.digest_enabled = False
     s.polling_interval_minutes = 60
     s.digest_schedule = "daily"
     s.digest_time = time(9, 0)
@@ -67,6 +69,12 @@ class TestPulseSettingsSchemas:
         resp = PulseSettingsResponse.model_validate(ps)
         assert resp.poll_message_limit == 100
 
+    def test_settings_schema_freeze_flags(self):
+        ps = make_pulse_settings()
+        resp = PulseSettingsResponse.model_validate(ps)
+        assert resp.polling_enabled is False
+        assert resp.digest_enabled is False
+
     def test_update_schema_partial(self):
         data = PulseSettingsUpdate(polling_interval_minutes=30)
         dumped = data.model_dump(exclude_unset=True)
@@ -76,6 +84,11 @@ class TestPulseSettingsSchemas:
         data = PulseSettingsUpdate(poll_message_limit=200)
         dumped = data.model_dump(exclude_unset=True)
         assert dumped == {"poll_message_limit": 200}
+
+    def test_update_schema_freeze_flags(self):
+        data = PulseSettingsUpdate(polling_enabled=False, digest_enabled=False)
+        dumped = data.model_dump(exclude_unset=True)
+        assert dumped == {"polling_enabled": False, "digest_enabled": False}
 
 
 # ── Service tests ────────────────────────────────────────────────────────────
@@ -102,6 +115,7 @@ class TestPulseSettingsService:
         from app.services.pulse_settings import update_settings
 
         existing = make_pulse_settings()
+        existing.digest_enabled = True
         db = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = existing
@@ -112,7 +126,87 @@ class TestPulseSettingsService:
 
         assert updated.polling_interval_minutes == 30
         assert updated.message_ttl_days == 14
-        mock_schedule.assert_called_once_with(1, 30)
+        mock_schedule.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("app.services.pulse_settings.remove_user_polling", create=True)
+    @patch("app.services.pulse_settings.schedule_user_polling")
+    async def test_disabling_polling_removes_poll_job(self, mock_schedule, mock_remove):
+        from app.services.pulse_settings import update_settings
+
+        existing = make_pulse_settings()
+        existing.polling_enabled = True
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = existing
+        db.execute = AsyncMock(return_value=mock_result)
+
+        data = PulseSettingsUpdate(polling_enabled=False)
+        updated = await update_settings(db, 1, data)
+
+        assert updated.polling_enabled is False
+        mock_remove.assert_called_once_with(1)
+        mock_schedule.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("app.services.pulse_settings.remove_user_polling")
+    @patch("app.services.pulse_settings.schedule_user_polling")
+    async def test_enabling_polling_schedules_poll_job(self, mock_schedule, mock_remove):
+        from app.services.pulse_settings import update_settings
+
+        existing = make_pulse_settings()
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = existing
+        db.execute = AsyncMock(return_value=mock_result)
+
+        data = PulseSettingsUpdate(polling_enabled=True)
+        updated = await update_settings(db, 1, data)
+
+        assert updated.polling_enabled is True
+        mock_schedule.assert_called_once_with(1, 60)
+        mock_remove.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("app.services.pulse_settings.remove_user_digest", create=True)
+    @patch("app.services.pulse_settings.schedule_user_digest")
+    async def test_disabling_digest_removes_digest_job(self, mock_schedule, mock_remove):
+        from app.services.pulse_settings import update_settings
+
+        existing = make_pulse_settings()
+        existing.digest_enabled = True
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = existing
+        db.execute = AsyncMock(return_value=mock_result)
+
+        data = PulseSettingsUpdate(digest_enabled=False)
+        updated = await update_settings(db, 1, data)
+
+        assert updated.digest_enabled is False
+        mock_remove.assert_called_once_with(1)
+        mock_schedule.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("app.services.pulse_settings.remove_user_digest")
+    @patch("app.services.pulse_settings.schedule_user_digest")
+    async def test_enabling_digest_schedules_digest_job(self, mock_schedule, mock_remove):
+        from app.services.pulse_settings import update_settings
+
+        existing = make_pulse_settings()
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = existing
+        mock_result.scalar.return_value = "UTC"
+        db.execute = AsyncMock(return_value=mock_result)
+
+        data = PulseSettingsUpdate(digest_enabled=True)
+        updated = await update_settings(db, 1, data)
+
+        assert updated.digest_enabled is True
+        mock_schedule.assert_called_once()
+        assert mock_schedule.call_args.kwargs["schedule"] == "daily"
+        mock_remove.assert_not_called()
 
 
 # ── API endpoint tests ───────────────────────────────────────────────────────
@@ -141,6 +235,8 @@ class TestPulseSettingsAPI:
         assert response.status_code == 200
         data = response.json()
         assert data["polling_interval_minutes"] == 60
+        assert data["polling_enabled"] is False
+        assert data["digest_enabled"] is False
 
     @pytest.mark.asyncio
     @patch("app.services.pulse_settings.update_settings")
@@ -168,6 +264,7 @@ class TestPulseSettingsAPI:
         from app.services.pulse_settings import update_settings
 
         existing = make_pulse_settings()
+        existing.digest_enabled = True
         db = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = existing
@@ -194,6 +291,7 @@ class TestPulseSettingsAPI:
         from app.services.pulse_settings import update_settings
 
         existing = make_pulse_settings()
+        existing.digest_enabled = True
         db = AsyncMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = existing

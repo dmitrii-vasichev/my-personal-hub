@@ -547,6 +547,7 @@ class TestSettingsReschedule:
         mock_settings.digest_time = time(9, 0)
         mock_settings.digest_day = None
         mock_settings.digest_interval_days = None
+        mock_settings.digest_enabled = True
         mock_settings.polling_interval_minutes = 60
 
         db = AsyncMock()
