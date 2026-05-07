@@ -32,6 +32,10 @@ Validation:
 - Frontend Pulse prompt test: `cd frontend && npm test -- --run src/__tests__/pulse/prompt-editor.test.tsx` -> `8 passed`.
 - Frontend lint: `cd frontend && npm run lint` -> passed.
 - Frontend build: `cd frontend && npm run build` -> passed.
+- Git: committed `c9b16c9 Freeze Pulse background work` and pushed `main` to `origin/main`.
+- Railway deploy: `railway up --service backend-api --environment production --message "Freeze Pulse background work"` -> deployment `3bfcfbc0-42b7-4815-8105-841725dbbe4a` reached `SUCCESS`.
+- Railway production migration check: `railway run --service backend-api --environment production --no-local -- bash -lc 'cd backend && PYTHONPATH=. ./venv/bin/alembic current'` -> `d4e5f6a7b8c9 (head)`.
+- Production health check: `curl -fsS https://backend-api-production-1967.up.railway.app/api/health` -> `{"status":"ok"}`.
 
 Notes:
 - Local migration application was not completed because PostgreSQL is unavailable on `127.0.0.1:5432` / `::1:5432`; `alembic upgrade head` failed at database connection time.
