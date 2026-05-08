@@ -39,7 +39,7 @@ export function StressChart({ data, period, isLoading }: StressChartProps) {
     <ResponsiveContainer width="100%" height={250}>
       <AreaChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <XAxis {...getDateAxisProps(period)} />
+        <XAxis {...getDateAxisProps(period, chartData.map((point) => point.date))} />
         <YAxis
           domain={[0, 100]}
           tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}

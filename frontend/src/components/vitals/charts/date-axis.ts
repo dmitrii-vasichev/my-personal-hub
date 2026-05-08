@@ -30,19 +30,49 @@ export function formatDateAxisTick(value: string | number, period: Period, index
   return format(date, "MM/dd");
 }
 
-export function getDateAxisProps(period: Period) {
+function getDateAxisTicks(dates: string[], period: Period): string[] | undefined {
+  if (period !== "30d") {
+    return undefined;
+  }
+
+  const monthStartIndexes = new Set(
+    dates
+      .map((date, index) => (parseChartDate(date).getDate() === 1 ? index : -1))
+      .filter((index) => index >= 0)
+  );
+
+  return dates.filter((_, index) => {
+    if (index === 0 || index === dates.length - 1) {
+      return true;
+    }
+
+    if (monthStartIndexes.has(index)) {
+      return true;
+    }
+
+    if (monthStartIndexes.has(index - 1) || monthStartIndexes.has(index + 1)) {
+      return false;
+    }
+
+    return index % 2 === 0;
+  });
+}
+
+export function getDateAxisProps(period: Period, dates: string[] = []) {
   const isThirtyDays = period === "30d";
   const isNinetyDays = period === "90d";
+  const ticks = getDateAxisTicks(dates, period);
 
   return {
     dataKey: "date",
     angle: 0,
     interval: isNinetyDays ? 6 : 0,
-    minTickGap: isNinetyDays ? 16 : isThirtyDays ? 0 : 4,
+    minTickGap: isNinetyDays ? 16 : isThirtyDays ? 8 : 4,
     height: 28,
     tickMargin: 8,
+    ticks,
     tick: {
-      fontSize: isThirtyDays ? 9 : isNinetyDays ? 10 : 11,
+      fontSize: isThirtyDays ? 10 : isNinetyDays ? 10 : 11,
       fill: "var(--text-tertiary)",
     },
     tickFormatter: (value: string | number, index: number) =>

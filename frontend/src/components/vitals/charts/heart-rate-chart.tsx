@@ -39,7 +39,7 @@ export function HeartRateChart({ data, period, isLoading }: HeartRateChartProps)
     <ResponsiveContainer width="100%" height={250}>
       <LineChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <XAxis {...getDateAxisProps(period)} />
+        <XAxis {...getDateAxisProps(period, chartData.map((point) => point.date))} />
         <YAxis
           tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
           tickFormatter={(v) => `${v}`}

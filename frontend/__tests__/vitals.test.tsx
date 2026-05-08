@@ -219,11 +219,19 @@ describe("Vitals chart date axis", () => {
     rechartsCalls.xAxis.mockClear();
   });
 
-  function buildMetrics(days: number): VitalsDailyMetric[] {
+  function buildMetrics(days: number, startDate = new Date(Date.UTC(2026, 0, 1))): VitalsDailyMetric[] {
     return Array.from({ length: days }, (_, index) => ({
       ...mockMetrics,
       id: index + 1,
-      date: new Date(Date.UTC(2026, 0, index + 1)).toISOString().slice(0, 10),
+      date: new Date(
+        Date.UTC(
+          startDate.getUTCFullYear(),
+          startDate.getUTCMonth(),
+          startDate.getUTCDate() + index
+        )
+      )
+        .toISOString()
+        .slice(0, 10),
       steps: 6000 + index,
     }));
   }
@@ -240,19 +248,30 @@ describe("Vitals chart date axis", () => {
     });
   });
 
-  it("keeps 30-day labels horizontal and compact enough to show each day", () => {
-    render(<StepsChart data={buildMetrics(30)} period="30d" isLoading={false} />);
+  it("keeps 30-day labels horizontal and skips enough ticks to avoid crowding", () => {
+    render(
+      <StepsChart
+        data={buildMetrics(31, new Date(Date.UTC(2026, 3, 8)))}
+        period="30d"
+        isLoading={false}
+      />
+    );
 
     const xAxisProps = rechartsCalls.xAxis.mock.calls[0]?.[0];
+    const ticks = xAxisProps?.ticks as string[];
 
     expect(xAxisProps).toMatchObject({
       angle: 0,
       interval: 0,
-      minTickGap: 0,
+      minTickGap: 8,
       tick: {
-        fontSize: 9,
+        fontSize: 10,
       },
     });
+    expect(ticks.length).toBeLessThan(20);
+    expect(ticks).toContain("2026-05-01");
+    expect(ticks).not.toContain("2026-04-30");
+    expect(ticks).not.toContain("2026-05-02");
   });
 });
 
