@@ -9,9 +9,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { format } from "date-fns";
 import type { VitalsDailyMetric } from "@/types/vitals";
 import type { Period } from "../period-selector";
+import { getDateAxisProps } from "./date-axis";
 
 interface HrvChartProps {
   data: VitalsDailyMetric[] | undefined;
@@ -28,9 +28,6 @@ export function HrvChart({ data, period, isLoading }: HrvChartProps) {
     .filter((m) => m.hrv_last_night_avg != null || m.hrv_weekly_avg != null)
     .map((m) => ({
       date: m.date,
-      label: period === "7d"
-        ? format(new Date(m.date), "MMM d")
-        : format(new Date(m.date), "MM/dd"),
       last_night: m.hrv_last_night_avg,
       weekly_avg: m.hrv_weekly_avg,
     }));
@@ -43,12 +40,7 @@ export function HrvChart({ data, period, isLoading }: HrvChartProps) {
     <ResponsiveContainer width="100%" height={250}>
       <LineChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <XAxis
-          dataKey="label"
-          tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
-          tickLine={false}
-          axisLine={false}
-        />
+        <XAxis {...getDateAxisProps(period)} />
         <YAxis
           tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
           tickFormatter={(v) => `${v}`}

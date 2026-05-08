@@ -9,9 +9,9 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { format } from "date-fns";
 import type { VitalsDailyMetric } from "@/types/vitals";
 import type { Period } from "../period-selector";
+import { getDateAxisProps } from "./date-axis";
 
 interface HeartRateChartProps {
   data: VitalsDailyMetric[] | undefined;
@@ -28,9 +28,6 @@ export function HeartRateChart({ data, period, isLoading }: HeartRateChartProps)
     .filter((m) => m.resting_hr != null)
     .map((m) => ({
       date: m.date,
-      label: period === "7d"
-        ? format(new Date(m.date), "MMM d")
-        : format(new Date(m.date), "MM/dd"),
       resting_hr: m.resting_hr,
     }));
 
@@ -42,12 +39,7 @@ export function HeartRateChart({ data, period, isLoading }: HeartRateChartProps)
     <ResponsiveContainer width="100%" height={250}>
       <LineChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <XAxis
-          dataKey="label"
-          tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
-          tickLine={false}
-          axisLine={false}
-        />
+        <XAxis {...getDateAxisProps(period)} />
         <YAxis
           tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
           tickFormatter={(v) => `${v}`}

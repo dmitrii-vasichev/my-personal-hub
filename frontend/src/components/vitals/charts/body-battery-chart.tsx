@@ -9,9 +9,9 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { format } from "date-fns";
 import type { VitalsDailyMetric } from "@/types/vitals";
 import type { Period } from "../period-selector";
+import { getDateAxisProps } from "./date-axis";
 
 interface BodyBatteryChartProps {
   data: VitalsDailyMetric[] | undefined;
@@ -28,9 +28,6 @@ export function BodyBatteryChart({ data, period, isLoading }: BodyBatteryChartPr
     .filter((m) => m.body_battery_high != null || m.body_battery_low != null)
     .map((m) => ({
       date: m.date,
-      label: period === "7d"
-        ? format(new Date(m.date), "MMM d")
-        : format(new Date(m.date), "MM/dd"),
       high: m.body_battery_high ?? 0,
       low: m.body_battery_low ?? 0,
     }));
@@ -43,12 +40,7 @@ export function BodyBatteryChart({ data, period, isLoading }: BodyBatteryChartPr
     <ResponsiveContainer width="100%" height={250}>
       <AreaChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <XAxis
-          dataKey="label"
-          tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
-          tickLine={false}
-          axisLine={false}
-        />
+        <XAxis {...getDateAxisProps(period)} />
         <YAxis
           domain={[0, 100]}
           tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}

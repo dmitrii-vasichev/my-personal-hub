@@ -9,9 +9,9 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { format } from "date-fns";
 import type { VitalsDailyMetric } from "@/types/vitals";
 import type { Period } from "../period-selector";
+import { getDateAxisProps } from "./date-axis";
 
 interface StepsChartProps {
   data: VitalsDailyMetric[] | undefined;
@@ -26,9 +26,6 @@ export function StepsChart({ data, period, isLoading }: StepsChartProps) {
 
   const chartData = (data ?? []).map((m) => ({
     date: m.date,
-    label: period === "7d"
-      ? format(new Date(m.date), "MMM d")
-      : format(new Date(m.date), "MM/dd"),
     steps: m.steps ?? 0,
   }));
 
@@ -40,12 +37,7 @@ export function StepsChart({ data, period, isLoading }: StepsChartProps) {
     <ResponsiveContainer width="100%" height={250}>
       <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <XAxis
-          dataKey="label"
-          tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
-          tickLine={false}
-          axisLine={false}
-        />
+        <XAxis {...getDateAxisProps(period)} />
         <YAxis
           tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
           tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v}

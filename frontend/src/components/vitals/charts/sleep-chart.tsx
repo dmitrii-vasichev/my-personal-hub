@@ -10,9 +10,9 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { format } from "date-fns";
 import type { VitalsSleep } from "@/types/vitals";
 import type { Period } from "../period-selector";
+import { getDateAxisProps } from "./date-axis";
 
 interface SleepChartProps {
   data: VitalsSleep[] | undefined;
@@ -38,9 +38,6 @@ export function SleepChart({ data, period, isLoading }: SleepChartProps) {
 
   const chartData = (data ?? []).map((s) => ({
     date: s.date,
-    label: period === "7d"
-      ? format(new Date(s.date), "MMM d")
-      : format(new Date(s.date), "MM/dd"),
     deep: secToHours(s.deep_seconds),
     light: secToHours(s.light_seconds),
     rem: secToHours(s.rem_seconds),
@@ -55,12 +52,7 @@ export function SleepChart({ data, period, isLoading }: SleepChartProps) {
     <ResponsiveContainer width="100%" height={250}>
       <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-        <XAxis
-          dataKey="label"
-          tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
-          tickLine={false}
-          axisLine={false}
-        />
+        <XAxis {...getDateAxisProps(period)} />
         <YAxis
           tick={{ fontSize: 11, fill: "var(--text-tertiary)" }}
           tickFormatter={(v) => `${v}h`}

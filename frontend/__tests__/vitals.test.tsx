@@ -6,11 +6,15 @@ import { BriefingCard } from "@/components/vitals/briefing-card";
 import { ActivitiesList } from "@/components/vitals/activities-list";
 import { PeriodSelector } from "@/components/vitals/period-selector";
 import { ChartsSection } from "@/components/vitals/charts-section";
+import { StepsChart } from "@/components/vitals/charts/steps-chart";
 import type { VitalsDailyMetric, VitalsSleep, VitalsActivity, VitalsBriefing } from "@/types/vitals";
 
 const vitalsHookCalls = vi.hoisted(() => ({
   metrics: vi.fn(),
   sleep: vi.fn(),
+}));
+const rechartsCalls = vi.hoisted(() => ({
+  xAxis: vi.fn(),
 }));
 
 vi.mock("sonner", () => ({
@@ -25,7 +29,10 @@ vi.mock("recharts", () => ({
   Bar: () => null,
   Line: () => null,
   Area: () => null,
-  XAxis: () => null,
+  XAxis: (props: Record<string, unknown>) => {
+    rechartsCalls.xAxis(props);
+    return null;
+  },
   YAxis: () => null,
   CartesianGrid: () => null,
   Tooltip: () => null,
@@ -169,6 +176,7 @@ describe("ChartsSection", () => {
   beforeEach(() => {
     vitalsHookCalls.metrics.mockClear();
     vitalsHookCalls.sleep.mockClear();
+    rechartsCalls.xAxis.mockClear();
   });
 
   it("renders HRV and Sleep as the first two trend charts", () => {
@@ -203,6 +211,48 @@ describe("ChartsSection", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("Vitals chart date axis", () => {
+  beforeEach(() => {
+    rechartsCalls.xAxis.mockClear();
+  });
+
+  function buildMetrics(days: number): VitalsDailyMetric[] {
+    return Array.from({ length: days }, (_, index) => ({
+      ...mockMetrics,
+      id: index + 1,
+      date: new Date(Date.UTC(2026, 0, index + 1)).toISOString().slice(0, 10),
+      steps: 6000 + index,
+    }));
+  }
+
+  it("keeps 90-day labels horizontal and skips intermediate ticks", () => {
+    render(<StepsChart data={buildMetrics(90)} period="90d" isLoading={false} />);
+
+    const xAxisProps = rechartsCalls.xAxis.mock.calls[0]?.[0];
+
+    expect(xAxisProps).toMatchObject({
+      angle: 0,
+      interval: 6,
+      minTickGap: 16,
+    });
+  });
+
+  it("keeps 30-day labels horizontal and compact enough to show each day", () => {
+    render(<StepsChart data={buildMetrics(30)} period="30d" isLoading={false} />);
+
+    const xAxisProps = rechartsCalls.xAxis.mock.calls[0]?.[0];
+
+    expect(xAxisProps).toMatchObject({
+      angle: 0,
+      interval: 0,
+      minTickGap: 0,
+      tick: {
+        fontSize: 9,
+      },
+    });
   });
 });
 
