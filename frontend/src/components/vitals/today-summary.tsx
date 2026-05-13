@@ -1,6 +1,6 @@
 "use client";
 
-import { Footprints, Moon, Brain, BatteryFull, HeartPulse, Zap } from "lucide-react";
+import { Footprints, Moon, Brain, BatteryFull, HeartPulse, Sparkles, Zap } from "lucide-react";
 import type { VitalsDailyMetric, VitalsSleep } from "@/types/vitals";
 
 interface TodaySummaryProps {
@@ -105,7 +105,11 @@ const AMBER_MUTED = "var(--accent-amber-muted)";
 const GREEN = "var(--accent-teal)";
 const GREEN_MUTED = "var(--accent-teal-muted)";
 
-function readinessTone(score: number): { color: string; colorMuted: string } {
+function readinessTone(
+  score: number,
+  level?: string | null,
+): { color: string; colorMuted: string } {
+  if (level === "PRIME") return { color: INDIGO, colorMuted: INDIGO_MUTED };
   if (score < 25) return { color: ROSE, colorMuted: ROSE_MUTED };
   if (score < 50) return { color: AMBER, colorMuted: AMBER_MUTED };
   if (score < 75) return { color: AMBER, colorMuted: AMBER_MUTED };
@@ -124,6 +128,8 @@ export function TodaySummary({ metrics, sleep, isLoading }: TodaySummaryProps) {
   }
 
   const readinessScore = metrics?.training_readiness ?? null;
+  const readinessLevel = metrics?.training_readiness_level ?? null;
+  const isPrime = readinessLevel === "PRIME";
   const showReadiness = readinessScore != null;
   const gridColsClass = showReadiness
     ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
@@ -133,12 +139,12 @@ export function TodaySummary({ metrics, sleep, isLoading }: TodaySummaryProps) {
     <div className={`grid ${gridColsClass} gap-3`} data-testid="vitals-summary">
       {showReadiness ? (
         <KpiCard
-          icon={<Zap size={14} />}
+          icon={isPrime ? <Sparkles size={14} /> : <Zap size={14} />}
           label="Readiness"
           value={String(readinessScore)}
-          subValue={metrics?.training_readiness_level ?? null}
-          color={readinessTone(readinessScore).color}
-          colorMuted={readinessTone(readinessScore).colorMuted}
+          subValue={isPrime ? "✨ PRIME" : readinessLevel}
+          color={readinessTone(readinessScore, readinessLevel).color}
+          colorMuted={readinessTone(readinessScore, readinessLevel).colorMuted}
           title={metrics?.training_readiness_feedback ?? undefined}
         />
       ) : null}

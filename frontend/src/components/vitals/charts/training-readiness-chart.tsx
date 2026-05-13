@@ -42,6 +42,7 @@ function ReadinessTooltip({
   }
   const entry = payload[0]?.payload;
   if (!entry) return null;
+  const isPrime = entry.level === "PRIME";
   return (
     <div
       style={{
@@ -54,7 +55,14 @@ function ReadinessTooltip({
     >
       <div style={{ fontWeight: 600 }}>{entry.value ?? "—"}</div>
       {entry.level ? (
-        <div style={{ color: "var(--text-tertiary)" }}>{entry.level}</div>
+        <div
+          style={{
+            color: isPrime ? "var(--primary)" : "var(--text-tertiary)",
+            fontWeight: isPrime ? 600 : undefined,
+          }}
+        >
+          {isPrime ? `✨ ${entry.level}` : entry.level}
+        </div>
       ) : null}
       {entry.recovery != null ? (
         <div style={{ color: "var(--text-tertiary)" }}>

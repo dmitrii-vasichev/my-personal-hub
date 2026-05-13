@@ -185,6 +185,19 @@ describe("TodaySummary", () => {
     expect(screen.queryByText("Readiness")).not.toBeInTheDocument();
   });
 
+  it("renders PRIME readiness with the special sparkle prefix", () => {
+    const primeMetrics: VitalsDailyMetric = {
+      ...mockMetrics,
+      training_readiness: 100,
+      training_readiness_level: "PRIME",
+      training_readiness_recovery_hours: 0,
+      training_readiness_feedback: "Peak readiness — push hard.",
+    };
+    render(<TodaySummary metrics={primeMetrics} sleep={mockSleep} isLoading={false} />);
+    expect(screen.getByText("✨ PRIME")).toBeInTheDocument();
+    expect(screen.queryByText("PRIME", { exact: true })).not.toBeInTheDocument();
+  });
+
   it("shows dashes when metrics are null", () => {
     render(<TodaySummary metrics={null} sleep={null} isLoading={false} />);
     const dashes = screen.getAllByText("\u2014");
