@@ -143,11 +143,10 @@ const mockActivities: VitalsActivity[] = [
 
 // --- TodaySummary ---
 describe("TodaySummary", () => {
-  it("renders 5 KPI cards with HRV first, sleep second, and no Resting HR factoid", () => {
+  it("renders KPI cards with HRV, sleep first, and no Resting HR factoid", () => {
     render(<TodaySummary metrics={mockMetrics} sleep={mockSleep} isLoading={false} />);
     const summary = screen.getByTestId("vitals-summary");
 
-    expect(summary.children).toHaveLength(5);
     expect(summary).toHaveTextContent(/HRV[\s\S]*Sleep[\s\S]*Body Battery[\s\S]*Avg Stress[\s\S]*Steps/);
     expect(screen.getByText("HRV")).toBeInTheDocument();
     expect(screen.getByText("52 ms")).toBeInTheDocument();
@@ -157,6 +156,33 @@ describe("TodaySummary", () => {
     expect(screen.getByText("87 / 32")).toBeInTheDocument();
     expect(screen.queryByText("Resting HR")).not.toBeInTheDocument();
     expect(screen.queryByText("62 bpm")).not.toBeInTheDocument();
+  });
+
+  it("renders training readiness factoid as the first metric when available", () => {
+    const metricsWithReadiness: VitalsDailyMetric = {
+      ...mockMetrics,
+      training_readiness: 87,
+      training_readiness_level: "READY",
+      training_readiness_recovery_hours: 12,
+      training_readiness_feedback: "Peak readiness",
+    };
+    render(<TodaySummary metrics={metricsWithReadiness} sleep={mockSleep} isLoading={false} />);
+    const summary = screen.getByTestId("vitals-summary");
+
+    expect(summary.children).toHaveLength(6);
+    expect(summary).toHaveTextContent(
+      /Readiness[\s\S]*HRV[\s\S]*Sleep[\s\S]*Body Battery[\s\S]*Avg Stress[\s\S]*Steps/,
+    );
+    expect(screen.getByText("Readiness")).toBeInTheDocument();
+    expect(screen.getByText("87")).toBeInTheDocument();
+    expect(screen.getByText("READY")).toBeInTheDocument();
+  });
+
+  it("hides training readiness factoid when score is null", () => {
+    render(<TodaySummary metrics={mockMetrics} sleep={mockSleep} isLoading={false} />);
+    const summary = screen.getByTestId("vitals-summary");
+    expect(summary.children).toHaveLength(5);
+    expect(screen.queryByText("Readiness")).not.toBeInTheDocument();
   });
 
   it("shows dashes when metrics are null", () => {
@@ -179,16 +205,18 @@ describe("ChartsSection", () => {
     rechartsCalls.xAxis.mockClear();
   });
 
-  it("renders HRV and Sleep as the first two trend charts", () => {
+  it("renders Training Readiness as the first trend chart, then HRV and Sleep", () => {
     render(<ChartsSection />);
 
     const chartHeadings = screen
       .getAllByRole("heading", { level: 3 })
       .map((heading) => heading.textContent);
 
-    expect(chartHeadings[0]).toBe("HRV");
-    expect(chartHeadings[1]).toBe("Sleep Phases");
+    expect(chartHeadings[0]).toBe("Training Readiness");
+    expect(chartHeadings[1]).toBe("HRV");
+    expect(chartHeadings[2]).toBe("Sleep Phases");
     expect(chartHeadings).toEqual([
+      "Training Readiness",
       "HRV",
       "Sleep Phases",
       "Steps",

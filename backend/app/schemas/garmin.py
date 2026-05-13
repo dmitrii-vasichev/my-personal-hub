@@ -54,6 +54,10 @@ class VitalsDailyMetricResponse(BaseModel):
     hrv_weekly_avg: Optional[int] = None
     hrv_status: Optional[str] = None
     vo2_max: Optional[float] = None
+    training_readiness: Optional[int] = None
+    training_readiness_level: Optional[str] = None
+    training_readiness_recovery_hours: Optional[int] = None
+    training_readiness_feedback: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

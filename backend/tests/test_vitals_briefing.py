@@ -56,6 +56,10 @@ def make_daily_metric(user_id: int = 1, metric_date: date | None = None) -> Vita
     m.hrv_weekly_avg = 48
     m.hrv_status = "BALANCED"
     m.vo2_max = 48.5
+    m.training_readiness = None
+    m.training_readiness_level = None
+    m.training_readiness_recovery_hours = None
+    m.training_readiness_feedback = None
     return m
 
 
@@ -178,6 +182,43 @@ class TestHealthSnapshot:
         assert snapshot["metrics"]["steps"] is None
         assert snapshot["body_battery"]["high"] is None
         assert snapshot["activities"] == []
+
+    @pytest.mark.asyncio
+    async def test_includes_training_readiness(self):
+        """Training readiness is part of the health snapshot fed to the LLM."""
+        from app.services.vitals_briefing import get_health_snapshot
+
+        metric = make_daily_metric()
+        metric.training_readiness = 85
+        metric.training_readiness_level = "READY"
+        metric.training_readiness_recovery_hours = 10
+        metric.training_readiness_feedback = "Good to go."
+
+        call_count = 0
+
+        async def mock_execute(query):
+            nonlocal call_count
+            call_count += 1
+            result = MagicMock()
+            if call_count == 1:
+                result.scalar_one_or_none.return_value = metric
+            elif call_count == 2:
+                result.scalar_one_or_none.return_value = None
+            else:
+                mock_scalars = MagicMock()
+                mock_scalars.all.return_value = []
+                result.scalars.return_value = mock_scalars
+            return result
+
+        db = AsyncMock()
+        db.execute = mock_execute
+
+        snapshot = await get_health_snapshot(db, 1, date(2026, 3, 20))
+
+        assert snapshot["training_readiness"]["score"] == 85
+        assert snapshot["training_readiness"]["level"] == "READY"
+        assert snapshot["training_readiness"]["recovery_hours"] == 10
+        assert snapshot["training_readiness"]["feedback"] == "Good to go."
 
 
 # ── Test Actions Snapshot ────────────────────────────────────────────────────

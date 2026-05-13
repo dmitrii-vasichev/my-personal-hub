@@ -9,6 +9,7 @@ import { HeartRateChart } from "./charts/heart-rate-chart";
 import { SleepChart } from "./charts/sleep-chart";
 import { StressChart } from "./charts/stress-chart";
 import { BodyBatteryChart } from "./charts/body-battery-chart";
+import { TrainingReadinessChart } from "./charts/training-readiness-chart";
 import { useVitalsMetrics, useVitalsSleep } from "@/hooks/use-vitals";
 
 export function ChartsSection() {
@@ -29,6 +30,20 @@ export function ChartsSection() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-border-subtle bg-card p-4">
+          <h3 className="mb-3 text-xs font-medium text-muted-foreground">Training Readiness</h3>
+          <TrainingReadinessChart
+            data={(metrics ?? []).map((m) => ({
+              date: m.date,
+              value: m.training_readiness ?? null,
+              level: m.training_readiness_level ?? null,
+              recovery: m.training_readiness_recovery_hours ?? null,
+            }))}
+            period={period}
+            isLoading={metricsLoading}
+          />
+        </div>
+
         <div className="rounded-xl border border-border-subtle bg-card p-4">
           <h3 className="mb-3 text-xs font-medium text-muted-foreground">HRV</h3>
           <HrvChart data={metrics} period={period} isLoading={metricsLoading} />

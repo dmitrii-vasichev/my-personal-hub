@@ -87,6 +87,11 @@ class VitalsDailyMetric(Base):
     hrv_status: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     # Fitness
     vo2_max: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    # Training Readiness
+    training_readiness: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    training_readiness_level: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    training_readiness_recovery_hours: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    training_readiness_feedback: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     # Raw API response
     raw_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 

@@ -102,6 +102,12 @@ async def get_health_snapshot(
             "high": metric.body_battery_high if metric else None,
             "low": metric.body_battery_low if metric else None,
         },
+        "training_readiness": {
+            "score": metric.training_readiness if metric else None,
+            "level": metric.training_readiness_level if metric else None,
+            "recovery_hours": metric.training_readiness_recovery_hours if metric else None,
+            "feedback": metric.training_readiness_feedback if metric else None,
+        },
         "activities": [
             {
                 "type": a.activity_type,
@@ -365,6 +371,7 @@ def _build_briefing_prompt(
         sleep = health.get("sleep", {})
         metrics = health.get("metrics", {})
         bb = health.get("body_battery", {})
+        tr = health.get("training_readiness", {})
         activities = health.get("activities", [])
 
         lines = ["## Health Data (Garmin)"]
@@ -389,6 +396,13 @@ def _build_briefing_prompt(
         if metrics.get("avg_stress") is not None:
             lines.append(
                 f"- Stress: avg {metrics['avg_stress']}, max {metrics.get('max_stress', 'N/A')}"
+            )
+        if tr.get("score") is not None:
+            level = tr.get("level") or "N/A"
+            feedback = tr.get("feedback") or ""
+            tail = f" — {feedback}" if feedback else ""
+            lines.append(
+                f"- Training readiness: {tr['score']} ({level}){tail}"
             )
         if activities:
             act_summary = "; ".join(

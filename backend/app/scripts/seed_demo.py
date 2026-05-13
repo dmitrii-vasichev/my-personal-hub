@@ -627,6 +627,22 @@ async def create_vitals_data(session, user_id: int) -> None:
         intensity = random.randint(10, 45)
         vo2_max = round(random.uniform(42.0, 48.0), 1)
 
+        training_readiness = random.randint(60, 92)
+        if training_readiness >= 75:
+            training_readiness_level = "READY"
+        elif training_readiness >= 50:
+            training_readiness_level = "MODERATE"
+        else:
+            training_readiness_level = "LOW"
+        training_readiness_recovery_hours = random.randint(0, 48)
+        training_readiness_feedback = random.choice(
+            [
+                "Productive training is possible.",
+                "Easy efforts only today.",
+                "Body well recovered.",
+            ]
+        )
+
         metric = VitalsDailyMetric(
             user_id=user_id,
             date=d,
@@ -648,6 +664,10 @@ async def create_vitals_data(session, user_id: int) -> None:
             hrv_weekly_avg=hrv_weekly_avg,
             hrv_status=hrv_status,
             vo2_max=vo2_max,
+            training_readiness=training_readiness,
+            training_readiness_level=training_readiness_level,
+            training_readiness_recovery_hours=training_readiness_recovery_hours,
+            training_readiness_feedback=training_readiness_feedback,
         )
         session.add(metric)
 

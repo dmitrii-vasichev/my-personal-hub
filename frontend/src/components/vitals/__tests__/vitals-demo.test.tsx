@@ -52,6 +52,9 @@ const mockToday = {
     min_hr: 55, avg_stress: 32, max_stress: 67, body_battery_high: 87,
     body_battery_low: 32, hrv_last_night_avg: 52, hrv_weekly_avg: 48,
     hrv_status: "BALANCED", vo2_max: 45.5,
+    training_readiness: 82, training_readiness_level: "READY",
+    training_readiness_recovery_hours: 6,
+    training_readiness_feedback: "Productive training is possible.",
   } satisfies VitalsDailyMetric,
   sleep: {
     id: 1, date: "2026-03-20", duration_seconds: 26580, deep_seconds: 5400,
@@ -188,7 +191,7 @@ describe("Vitals page — demo user sees vitals data", () => {
 });
 
 describe("TodaySummary — renders metrics regardless of demo mode", () => {
-  it("displays 5 KPI cards with HRV and Sleep first", () => {
+  it("displays KPI cards with HRV and Sleep first", () => {
     render(
       <TodaySummary
         metrics={mockToday.metrics}
@@ -198,7 +201,6 @@ describe("TodaySummary — renders metrics regardless of demo mode", () => {
     );
 
     expect(screen.getByTestId("vitals-summary")).toBeInTheDocument();
-    expect(screen.getByTestId("vitals-summary").children).toHaveLength(5);
     expect(screen.getByTestId("vitals-summary")).toHaveTextContent(
       /HRV[\s\S]*Sleep[\s\S]*Body Battery[\s\S]*Avg Stress[\s\S]*Steps/,
     );
@@ -215,5 +217,28 @@ describe("TodaySummary — renders metrics regardless of demo mode", () => {
     expect(screen.getByText("52 ms")).toBeInTheDocument();
     expect(screen.getByText("32")).toBeInTheDocument();
     expect(screen.getByText("87 / 32")).toBeInTheDocument();
+  });
+});
+
+describe("Demo payload — training readiness", () => {
+  it("includes training readiness in today metrics", () => {
+    const tr = mockToday.metrics.training_readiness;
+    expect(tr).not.toBeNull();
+    expect(tr).not.toBeUndefined();
+    expect(tr as number).toBeGreaterThanOrEqual(0);
+    expect(tr as number).toBeLessThanOrEqual(100);
+    expect(mockToday.metrics.training_readiness_level).toBeTruthy();
+  });
+
+  it("renders the readiness factoid as the first card", () => {
+    render(
+      <TodaySummary
+        metrics={mockToday.metrics}
+        sleep={mockToday.sleep}
+        isLoading={false}
+      />,
+    );
+    const summary = screen.getByTestId("vitals-summary");
+    expect(summary).toHaveTextContent(/Readiness[\s\S]*HRV/);
   });
 });

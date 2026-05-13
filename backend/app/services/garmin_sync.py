@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime, timedelta, timezone
+from typing import Optional
 
 from garminconnect import GarminConnectTooManyRequestsError
 from sqlalchemy import func, or_, select
@@ -26,6 +27,7 @@ INITIAL_BACKFILL_DAYS = 90
 INCREMENTAL_SYNC_DAYS = 2
 BACKFILL_MIN_HISTORY_DAYS = 7
 HRV_BACKFILL_MIN_HISTORY_DAYS = INITIAL_BACKFILL_DAYS
+READINESS_SPARSE_THRESHOLD = 30  # Garmin returns readiness for ~30 days only
 
 
 def _coerce_number(value) -> int | float | None:
@@ -99,6 +101,24 @@ def _extract_hrv_summary(
     return last_night_avg, weekly_avg, status
 
 
+def _extract_training_readiness(
+    payload: object,
+) -> tuple[Optional[int], Optional[str], Optional[int], Optional[str]]:
+    """Pull (score, level, recovery_hours, feedback) from Garmin trainingReadiness payload."""
+    if not payload or not isinstance(payload, dict):
+        return None, None, None, None
+    score = payload.get("score")
+    level = payload.get("level")
+    recovery = payload.get("recoveryTime")
+    feedback = payload.get("feedbackLong") or payload.get("feedbackShort")
+    return (
+        int(score) if isinstance(score, (int, float)) else None,
+        str(level) if isinstance(level, str) else None,
+        int(recovery) if isinstance(recovery, (int, float)) else None,
+        str(feedback)[:200] if isinstance(feedback, str) else None,
+    )
+
+
 def _inclusive_dates(start_date: date, end_date: date) -> list[date]:
     """Return all dates in [start_date, end_date]."""
     days = (end_date - start_date).days
@@ -143,15 +163,34 @@ async def _count_recent_hrv_rows(db: AsyncSession, user_id: int, today: date) ->
     return _coerce_count(result.scalar_one())
 
 
+async def _count_recent_readiness_rows(
+    db: AsyncSession, user_id: int, today: date
+) -> int:
+    start_date = today - timedelta(days=INITIAL_BACKFILL_DAYS - 1)
+    result = await db.execute(
+        select(func.count())
+        .select_from(VitalsDailyMetric)
+        .where(
+            VitalsDailyMetric.user_id == user_id,
+            VitalsDailyMetric.date >= start_date,
+            VitalsDailyMetric.date <= today,
+            VitalsDailyMetric.training_readiness.is_not(None),
+        )
+    )
+    return _coerce_count(result.scalar_one())
+
+
 async def _needs_vitals_backfill(db: AsyncSession, user_id: int, today: date) -> bool:
-    """Return True while recent metrics, sleep, or HRV history is still sparse."""
+    """Return True while recent metrics, sleep, HRV, or readiness history is sparse."""
     metrics_count = await _count_recent_rows(db, VitalsDailyMetric, user_id, today)
     sleep_count = await _count_recent_rows(db, VitalsSleep, user_id, today)
     hrv_count = await _count_recent_hrv_rows(db, user_id, today)
+    readiness_count = await _count_recent_readiness_rows(db, user_id, today)
     return (
         metrics_count < BACKFILL_MIN_HISTORY_DAYS
         or sleep_count < BACKFILL_MIN_HISTORY_DAYS
         or hrv_count < HRV_BACKFILL_MIN_HISTORY_DAYS
+        or readiness_count < READINESS_SPARSE_THRESHOLD
     )
 
 
@@ -311,8 +350,22 @@ async def _sync_daily_metrics(
     if not isinstance(hrv_data, dict):
         hrv_data = {}
 
+    try:
+        training_readiness_payload = client.get_morning_training_readiness(date_str)
+    except GarminConnectTooManyRequestsError:
+        raise GarminRateLimitError("429 on get_training_readiness")
+    except Exception as e:
+        logger.warning("Failed to get training readiness for %s: %s", date_str, e)
+        training_readiness_payload = None
+
     bb_high, bb_low = _extract_body_battery_range(body_battery)
     hrv_last_night_avg, hrv_weekly_avg, hrv_status = _extract_hrv_summary(hrv_data)
+    (
+        training_readiness,
+        training_readiness_level,
+        training_readiness_recovery_hours,
+        training_readiness_feedback,
+    ) = _extract_training_readiness(training_readiness_payload)
 
     # Parse VO2 max
     vo2_max = None
@@ -327,6 +380,7 @@ async def _sync_daily_metrics(
         "body_battery": body_battery,
         "max_metrics": max_metrics,
         "hrv": hrv_data,
+        "training_readiness": training_readiness_payload,
     }
 
     values = {
@@ -348,6 +402,10 @@ async def _sync_daily_metrics(
         "hrv_weekly_avg": hrv_weekly_avg,
         "hrv_status": hrv_status,
         "vo2_max": vo2_max,
+        "training_readiness": training_readiness,
+        "training_readiness_level": training_readiness_level,
+        "training_readiness_recovery_hours": training_readiness_recovery_hours,
+        "training_readiness_feedback": training_readiness_feedback,
         "raw_json": raw_json,
     }
 

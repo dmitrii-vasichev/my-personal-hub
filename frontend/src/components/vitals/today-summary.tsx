@@ -1,6 +1,6 @@
 "use client";
 
-import { Footprints, Moon, Brain, BatteryFull, HeartPulse } from "lucide-react";
+import { Footprints, Moon, Brain, BatteryFull, HeartPulse, Zap } from "lucide-react";
 import type { VitalsDailyMetric, VitalsSleep } from "@/types/vitals";
 
 interface TodaySummaryProps {
@@ -15,11 +15,16 @@ interface KpiCardProps {
   value: string;
   color: string;
   colorMuted: string;
+  subValue?: string | null;
+  title?: string;
 }
 
-function KpiCard({ icon, label, value, color, colorMuted }: KpiCardProps) {
+function KpiCard({ icon, label, value, color, colorMuted, subValue, title }: KpiCardProps) {
   return (
-    <div className="rounded-xl border border-border-subtle bg-card transition-colors duration-150 hover:bg-card-hover hover:border-border">
+    <div
+      className="rounded-xl border border-border-subtle bg-card transition-colors duration-150 hover:bg-card-hover hover:border-border"
+      title={title}
+    >
       <div className="p-[16px_18px]">
         <div className="flex items-start justify-between mb-[10px]">
           <span className="text-[12px] font-medium text-muted-foreground tracking-[0.01em]">
@@ -38,6 +43,11 @@ function KpiCard({ icon, label, value, color, colorMuted }: KpiCardProps) {
         >
           {value}
         </p>
+        {subValue ? (
+          <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.04em] text-muted-foreground">
+            {subValue}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -95,6 +105,13 @@ const AMBER_MUTED = "var(--accent-amber-muted)";
 const GREEN = "var(--accent-teal)";
 const GREEN_MUTED = "var(--accent-teal-muted)";
 
+function readinessTone(score: number): { color: string; colorMuted: string } {
+  if (score < 25) return { color: ROSE, colorMuted: ROSE_MUTED };
+  if (score < 50) return { color: AMBER, colorMuted: AMBER_MUTED };
+  if (score < 75) return { color: AMBER, colorMuted: AMBER_MUTED };
+  return { color: GREEN, colorMuted: GREEN_MUTED };
+}
+
 export function TodaySummary({ metrics, sleep, isLoading }: TodaySummaryProps) {
   if (isLoading) {
     return (
@@ -106,8 +123,25 @@ export function TodaySummary({ metrics, sleep, isLoading }: TodaySummaryProps) {
     );
   }
 
+  const readinessScore = metrics?.training_readiness ?? null;
+  const showReadiness = readinessScore != null;
+  const gridColsClass = showReadiness
+    ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
+    : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5";
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" data-testid="vitals-summary">
+    <div className={`grid ${gridColsClass} gap-3`} data-testid="vitals-summary">
+      {showReadiness ? (
+        <KpiCard
+          icon={<Zap size={14} />}
+          label="Readiness"
+          value={String(readinessScore)}
+          subValue={metrics?.training_readiness_level ?? null}
+          color={readinessTone(readinessScore).color}
+          colorMuted={readinessTone(readinessScore).colorMuted}
+          title={metrics?.training_readiness_feedback ?? undefined}
+        />
+      ) : null}
       <KpiCard
         icon={<HeartPulse size={14} />}
         label="HRV"

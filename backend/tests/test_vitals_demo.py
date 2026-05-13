@@ -514,3 +514,41 @@ class TestDemoUserVitalsRestrictions:
             assert "demo mode" in resp.json()["detail"].lower()
         finally:
             app.dependency_overrides.pop(get_current_user, None)
+
+
+# -- Demo seed populates training readiness -----------------------------------
+
+
+class TestDemoSeedTrainingReadiness:
+    """Ensure seed_demo.create_vitals_data populates training readiness columns."""
+
+    @pytest.mark.asyncio
+    async def test_demo_seed_populates_training_readiness(self):
+        """create_vitals_data must populate training_readiness fields for daily metrics."""
+        from app.scripts.seed_demo import create_vitals_data
+
+        added_objects: list = []
+
+        session = AsyncMock()
+        session.add = MagicMock(side_effect=lambda obj: added_objects.append(obj))
+
+        await create_vitals_data(session, user_id=999)
+
+        metrics = [o for o in added_objects if isinstance(o, VitalsDailyMetric)]
+        assert len(metrics) > 0, "Expected daily metric rows to be seeded"
+
+        populated = [m for m in metrics if m.training_readiness is not None]
+        assert len(populated) > 0, "At least one row must have training_readiness populated"
+
+        allowed_levels = {"POOR", "LOW", "MODERATE", "GOOD", "READY", "MAXIMIZED"}
+        for m in populated:
+            assert 0 <= m.training_readiness <= 100
+            assert m.training_readiness_level in allowed_levels
+            assert (
+                m.training_readiness_recovery_hours is None
+                or m.training_readiness_recovery_hours >= 0
+            )
+            # Feedback is optional but should be a non-empty string when present
+            if m.training_readiness_feedback is not None:
+                assert isinstance(m.training_readiness_feedback, str)
+                assert len(m.training_readiness_feedback) > 0

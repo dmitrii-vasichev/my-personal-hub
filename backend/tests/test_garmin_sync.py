@@ -321,6 +321,96 @@ class TestGarminSyncService:
 
     @pytest.mark.asyncio
     @patch("app.services.garmin_sync.garmin_auth")
+    async def test_sync_daily_metrics_persists_training_readiness(self, mock_auth):
+        """get_morning_training_readiness payload is persisted to all 4 columns."""
+        from app.services.garmin_sync import _sync_daily_metrics
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(return_value=mock_result)
+        db.add = MagicMock()
+
+        client = MagicMock()
+        client.get_user_summary.return_value = {"totalSteps": 1000}
+        client.get_body_battery.return_value = []
+        client.get_max_metrics.return_value = {}
+        client.get_hrv_data.return_value = {}
+        client.get_morning_training_readiness.return_value = {
+            "score": 92,
+            "level": "READY",
+            "recoveryTime": 8,
+            "feedbackLong": "Peak readiness — push hard.",
+        }
+
+        await _sync_daily_metrics(db, 1, client, date(2026, 5, 13))
+
+        db.add.assert_called_once()
+        added = db.add.call_args[0][0]
+        assert isinstance(added, VitalsDailyMetric)
+        assert added.training_readiness == 92
+        assert added.training_readiness_level == "READY"
+        assert added.training_readiness_recovery_hours == 8
+        assert added.training_readiness_feedback == "Peak readiness — push hard."
+        assert added.raw_json["training_readiness"]["score"] == 92
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
+    async def test_sync_daily_metrics_null_training_readiness(self, mock_auth):
+        """None payload from get_morning_training_readiness leaves columns null."""
+        from app.services.garmin_sync import _sync_daily_metrics
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(return_value=mock_result)
+        db.add = MagicMock()
+
+        client = MagicMock()
+        client.get_user_summary.return_value = {"totalSteps": 1000}
+        client.get_body_battery.return_value = []
+        client.get_max_metrics.return_value = {}
+        client.get_hrv_data.return_value = {}
+        client.get_morning_training_readiness.return_value = None
+
+        await _sync_daily_metrics(db, 1, client, date(2026, 5, 13))
+
+        db.add.assert_called_once()
+        added = db.add.call_args[0][0]
+        assert isinstance(added, VitalsDailyMetric)
+        assert added.training_readiness is None
+        assert added.training_readiness_level is None
+        assert added.training_readiness_recovery_hours is None
+        assert added.training_readiness_feedback is None
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
+    async def test_sync_daily_metrics_training_readiness_rate_limit_raises(self, mock_auth):
+        """429 from get_morning_training_readiness must be re-raised as GarminRateLimitError."""
+        from garminconnect import GarminConnectTooManyRequestsError
+
+        from app.services.garmin_sync import GarminRateLimitError, _sync_daily_metrics
+
+        db = AsyncMock()
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        db.execute = AsyncMock(return_value=mock_result)
+        db.add = MagicMock()
+
+        client = MagicMock()
+        client.get_user_summary.return_value = {"totalSteps": 1000}
+        client.get_body_battery.return_value = []
+        client.get_max_metrics.return_value = {}
+        client.get_hrv_data.return_value = {}
+        client.get_morning_training_readiness.side_effect = (
+            GarminConnectTooManyRequestsError("429")
+        )
+
+        with pytest.raises(GarminRateLimitError):
+            await _sync_daily_metrics(db, 1, client, date(2026, 5, 13))
+
+    @pytest.mark.asyncio
+    @patch("app.services.garmin_sync.garmin_auth")
     async def test_sync_daily_metrics_update(self, mock_auth):
         """Test _sync_daily_metrics updates existing record."""
         from app.services.garmin_sync import _sync_daily_metrics
@@ -539,7 +629,8 @@ class TestGarminSyncService:
         """Existing metrics/sleep rows should not mask missing HRV history."""
         from app.services.garmin_sync import _needs_vitals_backfill
 
-        counts = iter([90, 90, 2])
+        # metrics, sleep, hrv sparse, readiness complete (90)
+        counts = iter([90, 90, 2, 90])
 
         async def mock_execute(query):
             result = MagicMock()
@@ -554,11 +645,32 @@ class TestGarminSyncService:
         assert needs_backfill is True
 
     @pytest.mark.asyncio
+    async def test_needs_vitals_backfill_when_training_readiness_history_is_sparse(self):
+        """Sparse training_readiness rows in last 90d should trigger backfill."""
+        from app.services.garmin_sync import _needs_vitals_backfill
+
+        # metrics, sleep, hrv all complete; readiness sparse (only 5 rows)
+        counts = iter([90, 90, 90, 5])
+
+        async def mock_execute(query):
+            result = MagicMock()
+            result.scalar_one.return_value = next(counts)
+            return result
+
+        db = AsyncMock()
+        db.execute = mock_execute
+
+        needs_backfill = await _needs_vitals_backfill(db, 1, date(2026, 5, 13))
+
+        assert needs_backfill is True
+
+    @pytest.mark.asyncio
     async def test_needs_vitals_backfill_when_hrv_history_is_only_30_days(self):
         """Thirty HRV rows are still incomplete for the 90-day Vitals filter."""
         from app.services.garmin_sync import _needs_vitals_backfill
 
-        counts = iter([90, 90, 30])
+        # metrics, sleep, hrv at 30, readiness complete (90)
+        counts = iter([90, 90, 30, 90])
 
         async def mock_execute(query):
             result = MagicMock()
@@ -1590,6 +1702,38 @@ class TestSyncLogEndpoint:
         assert data[0]["status"] == "success"
         assert data[0]["duration_ms"] == 5000
         assert data[0]["records_synced"]["metrics"] == 2
+
+
+class TestExtractTrainingReadiness:
+    def test_extracts_score_level_recovery_feedback(self):
+        from app.services.garmin_sync import _extract_training_readiness
+
+        payload = {
+            "score": 87,
+            "level": "READY",
+            "recoveryTime": 12,
+            "feedbackLong": "You can take on a challenging workout today.",
+            "feedbackShort": "Ready to go",
+        }
+        score, level, recovery, feedback = _extract_training_readiness(payload)
+        assert score == 87
+        assert level == "READY"
+        assert recovery == 12
+        assert feedback == "You can take on a challenging workout today."
+
+    def test_falls_back_to_feedback_short_when_long_missing(self):
+        from app.services.garmin_sync import _extract_training_readiness
+
+        payload = {"score": 50, "level": "MODERATE", "recoveryTime": 24, "feedbackShort": "Easy"}
+        _, _, _, feedback = _extract_training_readiness(payload)
+        assert feedback == "Easy"
+
+    def test_returns_all_none_for_empty_payload(self):
+        from app.services.garmin_sync import _extract_training_readiness
+
+        assert _extract_training_readiness(None) == (None, None, None, None)
+        assert _extract_training_readiness({}) == (None, None, None, None)
+        assert _extract_training_readiness([]) == (None, None, None, None)
 
 
 class TestConsecutiveFailuresReset:

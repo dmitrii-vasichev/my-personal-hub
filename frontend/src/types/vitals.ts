@@ -19,6 +19,10 @@ export interface VitalsDailyMetric {
   hrv_weekly_avg: number | null;
   hrv_status: string | null;
   vo2_max: number | null;
+  training_readiness?: number | null;
+  training_readiness_level?: string | null;
+  training_readiness_recovery_hours?: number | null;
+  training_readiness_feedback?: string | null;
 }
 
 export interface VitalsSleep {

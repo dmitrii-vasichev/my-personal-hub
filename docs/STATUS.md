@@ -1,15 +1,66 @@
 # Legacy Tasks Domain Removal Status
 
-Last updated: 2026-05-06
+Last updated: 2026-05-13
 
 ## Current State
 
-- Branch: `main`
+- Branch: `claude/serene-galileo-957673` (worktree), awaiting squash-merge to `main`.
 - Base branch: `main`
-- Current feature: Pulse background freeze
+- Current feature: Garmin Training Readiness end-to-end (sync + factoid + chart + backfill).
 - Current execution source of truth: `docs/STATUS.md`
 
 ## Live Journal
+
+### 2026-05-13 — Garmin Training Readiness Added
+
+Changed:
+- Added 4 nullable columns to `vitals_daily_metrics`: `training_readiness` (int 0-100), `training_readiness_level` (str), `training_readiness_recovery_hours` (int), `training_readiness_feedback` (str). Alembic migration `e1f2a3b4c5d6_add_training_readiness_to_vitals_daily_metrics`.
+- `_sync_daily_metrics` now calls `client.get_morning_training_readiness(date_str)` after the HRV block. 429 propagates as `GarminRateLimitError`; other errors log a warning and leave the columns null. Helper `_extract_training_readiness(payload)` parses score/level/recoveryTime/feedbackLong-or-feedbackShort. `raw_json["training_readiness"]` carries the full payload alongside `summary`/`body_battery`/`max_metrics`/`hrv`.
+- `_needs_vitals_backfill` extended with `_count_recent_readiness_rows` and `READINESS_SPARSE_THRESHOLD = 30` (softer than HRV's 90 because Garmin only returns readiness for ~30 days).
+- `VitalsDailyMetricResponse` Pydantic schema exposes the 4 new fields (Optional).
+- `vitals_briefing.py`: `get_health_snapshot` emits a `training_readiness` dict (`score`, `level`, `recovery_hours`, `feedback`); `_build_briefing_prompt` renders a `Training readiness: N (LEVEL) — feedback` line when score is non-null.
+- New one-shot CLI `backend/scripts/backfill_training_readiness.py` — walks back N days (default 90, idempotent, supports `--dry-run`) and fills training-readiness fields on existing `vitals_daily_metrics` rows only. Local engine + `engine.dispose()` in `finally` (mirrors `backfill_job_event_links.py`).
+- Frontend type `VitalsDailyMetric` gets 4 snake_case nullable fields (matches existing field convention; no API adapter — backend JSON passes through).
+- `today-summary.tsx` renders a new factoid first when `training_readiness != null`. Score is the big number, level is the caption, feedback is the tooltip. Tone scale: `<50` amber, `≥75` green (project design system collapses neutral/yellow into amber).
+- New chart `frontend/src/components/vitals/charts/training-readiness-chart.tsx` (Recharts AreaChart, Y-domain `[0, 100]`, mirrors `hrv-chart.tsx` style; custom tooltip shows level + recovery hours). Wired first in `charts-section.tsx`, above HRV.
+- Demo seed (`backend/app/scripts/seed_demo.py` + frontend `vitals-demo.test.tsx` inline fixture): generates plausible readiness 60-92 with derived level (POOR/LOW/MODERATE/GOOD/READY/MAXIMIZED), recovery 0-48h, feedback from a fixed pool.
+- Dashboard widget (`vitals-widget.tsx`) intentionally unchanged (out of scope).
+
+Validation:
+- Backend `py_compile`: `app/models/garmin.py app/schemas/garmin.py app/services/garmin_sync.py app/services/vitals_briefing.py alembic/versions/e1f2a3b4c5d6_*.py scripts/backfill_training_readiness.py app/scripts/seed_demo.py` -> passed.
+- Backend `alembic heads` -> `e1f2a3b4c5d6 (head)`. Local `alembic upgrade head` skipped (local Postgres unavailable, will be applied on Railway during deploy).
+- Backend focused: `pytest -q tests/test_garmin_sync.py tests/test_garmin_auth.py tests/test_vitals_briefing.py tests/test_vitals_demo.py` -> `152 passed`.
+- TDD on every implementer cycle: RED test demonstrated failure before implementation, GREEN confirmed after. Existing sparse-history tests (`hrv_history_is_sparse`, `hrv_history_is_only_30_days`) had their mocked `db.execute` count iterables extended from 3 elements to 4 to accommodate the new readiness count.
+- Frontend focused: `npm test -- --run __tests__/vitals.test.tsx __tests__/vitals-widget.test.tsx src/components/vitals/__tests__/vitals-demo.test.tsx src/components/vitals/charts/__tests__/training-readiness-chart.test.tsx` -> `45 passed`.
+- Frontend lint: `npm run lint` -> clean.
+- Frontend build: `npx next build --webpack` -> clean, `/vitals` prerendered. (`npm run build` via Turbopack fails on `node_modules` symlink — known worktree quirk, not a code issue.)
+
+Commits on `claude/serene-galileo-957673` (oldest → newest):
+- `a890c9d` feat(vitals): migration for training readiness columns
+- `c8c8ac5` feat(vitals): add training readiness fields to VitalsDailyMetric
+- `517a088` feat(vitals): add training readiness extractor
+- `1def4e4` feat(vitals): sync training readiness in daily metrics
+- `a8fd865` test(vitals): cover training readiness rate limit
+- `b615fc0` feat(vitals): trigger backfill when training readiness sparse
+- `cf74b0e` feat(vitals): expose training readiness via API schema
+- `d076ce6` feat(vitals): include training readiness in briefing snapshot
+- `0d8383a` feat(vitals): one-shot script to backfill training readiness
+- `bf7d75a` feat(vitals): training readiness types
+- `aa571ae` feat(vitals): readiness factoid in today summary
+- `ea9bf8a` feat(vitals): training readiness chart component
+- `4c520e0` feat(vitals): show readiness chart first on vitals page
+- `c30b32e` feat(vitals): demo seed populates training readiness
+
+Manual-only items:
+- Squash-merge to `main` and push (manual gate per CLAUDE.md — awaiting user confirmation).
+- Railway deploy + `alembic upgrade head` on prod.
+- One-shot backfill: `railway run --service backend-api --environment production --no-local -- python backend/scripts/backfill_training_readiness.py --user-id 1 --days 90`.
+- Visual smoke `/vitals` in prod — factoid + chart populated.
+
+Notes:
+- Local Postgres still unavailable on `127.0.0.1:5432`; migration applies on Railway during deploy.
+- Garmin API typically returns morning training readiness only for the last ~30 days. The backfill script asks for 90; the actual fill window will be best-effort (~30 days). This is expected, not an error.
+- Existing dependency/deprecation and `AsyncMock` warnings remain in backend focused suite (pre-existing).
 
 ### 2026-05-07 — Pulse Background Freeze
 
