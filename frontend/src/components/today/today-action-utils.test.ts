@@ -41,6 +41,12 @@ function timezoneSuffixFor(date: Date): string {
   )}`;
 }
 
+function localIso(date: string, time: string): string {
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute] = time.split(":").map(Number);
+  return `${date}T${time}:00${timezoneSuffixFor(new Date(year, month - 1, day, hour, minute))}`;
+}
+
 describe("today-action-utils", () => {
   it("formats local dates as yyyy-mm-dd", () => {
     expect(localDateString(new Date(2026, 4, 5, 9, 0, 0))).toBe("2026-05-05");
@@ -71,7 +77,7 @@ describe("today-action-utils", () => {
     expect(actionBelongsToLocalDay(makeAction({ action_date: "2026-05-16" }), ref)).toBe(false);
     expect(
       actionBelongsToLocalDay(
-        makeAction({ action_date: null, remind_at: "2026-05-15T18:00:00-06:00" }),
+        makeAction({ action_date: null, remind_at: localIso("2026-05-15", "18:00") }),
         ref
       )
     ).toBe(true);
@@ -84,7 +90,7 @@ describe("today-action-utils", () => {
       actionBelongsToLocalDay(
         makeAction({
           action_date: "2026-05-16",
-          remind_at: "2026-05-15T18:00:00-06:00",
+          remind_at: localIso("2026-05-15", "18:00"),
         }),
         ref
       )
