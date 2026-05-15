@@ -16,9 +16,6 @@ export default function TodayPage() {
   return (
     <div className="flex flex-col gap-[18px]">
       <header className="border-b-[1.5px] border-[color:var(--line)] pb-[14px]">
-        <p className="mb-2 font-mono text-[10px] uppercase tracking-[2px] text-[color:var(--ink-3)]">
-          Health first
-        </p>
         <h1 className="m-0 font-[family-name:var(--font-space-grotesk)] text-[28px] font-bold leading-none text-[color:var(--ink)]">
           Today
         </h1>

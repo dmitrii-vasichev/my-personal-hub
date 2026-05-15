@@ -199,6 +199,7 @@ describe("Today page redesign", () => {
     expect(screen.queryByText(/planner/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/code implementation/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/job hunt/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/health first/i)).not.toBeInTheDocument();
     expect(screen.queryByTestId("reminders-today")).not.toBeInTheDocument();
     expect(screen.queryByTestId("day-timeline")).not.toBeInTheDocument();
     expect(screen.queryByTestId("stats-grid")).not.toBeInTheDocument();
