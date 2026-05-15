@@ -8,7 +8,10 @@ export function localDateString(date: Date = new Date()): string {
 }
 
 export function withLocalTzOffset(date: string, time: string): string {
-  const offset = new Date().getTimezoneOffset();
+  const [year, month, day] = date.split("-").map(Number);
+  const [hour, minute] = time.split(":").map(Number);
+  const selected = new Date(year, month - 1, day, hour, minute, 0);
+  const offset = selected.getTimezoneOffset();
   const sign = offset <= 0 ? "+" : "-";
   const abs = Math.abs(offset);
   return `${date}T${time}:00${sign}${pad2(Math.floor(abs / 60))}:${pad2(abs % 60)}`;

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { Action } from "@/types/action";
 import {
   actionBelongsToLocalDay,
@@ -31,6 +31,16 @@ function makeAction(overrides: Partial<Action> = {}): Action {
   };
 }
 
+function timezoneSuffixFor(date: Date): string {
+  const offset = date.getTimezoneOffset();
+  const sign = offset <= 0 ? "+" : "-";
+  const abs = Math.abs(offset);
+  return `${sign}${String(Math.floor(abs / 60)).padStart(2, "0")}:${String(abs % 60).padStart(
+    2,
+    "0"
+  )}`;
+}
+
 describe("today-action-utils", () => {
   it("formats local dates as yyyy-mm-dd", () => {
     expect(localDateString(new Date(2026, 4, 5, 9, 0, 0))).toBe("2026-05-05");
@@ -40,6 +50,19 @@ describe("today-action-utils", () => {
     expect(withLocalTzOffset("2026-05-15", "09:30")).toMatch(
       /^2026-05-15T09:30:00[+-]\d{2}:\d{2}$/
     );
+  });
+
+  it("uses the selected local date timezone offset instead of the current date offset", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(2026, 6, 1, 12, 0, 0));
+      const selected = new Date(2026, 0, 15, 9, 30, 0);
+      const expected = `2026-01-15T09:30:00${timezoneSuffixFor(selected)}`;
+
+      expect(withLocalTzOffset("2026-01-15", "09:30")).toBe(expected);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("matches actions by action_date or remind_at on the reference local day", () => {
@@ -96,6 +119,32 @@ describe("today-action-utils", () => {
       "Scheduled late",
       "Anytime urgent",
       "Anytime normal",
+    ]);
+  });
+
+  it("does not mutate the input array when sorting actions", () => {
+    const actions = [
+      makeAction({ id: 1, title: "Anytime normal", created_at: "2026-05-15T12:00:00Z" }),
+      makeAction({
+        id: 2,
+        title: "Scheduled early",
+        remind_at: "2026-05-15T09:00:00-06:00",
+        is_floating: false,
+      }),
+      makeAction({
+        id: 3,
+        title: "Anytime urgent",
+        is_urgent: true,
+        created_at: "2026-05-15T13:00:00Z",
+      }),
+    ];
+
+    sortTodayActions(actions);
+
+    expect(actions.map((action) => action.title)).toEqual([
+      "Anytime normal",
+      "Scheduled early",
+      "Anytime urgent",
     ]);
   });
 });
