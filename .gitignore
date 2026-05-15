@@ -68,9 +68,6 @@ docs/prd-floating-reminders.md
 docs/stage-5-touch-audit.md
 docs/linkedin-post/
 
-# Telegram bot local state (bot's own .env, .venv, __pycache__ are covered globally)
-telegram_bot/.state.json
-
 # Misc
 *.log
 .workflow-state.json

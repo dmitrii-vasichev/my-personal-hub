@@ -1,15 +1,102 @@
-# Legacy Tasks Domain Removal Status
+# Telegram Claude Bridge Decommission Status
 
-Last updated: 2026-05-13
+Last updated: 2026-05-15
 
 ## Current State
 
-- Branch: `claude/serene-galileo-957673` (worktree), awaiting squash-merge to `main`.
+- Branch: `main`
 - Base branch: `main`
-- Current feature: Garmin Training Readiness end-to-end (sync + factoid + chart + backfill).
+- Current feature: Telegram-to-Claude-Code bridge decommission.
 - Current execution source of truth: `docs/STATUS.md`
 
 ## Live Journal
+
+### 2026-05-15 — Decommission Started
+
+Intent:
+- Remove the standalone Telegram-to-Claude-Code bridge now that Codex provides
+  the remote control workflow directly.
+- Preserve Telegram Pulse, Telegram Mini App, reminder callbacks, and channel
+  digest functionality.
+
+Initial findings:
+- `com.my-personal-hub.telegram-bot` was registered and running under launchd
+  with a live `telegram_bot/main.py` process.
+- The bridge consists of a standalone `telegram_bot/` package, backend
+  `/api/telegram/auth/*` endpoints, `/api/users/me/telegram-*` pairing
+  endpoints, `users.telegram_user_id` / `users.telegram_pin_hash` fields, and a
+  Settings → Telegram "Telegram Bridge" section.
+
+Planned validation:
+- Runtime: confirm LaunchAgent is not registered and no bridge process remains.
+- Backend: focused decommission/auth tests, compile smoke, and `alembic heads`.
+- Frontend: focused `telegram-tab` tests, then lint/build where practical.
+
+Changed:
+- Uninstalled `com.my-personal-hub.telegram-bot` with the repo launchd
+  uninstall script before deleting the package.
+- Removed local bridge logs and deleted the whole `telegram_bot/` runtime,
+  including ignored local `.env`, `.state.json`, and `.venv` contents.
+- Removed backend bridge router registration, `/api/telegram/auth/*` endpoints,
+  `/api/users/me/telegram-*` endpoints, bridge schemas, bridge PIN rate limiter,
+  and old bridge tests.
+- Removed `users.telegram_user_id` and `users.telegram_pin_hash` from the ORM
+  and auth response payload.
+- Added Alembic migration
+  `f2a3b4c5d6e7_decommission_telegram_claude_bridge.py` to drop the bridge
+  columns, unique constraint, and index.
+- Removed Settings → Telegram "Telegram Bridge" UI, bridge frontend hook/type,
+  and bridge fields from the frontend `User` type. Telegram Pulse UI remains.
+- Deleted `docs/prd-telegram-claude-bridge.md` and updated active repo
+  instructions to treat the bridge as decommissioned historical work.
+
+Validation:
+- RED backend decommission test before removal:
+  `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_telegram_bridge_decommission.py`
+  -> failed as expected because routes were still registered and auth response
+  still serialized bridge fields.
+- RED frontend Telegram settings test before removal:
+  `cd frontend && npm test -- --run __tests__/telegram-tab.test.tsx`
+  -> failed as expected because "Telegram Bridge" was still rendered.
+- Runtime check after uninstall:
+  `launchctl print gui/$(id -u)/com.my-personal-hub.telegram-bot` ->
+  not registered; `pgrep -fl 'telegram_bot/main.py|com.my-personal-hub.telegram-bot'`
+  -> no processes.
+- Backend focused:
+  `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_telegram_bridge_decommission.py tests/test_user_management_phase7.py tests/test_user_management_phase8.py tests/test_api_tokens.py`
+  -> `46 passed`.
+- Backend Telegram/Pulse preservation:
+  `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q tests/test_telegram_auth.py tests/test_telegram_credentials.py tests/test_pulse_settings.py tests/test_pulse_sources.py tests/test_pulse_digest.py tests/test_pulse_collection.py`
+  -> `131 passed`.
+- Backend compile:
+  `cd backend && PYTHONPATH=. ./venv/bin/python -m py_compile app/main.py app/api/auth.py app/api/users.py app/models/user.py app/schemas/auth.py alembic/versions/f2a3b4c5d6e7_decommission_telegram_claude_bridge.py`
+  -> passed.
+- Alembic metadata:
+  `cd backend && PYTHONPATH=. ./venv/bin/alembic heads` ->
+  `f2a3b4c5d6e7 (head)`.
+- Frontend focused:
+  `cd frontend && npm test -- --run __tests__/telegram-tab.test.tsx` ->
+  `11 passed`.
+- Frontend lint:
+  `cd frontend && npm run lint` -> passed.
+- Frontend production build:
+  `cd frontend && npx next build --webpack` -> passed.
+- Backend broad:
+  `cd backend && PYTHONPATH=. ./venv/bin/python -m pytest -q` ->
+  `766 passed / 1 failed`; failure is
+  `tests/test_demo_mode.py::test_reset_demo_allowed_for_demo_user` because the
+  local database is missing pre-existing `vitals_daily_metrics.training_readiness`
+  columns from the previous Garmin readiness migration.
+- Frontend broad:
+  `cd frontend && npm test -- --run` -> `384 passed / 3 failed`; failures are
+  pre-existing/out-of-scope tests in `pulse-settings`, `date-picker`, and
+  `reminders-mobile-polish`. Re-running `__tests__/pulse-settings.test.tsx`
+  with the touched `telegram-tab` test reproduces the single Pulse settings
+  expectation failure while `telegram-tab` remains green.
+
+Follow-up:
+- Revoke the old BotFather token and Hub `telegram-bridge` API token outside
+  the repository if they still exist.
 
 ### 2026-05-13 — Garmin Training Readiness Added
 

@@ -2,11 +2,10 @@ import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.deps import get_current_user, require_admin, restrict_demo
+from app.core.deps import get_current_user, require_admin
 from app.core.security import hash_password
 from app.models.user import User, UserRole
 from app.schemas.auth import (
@@ -16,10 +15,6 @@ from app.schemas.auth import (
     UpdateUserRequest,
     UserResponse,
     user_to_response,
-)
-from app.schemas.telegram_bridge import (
-    TelegramPinUpdateRequest,
-    TelegramUserIdUpdateRequest,
 )
 from app.services.auth import create_user
 from app.services.timezone import apply_user_timezone_change
@@ -191,45 +186,3 @@ async def reset_demo_data(
     await db.commit()
 
     return {"status": "ok", "message": "Demo data reset successfully"}
-
-
-# --- Telegram→CC bridge (Phase 2): owner-only self-service ------------------
-#
-# These two PUTs let the authenticated user set/rotate their own PIN and TG
-# user id for the Telegram bridge. They live on the ``/api/users`` router
-# (not the new ``/api/telegram/auth`` router) because they mutate
-# ``users.*`` rows — the bridge router is read-only against the user table.
-
-
-@router.put("/me/telegram-pin", status_code=status.HTTP_204_NO_CONTENT)
-async def update_my_telegram_pin(
-    data: TelegramPinUpdateRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(restrict_demo),
-):
-    """Set or rotate the owner's Telegram PIN. Stored bcrypt-hashed."""
-    current_user.telegram_pin_hash = hash_password(data.pin)
-    await db.commit()
-
-
-@router.put("/me/telegram-user-id", status_code=status.HTTP_204_NO_CONTENT)
-async def update_my_telegram_user_id(
-    data: TelegramUserIdUpdateRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(restrict_demo),
-):
-    """Set or rotate the owner's ``users.telegram_user_id`` column.
-
-    The column has a UNIQUE constraint; collisions are impossible in
-    single-tenant mode but we still catch ``IntegrityError`` to return
-    a clean 409 instead of a 500 if anything racy happens.
-    """
-    current_user.telegram_user_id = data.telegram_user_id
-    try:
-        await db.commit()
-    except IntegrityError:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="telegram_user_id already in use",
-        )

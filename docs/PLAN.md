@@ -1,72 +1,86 @@
-# Legacy Tasks Domain Removal Plan
+# Telegram Claude Bridge Decommission Plan
 
-Last updated: 2026-04-29
+Last updated: 2026-05-15
 
 ## Goal
 
-Remove the legacy Tasks domain completely now that Actions are backed by reminders and are the primary daily execution model.
+Remove the Telegram-to-Claude-Code bridge completely now that Codex provides the
+remote control workflow directly.
 
 ## Non-Goals
 
-- Do not add an export/archive UI for deleted task data.
-- Do not introduce Action tags in this pass.
-- Do not support rolling mixed-version deployment between legacy task code and the removal migration.
+- Do not remove Telegram Pulse channel collection, digests, reminder callbacks,
+  or the Telegram Mini App.
+- Do not remove generic API token support; only remove bridge-specific token
+  consumers and setup surfaces.
+- Do not preserve bridge pairing data. `users.telegram_user_id` and
+  `users.telegram_pin_hash` may be dropped.
 
 ## Architecture
 
-- Keep `reminders` as the durable Action table.
-- Move `Visibility` into a shared backend model module so Calendar keeps its enum without depending on Tasks.
-- Remove task-only backend models, schemas, services, routers, analytics, cleanup APIs, link services, seed data, and tests.
-- Remove task-only frontend pages, hooks, components, types, and tests.
-- Keep `/tasks*` frontend routes as redirect shims to `/actions`.
-- Replace Pulse `to_task` actions with `to_action`, creating Actions through the reminders-backed service.
+- Stop and remove the local macOS LaunchAgent before deleting its repo script.
+- Delete the standalone `telegram_bot/` package, launchd files, security
+  profiles, local bridge tests, and setup docs.
+- Remove Hub bridge auth endpoints under `/api/telegram/auth/*`.
+- Remove bridge self-service endpoints under `/api/users/me/telegram-*`.
+- Remove bridge-only user columns and API response fields.
+- Add a normal Alembic revision after the current head to drop the bridge
+  columns and constraints from `users`.
+- Remove the Settings → Telegram "Telegram Bridge" section while preserving the
+  existing "Telegram Pulse" section.
 
 ## Milestones
 
-### M1 — Destructive Migration
+### M1 — Runtime Shutdown
 
 Scope:
-- Add a normal Alembic revision after current head.
-- Detach preserved non-task rows before dropping task references.
-- Drop legacy task link tables, tag tables, update table, task table, and unused task enum types.
-- Rename vitals briefing task snapshot storage to action snapshot storage.
+- Unload and remove `com.my-personal-hub.telegram-bot` from LaunchAgents.
+- Remove local bridge logs after the service is stopped.
+- Delete ignored local runtime files together with `telegram_bot/`.
 
 Definition of done:
-- `alembic upgrade head` runs without manual cleanup.
-- `reminders.task_id`, `focus_sessions.task_id`, `plan_items.linked_task_id`, and `vitals_briefings.tasks_data_json` are gone.
-- Legacy task tables are gone.
-- `visibility` remains available for Calendar.
+- `launchctl print gui/$(id -u)/com.my-personal-hub.telegram-bot` reports the
+  service is not registered.
+- No `telegram_bot/main.py` process is running.
 
-### M2 — Backend Removal
+### M2 — Backend Decommission
 
 Scope:
-- Remove `/api/tasks*`, `/api/task-analytics*`, `/api/actions/task-cleanup/*`, task-link endpoints, and task-only bulk tag APIs.
-- Remove task fields from Actions, Reminders, Focus, and Planner schemas.
-- Remove task services, task analytics, cleanup service, task link services, models, schemas, seed data, and task-specific tests.
-- Update Calendar, Jobs, Notes, Dashboard, Planner, Focus, Vitals, and Pulse dependencies.
+- Delete bridge router, schemas, rate limiter, and bridge tests.
+- Remove router registration from `app/main.py`.
+- Remove `telegram_user_id` and `telegram_pin_hash` from the ORM and auth
+  response schema.
+- Add a drop-column Alembic migration with downgrade restoration.
 
 Definition of done:
-- Backend imports no longer depend on removed task/tag modules.
-- Mixed modules compile and focused tests pass without task fields.
+- `/api/telegram/auth/check-sender` and `/api/telegram/auth/verify-pin` are no
+  longer registered.
+- `/api/auth/me` no longer serializes bridge fields.
+- `alembic heads` reports a single new head.
 
-### M3 — Frontend Removal
+### M3 — Frontend Decommission
 
 Scope:
-- Remove task pages/components/hooks/types/tests.
-- Move reusable checklist UI into a shared component location for Actions and Reminders.
-- Remove linked-task UI from Calendar, Jobs, and Notes.
-- Remove the Legacy Review button and task cleanup page.
-- Keep `/tasks`, `/tasks/[id]`, and `/tasks/analytics` as redirects to `/actions`.
+- Remove bridge mutations and request types.
+- Remove bridge state and UI from `TelegramTab`.
+- Remove bridge fields from the frontend `User` type.
+- Keep Telegram Pulse settings/auth UI intact.
 
 Definition of done:
-- Frontend has no imports from task/tag hooks, types, or components.
-- Visible task-link controls are removed.
-- Actions, Focus, Pulse, Settings, command palette, Jobs, Calendar, and Notes remain functional.
+- Settings → Telegram still renders the Pulse section.
+- Settings → Telegram no longer renders "Telegram Bridge".
 
-### M4 — Validation And Status
+### M4 — Documentation And Validation
+
+Scope:
+- Update active repo instructions and status docs so the bridge is no longer a
+  live constraint.
+- Keep historical shipped logs as historical context unless they create active
+  instructions.
+- Run focused backend/frontend validation first, then broader checks where
+  practical.
 
 Definition of done:
-- Local migration has been applied and inspected.
-- Focused backend and frontend suites for touched areas pass.
-- Broad lint/build/test validation is run where practical.
-- `docs/STATUS.md` records exact commands and outcomes.
+- Active docs describe the decommissioned state.
+- Focused backend and frontend tests pass.
+- Compile, lint, and build checks are run or explicitly recorded as skipped.

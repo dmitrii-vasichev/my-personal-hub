@@ -15,6 +15,6 @@
 
 ## Current Project Constraints
 - `main` is the integration branch.
-- Preserve the existing stack and patterns: FastAPI + SQLAlchemy async + Alembic, Next.js + React Query, and the standalone `telegram_bot` test suite.
+- Preserve the existing stack and patterns: FastAPI + SQLAlchemy async + Alembic, Next.js + React Query.
 - Treat `CLAUDE.md` and `docs/archive/shipped-log.md` as historical context, but keep new execution state in the `docs/` pack above.
 - Existing frontend and backend test suites have documented pre-existing flakes/failures; compare touched-area tests first, then broad suites when practical.

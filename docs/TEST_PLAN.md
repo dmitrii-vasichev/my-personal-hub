@@ -1,42 +1,33 @@
-# Legacy Tasks Domain Removal Test Plan
+# Telegram Claude Bridge Decommission Test Plan
 
-Last updated: 2026-04-29
+Last updated: 2026-05-15
 
 ## Strategy
 
-Validate the destructive migration first, then focused backend/frontend areas that previously touched Tasks. Run broader suites after focused regressions are clean.
+Validate absence of the bridge surface while preserving Telegram Pulse and
+generic auth/user behavior. Run focused checks first, then broader suites where
+practical.
 
-## Migration
+## Runtime
 
 ```bash
-cd backend
-PYTHONPATH=. ./venv/bin/alembic upgrade head
-PYTHONPATH=. ./venv/bin/alembic current
+launchctl print gui/$(id -u)/com.my-personal-hub.telegram-bot
+pgrep -fl 'telegram_bot/main.py|com.my-personal-hub.telegram-bot'
 ```
 
-Manual database inspection:
-- Confirm legacy tables are absent: `tasks`, `task_updates`, `task_tags`, `tags`, `task_event_links`, `job_task_links`, `note_task_links`.
-- Confirm legacy columns are absent: `reminders.task_id`, `focus_sessions.task_id`, `plan_items.linked_task_id`, `vitals_briefings.tasks_data_json`.
-- Confirm `vitals_briefings.actions_data_json` exists.
+Expected:
+- LaunchAgent is not registered.
+- No bridge bot Python process is running.
 
 ## Backend
 
-Focused commands:
+Focused checks:
 
 ```bash
 cd backend
-PYTHONPATH=. ./venv/bin/pytest -q \
-  tests/test_actions.py \
-  tests/test_reminders.py \
-  tests/test_focus_sessions.py \
-  tests/test_planner_api.py \
-  tests/test_planner_service.py \
-  tests/test_pulse_digest_items.py \
-  tests/test_pulse_inbox.py \
-  tests/test_calendar.py \
-  tests/test_job_links.py \
-  tests/test_dashboard.py \
-  tests/test_vitals_briefing.py
+PYTHONPATH=. ./venv/bin/python -m pytest -q \
+  tests/test_telegram_bridge_decommission.py \
+  tests/test_auth.py
 ```
 
 Compile/import smoke:
@@ -45,17 +36,17 @@ Compile/import smoke:
 cd backend
 PYTHONPATH=. ./venv/bin/python -m py_compile \
   app/main.py \
-  app/api/actions.py \
-  app/api/reminders.py \
-  app/api/calendar.py \
-  app/api/jobs.py \
-  app/api/notes.py \
-  app/services/actions.py \
-  app/services/reminders.py \
-  app/services/planner.py \
-  app/services/pulse_digest_items.py \
-  app/services/pulse_inbox.py \
-  app/services/vitals_briefing.py
+  app/api/users.py \
+  app/models/user.py \
+  app/schemas/auth.py \
+  alembic/versions/f2a3b4c5d6e7_decommission_telegram_claude_bridge.py
+```
+
+Migration metadata:
+
+```bash
+cd backend
+PYTHONPATH=. ./venv/bin/alembic heads
 ```
 
 Broad command:
@@ -67,26 +58,11 @@ PYTHONPATH=. ./venv/bin/pytest -q
 
 ## Frontend
 
-Focused commands:
+Focused checks:
 
 ```bash
 cd frontend
-npm test -- --run \
-  src/components/actions/__tests__/action-list-groups.test.tsx \
-  src/components/actions/__tests__/actions-page.test.tsx \
-  src/components/focus/__tests__/start-focus-dialog.test.tsx \
-  src/components/today/__tests__/fixed-schedule.test.tsx \
-  src/components/today/__tests__/focus-queue.test.tsx \
-  src/components/today/__tests__/now-block.test.tsx \
-  src/components/today/__tests__/plan-bar.test.tsx \
-  src/hooks/__tests__/use-focus-session.test.tsx \
-  src/components/reminders/__tests__/reminder-list-groups.test.tsx \
-  src/components/reminders/__tests__/reminders-mobile-polish.test.tsx \
-  __tests__/digest-items.test.tsx \
-  __tests__/job-detail-tracking.test.tsx \
-  __tests__/collapsible-description.test.tsx \
-  __tests__/inline-edit.test.tsx \
-  __tests__/api-error-handling.test.ts
+npm test -- --run __tests__/telegram-tab.test.tsx
 ```
 
 Broad commands:
@@ -100,8 +76,7 @@ npm run build
 
 ## Manual Smoke Checklist
 
-- `/actions` has no `Legacy Review` button.
-- `/tasks`, `/tasks/[id]`, and `/tasks/analytics` redirect to `/actions`.
-- Pulse item action saves as an Action, not a Task.
-- Calendar, Jobs, and Notes no longer show task-link UI.
-- Settings no longer exposes task tag management.
+- Settings → Telegram renders "Telegram Pulse".
+- Settings → Telegram does not render "Telegram Bridge".
+- Pulse source management and digest pages still render.
+- No `/api/telegram/auth/*` endpoint appears in the FastAPI route table.
