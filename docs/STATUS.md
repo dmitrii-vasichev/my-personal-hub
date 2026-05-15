@@ -49,6 +49,7 @@ Changed:
   composition.
 
 Validation:
-- Focused Today/Actions tests: pending.
-- Frontend lint: pending.
-- Frontend production build: pending.
+- Focused Today/Actions tests: passed, 31 tests.
+- Today action date utilities in `TZ=UTC`: passed, 7 tests.
+- Frontend lint: passed.
+- Frontend production build with `npx next build --webpack`: passed.
