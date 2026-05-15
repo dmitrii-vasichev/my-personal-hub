@@ -1,23 +1,57 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActionRow } from "@/components/actions/action-row";
 import { useActions } from "@/hooks/use-actions";
-import { actionBelongsToLocalDay, sortTodayActions } from "./today-action-utils";
+import {
+  actionBelongsToLocalDay,
+  localDateString,
+  sortTodayActions,
+} from "./today-action-utils";
+
+const MIDNIGHT_ROLLOVER_BUFFER_MS = 1_000;
+
+function dateFromLocalKey(todayKey: string): Date {
+  const [year, month, day] = todayKey.split("-").map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0);
+}
+
+function msUntilNextLocalDay(now = new Date()): number {
+  const nextMidnight = new Date(now);
+  nextMidnight.setDate(now.getDate() + 1);
+  nextMidnight.setHours(0, 0, 0, 0);
+  return Math.max(
+    nextMidnight.getTime() - now.getTime() + MIDNIGHT_ROLLOVER_BUFFER_MS,
+    MIDNIGHT_ROLLOVER_BUFFER_MS
+  );
+}
 
 export function ActionsToday() {
   const { data: actions = [], isLoading, error } = useActions(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [todayKey, setTodayKey] = useState(() => localDateString());
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setTodayKey(localDateString());
+      setExpandedId(null);
+    }, msUntilNextLocalDay());
+
+    return () => window.clearTimeout(timeout);
+  }, [todayKey]);
+
+  const todayRef = useMemo(() => dateFromLocalKey(todayKey), [todayKey]);
 
   const todayActions = useMemo(
     () =>
       sortTodayActions(
         actions.filter(
           (action) =>
-            action.status === "pending" && actionBelongsToLocalDay(action)
+            action.status === "pending" &&
+            actionBelongsToLocalDay(action, todayRef)
         )
       ),
-    [actions]
+    [actions, todayRef]
   );
 
   if (isLoading) {

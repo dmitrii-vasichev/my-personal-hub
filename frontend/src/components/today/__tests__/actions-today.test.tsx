@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Action } from "@/types/action";
@@ -214,5 +214,25 @@ describe("ActionsToday", () => {
     fireEvent.click(screen.getByRole("button", { name: /done/i }));
 
     expect(markDoneMutate).toHaveBeenCalledWith(42, expect.any(Object));
+  });
+
+  it("refreshes the local-day filter after local midnight", () => {
+    vi.setSystemTime(new Date(2026, 4, 15, 23, 59, 59, 900));
+    actionsState.data = [
+      makeAction({ id: 1, title: "May 15 action", action_date: "2026-05-15" }),
+      makeAction({ id: 2, title: "May 16 action", action_date: "2026-05-16" }),
+    ];
+
+    wrap(<ActionsToday />);
+
+    expect(screen.getByRole("heading", { name: "May 15 action", level: 4 })).toBeInTheDocument();
+    expect(screen.queryByText("May 16 action")).not.toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(1_500);
+    });
+
+    expect(screen.getByRole("heading", { name: "May 16 action", level: 4 })).toBeInTheDocument();
+    expect(screen.queryByText("May 15 action")).not.toBeInTheDocument();
   });
 });
