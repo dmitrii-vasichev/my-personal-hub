@@ -15,11 +15,65 @@ interface FactoidProps {
   subValue: string;
   compactSubValue?: string;
   title?: string;
+  freshness?: HealthFreshnessStatus;
 }
+
+type HealthFreshnessStatus = "fresh" | "stale" | "missing";
+
+const FRESHNESS_DOT: Record<
+  HealthFreshnessStatus,
+  { label: string; className: string }
+> = {
+  fresh: {
+    label: "Vitals data is fresh",
+    className: "bg-[color:var(--accent)] shadow-[0_0_0_2px_var(--bg-2)]",
+  },
+  stale: {
+    label: "Vitals data may be stale",
+    className: "bg-amber-400 shadow-[0_0_0_2px_var(--bg-2)]",
+  },
+  missing: {
+    label: "Vitals data is not available yet",
+    className: "bg-[color:var(--ink-3)] shadow-[0_0_0_2px_var(--bg-2)]",
+  },
+};
 
 function formatNumber(value: number | null | undefined, suffix = ""): string {
   if (value == null) return "--";
   return `${value}${suffix}`;
+}
+
+function toDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function normalizeDateKey(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const dateKey = value.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(dateKey) ? dateKey : null;
+}
+
+function getExpectedVitalsDateKey(referenceDate = new Date()): string {
+  const expectedDate = new Date(referenceDate);
+  expectedDate.setDate(expectedDate.getDate() - 1);
+  return toDateKey(expectedDate);
+}
+
+function getHealthFreshnessStatus(
+  metrics: VitalsDailyMetric | null | undefined,
+  sleep: VitalsSleep | null | undefined,
+): HealthFreshnessStatus {
+  const expectedDateKey = getExpectedVitalsDateKey();
+  const availableDateKeys = [
+    normalizeDateKey(metrics?.date),
+    normalizeDateKey(sleep?.date),
+  ].filter((dateKey): dateKey is string => dateKey != null);
+
+  if (availableDateKeys.length === 0) return "missing";
+  return availableDateKeys.every((dateKey) => dateKey >= expectedDateKey) ? "fresh" : "stale";
 }
 
 function formatSleepDuration(seconds: number | null | undefined): string {
@@ -72,12 +126,14 @@ function Factoid({
   subValue,
   compactSubValue,
   title,
+  freshness,
 }: FactoidProps) {
   return (
     <div
-      className="min-h-[78px] border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)] p-[9px] sm:min-h-[96px] sm:p-[14px]"
+      className="relative min-h-[78px] border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)] p-[9px] sm:min-h-[96px] sm:p-[14px]"
       title={title}
     >
+      {freshness ? <FreshnessDot status={freshness} /> : null}
       <span className="block truncate text-[8.5px] uppercase tracking-[1.4px] text-[color:var(--ink-3)] sm:text-[9.5px] sm:tracking-[2px]">
         {shortLabel ? <span className="sm:hidden">{shortLabel}</span> : null}
         <span className={shortLabel ? "hidden sm:inline" : undefined}>
@@ -101,9 +157,29 @@ function Factoid({
   );
 }
 
-function LoadingFactoid({ label }: { label: string }) {
+function FreshnessDot({ status }: { status: HealthFreshnessStatus }) {
+  const dot = FRESHNESS_DOT[status];
   return (
-    <div className="h-[78px] animate-pulse border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)] sm:h-[96px]">
+    <span
+      aria-label={dot.label}
+      className={`absolute right-2 top-2 h-2 w-2 rounded-full ${dot.className}`}
+      data-status={status}
+      data-testid="today-health-freshness"
+      title={dot.label}
+    />
+  );
+}
+
+function LoadingFactoid({
+  label,
+  freshness,
+}: {
+  label: string;
+  freshness?: HealthFreshnessStatus;
+}) {
+  return (
+    <div className="relative h-[78px] animate-pulse border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)] sm:h-[96px]">
+      {freshness ? <FreshnessDot status={freshness} /> : null}
       <span className="sr-only">
         {label}
       </span>
@@ -123,11 +199,17 @@ export function TodayHealthFactoids({
         data-testid="today-health-loading"
       >
         {["readiness", "hrv", "sleep"].map((key) => (
-          <LoadingFactoid key={key} label={key} />
+          <LoadingFactoid
+            key={key}
+            label={key}
+            freshness={key === "sleep" ? "missing" : undefined}
+          />
         ))}
       </div>
     );
   }
+
+  const freshness = getHealthFreshnessStatus(metrics, sleep);
 
   return (
     <div className="grid grid-cols-3 gap-[6px] sm:gap-[10px]" data-testid="today-health">
@@ -150,6 +232,7 @@ export function TodayHealthFactoids({
         value={formatSleepDuration(sleep?.duration_seconds)}
         subValue={sleep?.sleep_score != null ? `Score ${sleep.sleep_score}` : "No sleep data"}
         compactSubValue={sleep?.sleep_score != null ? `Score ${sleep.sleep_score}` : "No data"}
+        freshness={freshness}
       />
     </div>
   );

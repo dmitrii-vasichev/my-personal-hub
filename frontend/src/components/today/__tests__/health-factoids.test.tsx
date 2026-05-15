@@ -1,5 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { TodayHealthFactoids } from "../health-factoids";
 import type { VitalsDailyMetric, VitalsSleep } from "@/types/vitals";
 
@@ -50,6 +50,10 @@ function sleep(overrides: Partial<VitalsSleep> = {}): VitalsSleep {
 }
 
 describe("TodayHealthFactoids", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("renders readiness, weekly HRV with last-night subtext, and sleep duration", () => {
     render(<TodayHealthFactoids metrics={metric()} sleep={sleep()} isLoading={false} />);
 
@@ -69,6 +73,34 @@ describe("TodayHealthFactoids", () => {
     expect(screen.getByText("Sleep")).toBeInTheDocument();
     expect(screen.getByText("7h 23m")).toBeInTheDocument();
     expect(screen.getByText("Score 78")).toBeInTheDocument();
+  });
+
+  it("marks health data as fresh when Garmin data is from yesterday", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-16T12:00:00"));
+
+    render(<TodayHealthFactoids metrics={metric()} sleep={sleep()} isLoading={false} />);
+
+    const freshness = screen.getByTestId("today-health-freshness");
+    expect(freshness).toHaveAttribute("data-status", "fresh");
+    expect(freshness).toHaveAccessibleName("Vitals data is fresh");
+  });
+
+  it("marks health data as stale when any available Garmin data is older than yesterday", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-16T12:00:00"));
+
+    render(
+      <TodayHealthFactoids
+        metrics={metric({ date: "2026-05-14" })}
+        sleep={sleep()}
+        isLoading={false}
+      />,
+    );
+
+    const freshness = screen.getByTestId("today-health-freshness");
+    expect(freshness).toHaveAttribute("data-status", "stale");
+    expect(freshness).toHaveAccessibleName("Vitals data may be stale");
   });
 
   it("does not replace missing weekly HRV with last-night HRV", () => {
@@ -104,5 +136,6 @@ describe("TodayHealthFactoids", () => {
     const loading = screen.getByTestId("today-health-loading");
     expect(loading).toBeInTheDocument();
     expect(loading.children).toHaveLength(3);
+    expect(screen.getByTestId("today-health-freshness")).toHaveAttribute("data-status", "missing");
   });
 });
