@@ -4,7 +4,7 @@ Last updated: 2026-05-15
 
 ## Current State
 
-- Branch: `main`
+- Branch: `codex/today-redesign`
 - Base branch: `main`
 - Current feature: Today redesign.
 - Current execution source of truth: `docs/PLAN.md`
@@ -36,3 +36,20 @@ Planned validation:
 - Focused Today/Actions Vitest tests.
 - Frontend lint.
 - Frontend production build with `npx next build --webpack`.
+
+### 2026-05-15 - Implementation
+
+Changed:
+- Extracted shared `ActionRow` from `ActionList`.
+- Added Today action date utilities.
+- Added Today health factoids.
+- Added Today quick-add Action capture.
+- Added expandable Actions Today list.
+- Replaced the planner/dashboard Today composition with the health-first Today
+  composition.
+
+Validation:
+- Focused Today/Actions tests: passed, 32 tests.
+- Today action date utilities in `TZ=UTC`: passed, 7 tests.
+- Frontend lint: passed.
+- Frontend production build with `npx next build --webpack`: passed.
