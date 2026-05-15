@@ -1,86 +1,55 @@
-# Telegram Claude Bridge Decommission Plan
+# Today Redesign Plan
 
 Last updated: 2026-05-15
 
 ## Goal
 
-Remove the Telegram-to-Claude-Code bridge completely now that Codex provides the
-remote control workflow directly.
+Rebuild Today as a low-noise daily operating view focused on Garmin health
+factoids and pending Actions for today.
 
-## Non-Goals
+## Source Documents
 
-- Do not remove Telegram Pulse channel collection, digests, reminder callbacks,
-  or the Telegram Mini App.
-- Do not remove generic API token support; only remove bridge-specific token
-  consumers and setup surfaces.
-- Do not preserve bridge pairing data. `users.telegram_user_id` and
-  `users.telegram_pin_hash` may be dropped.
-
-## Architecture
-
-- Stop and remove the local macOS LaunchAgent before deleting its repo script.
-- Delete the standalone `telegram_bot/` package, launchd files, security
-  profiles, local bridge tests, and setup docs.
-- Remove Hub bridge auth endpoints under `/api/telegram/auth/*`.
-- Remove bridge self-service endpoints under `/api/users/me/telegram-*`.
-- Remove bridge-only user columns and API response fields.
-- Add a normal Alembic revision after the current head to drop the bridge
-  columns and constraints from `users`.
-- Remove the Settings → Telegram "Telegram Bridge" section while preserving the
-  existing "Telegram Pulse" section.
+- Design: `docs/superpowers/specs/2026-05-15-today-redesign-design.md`
+- Implementation plan: `docs/superpowers/plans/2026-05-15-today-redesign.md`
 
 ## Milestones
 
-### M1 — Runtime Shutdown
+### M1 - Shared Action Row
 
-Scope:
-- Unload and remove `com.my-personal-hub.telegram-bot` from LaunchAgents.
-- Remove local bridge logs after the service is stopped.
-- Delete ignored local runtime files together with `telegram_bot/`.
+Extract the expandable Action row from `ActionList` so Today and `/actions`
+share Done, Edit, Snooze/Move, Delete, details, and checklist behavior.
 
 Definition of done:
-- `launchctl print gui/$(id -u)/com.my-personal-hub.telegram-bot` reports the
-  service is not registered.
-- No `telegram_bot/main.py` process is running.
+- Existing ActionList grouping tests pass.
+- `/actions` keeps its existing row behavior.
 
-### M2 — Backend Decommission
+### M2 - Today Components
 
-Scope:
-- Delete bridge router, schemas, rate limiter, and bridge tests.
-- Remove router registration from `app/main.py`.
-- Remove `telegram_user_id` and `telegram_pin_hash` from the ORM and auth
-  response schema.
-- Add a drop-column Alembic migration with downgrade restoration.
+Add Today health factoids, Today quick-add Action capture, and Actions Today
+list components.
 
 Definition of done:
-- `/api/telegram/auth/check-sender` and `/api/telegram/auth/verify-pin` are no
-  longer registered.
-- `/api/auth/me` no longer serializes bridge fields.
-- `alembic heads` reports a single new head.
+- HRV large value uses weekly average.
+- Sleep duration renders as `7h 23m`.
+- Quick-add creates an Action with today's `action_date`.
+- Actions Today shows only pending Actions for the current local day.
 
-### M3 — Frontend Decommission
+### M3 - Page Replacement
 
-Scope:
-- Remove bridge mutations and request types.
-- Remove bridge state and UI from `TelegramTab`.
-- Remove bridge fields from the frontend `User` type.
-- Keep Telegram Pulse settings/auth UI intact.
+Replace the current planner/dashboard Today composition with the new
+health-first Today composition.
 
 Definition of done:
-- Settings → Telegram still renders the Pulse section.
-- Settings → Telegram no longer renders "Telegram Bridge".
+- Today no longer renders planner, job-hunt, notes, response-rate, or background
+  signals blocks.
+- Focused Today page tests pass.
 
-### M4 — Documentation And Validation
+### M4 - Validation
 
-Scope:
-- Update active repo instructions and status docs so the bridge is no longer a
-  live constraint.
-- Keep historical shipped logs as historical context unless they create active
-  instructions.
-- Run focused backend/frontend validation first, then broader checks where
-  practical.
+Run focused tests first, then lint and production build.
 
 Definition of done:
-- Active docs describe the decommissioned state.
-- Focused backend and frontend tests pass.
-- Compile, lint, and build checks are run or explicitly recorded as skipped.
+- Focused Today/Actions tests pass.
+- `npm run lint` passes.
+- `npx next build --webpack` passes or any failure is documented with a known
+  baseline comparison.
