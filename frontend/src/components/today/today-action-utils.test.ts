@@ -54,6 +54,20 @@ describe("today-action-utils", () => {
     ).toBe(true);
   });
 
+  it("matches reminders on the reference local day even when action_date is different", () => {
+    const ref = new Date(2026, 4, 15, 12, 0, 0);
+
+    expect(
+      actionBelongsToLocalDay(
+        makeAction({
+          action_date: "2026-05-16",
+          remind_at: "2026-05-15T18:00:00-06:00",
+        }),
+        ref
+      )
+    ).toBe(true);
+  });
+
   it("sorts timed actions first, then urgent anytime, then creation time", () => {
     const sorted = sortTodayActions([
       makeAction({ id: 1, title: "Anytime normal", created_at: "2026-05-15T12:00:00Z" }),

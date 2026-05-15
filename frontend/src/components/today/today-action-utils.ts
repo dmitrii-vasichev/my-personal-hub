@@ -15,8 +15,7 @@ export function withLocalTzOffset(date: string, time: string): string {
 }
 
 export function actionBelongsToLocalDay(action: Action, ref: Date = new Date()): boolean {
-  const source = action.action_date ?? action.remind_at;
-  return isSameLocalDay(source, ref);
+  return isSameLocalDay(action.action_date, ref) || isSameLocalDay(action.remind_at, ref);
 }
 
 export function sortTodayActions(actions: Action[]): Action[] {
