@@ -38,6 +38,7 @@ out/
 # Claude Code
 CLAUDE.md
 .claude/
+.superpowers/
 
 # Linters
 .ruff_cache/
