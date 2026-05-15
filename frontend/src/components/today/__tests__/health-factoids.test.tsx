@@ -56,6 +56,10 @@ describe("TodayHealthFactoids", () => {
     expect(screen.getByText("Training readiness")).toBeInTheDocument();
     expect(screen.getByText("82")).toBeInTheDocument();
     expect(screen.getByText("READY - 6h recovery")).toBeInTheDocument();
+    expect(screen.getByText("Training readiness").closest("div")).toHaveAttribute(
+      "title",
+      "Productive training is possible.",
+    );
 
     const hrvTile = screen.getByText("HRV").closest("div");
     expect(hrvTile).not.toBeNull();
@@ -81,8 +85,24 @@ describe("TodayHealthFactoids", () => {
     expect(within(hrvTile!).getByText("Last night 52 ms - BALANCED")).toBeInTheDocument();
   });
 
+  it("renders sleep fallback subtext when score is missing", () => {
+    render(
+      <TodayHealthFactoids
+        metrics={metric()}
+        sleep={sleep({ sleep_score: null })}
+        isLoading={false}
+      />,
+    );
+
+    expect(screen.getByText("Sleep")).toBeInTheDocument();
+    expect(screen.getByText("7h 23m")).toBeInTheDocument();
+    expect(screen.getByText("No sleep data")).toBeInTheDocument();
+  });
+
   it("renders stable skeleton tiles while loading", () => {
     render(<TodayHealthFactoids metrics={null} sleep={null} isLoading />);
-    expect(screen.getByTestId("today-health-loading")).toBeInTheDocument();
+    const loading = screen.getByTestId("today-health-loading");
+    expect(loading).toBeInTheDocument();
+    expect(loading.children).toHaveLength(3);
   });
 });
