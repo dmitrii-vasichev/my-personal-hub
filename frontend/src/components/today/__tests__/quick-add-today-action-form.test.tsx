@@ -40,7 +40,7 @@ describe("QuickAddTodayActionForm", () => {
     const submit = screen.getByRole("button", { name: /^add$/i });
     expect(submit).toBeDisabled();
 
-    fireEvent.change(screen.getByPlaceholderText("What needs to happen today?"), {
+    fireEvent.change(screen.getByRole("textbox", { name: /action title/i }), {
       target: { value: "   " },
     });
     expect(submit).toBeDisabled();
@@ -52,7 +52,7 @@ describe("QuickAddTodayActionForm", () => {
   it("creates a today action without remind_at by default", () => {
     renderForm();
 
-    fireEvent.change(screen.getByPlaceholderText("What needs to happen today?"), {
+    fireEvent.change(screen.getByRole("textbox", { name: /action title/i }), {
       target: { value: "Send invoice" },
     });
     fireEvent.click(screen.getByRole("button", { name: /^add$/i }));

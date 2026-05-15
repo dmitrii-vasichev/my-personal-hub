@@ -499,6 +499,18 @@ export function ActionRow({
     onToggle();
   };
 
+  const handleRowKeyDown = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest("a, button, input, select, textarea")) {
+      return;
+    }
+
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onToggle();
+    }
+  };
+
   const handleChecklistToggle = (itemId: string) => {
     const nextChecklist = checklist.map((item) =>
       item.id === itemId ? { ...item, completed: !item.completed } : item
@@ -675,8 +687,13 @@ export function ActionRow({
       >
         {/* Main row - when | body | acts */}
         <div
-          className="grid cursor-pointer grid-cols-[54px_minmax(0,1fr)] items-center gap-2 px-2.5 py-3 sm:grid-cols-[72px_minmax(0,1fr)_auto] sm:gap-3 sm:px-3 sm:py-2"
+          role="button"
+          tabIndex={0}
+          aria-expanded={expanded}
+          aria-label={`Toggle details for ${action.title}`}
+          className="grid cursor-pointer grid-cols-[54px_minmax(0,1fr)] items-center gap-2 px-2.5 py-3 outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg)] sm:grid-cols-[72px_minmax(0,1fr)_auto] sm:gap-3 sm:px-3 sm:py-2"
           onClick={handleRowClick}
+          onKeyDown={handleRowKeyDown}
         >
           {/* when */}
           <div className="flex min-w-0 flex-col gap-0 font-mono leading-tight">

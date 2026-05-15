@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi } from "vitest";
 import type { Action } from "@/types/action";
@@ -142,5 +143,39 @@ describe("ActionList grouping", () => {
     expect(within(row!).getByLabelText("Repeats Daily")).toBeInTheDocument();
     expect(within(row!).getByLabelText("Snoozed 6 times")).toBeInTheDocument();
     expect(within(row!).getByLabelText("Checklist 0 of 2")).toBeInTheDocument();
+  });
+
+  it("expands and collapses an action row from the keyboard", async () => {
+    const user = userEvent.setup();
+
+    wrap(
+      <ActionList
+        actions={[
+          makeAction({
+            title: "Keyboard expandable action",
+            details: "Visible after keyboard expansion",
+          }),
+        ]}
+        today={new Date("2026-05-02T09:00:00Z")}
+        isLoading={false}
+        error={null}
+      />,
+    );
+
+    const rowToggle = screen.getByRole("button", {
+      name: /keyboard expandable action/i,
+    });
+    expect(rowToggle).toHaveAttribute("aria-expanded", "false");
+
+    rowToggle.focus();
+    await user.keyboard("{Enter}");
+
+    expect(rowToggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Visible after keyboard expansion")).toBeInTheDocument();
+
+    await user.keyboard(" ");
+
+    expect(rowToggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("Visible after keyboard expansion")).not.toBeInTheDocument();
   });
 });

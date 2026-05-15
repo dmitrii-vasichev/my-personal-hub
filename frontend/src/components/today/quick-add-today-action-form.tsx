@@ -51,6 +51,7 @@ export function QuickAddTodayActionForm() {
         <Input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
+          aria-label="Action title"
           placeholder="What needs to happen today?"
           autoComplete="off"
           className="min-h-9 flex-1 border-0 bg-transparent px-1 text-[16px] shadow-none rounded-none placeholder:text-[color:var(--ink-3)] focus-visible:ring-0 md:text-[13px]"
