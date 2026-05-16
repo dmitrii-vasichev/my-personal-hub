@@ -11,6 +11,7 @@ import { CompletedActionsSheet } from "@/components/actions/completed-actions-sh
 import { useActions } from "@/hooks/use-actions";
 import { useBirthdays } from "@/hooks/use-birthdays";
 import { parseLocalDateSource } from "@/components/today/today-date";
+import { isInboxAction } from "@/components/actions/action-filters";
 
 function Hdline({ title, count }: { title: string; count?: number }) {
   return (
@@ -47,6 +48,10 @@ export default function ActionsPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const visibleActions = useMemo(
+    () => actions.filter((action) => !isInboxAction(action)),
+    [actions],
+  );
 
   const focusQuickAdd = () => {
     quickAddRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -78,7 +83,7 @@ export default function ActionsPage() {
     let inbox = 0;
     for (const action of actions) {
       if (action.status === "done") continue;
-      if (!action.action_date && !action.remind_at) {
+      if (isInboxAction(action)) {
         inbox += 1;
         continue;
       }
@@ -140,7 +145,7 @@ export default function ActionsPage() {
         <div className="flex flex-col gap-2.5 sm:gap-[14px]" ref={quickAddRef}>
           <QuickAddActionForm />
           <ActionList
-            actions={actions}
+            actions={visibleActions}
             isLoading={isLoading}
             error={error}
           />

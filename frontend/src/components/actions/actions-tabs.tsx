@@ -3,21 +3,25 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-
-const TABS = [
-  { label: "Actions", href: "/actions" },
-  { label: "Birthdays", href: "/actions/birthdays" },
-] as const;
+import { useActions } from "@/hooks/use-actions";
+import { isInboxAction } from "./action-filters";
 
 export function ActionsTabs() {
   const pathname = usePathname();
+  const { data: actions = [] } = useActions();
+  const inboxCount = actions.filter(isInboxAction).length;
+  const tabs = [
+    { label: "Actions", href: "/actions" },
+    { label: `Inbox (${inboxCount})`, href: "/actions/inbox" },
+    { label: "Birthdays", href: "/actions/birthdays" },
+  ] as const;
 
   return (
     <nav
       role="tablist"
       className="flex items-center gap-0 border-b-[1.5px] border-[color:var(--line)]"
     >
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const isActive = pathname === tab.href;
         return (
           <Link
