@@ -60,6 +60,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         />
         <main className="flex-1 overflow-y-auto p-4 pb-[calc(1rem+var(--safe-bottom))] pl-[max(1rem,var(--safe-left))] pr-[max(1rem,var(--safe-right))] md:p-6">
           <div className="mx-auto max-w-[1200px]">{children}</div>
+          <p className="mx-auto mt-6 max-w-[1200px] border-t border-[color:var(--line)] pt-3 text-center text-[11px] font-medium tracking-[0.4px] text-[color:var(--ink-3)] md:hidden">
+            Привет, Андрюха!
+          </p>
         </main>
       </div>
     </div>
