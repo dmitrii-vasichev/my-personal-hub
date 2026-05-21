@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ActionRow } from "@/components/actions/action-row";
 import { useActions } from "@/hooks/use-actions";
 import {
-  actionBelongsToLocalDay,
+  actionIsDueByLocalDay,
   localDateString,
   sortTodayActions,
 } from "./today-action-utils";
@@ -48,7 +48,7 @@ export function ActionsToday() {
         actions.filter(
           (action) =>
             action.status === "pending" &&
-            actionBelongsToLocalDay(action, todayRef)
+            actionIsDueByLocalDay(action, todayRef)
         )
       ),
     [actions, todayRef]

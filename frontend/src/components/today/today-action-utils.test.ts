@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { Action } from "@/types/action";
 import {
   actionBelongsToLocalDay,
+  actionIsDueByLocalDay,
   localDateString,
   sortTodayActions,
   withLocalTzOffset,
@@ -81,6 +82,19 @@ describe("today-action-utils", () => {
         ref
       )
     ).toBe(true);
+  });
+
+  it("treats pending actions due before the reference local day as due today", () => {
+    const ref = new Date(2026, 4, 15, 12, 0, 0);
+
+    expect(actionIsDueByLocalDay(makeAction({ action_date: "2026-05-14" }), ref)).toBe(true);
+    expect(
+      actionIsDueByLocalDay(
+        makeAction({ action_date: null, remind_at: localIso("2026-05-14", "18:00") }),
+        ref
+      )
+    ).toBe(true);
+    expect(actionIsDueByLocalDay(makeAction({ action_date: "2026-05-16" }), ref)).toBe(false);
   });
 
   it("matches reminders on the reference local day even when action_date is different", () => {

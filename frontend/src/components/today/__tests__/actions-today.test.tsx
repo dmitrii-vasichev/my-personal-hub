@@ -119,7 +119,7 @@ describe("ActionsToday", () => {
     expect(screen.queryByRole("heading", { level: 4 })).not.toBeInTheDocument();
   });
 
-  it("filters out non-today and done actions", () => {
+  it("carries overdue pending actions into today and filters future or done actions", () => {
     actionsState.data = [
       makeAction({ id: 1, title: "Today by date", action_date: "2026-05-15" }),
       makeAction({
@@ -128,6 +128,7 @@ describe("ActionsToday", () => {
         action_date: null,
         remind_at: "2026-05-15T17:00:00-06:00",
       }),
+      makeAction({ id: 5, title: "Yesterday debt", action_date: "2026-05-14" }),
       makeAction({ id: 3, title: "Tomorrow", action_date: "2026-05-16" }),
       makeAction({ id: 4, title: "Done today", status: "done" }),
     ];
@@ -136,6 +137,7 @@ describe("ActionsToday", () => {
 
     expect(screen.getByRole("heading", { name: "Today by date", level: 4 })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Today by reminder", level: 4 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Yesterday debt", level: 4 })).toBeInTheDocument();
     expect(screen.queryByText("Tomorrow")).not.toBeInTheDocument();
     expect(screen.queryByText("Done today")).not.toBeInTheDocument();
   });
@@ -216,7 +218,7 @@ describe("ActionsToday", () => {
     expect(markDoneMutate).toHaveBeenCalledWith(42, expect.any(Object));
   });
 
-  it("refreshes the local-day filter after local midnight", () => {
+  it("refreshes the local-day filter after local midnight while carrying over debt", () => {
     vi.setSystemTime(new Date(2026, 4, 15, 23, 59, 59, 900));
     actionsState.data = [
       makeAction({ id: 1, title: "May 15 action", action_date: "2026-05-15" }),
@@ -233,6 +235,6 @@ describe("ActionsToday", () => {
     });
 
     expect(screen.getByRole("heading", { name: "May 16 action", level: 4 })).toBeInTheDocument();
-    expect(screen.queryByText("May 15 action")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "May 15 action", level: 4 })).toBeInTheDocument();
   });
 });

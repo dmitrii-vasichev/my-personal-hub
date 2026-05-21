@@ -21,6 +21,23 @@ export function actionBelongsToLocalDay(action: Action, ref: Date = new Date()):
   return isSameLocalDay(action.action_date, ref) || isSameLocalDay(action.remind_at, ref);
 }
 
+function localDayTimestamp(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function sourceIsDueByLocalDay(source: string | null | undefined, ref: Date): boolean {
+  const parsed = parseLocalDateSource(source);
+  if (!parsed) return false;
+  return localDayTimestamp(parsed) <= localDayTimestamp(ref);
+}
+
+export function actionIsDueByLocalDay(action: Action, ref: Date = new Date()): boolean {
+  return (
+    sourceIsDueByLocalDay(action.action_date, ref) ||
+    sourceIsDueByLocalDay(action.remind_at, ref)
+  );
+}
+
 export function sortTodayActions(actions: Action[]): Action[] {
   return [...actions].sort((a, b) => {
     const aScheduled = a.remind_at ? 0 : 1;
