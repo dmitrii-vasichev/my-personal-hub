@@ -1,6 +1,6 @@
 # My Personal Hub
 
-A full-stack personal productivity platform that consolidates task management, job hunting, calendar, notes, Telegram monitoring, and health tracking into a single dashboard.
+A personal data and workflow automation platform integrating tasks, job-search data, calendar, notes, Telegram, Garmin Connect, dashboards, and AI-assisted summaries.
 
 **[Live Demo](https://hub.dmitrii-vasichev.com)**
 
