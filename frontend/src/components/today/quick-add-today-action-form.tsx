@@ -5,6 +5,7 @@ import { Clock, Flag, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCreateAction } from "@/hooks/use-actions";
+import { toast } from "sonner";
 import { localDateString, withLocalTzOffset } from "./today-action-utils";
 
 export function QuickAddTodayActionForm() {
@@ -37,7 +38,13 @@ export function QuickAddTodayActionForm() {
         is_urgent: isUrgent,
       },
       {
-        onSuccess: reset,
+        onSuccess: () => {
+          reset();
+          toast.success("Action added");
+        },
+        onError: () => {
+          toast.error("Failed to add action");
+        },
       }
     );
   };

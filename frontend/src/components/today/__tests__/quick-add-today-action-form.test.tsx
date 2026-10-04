@@ -6,6 +6,8 @@ import { withLocalTzOffset } from "../today-action-utils";
 const mocks = vi.hoisted(() => ({
   createActionMutate: vi.fn(),
   isPending: false,
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 vi.mock("@/hooks/use-actions", () => ({
@@ -13,6 +15,13 @@ vi.mock("@/hooks/use-actions", () => ({
     mutate: mocks.createActionMutate,
     isPending: mocks.isPending,
   }),
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: mocks.toastSuccess,
+    error: mocks.toastError,
+  },
 }));
 
 function renderForm() {
@@ -24,6 +33,8 @@ describe("QuickAddTodayActionForm", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 4, 15, 12, 0, 0));
     mocks.isPending = false;
+    mocks.toastSuccess.mockReset();
+    mocks.toastError.mockReset();
     mocks.createActionMutate.mockReset();
     mocks.createActionMutate.mockImplementation((_payload, options) => {
       options?.onSuccess?.();
@@ -121,5 +132,25 @@ describe("QuickAddTodayActionForm", () => {
     expect(screen.queryByDisplayValue("09:00")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /mark as urgent/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^add$/i })).toBeDisabled();
+    expect(mocks.toastSuccess).toHaveBeenCalledWith("Action added");
+    expect(mocks.toastError).not.toHaveBeenCalled();
+  });
+
+  it("shows an error toast and keeps the draft when create fails", () => {
+    mocks.createActionMutate.mockImplementation((_payload, options) => {
+      options?.onError?.();
+    });
+    renderForm();
+
+    fireEvent.change(screen.getByPlaceholderText("What needs to happen today?"), {
+      target: { value: "Follow up" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^add$/i }));
+
+    expect(mocks.toastError).toHaveBeenCalledWith("Failed to add action");
+    expect(mocks.toastSuccess).not.toHaveBeenCalled();
+    expect(screen.getByPlaceholderText("What needs to happen today?")).toHaveValue(
+      "Follow up"
+    );
   });
 });
