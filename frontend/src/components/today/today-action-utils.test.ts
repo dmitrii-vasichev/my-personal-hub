@@ -4,6 +4,7 @@ import {
   actionBelongsToLocalDay,
   actionIsDueByLocalDay,
   localDateString,
+  partitionDueTodayActions,
   sortTodayActions,
   withLocalTzOffset,
 } from "./today-action-utils";
@@ -165,6 +166,68 @@ describe("today-action-utils", () => {
       "Anytime normal",
       "Scheduled early",
       "Anytime urgent",
+    ]);
+  });
+
+  it("splits due actions into overdue and planned-for-today sections", () => {
+    const ref = new Date(2026, 4, 15, 12, 0, 0);
+    const sections = partitionDueTodayActions(
+      [
+        makeAction({ id: 1, title: "Yesterday debt", action_date: "2026-05-14" }),
+        makeAction({ id: 2, title: "Today by date", action_date: "2026-05-15" }),
+        makeAction({
+          id: 3,
+          title: "Today by reminder",
+          action_date: null,
+          remind_at: localIso("2026-05-15", "18:00"),
+        }),
+        makeAction({
+          id: 4,
+          title: "Past date but reminded today",
+          action_date: "2026-05-13",
+          remind_at: localIso("2026-05-15", "09:00"),
+        }),
+        makeAction({
+          id: 5,
+          title: "Older reminder",
+          action_date: null,
+          remind_at: localIso("2026-05-13", "08:00"),
+        }),
+        makeAction({ id: 6, title: "Tomorrow", action_date: "2026-05-16" }),
+        makeAction({ id: 7, title: "Done yesterday", action_date: "2026-05-14", status: "done" }),
+      ],
+      ref
+    );
+
+    expect(sections.overdue.map((action) => action.title)).toEqual([
+      "Older reminder",
+      "Yesterday debt",
+    ]);
+    expect(sections.today.map((action) => action.title)).toEqual([
+      "Past date but reminded today",
+      "Today by reminder",
+      "Today by date",
+    ]);
+  });
+
+  it("sorts each today section without mutating the input", () => {
+    const ref = new Date(2026, 4, 15, 12, 0, 0);
+    const actions = [
+      makeAction({ id: 1, title: "Anytime normal", action_date: "2026-05-15" }),
+      makeAction({
+        id: 2,
+        title: "Scheduled late",
+        action_date: "2026-05-15",
+        remind_at: localIso("2026-05-15", "18:00"),
+        is_floating: false,
+      }),
+    ];
+
+    partitionDueTodayActions(actions, ref);
+
+    expect(actions.map((action) => action.title)).toEqual([
+      "Anytime normal",
+      "Scheduled late",
     ]);
   });
 });

@@ -140,6 +140,26 @@ describe("ActionsToday", () => {
     expect(screen.getByRole("heading", { name: "Yesterday debt", level: 4 })).toBeInTheDocument();
     expect(screen.queryByText("Tomorrow")).not.toBeInTheDocument();
     expect(screen.queryByText("Done today")).not.toBeInTheDocument();
+
+    const overdue = screen.getByRole("region", { name: /просрочено\s*1/i });
+    const planned = screen.getByRole("region", { name: /на сегодня\s*2/i });
+    expect(within(overdue).getByRole("heading", { name: "Yesterday debt", level: 4 })).toBeInTheDocument();
+    expect(within(overdue).queryByText("Today by date")).not.toBeInTheDocument();
+    expect(within(planned).getByRole("heading", { name: "Today by date", level: 4 })).toBeInTheDocument();
+    expect(within(planned).getByRole("heading", { name: "Today by reminder", level: 4 })).toBeInTheDocument();
+    expect(within(planned).queryByText("Yesterday debt")).not.toBeInTheDocument();
+
+    const overdueRow = within(overdue)
+      .getByRole("heading", { name: "Yesterday debt", level: 4 })
+      .closest("article");
+    expect(overdueRow).toHaveAttribute("data-overdue", "true");
+    expect(overdueRow?.className).toContain("accent-2");
+    expect(within(overdueRow!).getByText("Просрочено")).toBeInTheDocument();
+
+    const todayRow = within(planned)
+      .getByRole("heading", { name: "Today by date", level: 4 })
+      .closest("article");
+    expect(todayRow).not.toHaveAttribute("data-overdue");
   });
 
   it("sorts scheduled actions before unscheduled, then urgent and created order", () => {
@@ -236,5 +256,9 @@ describe("ActionsToday", () => {
 
     expect(screen.getByRole("heading", { name: "May 16 action", level: 4 })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "May 15 action", level: 4 })).toBeInTheDocument();
+    const overdue = screen.getByRole("region", { name: /просрочено\s*1/i });
+    const planned = screen.getByRole("region", { name: /на сегодня\s*1/i });
+    expect(within(overdue).getByRole("heading", { name: "May 15 action", level: 4 })).toBeInTheDocument();
+    expect(within(planned).getByRole("heading", { name: "May 16 action", level: 4 })).toBeInTheDocument();
   });
 });

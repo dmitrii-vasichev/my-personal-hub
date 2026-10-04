@@ -58,3 +58,34 @@ export function sortTodayActions(actions: Action[]): Action[] {
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
   });
 }
+
+export interface TodayActionSections {
+  overdue: Action[];
+  today: Action[];
+}
+
+/** Split pending actions that are due by the reference local day.
+ *  Planned for that day (action_date or remind_at) stays in Today.
+ *  Earlier dates, and only those, go to Overdue. Future and done items are dropped.
+ */
+export function partitionDueTodayActions(
+  actions: Action[],
+  ref: Date = new Date()
+): TodayActionSections {
+  const overdue: Action[] = [];
+  const today: Action[] = [];
+
+  for (const action of actions) {
+    if (action.status !== "pending") continue;
+    if (actionBelongsToLocalDay(action, ref)) {
+      today.push(action);
+    } else if (actionIsDueByLocalDay(action, ref)) {
+      overdue.push(action);
+    }
+  }
+
+  return {
+    overdue: sortTodayActions(overdue),
+    today: sortTodayActions(today),
+  };
+}

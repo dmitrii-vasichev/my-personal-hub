@@ -417,6 +417,8 @@ interface ActionRowProps {
   expanded: boolean;
   onToggle: () => void;
   showFocusButton?: boolean;
+  /** Amber treatment for actions carried into Today from an earlier day. */
+  overdue?: boolean;
 }
 
 export function ActionRow({
@@ -424,6 +426,7 @@ export function ActionRow({
   expanded,
   onToggle,
   showFocusButton = true,
+  overdue = false,
 }: ActionRowProps) {
   const markDone = useMarkActionDone();
   const snooze = useSnoozeAction();
@@ -681,9 +684,16 @@ export function ActionRow({
     <>
       <article
         data-done={isDone}
-        className={`group border-[1.5px] border-[color:var(--line)] bg-[color:var(--bg-2)] hover:border-[color:var(--line-2)] transition-colors ${
+        data-overdue={overdue ? "true" : undefined}
+        className={`group border-[1.5px] bg-[color:var(--bg-2)] hover:border-[color:var(--line-2)] transition-colors ${
           isDone ? "opacity-60" : ""
-        } ${expanded ? "border-[color:var(--accent)]" : ""}`}
+        } ${
+          expanded
+            ? "border-[color:var(--accent)]"
+            : overdue
+              ? "border-[color:var(--accent-2)] bg-[color:var(--accent-amber-muted)]"
+              : "border-[color:var(--line)]"
+        }`}
       >
         {/* Main row - when | body | acts */}
         <div
@@ -699,7 +709,7 @@ export function ActionRow({
           <div className="flex min-w-0 flex-col gap-0 font-mono leading-tight">
             <span
               className={`truncate text-[11px] uppercase tracking-[1px] sm:tracking-[1.5px] ${
-                action.is_urgent
+                overdue || action.is_urgent
                   ? "text-[color:var(--accent-2)]"
                   : "text-[color:var(--ink-2)]"
               }`}
@@ -710,8 +720,14 @@ export function ActionRow({
                 timeText
               )}
             </span>
-            <span className="truncate text-[10px] tracking-[0.7px] text-[color:var(--ink-3)] sm:tracking-[1px]">
-              {relText}
+            <span
+              className={`truncate text-[10px] tracking-[0.7px] sm:tracking-[1px] ${
+                overdue
+                  ? "text-[color:var(--accent-2)]"
+                  : "text-[color:var(--ink-3)]"
+              }`}
+            >
+              {overdue ? "Просрочено" : relText}
             </span>
           </div>
 
